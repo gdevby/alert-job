@@ -1,0 +1,16 @@
+eureka:
+  client:
+    fetchRegistry: false
+    registerWithEureka: false
+server:
+  port: 8015
+spring:
+  application:
+    name: alert-job-gateway
+  cloud:
+    config:
+      uri: http://alert-job-config:8011
+    loadbalancer:
+      ribbon: false
+  profiles:
+    active: dev  

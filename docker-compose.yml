@@ -1,0 +1,62 @@
+version: "3.8"
+services:
+  alert-job-config:
+    image: alert-job/alert-job-config:0.0.1-SNAPSHOT
+    ports:
+      - "8011:8011"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+  alert-job-eureka:
+    image: alert-job/alert-job-eureka:0.0.1-SNAPSHOT
+    ports:
+      - "8012:8012"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      alert-job-config:
+        condition: service_healthy
+  alert-job-test-service:
+    image: alert-job/alert-job-test-service:0.0.1-SNAPSHOT
+    ports:
+      - "8013:8013"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      alert-job-config:
+        condition: service_healthy
+      alert-job-eureka:
+        condition: service_healthy
+  alert-job-test-service1:
+    image: alert-job/alert-job-test1-service:0.0.1-SNAPSHOT
+    ports:
+      - "8014:8014"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      alert-job-config:
+        condition: service_healthy
+      alert-job-eureka:
+        condition: service_healthy
+  alert-job-keycloak:
+    image: alert-job/alert-job-keycloak:0.1
+    #restart: always
+    command:
+      - "start-dev"
+      #- health-enabled=true
+      #- metrics-enabled=true
+    ports:
+      - "8080:8080"
+  alert-job-gateway:
+    image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
+    ports:
+      - "8015:8015"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      alert-job-config:
+        condition: service_healthy
+      alert-job-eureka:
+        condition: service_healthy
+      alert-job-keycloak:
+        condition: service_healthy
+      
