@@ -59,4 +59,37 @@ services:
         condition: service_healthy
       alert-job-keycloak:
         condition: service_healthy
+  email-alert-job:
+    image: alert-job/email-alert-job:0.0.1-SNAPSHOT
+    ports:
+      - "8016:8016"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      alert-job-config:
+        condition: service_healthy
+      alert-job-eureka:
+        condition: service_healthy
+  parser-alert-job:
+    image: alert-job/parser-alert-job:0.0.1-SNAPSHOT
+    ports:
+      - "8017:8017"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      alert-job-config:
+        condition: service_healthy
+      alert-job-eureka:
+        condition: service_healthy
+  core-alert-job:
+    image: alert-job/core-alert-job:0.0.1-SNAPSHOT
+    ports:
+      - "8018:8018"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      alert-job-config:
+        condition: service_healthy
+      alert-job-eureka:
+        condition: service_healthy
       

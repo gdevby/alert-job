@@ -10,6 +10,9 @@
 		<module>alert-job-test-service</module>
 		<module>alert-job-test1-service</module>
 		<module>alert-job-gateway</module>
+		<module>email-alert-job</module>
+		<module>parser-alert-job</module>
+		<module>core-alert-job</module>
 	</modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
