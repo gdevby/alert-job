@@ -27,3 +27,4 @@ target
 .settings
 .mvn
 .flattened-pom.xml
+.factorypath
