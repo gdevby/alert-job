@@ -15,7 +15,7 @@ public class AppHandler {
 	private final ApplicationProperty property;
 
 	public Mono<ServerResponse> message(ServerRequest request) {
-		return ServerResponse.ok().bodyValue(property.getTest());
+		return ServerResponse.ok().bodyValue("test " + property.getTest());
 	}
 	public Mono<ServerResponse> secureMessage(ServerRequest request) {
 		return ServerResponse.ok().bodyValue(property.getTest() +" **** secure");
