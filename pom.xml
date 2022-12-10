@@ -13,6 +13,7 @@
 		<module>email-alert-job</module>
 		<module>parser-alert-job</module>
 		<module>core-alert-job</module>
+		<module>common-alert-job</module>
 	</modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>

@@ -20,3 +20,6 @@ curl -v -H "Accept: application/json" -H "Authorization: Bearer {TOKEN}" http://
 
 <br>
 
+usefull links <br>
+https://keycloak.discourse.group/t/keycloak-17-docker-container-how-to-export-import-realm-import-must-be-done-on-container-startup/13619/23
+
