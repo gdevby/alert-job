@@ -20,8 +20,8 @@ curl -v -H "Accept: application/json" -H "Authorization: Bearer {TOKEN}" http://
 
 <br>
 to test secure api with auth <br> http://alert-job-gateway:8015/alert-job-test-service/secure/message 
-and insert username and password
-user-test-service
+and insert username and password <br>
+user-test-service<br>
 test
 
 usefull links <br>

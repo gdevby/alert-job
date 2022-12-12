@@ -17,10 +17,11 @@ public class SecurityConfig {
 	@Bean
 	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
 			ServerLogoutSuccessHandler handler) {
-		http.authorizeExchange().pathMatchers("/alert-job-test-service/public/**").permitAll()
+		http.csrf().disable().authorizeExchange().pathMatchers("/alert-job-test-service/public/**","/logout.html","/").permitAll()
 				.pathMatchers("test-service/secure/**").hasAnyRole("admin-test-service-role").and().authorizeExchange()
-				.anyExchange().authenticated().and().oauth2Login() // to redirect to oauth2 login page.
-				.and().logout().logoutSuccessHandler(handler).and();
+				.anyExchange().authenticated().and()
+				.oauth2Login().and() // to redirect to oauth2 login page.
+				.logout().logoutSuccessHandler(handler).and();
 		return http.build();
 	}
 
@@ -30,7 +31,7 @@ public class SecurityConfig {
 		OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
 				repository);
 
-		oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}/logout.html");
+		oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}");
 
 		return oidcLogoutSuccessHandler;
 	}
