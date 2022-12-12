@@ -26,7 +26,18 @@
 		<docker.image.prefix>alert-job</docker.image.prefix>
 		<revision>0.0.1-SNAPSHOT</revision>
 	</properties>
+		
 	<dependencies>
+	<dependency>
+           <groupId>jakarta.xml.bind</groupId>
+           <artifactId>jakarta.xml.bind-api</artifactId>
+       </dependency>
+
+       <!-- Runtime, com.sun.xml.bind module -->
+       <dependency>
+           <groupId>org.glassfish.jaxb</groupId>
+           <artifactId>jaxb-runtime</artifactId>
+       </dependency>	
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
