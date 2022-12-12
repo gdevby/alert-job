@@ -13,7 +13,7 @@ to test gateway routes http://127.0.0.1:8015/alert-job-test-service/public/messa
 //wait minute before test cas services should be registrated.<br>
 to test secure endpoint you need to get token with curl <br>
 get Client secret open http://127.0.0.1:8080, insert admin admin, after select realm myrealm and click on clients-> Credentials and copy.<br>
-curl -u "client-test-service:{CLIENT_SECRET_REPLACE}" -d "grant_type=password&username=user-test-service&password=test"  -H "Accept: application/json" -X POST http://localhost:8080/realms/myrealm/protocol/openid-connect/token
+curl -u "client-test-service:{CLIENT_SECRET_REPLACE}" -d "grant_type=password&username=test&password=test"  -H "Accept: application/json" -X POST http://localhost:8080/realms/myrealm/protocol/openid-connect/token
 <br>
 and after execute with access_token <br>
 curl -v -H "Accept: application/json" -H "Authorization: Bearer {TOKEN}" http://127.0.0.1:8015/alert-job-test-service/secure/message
@@ -21,7 +21,7 @@ curl -v -H "Accept: application/json" -H "Authorization: Bearer {TOKEN}" http://
 <br>
 to test secure api with auth <br> http://alert-job-gateway:8015/alert-job-test-service/secure/message 
 and insert username and password <br>
-user-test-service<br>
+test<br>
 test
 
 usefull links <br>
