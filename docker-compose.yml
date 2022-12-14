@@ -42,6 +42,9 @@ services:
     #restart: always
     command:
       - "start-dev"
+      - "--hostname-url=http://aj.by/keycloak"
+      - "--hostname-admin-url=http://aj.by/keycloak"
+      
       #- health-enabled=true
       #- metrics-enabled=true
     ports:
