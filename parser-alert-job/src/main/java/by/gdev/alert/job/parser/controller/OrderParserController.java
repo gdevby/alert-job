@@ -32,7 +32,7 @@ public class OrderParserController {
 	@GetMapping(value = "/stream-sse/hubr", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<List<Order>>> streamHubrEvents() {
 		return Flux.interval(Duration.ofSeconds(10)).map(sequence -> ServerSentEvent.<List<Order>>builder()
-				.id(String.valueOf(sequence)).event("periodic-parse-event").data(fl.flruParser()).build());
+				.id(String.valueOf(sequence)).event("periodic-parse-event").data(hubr.hubrParser()).build());
 	}
 
 }

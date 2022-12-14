@@ -3,6 +3,7 @@ package by.gdev.alert.job.parser.domain;
 import java.util.Date;
 
 import javax.persistence.Entity;
+import javax.persistence.OneToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
@@ -17,7 +18,10 @@ import lombok.EqualsAndHashCode;
 public class OrderLinks extends BasicId {
 
 	
-	//должен быть составной Map<Категория, Ссылка>
+	@OneToOne
+	private Category category;
+	@OneToOne
+	private SubCategory subCategory;
 	private String links;
 	
 	@CreationTimestamp

@@ -18,8 +18,10 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import by.gdev.alert.job.parser.domain.Category;
 import by.gdev.alert.job.parser.domain.EnumSite;
 import by.gdev.alert.job.parser.domain.SiteSubCategory;
+import by.gdev.alert.job.parser.domain.SubCategory;
 import by.gdev.alert.job.parser.model.Order;
 import by.gdev.alert.job.parser.model.Price;
 import by.gdev.alert.job.parser.model.Rss;
@@ -51,7 +53,8 @@ public class HabrOrderParser {
 						// checking if a subcategory exists for this category
 						if (Objects.isNull(siteSubCategories)) {
 							// category does't have a subcategory
-							orders.addAll(hubrMapItems(categories.getLink()));
+							List<Order> list = flruMapItems(categories.getLink(), categories.getCategory(), null);
+							orders.addAll(list);
 						} else {
 							// category have a subcategory
 							siteSubCategories.stream()
@@ -59,7 +62,8 @@ public class HabrOrderParser {
 									.filter(subCategoryFilter -> subCategoryFilter.isParse())
 									// Iterate all sub category
 									.forEach(subCategories -> {
-										orders.addAll(hubrMapItems(subCategories.getLink()));
+										List<Order> list = flruMapItems(categories.getLink(), categories.getCategory(), subCategories.getSubCategory());
+										orders.addAll(list);
 									});
 						}
 					});
@@ -68,23 +72,26 @@ public class HabrOrderParser {
 	}
 
 	@SneakyThrows
-	private List<Order> hubrMapItems(String rssURI) {
+	private List<Order> flruMapItems(String rssURI, Category category, SubCategory subCategory) {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return rss.getChannel().getItem().stream().filter(util.orderFilter()::test).map(m -> {
+		return rss.getChannel().getItem().stream().map(m -> {
 			Order o = new Order();
 			o.setTitle(m.getTitle().toLowerCase());
 			o.setDateTime(m.getPubDate());
 			o.setMessage(m.getDescription().toLowerCase());
 			o.setLink(m.getLink());
-			parsePrice(o);
 			return o;
+		}).filter(filter -> {
+			if (util.orderFilter(category, subCategory, filter.getLink()))
+				parsePrice(filter);
+			return true;
 		}).collect(Collectors.toList());
 	}
 
 	@SneakyThrows
-	private void parsePrice(Order order) {
+	private Order parsePrice(Order order) {
 		Document doc = Jsoup.parse(new URL(order.getLink()), 30000);
 		Element el = doc.selectFirst("span.count");
 		Element elPaymentType = el.selectFirst(".suffix");
@@ -94,5 +101,6 @@ public class HabrOrderParser {
 		}
 		Elements elements = doc.select(".tags__item_link");
 		order.setTechnologies(elements.eachText().stream().map(e -> e.toLowerCase()).collect(Collectors.toList()));
+		return order;
 	}
 }
