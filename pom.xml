@@ -13,6 +13,7 @@
 		<module>email-alert-job</module>
 		<module>parser-alert-job</module>
 		<module>core-alert-job</module>
+		<module>common-alert-job</module>
 	</modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -91,18 +92,6 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
