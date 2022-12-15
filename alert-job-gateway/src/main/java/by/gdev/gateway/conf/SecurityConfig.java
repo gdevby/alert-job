@@ -19,6 +19,7 @@ public class SecurityConfig {
 			ServerLogoutSuccessHandler handler) {
 		http.csrf().disable().authorizeExchange().pathMatchers("/alert-job-test-service/public/**","/logout.html","/").permitAll()
 				.pathMatchers("test-service/secure/**").hasAnyRole("admin-test-service-role").and().authorizeExchange()
+				.pathMatchers("/actuator/**").permitAll()
 				.anyExchange().authenticated().and()
 				.oauth2Login().and() // to redirect to oauth2 login page.
 				.logout().logoutSuccessHandler(handler).and();

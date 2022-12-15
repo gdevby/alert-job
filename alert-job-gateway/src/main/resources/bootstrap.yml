@@ -9,7 +9,7 @@ spring:
     name: alert-job-gateway
   cloud:
     config:
-      uri: http://alert-job-config:8011
+      uri: http://config:8011
     loadbalancer:
       ribbon: false
   profiles:

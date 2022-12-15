@@ -1,43 +1,51 @@
 version: "3.8"
 services:
-  alert-job-config:
+  nginx:
+    image: nginx:1.23.3
+    volumes:
+      - "./nginx/conf.d:/etc/nginx/conf.d"
+    ports:
+      - "80:80"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+  config:
     image: alert-job/alert-job-config:0.0.1-SNAPSHOT
     ports:
       - "8011:8011"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
-  alert-job-eureka:
+  eureka:
     image: alert-job/alert-job-eureka:0.0.1-SNAPSHOT
     ports:
       - "8012:8012"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
     depends_on:
-      alert-job-config:
+      config:
         condition: service_healthy
-  alert-job-test-service:
+  test-service:
     image: alert-job/alert-job-test-service:0.0.1-SNAPSHOT
     ports:
       - "8013:8013"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
     depends_on:
-      alert-job-config:
+      config:
         condition: service_healthy
-      alert-job-eureka:
+      eureka:
         condition: service_healthy
-  alert-job-test1-service:
+  test1-service:
     image: alert-job/alert-job-test1-service:0.0.1-SNAPSHOT
     ports:
       - "8014:8014"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
     depends_on:
-      alert-job-config:
+      config:
         condition: service_healthy
-      alert-job-eureka:
+      eureka:
         condition: service_healthy
-  alert-job-keycloak:
+  keycloak:
     image: alert-job/alert-job-keycloak:0.1
     #restart: always
     command:
@@ -49,50 +57,53 @@ services:
       #- metrics-enabled=true
     ports:
       - "8080:8080"
-  alert-job-gateway:
+  gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
       - "8015:8015"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
+    links:
+      - "nginx:aj.by"
+    #extra_hosts:
+     #   - "aj.by:nginx-alert-job" #host and ip
     depends_on:
-      alert-job-config:
+      config:
         condition: service_healthy
-      alert-job-eureka:
+      eureka:
         condition: service_healthy
-      alert-job-keycloak:
+      keycloak:
         condition: service_healthy
-  email-alert-job:
+  email:
     image: alert-job/email-alert-job:0.0.1-SNAPSHOT
     ports:
       - "8016:8016"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
     depends_on:
-      alert-job-config:
+      config:
         condition: service_healthy
-      alert-job-eureka:
+      eureka:
         condition: service_healthy
-  parser-alert-job:
+  parser:
     image: alert-job/parser-alert-job:0.0.1-SNAPSHOT
     ports:
       - "8017:8017"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
     depends_on:
-      alert-job-config:
+      config:
         condition: service_healthy
-      alert-job-eureka:
+      eureka:
         condition: service_healthy
-  core-alert-job:
+  core:
     image: alert-job/core-alert-job:0.0.1-SNAPSHOT
     ports:
       - "8018:8018"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
     depends_on:
-      alert-job-config:
+      config:
         condition: service_healthy
-      alert-job-eureka:
+      eureka:
         condition: service_healthy
-      
