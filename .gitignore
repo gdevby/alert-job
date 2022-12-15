@@ -28,3 +28,4 @@ target
 .mvn
 .flattened-pom.xml
 .factorypath
+.dbeaver
