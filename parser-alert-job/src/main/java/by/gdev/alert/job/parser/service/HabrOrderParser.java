@@ -76,18 +76,16 @@ public class HabrOrderParser {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return rss.getChannel().getItem().stream().map(m -> {
-			Order o = new Order();
-			o.setTitle(m.getTitle().toLowerCase());
-			o.setDateTime(m.getPubDate());
-			o.setMessage(m.getDescription().toLowerCase());
-			o.setLink(m.getLink());
-			return o;
-		}).filter(filter -> {
-			if (util.orderFilter(category, subCategory, filter.getLink()))
-				parsePrice(filter);
-			return true;
-		}).collect(Collectors.toList());
+		return rss.getChannel().getItem().stream().filter(f -> util.isExistsOrder(category, subCategory, f.getLink()))
+				.map(m -> {
+					Order o = new Order();
+					o.setTitle(m.getTitle().toLowerCase());
+					o.setDateTime(m.getPubDate());
+					o.setMessage(m.getDescription().toLowerCase());
+					o.setLink(m.getLink());
+					parsePrice(o);
+					return o;
+				}).collect(Collectors.toList());
 	}
 
 	@SneakyThrows
