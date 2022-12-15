@@ -11,20 +11,19 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class ParserUtil {
-	
+
 	private final OrderLinksRepository linkRepository;
-	
-	public boolean orderFilter(Category category, SubCategory subCategory, String link){
-			if (linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link)) {
-				return false;
-			}
-			else {
-				OrderLinks ol = new OrderLinks();
-				ol.setCategory(category);
-				ol.setSubCategory(subCategory);
-				ol.setLinks(link);
-				linkRepository.save(ol);
-				return true;
-			}
+
+	public boolean isExistsOrder(Category category, SubCategory subCategory, String link) {
+		if (linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link)) {
+			return false;
+		} else {
+			OrderLinks ol = new OrderLinks();
+			ol.setCategory(category);
+			ol.setSubCategory(subCategory);
+			ol.setLinks(link);
+			linkRepository.save(ol);
+			return true;
+		}
 	}
 }
