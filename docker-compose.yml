@@ -71,6 +71,11 @@ services:
       - "nginx:aj.by"
     #extra_hosts:
      #   - "aj.by:nginx-alert-job" #host and ip
+    depends_on:
+      config:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
   email:
     image: alert-job/email-alert-job:0.0.1-SNAPSHOT
     ports:
