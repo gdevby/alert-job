@@ -16,7 +16,6 @@ public class SiteCategory extends BasicId {
 	
 	@ManyToOne
 	private Category category;
-	//TODO ???
 	@OneToMany
 	private Set<SiteSubCategory> siteSubCategories;
 	private String link;
