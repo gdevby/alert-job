@@ -1,13 +1,29 @@
 version: "3.8"
 services:
+  keycloak:
+    image: alert-job/alert-job-keycloak:0.1
+    #restart: always
+    command:
+      - "start-dev"
+      - "--hostname-url=http://aj.by/keycloak"
+      - "--hostname-admin-url=http://aj.by/keycloak"
+      
+      #- health-enabled=true
+      #- metrics-enabled=true
+    ports:
+      - "8080:8080"
   nginx:
     image: nginx:1.23.3
     volumes:
       - "./nginx/conf.d:/etc/nginx/conf.d"
+      - "./front:/etc/alert-job-front"
     ports:
       - "80:80"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
+    depends_on:
+      keycloak:
+        condition: service_healthy
   config:
     image: alert-job/alert-job-config:0.0.1-SNAPSHOT
     ports:
@@ -45,18 +61,6 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
-  keycloak:
-    image: alert-job/alert-job-keycloak:0.1
-    #restart: always
-    command:
-      - "start-dev"
-      - "--hostname-url=http://aj.by/keycloak"
-      - "--hostname-admin-url=http://aj.by/keycloak"
-      
-      #- health-enabled=true
-      #- metrics-enabled=true
-    ports:
-      - "8080:8080"
   gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
@@ -67,13 +71,6 @@ services:
       - "nginx:aj.by"
     #extra_hosts:
      #   - "aj.by:nginx-alert-job" #host and ip
-    depends_on:
-      config:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
   email:
     image: alert-job/email-alert-job:0.0.1-SNAPSHOT
     ports:
