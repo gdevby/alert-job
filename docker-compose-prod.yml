@@ -68,7 +68,7 @@ services:
     ports:
       - "8016:8016"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=prod"
     depends_on:
       config:
         condition: service_healthy
@@ -79,7 +79,7 @@ services:
     ports:
       - "8017:8017"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=prod"
     depends_on:
       config:
         condition: service_healthy
@@ -90,7 +90,7 @@ services:
     ports:
       - "8018:8018"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=prod"
     depends_on:
       config:
         condition: service_healthy
