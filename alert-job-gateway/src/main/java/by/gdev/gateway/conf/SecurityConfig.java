@@ -1,5 +1,6 @@
 package by.gdev.gateway.conf;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -13,6 +14,8 @@ import org.springframework.security.web.server.authentication.logout.ServerLogou
 //@EnableWebSecurity
 @EnableGlobalMethodSecurity(jsr250Enabled = true)
 public class SecurityConfig {
+	@Value("${gateway.logout}")
+	private String logoutURI;
 
 	@Bean
 	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
@@ -32,7 +35,7 @@ public class SecurityConfig {
 		OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
 				repository);
 
-		oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}");
+		oidcLogoutSuccessHandler.setPostLogoutRedirectUri(logoutURI);
 
 		return oidcLogoutSuccessHandler;
 	}
