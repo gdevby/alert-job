@@ -2,6 +2,7 @@ package by.gdev.alert.job.parser.configuration;
 
 import java.util.concurrent.TimeUnit;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -42,5 +43,10 @@ public class ApplicationConfig {
 							codecs.defaultCodecs().jaxb2Decoder(new Jaxb2XmlDecoder());
 						}).build())
 				.clientConnector(conn).build();
+	}
+	
+	@Bean
+	public ModelMapper createModelMapper() {
+		return new ModelMapper();
 	}
 }
