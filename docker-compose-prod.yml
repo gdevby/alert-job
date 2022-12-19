@@ -40,7 +40,7 @@ services:
       - "8011:8011"
     environment:
       - "SPRING_PROFILES_ACTIVE=dev,native"
-      - "spring.cloud.config.server.native.search-locations=file//$configuration_override_parameters_directory_docker"
+      - "spring.cloud.config.server.native.search-locations=file://$configuration_override_parameters_directory_docker"
     volumes:
       - "$local_config_directory:$configuration_override_parameters_directory_docker"
   eureka:
