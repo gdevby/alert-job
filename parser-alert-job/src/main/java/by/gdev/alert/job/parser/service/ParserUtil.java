@@ -15,15 +15,14 @@ public class ParserUtil {
 	private final OrderLinksRepository linkRepository;
 
 	public boolean isExistsOrder(Category category, SubCategory subCategory, String link) {
-		if (linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link)) {
-			return false;
-		} else {
-			OrderLinks ol = new OrderLinks();
-			ol.setCategory(category);
-			ol.setSubCategory(subCategory);
-			ol.setLinks(link);
-			linkRepository.save(ol);
-			return true;
-		}
+		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link);
+	}
+	
+	public void saveOrderLinks(Category category, SubCategory subCategory, String link) {
+		OrderLinks ol = new OrderLinks();
+		ol.setCategory(category);
+		ol.setSubCategory(subCategory);
+		ol.setLinks(link);
+		linkRepository.save(ol);
 	}
 }
