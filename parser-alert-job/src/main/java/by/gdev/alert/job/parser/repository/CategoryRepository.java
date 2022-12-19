@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.repository.CrudRepository;
 
-import by.gdev.alert.job.parser.domain.Category;
+import by.gdev.alert.job.parser.domain.db.Category;
 
 public interface CategoryRepository extends CrudRepository<Category, Long> {
 	

@@ -7,9 +7,9 @@ import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 
-import by.gdev.alert.job.parser.domain.Category;
-import by.gdev.alert.job.parser.domain.EnumSite;
-import by.gdev.alert.job.parser.domain.SubCategory;
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.SubCategory;
+import by.gdev.alert.job.parser.domain.model.EnumSite;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteCategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;

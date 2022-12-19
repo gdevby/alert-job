@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.domain;
+package by.gdev.alert.job.parser.domain.model;
 
 import java.util.List;
 

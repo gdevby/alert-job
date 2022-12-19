@@ -2,9 +2,9 @@ package by.gdev.alert.job.parser.service;
 
 import org.springframework.stereotype.Component;
 
-import by.gdev.alert.job.parser.domain.Category;
-import by.gdev.alert.job.parser.domain.OrderLinks;
-import by.gdev.alert.job.parser.domain.SubCategory;
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.OrderLinks;
+import by.gdev.alert.job.parser.domain.db.SubCategory;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
 import lombok.RequiredArgsConstructor;
 
