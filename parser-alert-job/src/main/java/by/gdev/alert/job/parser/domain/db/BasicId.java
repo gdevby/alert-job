@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.domain;
+package by.gdev.alert.job.parser.domain.db;
 
 import javax.persistence.Access;
 import javax.persistence.AccessType;
