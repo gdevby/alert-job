@@ -82,6 +82,7 @@ public class FLOrderParser {
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
 		return rss.getChannel().getItem().stream().filter(f -> util.isExistsOrder(category, subCategory, f.getLink()))
 				.map(m -> {
+					util.saveOrderLinks(category, subCategory, m.getLink());
 					Order o = new Order();
 					o.setTitle(m.getTitle().toLowerCase());
 					o.setDateTime(m.getPubDate());
