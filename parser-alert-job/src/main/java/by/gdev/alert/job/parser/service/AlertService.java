@@ -5,11 +5,17 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.SubCategory;
+import com.google.common.collect.Lists;
+
+import by.gdev.alert.job.parser.domain.db.SiteCategory;
+import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.model.EnumSite;
+import by.gdev.alert.job.parser.domain.model.SiteCategoryDTO;
+import by.gdev.alert.job.parser.domain.model.SiteSubCategoryDTO;
+import by.gdev.alert.job.parser.exeption.ResourceNotFoundException;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteCategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
@@ -25,17 +31,24 @@ public class AlertService {
 	private final SiteCategoryRepository siteCategoryRepository;
 	private final CategoryRepository categoryRepository;
 	
+	private final ModelMapper mapper;
 	
-	@Transactional
-	public List<Category> getCategories(EnumSite site){
-		return siteSourceJobRepository.findAllByName(site.name()).stream().map(e -> e.getSiteCategories())
-				.flatMap(e2 -> e2.stream().map(m -> m.getCategory())).collect(Collectors.toList());
+	public List<EnumSite> getSites() {
+		return Lists.newArrayList(siteSourceJobRepository.findAll()).stream().map(e -> EnumSite.valueOf(e.getName()))
+				.collect(Collectors.toList());
 	}
 	
 	@Transactional
-	public List<SubCategory> getSubCategories(String category) {
-		Category c = categoryRepository.findByName(category).orElseThrow(() -> new RuntimeException());
-		return siteCategoryRepository.findByCategory(c).stream().map(e -> e.getSiteSubCategories())
-				.flatMap(e2 -> e2.stream().map(m -> m.getSubCategory())).collect(Collectors.toList());
+	public List<SiteCategoryDTO> getCategories(Long id) {
+		SiteSourceJob ssj = siteSourceJobRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException());
+		return ssj.getSiteCategories().stream().map(e -> {
+			return mapper.map(e, SiteCategoryDTO.class);
+		}).collect(Collectors.toList());
+	}
+	
+	@Transactional
+	public List<SiteSubCategoryDTO> getSubCategories(Long category) {
+		SiteCategory sc = siteCategoryRepository.findById(category).orElseThrow(() -> new ResourceNotFoundException());
+		return sc.getSiteSubCategories().stream().map(e -> mapper.map(e, SiteSubCategoryDTO.class)).collect(Collectors.toList());
 	}
 }

@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.SubCategory;
 import by.gdev.alert.job.parser.domain.model.EnumSite;
 import by.gdev.alert.job.parser.domain.model.Order;
+import by.gdev.alert.job.parser.domain.model.SiteCategoryDTO;
+import by.gdev.alert.job.parser.domain.model.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.service.AlertService;
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
@@ -43,16 +43,16 @@ public class OrderParserController {
 	
 	@GetMapping("sites")
 	public List<EnumSite> sites(){
-		return EnumSite.getAllSites();
+		return service.getSites();
 	}
 	
 	@GetMapping("categories")
-	public List<Category> categories(@RequestParam("site") EnumSite site){
+	public List<SiteCategoryDTO> categories(@RequestParam("site_id") Long site){
 		return service.getCategories(site);
 	}
 	
 	@GetMapping("subcategories")
-	public List<SubCategory> subCategories(@RequestParam("category") String category){
+	public List<SiteSubCategoryDTO> subCategories(@RequestParam("category_id") Long category){
 		return service.getSubCategories(category);
 	}
 }
