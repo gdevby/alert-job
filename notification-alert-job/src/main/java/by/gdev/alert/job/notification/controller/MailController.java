@@ -1,7 +1,7 @@
 package by.gdev.alert.job.notification.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,12 +15,16 @@ import reactor.core.publisher.Mono;
 @RequestMapping
 @RequiredArgsConstructor
 public class MailController {
-	
+
 	private final MailService service;
-	
-	
-	@GetMapping("mail")
+
+	@PostMapping("mail")
 	public ResponseEntity<Mono<Void>> mailMessage(@RequestBody UserMail userMail) {
 		return ResponseEntity.ok(service.sendMessage(userMail));
+	}
+
+	@PostMapping("telegram")
+	public ResponseEntity<Mono<Void>> sendTelegram(@RequestBody UserMail userMail) {
+		return ResponseEntity.ok(service.sendMessageToTelegram(userMail));
 	}
 }

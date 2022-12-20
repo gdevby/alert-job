@@ -12,6 +12,7 @@ public class ApplicationProperty {
 	
 	@Value("${mail.password}")
 	private String mailPassword;
-	
+	@Value("${telegram.chat.token}")
+	private String telegramChatToken;
 	
 }
