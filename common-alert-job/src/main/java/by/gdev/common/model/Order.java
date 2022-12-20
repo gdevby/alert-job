@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.domain.model;
+package by.gdev.common.model;
 
 import java.util.Date;
 import java.util.List;

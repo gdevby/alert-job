@@ -8,6 +8,11 @@
 	<artifactId>parser-alert-job</artifactId>
 	<dependencies>
 		<dependency>
+			<groupId>by.gdev</groupId>
+			<artifactId>common-alert-job</artifactId>
+			<version>${revision}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 			<exclusions>

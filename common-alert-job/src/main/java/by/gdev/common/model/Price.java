@@ -1,10 +1,12 @@
-package by.gdev.alert.job.parser.domain.model;
+package by.gdev.common.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Price {
 	private String price;
 	private int value;
