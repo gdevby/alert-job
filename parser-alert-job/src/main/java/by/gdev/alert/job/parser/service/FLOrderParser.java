@@ -66,7 +66,7 @@ public class FLOrderParser {
 									.filter(subCategoryFilter -> subCategoryFilter.isParse())
 									// Iterate all sub category
 									.forEach(subCategories -> {
-										List<Order> list = flruMapItems(categories.getLink(), categories.getCategory(), subCategories.getSubCategory());
+										List<Order> list = flruMapItems(subCategories.getLink(), categories.getCategory(), subCategories.getSubCategory());
 										orders.addAll(list);
 									});
 						}
