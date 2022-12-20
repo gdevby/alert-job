@@ -12,17 +12,15 @@ services:
       - MYSQL_USER=$database_user_login
       - MYSQL_DATABASE=keycloak
   keycloak:
-    image: alert-job/alert-job-keycloak:0.1
-    #restart: always
+    image: quay.io/keycloak/keycloak:20.0.1
     command:
       - "start"
-      - "--hostname-url=http://aj.by/keycloak"
-      - "--hostname-admin-url=http://aj.by/keycloak"
+      - "--hostname-url=$keycloak_url"
+      - "--hostname-admin-url=$keycloak_url"
       - "--db mariadb"
       - "--db-url-host db"
       - "--db-username $database_user_login"
       - "--db-password $database_user_password"
-      
       #- health-enabled=true
       #- metrics-enabled=true
     ports:
@@ -30,24 +28,21 @@ services:
     environment:
       - "KC_HTTP_ENABLED=true"
       - "KC_PROXY=edge"
-  nginx:
-    image: nginx:1.23.3
-    volumes:
-      - "./nginx/conf.d:/etc/nginx/conf.d"
-      - "./front:/etc/alert-job-front"
-    ports:
-      - "80:80"
-    environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-  depends_on:
-      keycloak:
-        condition: service_healthy
+      - "KEYCLOAK_ADMIN=$keycloak_admin"
+      - "KEYCLOAK_ADMIN_PASSWORD=$keycloak_admin_password"
+      - "KEYCLOAK_USER=$keycloak_admin"
+      - "KEYCLOAK_PASSWORD=$keycloak_admin_password"
+    depends_on:
+      - db
   config:
     image: alert-job/alert-job-config:0.0.1-SNAPSHOT
     ports:
       - "8011:8011"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+      - "SPRING_PROFILES_ACTIVE=dev,native"
+      - "spring.cloud.config.server.native.search-locations=file://$configuration_override_parameters_directory_docker"
+    volumes:
+      - "$local_config_directory:$configuration_override_parameters_directory_docker"
   eureka:
     image: alert-job/alert-job-eureka:0.0.1-SNAPSHOT
     ports:
@@ -57,57 +52,23 @@ services:
     depends_on:
       config:
         condition: service_healthy
-  test-service:
-    image: alert-job/alert-job-test-service:0.0.1-SNAPSHOT
-    ports:
-      - "8013:8013"
-    environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-    depends_on:
-      config:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
-  test1-service:
-    image: alert-job/alert-job-test1-service:0.0.1-SNAPSHOT
-    ports:
-      - "8014:8014"
-    environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-    depends_on:
-      config:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
   gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
       - "8015:8015"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-    links:
-      - "nginx:aj.by"
-    #extra_hosts:
-     #   - "aj.by:nginx-alert-job" #host and ip
-    healthcheck:
-      test: curl --fail http://keycloak:8000 || exit 1
-      interval: 60s
-      retries: 5
-      start_period: 20s
-      timeout: 10s
+       - "SPRING_PROFILES_ACTIVE=prod"
     depends_on:
       config:
         condition: service_healthy
       eureka:
         condition: service_healthy
-      #keycloak:
-       # condition: service_healthy
   email:
     image: alert-job/email-alert-job:0.0.1-SNAPSHOT
     ports:
       - "8016:8016"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=prod"
     depends_on:
       config:
         condition: service_healthy
@@ -118,7 +79,7 @@ services:
     ports:
       - "8017:8017"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=prod"
     depends_on:
       config:
         condition: service_healthy
@@ -129,7 +90,7 @@ services:
     ports:
       - "8018:8018"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=prod"
     depends_on:
       config:
         condition: service_healthy

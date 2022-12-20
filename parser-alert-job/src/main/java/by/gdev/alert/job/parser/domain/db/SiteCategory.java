@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.domain;
+package by.gdev.alert.job.parser.domain.db;
 
 import java.util.Set;
 
@@ -16,7 +16,6 @@ public class SiteCategory extends BasicId {
 	
 	@ManyToOne
 	private Category category;
-	//TODO ???
 	@OneToMany
 	private Set<SiteSubCategory> siteSubCategories;
 	private String link;

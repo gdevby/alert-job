@@ -18,13 +18,13 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import by.gdev.alert.job.parser.domain.Category;
-import by.gdev.alert.job.parser.domain.EnumSite;
-import by.gdev.alert.job.parser.domain.SiteSubCategory;
-import by.gdev.alert.job.parser.domain.SubCategory;
-import by.gdev.alert.job.parser.model.Order;
-import by.gdev.alert.job.parser.model.Price;
-import by.gdev.alert.job.parser.model.Rss;
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.SiteSubCategory;
+import by.gdev.alert.job.parser.domain.db.SubCategory;
+import by.gdev.alert.job.parser.domain.model.EnumSite;
+import by.gdev.alert.job.parser.domain.model.Order;
+import by.gdev.alert.job.parser.domain.model.Price;
+import by.gdev.alert.job.parser.domain.model.Rss;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -78,6 +78,7 @@ public class HabrOrderParser {
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
 		return rss.getChannel().getItem().stream().filter(f -> util.isExistsOrder(category, subCategory, f.getLink()))
 				.map(m -> {
+					util.saveOrderLinks(category, subCategory, m.getLink());
 					Order o = new Order();
 					o.setTitle(m.getTitle().toLowerCase());
 					o.setDateTime(m.getPubDate());

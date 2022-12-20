@@ -3,6 +3,7 @@ package by.gdev.alert.job.parser.scheduller;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +22,10 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	
 	private final OrderLinksRepository linkRepository;
 	
+	@Value("${parser.update.links.after.days}")
+	private long parserUpdateLinksAfterDay;
+	
+	
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 	}
@@ -30,7 +35,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	public void removeEnaibleTokens() {
 		Lists.newArrayList(linkRepository.findAll()).stream().filter(f -> {
 			LocalDateTime ldt = f.getCreatedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-			LocalDateTime plusLdt = ldt.plusDays(3);
+			LocalDateTime plusLdt = ldt.plusDays(parserUpdateLinksAfterDay);
 			LocalDateTime now = LocalDateTime.now();
 			return now.isAfter(plusLdt);
 		}).forEach(e -> {
