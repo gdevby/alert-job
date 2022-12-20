@@ -1,4 +1,4 @@
-package by.gdev.alert.job.email.config;
+package by.gdev.alert.job.notification.config;
 
 import org.springframework.beans.factory.annotation.Value;
 

@@ -1,4 +1,4 @@
-package by.gdev.alert.job.email.controller;
+package by.gdev.alert.job.notification.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import by.gdev.alert.job.email.model.UserMail;
-import by.gdev.alert.job.email.service.MailService;
+import by.gdev.alert.job.notification.model.UserMail;
+import by.gdev.alert.job.notification.service.MailService;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 

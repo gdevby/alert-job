@@ -1,4 +1,4 @@
-package by.gdev.alert.job.email.model;
+package by.gdev.alert.job.notification.model;
 
 import lombok.Data;
 

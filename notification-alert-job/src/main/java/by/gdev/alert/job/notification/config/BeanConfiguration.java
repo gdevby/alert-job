@@ -1,4 +1,4 @@
-package by.gdev.alert.job.email.config;
+package by.gdev.alert.job.notification.config;
 
 import org.simplejavamail.api.mailer.Mailer;
 import org.simplejavamail.api.mailer.config.TransportStrategy;

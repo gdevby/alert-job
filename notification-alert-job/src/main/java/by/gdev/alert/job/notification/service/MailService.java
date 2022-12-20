@@ -1,12 +1,12 @@
-package by.gdev.alert.job.email.service;
+package by.gdev.alert.job.notification.service;
 
 import org.simplejavamail.api.email.Email;
 import org.simplejavamail.api.mailer.Mailer;
 import org.simplejavamail.email.EmailBuilder;
 import org.springframework.stereotype.Service;
 
-import by.gdev.alert.job.email.config.ApplicationProperty;
-import by.gdev.alert.job.email.model.UserMail;
+import by.gdev.alert.job.notification.config.ApplicationProperty;
+import by.gdev.alert.job.notification.model.UserMail;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
