@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import by.gdev.alert.job.parser.domain.model.EnumSite;
-import by.gdev.alert.job.parser.domain.model.Order;
 import by.gdev.alert.job.parser.domain.model.SiteCategoryDTO;
 import by.gdev.alert.job.parser.domain.model.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.service.AlertService;
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
+import by.gdev.common.model.Order;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 
