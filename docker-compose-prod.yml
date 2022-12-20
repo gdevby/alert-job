@@ -85,6 +85,17 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+  notification:
+    image: alert-job/notification-alert-job:0.0.1-SNAPSHOT
+    ports:
+      - "8019:8019"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=prod"
+    depends_on:
+      config:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
   core:
     image: alert-job/core-alert-job:0.0.1-SNAPSHOT
     ports:
