@@ -1,10 +1,10 @@
 package by.gdev.alert.job.core.model.key;
 
 import lombok.Data;
-//TODO super class
+import lombok.EqualsAndHashCode;
+
 @Data
-public class TitleWord {
-	private String name;
-	private Long counter;
+@EqualsAndHashCode(callSuper = true)
+public class TitleWord extends Word {
 	private String hide;
 }

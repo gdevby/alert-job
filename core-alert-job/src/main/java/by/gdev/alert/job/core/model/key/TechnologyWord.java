@@ -1,9 +1,10 @@
 package by.gdev.alert.job.core.model.key;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class TechnologyWord {
-	private String name;
-	private Long counter;
+@EqualsAndHashCode(callSuper = true)
+public class TechnologyWord extends Word {
+
 }
