@@ -1,0 +1,14 @@
+.list {
+	position: relative;
+	width: 150px;
+	&_items {
+		position: absolute;
+		background: #e9e6e6;
+    	min-width: 100%;
+    	
+    	& > div {
+			padding: .4rem;
+			cursor: pointer;
+		}
+	}
+}

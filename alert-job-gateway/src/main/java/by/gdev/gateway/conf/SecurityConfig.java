@@ -1,5 +1,7 @@
 package by.gdev.gateway.conf;
 
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -17,11 +19,15 @@ public class SecurityConfig {
 	@Bean
 	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
 			ServerLogoutSuccessHandler handler) {
-		http.csrf().disable().authorizeExchange().pathMatchers("/alert-job-test-service/public/**","/logout.html","/","/favicon.ico").permitAll()
+		http.csrf().disable().authorizeExchange()
+				.pathMatchers("/alert-job-test-service/public/**", "/logout.html", "/", "/favicon.ico").permitAll()
 				.pathMatchers("test-service/secure/**").hasAnyRole("admin-test-service-role").and().authorizeExchange()
-				.pathMatchers("/actuator/**").permitAll()
-				.anyExchange().authenticated().and()
-				.oauth2Login().and() // to redirect to oauth2 login page.
+				.pathMatchers("/actuator/**").permitAll().anyExchange().authenticated().and().oauth2Login().and() // to
+																													// redirect
+																													// to
+																													// oauth2
+																													// login
+																													// page.
 				.logout().logoutSuccessHandler(handler).and();
 		return http.build();
 	}
@@ -36,4 +42,5 @@ public class SecurityConfig {
 
 		return oidcLogoutSuccessHandler;
 	}
+
 }
