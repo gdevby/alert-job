@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import by.gdev.alert.job.parser.domain.model.EnumSite;
-import by.gdev.alert.job.parser.domain.model.SiteCategoryDTO;
-import by.gdev.alert.job.parser.domain.model.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.domain.EnumSite;
+import by.gdev.alert.job.parser.domain.SiteCategoryDTO;
+import by.gdev.alert.job.parser.domain.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.common.model.Order;

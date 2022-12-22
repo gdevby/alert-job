@@ -19,12 +19,12 @@ import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import by.gdev.alert.job.parser.domain.EnumSite;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteCategory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.SiteSubCategory;
 import by.gdev.alert.job.parser.domain.db.SubCategory;
-import by.gdev.alert.job.parser.domain.model.EnumSite;
 import by.gdev.alert.job.parser.domain.rss.Rss;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.Order;

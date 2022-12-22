@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
 
+import by.gdev.alert.job.parser.domain.EnumSite;
+import by.gdev.alert.job.parser.domain.SiteCategoryDTO;
+import by.gdev.alert.job.parser.domain.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
 import by.gdev.alert.job.parser.domain.db.SiteCategory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.SubCategory;
-import by.gdev.alert.job.parser.domain.model.EnumSite;
-import by.gdev.alert.job.parser.domain.model.SiteCategoryDTO;
-import by.gdev.alert.job.parser.domain.model.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.exeption.ResourceNotFoundException;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
