@@ -1,10 +1,15 @@
 package by.gdev.alert.job.core.model.key;
 
-import lombok.Data;
+import javax.persistence.MappedSuperclass;
 
-//@MappedSuperclass
+import by.gdev.alert.job.core.model.BasicId;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@MappedSuperclass
 @Data
-public abstract class Word {
+@EqualsAndHashCode(callSuper = true)
+public abstract class Word extends BasicId {
 	private String name;
 	private Long counter;
 

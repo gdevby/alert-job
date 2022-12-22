@@ -1,9 +1,14 @@
 package by.gdev.alert.job.core.model;
 
-import lombok.Data;
+import javax.persistence.Entity;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@Entity
 @Data
-public class SourceSite {
+@EqualsAndHashCode(callSuper = true)
+public class SourceSite extends BasicId{
 	private Long siteSource;
 	private Long siteCategory;
 	private Long siteSubCategory;
