@@ -1,4 +1,4 @@
-package by.gdev.alert.job.email.config;
+package by.gdev.alert.job.notification.config;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -12,6 +12,7 @@ public class ApplicationProperty {
 	
 	@Value("${mail.password}")
 	private String mailPassword;
-	
+	@Value("${telegram.chat.token}")
+	private String telegramChatToken;
 	
 }

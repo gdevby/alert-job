@@ -5,7 +5,7 @@
     <artifactId>alert-job-parent</artifactId>
     <version>${revision}</version>
   </parent>
-  <artifactId>email-alert-job</artifactId>
+  <artifactId>notification-alert-job</artifactId>
   <dependencies>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
