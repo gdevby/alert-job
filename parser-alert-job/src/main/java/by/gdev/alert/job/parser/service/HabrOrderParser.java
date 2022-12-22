@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.SiteCategory;
+import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.SiteSubCategory;
 import by.gdev.alert.job.parser.domain.db.SubCategory;
 import by.gdev.alert.job.parser.domain.model.EnumSite;
@@ -26,6 +28,7 @@ import by.gdev.alert.job.parser.domain.model.Rss;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.Order;
 import by.gdev.common.model.Price;
+import by.gdev.common.model.SourceSiteDTO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -42,37 +45,39 @@ public class HabrOrderParser {
 	@Transactional
 	public List<Order> hubrParser() {
 		List<Order> orders = new ArrayList<>();
-//		// find all elements from database with Hubr.ru name
-		siteSourceJobRepository.findAllByName(EnumSite.HUBR.name()).forEach(element -> {
-			element.getSiteCategories().stream()
-					// parse only categories that can parse=true
-					.filter(categoryFilter -> categoryFilter.isParse())
-					// iterate over each category from this collection
-					.forEach(categories -> {
-						Set<SiteSubCategory> siteSubCategories = categories.getSiteSubCategories();
-						// checking if a subcategory exists for this category
-						if (Objects.isNull(siteSubCategories)) {
-							// category does't have a subcategory
-							List<Order> list = flruMapItems(categories.getLink(), categories.getCategory(), null);
-							orders.addAll(list);
-						} else {
-							// category have a subcategory
-							siteSubCategories.stream()
-									// parse only sub categories that can parse=true
-									.filter(subCategoryFilter -> subCategoryFilter.isParse())
-									// Iterate all sub category
-									.forEach(subCategories -> {
-										List<Order> list = flruMapItems(categories.getLink(), categories.getCategory(), subCategories.getSubCategory());
-										orders.addAll(list);
-									});
-						}
-					});
-		});
+//		// find elements from database with Hubr.ru name
+		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName(EnumSite.HUBR.name());
+		siteSourceJob.getSiteCategories().stream()
+				// parse only categories that can parse=true
+				.filter(categoryFilter -> categoryFilter.isParse())
+				// iterate over each category from this collection
+				.forEach(categories -> {
+					Set<SiteSubCategory> siteSubCategories = categories.getSiteSubCategories();
+					// checking if a subcategory exists for this category
+					if (Objects.isNull(siteSubCategories)) {
+						// category does't have a subcategory
+						List<Order> list = flruMapItems(categories.getLink(), siteSourceJob.getId(), categories, null);
+						orders.addAll(list);
+					} else {
+						// category have a subcategory
+						siteSubCategories.stream()
+								// parse only sub categories that can parse=true
+								.filter(subCategoryFilter -> subCategoryFilter.isParse())
+								// Iterate all sub category
+								.forEach(subCategories -> {
+									List<Order> list = flruMapItems(subCategories.getLink(), siteSourceJob.getId(),
+											categories, subCategories);
+									orders.addAll(list);
+								});
+					}
+				});
 		return orders;
 	}
 
 	@SneakyThrows
-	private List<Order> flruMapItems(String rssURI, Category category, SubCategory subCategory) {
+	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, SiteCategory siteCategory, SiteSubCategory siteSubCategory) {
+		Category category = siteCategory.getCategory();
+		SubCategory subCategory = siteSubCategory.getSubCategory();
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
@@ -85,6 +90,12 @@ public class HabrOrderParser {
 					o.setMessage(m.getDescription().toLowerCase());
 					o.setLink(m.getLink());
 					parsePrice(o);
+					SourceSiteDTO dto = new SourceSiteDTO();
+					dto.setSiteSource(siteSourceJobId);
+					dto.setSiteCategory(siteCategory.getId());
+					dto.setSiteSubCategory(siteSubCategory.getId());
+					dto.setFlRuForAll(o.isFlRuForAll());
+					o.setSourceSite(dto);
 					return o;
 				}).collect(Collectors.toList());
 	}

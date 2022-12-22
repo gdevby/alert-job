@@ -17,5 +17,6 @@ public class Order {
 	private Date dateTime;
 	private Price price;
 	private List<String> technologies;
+	private SourceSiteDTO sourceSite;
 	private boolean flRuForAll;
 }
