@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.domain.model;
+package by.gdev.alert.job.parser.domain.rss;
 
 import javax.xml.bind.annotation.XmlRootElement;
 

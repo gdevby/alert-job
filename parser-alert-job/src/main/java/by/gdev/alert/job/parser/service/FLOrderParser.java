@@ -25,7 +25,7 @@ import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.SiteSubCategory;
 import by.gdev.alert.job.parser.domain.db.SubCategory;
 import by.gdev.alert.job.parser.domain.model.EnumSite;
-import by.gdev.alert.job.parser.domain.model.Rss;
+import by.gdev.alert.job.parser.domain.rss.Rss;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.Order;
 import by.gdev.common.model.Price;
@@ -40,7 +40,7 @@ import lombok.SneakyThrows;
 public class FLOrderParser {
 
 	private final WebClient webClient;
-	private final ParserUtil util;
+	private final ParserService service;
 	private final SiteSourceJobRepository siteSourceJobRepository;
 
 	private Pattern paymentPatter = Pattern.compile(".*[Бб]юджет: ([0-9]+).*");
@@ -85,9 +85,9 @@ public class FLOrderParser {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return rss.getChannel().getItem().stream().filter(f -> util.isExistsOrder(category, subCategory, f.getLink()))
+		return rss.getChannel().getItem().stream().filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
 				.map(m -> {
-					util.saveOrderLinks(category, subCategory, m.getLink());
+					service.saveOrderLinks(category, subCategory, m.getLink());
 					Order o = new Order();
 					o.setTitle(m.getTitle().toLowerCase());
 					o.setDateTime(m.getPubDate());

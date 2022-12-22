@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import by.gdev.alert.job.parser.domain.model.EnumSite;
 import by.gdev.alert.job.parser.domain.model.SiteCategoryDTO;
 import by.gdev.alert.job.parser.domain.model.SiteSubCategoryDTO;
-import by.gdev.alert.job.parser.service.AlertService;
+import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.common.model.Order;
@@ -27,7 +27,7 @@ public class OrderParserController {
 
 	public final HabrOrderParser hubr;
 	public final FLOrderParser fl;
-	public final AlertService service;
+	public final ParserService service;
 	
 	@GetMapping(value = "/stream-sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<List<Order>>> streamFlruEvents() {

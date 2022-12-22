@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.configuration;
+package by.gdev.alert.job.parser.adapter;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
