@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
 
-import by.gdev.alert.job.parser.domain.EnumSite;
 import by.gdev.alert.job.parser.domain.SiteCategoryDTO;
+import by.gdev.alert.job.parser.domain.SiteSourceDTO;
 import by.gdev.alert.job.parser.domain.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
@@ -30,19 +30,19 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ParserService {
-	
+
 	private final SiteSourceJobRepository siteSourceJobRepository;
 	private final SiteCategoryRepository siteCategoryRepository;
 	private final CategoryRepository categoryRepository;
 	private final OrderLinksRepository linkRepository;
-	
+
 	private final ModelMapper mapper;
-	
-	public List<EnumSite> getSites() {
-		return Lists.newArrayList(siteSourceJobRepository.findAll()).stream().map(e -> EnumSite.valueOf(e.getName()))
-				.collect(Collectors.toList());
+
+	public List<SiteSourceDTO> getSites() {
+		return Lists.newArrayList(siteSourceJobRepository.findAll()).stream()
+				.map(s -> mapper.map(s, SiteSourceDTO.class)).collect(Collectors.toList());
 	}
-	
+
 	@Transactional
 	public List<SiteCategoryDTO> getCategories(Long id) {
 		SiteSourceJob ssj = siteSourceJobRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException());
@@ -50,17 +50,18 @@ public class ParserService {
 			return mapper.map(e, SiteCategoryDTO.class);
 		}).collect(Collectors.toList());
 	}
-	
+
 	@Transactional
 	public List<SiteSubCategoryDTO> getSubCategories(Long category) {
 		SiteCategory sc = siteCategoryRepository.findById(category).orElseThrow(() -> new ResourceNotFoundException());
-		return sc.getSiteSubCategories().stream().map(e -> mapper.map(e, SiteSubCategoryDTO.class)).collect(Collectors.toList());
+		return sc.getSiteSubCategories().stream().map(e -> mapper.map(e, SiteSubCategoryDTO.class))
+				.collect(Collectors.toList());
 	}
-	
+
 	public boolean isExistsOrder(Category category, SubCategory subCategory, String link) {
 		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link);
 	}
-	
+
 	public void saveOrderLinks(Category category, SubCategory subCategory, String link) {
 		OrderLinks ol = new OrderLinks();
 		ol.setCategory(category);
@@ -68,6 +69,5 @@ public class ParserService {
 		ol.setLinks(link);
 		linkRepository.save(ol);
 	}
-	
-	
+
 }

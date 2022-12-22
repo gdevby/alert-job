@@ -18,7 +18,6 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import by.gdev.alert.job.parser.domain.EnumSite;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteCategory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
@@ -46,7 +45,7 @@ public class HabrOrderParser {
 	public List<Order> hubrParser() {
 		List<Order> orders = new ArrayList<>();
 //		// find elements from database with Hubr.ru name
-		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName(EnumSite.HUBR.name());
+		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName("HUBR");
 		siteSourceJob.getSiteCategories().stream()
 				// parse only categories that can parse=true
 				.filter(categoryFilter -> categoryFilter.isParse())
@@ -75,14 +74,15 @@ public class HabrOrderParser {
 	}
 
 	@SneakyThrows
-	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, SiteCategory siteCategory, SiteSubCategory siteSubCategory) {
+	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, SiteCategory siteCategory,
+			SiteSubCategory siteSubCategory) {
 		Category category = siteCategory.getCategory();
 		SubCategory subCategory = siteSubCategory.getSubCategory();
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return rss.getChannel().getItem().stream().filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
-				.map(m -> {
+		return rss.getChannel().getItem().stream()
+				.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
 					service.saveOrderLinks(category, subCategory, m.getLink());
 					Order o = new Order();
 					o.setTitle(m.getTitle().toLowerCase());

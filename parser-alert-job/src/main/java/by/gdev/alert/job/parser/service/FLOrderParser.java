@@ -19,7 +19,6 @@ import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import by.gdev.alert.job.parser.domain.EnumSite;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteCategory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
@@ -50,7 +49,7 @@ public class FLOrderParser {
 	public List<Order> flruParser() {
 		List<Order> orders = new ArrayList<>();
 //		// find elements from database with Hubr.ru name
-		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName(EnumSite.FLRU.name());
+		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName("FLRU");
 		siteSourceJob.getSiteCategories().stream()
 				// parse only categories that can parse=true
 				.filter(categoryFilter -> categoryFilter.isParse())
