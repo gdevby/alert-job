@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
-@Entity(name = "parser_categoty")
+@Entity(name = "parser_category")
 @EqualsAndHashCode(callSuper =  true)
 public class Category extends BasicId {
 
