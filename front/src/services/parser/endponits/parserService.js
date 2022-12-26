@@ -1,4 +1,4 @@
-import api from '../api/index'
+import api from '../api/parserApi'
 
 const parserService = {
 	getSites: () => api.get('sites'),
