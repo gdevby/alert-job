@@ -8,7 +8,7 @@ import './header.scss'
 const Header = () => {
 	
 	const openLoginForm = () => {
-		window.open('http://aj.by/oauth2/authorization/keycloak-spring-gateway-client', '_blank')
+		window.open('http://aj.by/oauth2/authorization/keycloak-spring-gateway-client', '_parent')
 	}
 	
 
