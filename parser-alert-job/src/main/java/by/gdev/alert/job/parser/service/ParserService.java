@@ -2,10 +2,9 @@ package by.gdev.alert.job.parser.service;
 
 import java.util.Iterator;
 
-import javax.transaction.Transactional;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import by.gdev.alert.job.parser.domain.SiteCategoryDTO;
 import by.gdev.alert.job.parser.domain.SiteSourceDTO;
@@ -48,7 +47,7 @@ public class ParserService {
 
 	}
 
-	@Transactional
+	@Transactional(readOnly = true)
 	public Flux<SiteCategoryDTO> getCategories(Long id) {
 		return Flux.create(flux -> {
 			SiteSourceJob ssj = siteSourceJobRepository.findById(id)
@@ -61,7 +60,7 @@ public class ParserService {
 		});
 	}
 
-	@Transactional
+	@Transactional(readOnly = true)
 	public Flux<SiteSubCategoryDTO> getSubCategories(Long category) {
 		return Flux.create(flux -> {
 			SiteCategory sc = siteCategoryRepository.findById(category)
