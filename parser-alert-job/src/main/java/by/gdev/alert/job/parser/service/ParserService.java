@@ -1,14 +1,11 @@
 package by.gdev.alert.job.parser.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Iterator;
 
 import javax.transaction.Transactional;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.Lists;
 
 import by.gdev.alert.job.parser.domain.SiteCategoryDTO;
 import by.gdev.alert.job.parser.domain.SiteSourceDTO;
@@ -17,6 +14,7 @@ import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
 import by.gdev.alert.job.parser.domain.db.SiteCategory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.domain.db.SiteSubCategory;
 import by.gdev.alert.job.parser.domain.db.SubCategory;
 import by.gdev.alert.job.parser.exeption.ResourceNotFoundException;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
@@ -25,6 +23,7 @@ import by.gdev.alert.job.parser.repository.SiteCategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 
 @Data
 @Service
@@ -38,24 +37,41 @@ public class ParserService {
 
 	private final ModelMapper mapper;
 
-	public List<SiteSourceDTO> getSites() {
-		return Lists.newArrayList(siteSourceJobRepository.findAll()).stream()
-				.map(s -> mapper.map(s, SiteSourceDTO.class)).collect(Collectors.toList());
+	public Flux<SiteSourceDTO> getSites() {
+		return Flux.create(flux -> {
+			Iterator<SiteSourceJob> iterator = siteSourceJobRepository.findAll().iterator();
+			while (iterator.hasNext()) {
+				flux.next(mapper.map(iterator.next(), SiteSourceDTO.class));
+			}
+			flux.complete();
+		});
+
 	}
 
 	@Transactional
-	public List<SiteCategoryDTO> getCategories(Long id) {
-		SiteSourceJob ssj = siteSourceJobRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException());
-		return ssj.getSiteCategories().stream().map(e -> {
-			return mapper.map(e, SiteCategoryDTO.class);
-		}).collect(Collectors.toList());
+	public Flux<SiteCategoryDTO> getCategories(Long id) {
+		return Flux.create(flux -> {
+			SiteSourceJob ssj = siteSourceJobRepository.findById(id)
+					.orElseThrow(() -> new ResourceNotFoundException(""));
+			Iterator<SiteCategory> iterator = ssj.getSiteCategories().iterator();
+			while (iterator.hasNext()) {
+				flux.next(mapper.map(iterator.next(), SiteCategoryDTO.class));
+			}
+			flux.complete();
+		});
 	}
 
 	@Transactional
-	public List<SiteSubCategoryDTO> getSubCategories(Long category) {
-		SiteCategory sc = siteCategoryRepository.findById(category).orElseThrow(() -> new ResourceNotFoundException());
-		return sc.getSiteSubCategories().stream().map(e -> mapper.map(e, SiteSubCategoryDTO.class))
-				.collect(Collectors.toList());
+	public Flux<SiteSubCategoryDTO> getSubCategories(Long category) {
+		return Flux.create(flux -> {
+			SiteCategory sc = siteCategoryRepository.findById(category)
+					.orElseThrow(() -> new ResourceNotFoundException());
+			Iterator<SiteSubCategory> iterator = sc.getSiteSubCategories().iterator();
+			while (iterator.hasNext()) {
+				flux.next(mapper.map(iterator.next(), SiteSubCategoryDTO.class));
+			}
+			flux.complete();
+		});
 	}
 
 	public boolean isExistsOrder(Category category, SubCategory subCategory, String link) {

@@ -43,19 +43,20 @@ public class OrderParserController {
 						.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build());
 		return Flux.merge(flruFlux, hubrFlux);
 	}
-
+	
 	@GetMapping("sites")
-	public List<SiteSourceDTO> sites() {
+	public Flux<SiteSourceDTO> sites(){
 		return service.getSites();
 	}
+	
 
 	@GetMapping("categories")
-	public List<SiteCategoryDTO> categories(@RequestParam("site_id") Long site) {
+	public Flux<SiteCategoryDTO> categories(@RequestParam("site_id") Long site) {
 		return service.getCategories(site);
 	}
 
 	@GetMapping("subcategories")
-	public List<SiteSubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
+	public Flux<SiteSubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
 		return service.getSubCategories(category);
 	}
 }
