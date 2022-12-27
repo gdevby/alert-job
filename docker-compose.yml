@@ -5,8 +5,8 @@ services:
     #restart: always
     command:
       - "start-dev"
-      - "--hostname-url=http://aj.by/keycloak"
-      - "--hostname-admin-url=http://aj.by/keycloak"
+      - "--hostname-url=http://auth.alertjob.by"
+      - "--hostname-admin-url=http://auth.alertjob.by"
       
       #- health-enabled=true
       #- metrics-enabled=true
@@ -22,8 +22,13 @@ services:
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
     depends_on:
-      keycloak:
-        condition: service_healthy
+      - gateway
+      - keycloak
+    networks:
+      default:
+        aliases:
+          - aj.by
+          - auth.alertjob.by
   config:
     image: alert-job/alert-job-config:0.0.1-SNAPSHOT
     ports:
@@ -67,8 +72,6 @@ services:
       - "8015:8015"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
-    links:
-      - "nginx:aj.by"
     #extra_hosts:
      #   - "aj.by:nginx-alert-job" #host and ip
     depends_on:

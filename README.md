@@ -1,51 +1,20 @@
 # alert-job
-Implemented load balancer of configuration git, eureka and test service<br>
-To test, you need to run application with command<br>
- build every module
-cd config &&  mvn clean install<br>
-cd eureka && mvn clean install<br>
-cd test-service && mvn clean install<br>
-cd gateway && mvn clean install<br>
-docker compose up<br>
-wait one minute and test<br>
-and wait 30 seconds and execute  http://127.0.0.1:8014/testbalancer, it should be return message with balancer<br>
-to test gateway routes http://aj.by/alert-job-test-service/public/message where test-service name of the service white routes by gateway<br>
-//wait minute before test cas services should be registrated.<br>
-to test secure endpoint you need to get token with curl <br>
-get Client secret open http://aj.by, insert admin admin, after select realm myrealm and click on clients-> Credentials and copy.<br>
-curl -u "client-test-service:{CLIENT_SECRET_REPLACE}" -d "grant_type=password&username=test&password=test"  -H "Accept: application/json" -X POST http://aj.by/keycloak/realms/myrealm/protocol/openid-connect/token
-<br>
-and after execute with access_token <br>
-curl -v -H "Accept: application/json" -H "Authorization: Bearer {TOKEN}" http://aj.by/alert-job-test-service/secure/message
+Implemented alert job system to get proper messages with custom filters from lots sites:fl.ru, habr.ru<br>
+You can save time.<br>
+You can answer very fast<br>
+You don't need to check sites to find order for yourself. System ping you when proper order will be created. It looks for 24 per day for you order.<br>
 
-<br>
-to test secure api with auth <br> http://aj.by/alert-job-test-service/secure/message 
-and insert username and password <br>
-test<br>
-test
-to use one api aj.by you need to configurate nginx file <br>
-server{<br>
-        listen 80;<br>
-        server_name aj.by;<br>
-location / {<br>
-                        proxy_pass http://127.0.0.1:8015;<br>
-                        proxy_set_header Host $host;<br>
-                        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;<br>
-                        proxy_set_header X-Forwarded-Proto $scheme;<br>
-                        proxy_set_header X-Real-IP $remote_addr;<br>
-                }<br>
-location /keycloak {<br>
-                        rewrite  ^/keycloak/(.*)  /$1 break;<br>
-                        proxy_pass http://127.0.0.1:8080/;<br>
-                        proxy_set_header Host $host;<br>
-                        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;<br>
-                        proxy_set_header X-Forwarded-Proto $scheme;<br>
-                        proxy_set_header X-Real-IP $remote_addr;<br>
-                }<br>
-}<br>
-and add to /etc/hosts
-127.0.0.1 aj.by
+please add to /etc/hosts/ 
+127.0.0.1 alertjob.by   auth.alertjob.by
+You need to have java 17 and maven.
+To run application, you need to clone alert-job-parent. After cd to this directory. and execute command mvn clean install.<br>
+Now move to keycloak and execute build.sh<br>
+now you can run docker compose pull<br>
+now you can run all modules with docker compose up<br>
 
+after this you can check status of the services with docker compose ps <br>
+if all services are running. you can open page http://alertjob.by<br>
+test user :test test<br>
 usefull links <br>
 https://keycloak.discourse.group/t/keycloak-17-docker-container-how-to-export-import-realm-import-must-be-done-on-container-startup/13619/23
 
