@@ -12,7 +12,7 @@ const Header = () => {
 	
 	
 	const openLoginForm = () => {
-		window.open('http://aj.by/oauth2/authorization/keycloak-spring-gateway-client', '_parent')
+		window.open(`${window.location.origin}/oauth2/authorization/keycloak-spring-gateway-client`, '_parent')
 	}
 	
 	useEffect(() => {

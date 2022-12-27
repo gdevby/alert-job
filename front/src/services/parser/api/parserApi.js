@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_URL = `http://aj.by/parser-alert-job/api/`;
+export const API_URL = `${window.location.origin}/parser-alert-job/api/`;
 
 const parser_api = axios.create({
 	baseURL: API_URL,
