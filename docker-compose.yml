@@ -27,7 +27,7 @@ services:
     networks:
       default:
         aliases:
-          - aj.by
+          - alertjob.by
           - auth.alertjob.by
   config:
     image: alert-job/alert-job-config:0.0.1-SNAPSHOT
@@ -78,6 +78,8 @@ services:
       config:
         condition: service_healthy
       eureka:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
   email:
     image: alert-job/email-alert-job:0.0.1-SNAPSHOT
