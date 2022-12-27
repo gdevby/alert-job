@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import by.gdev.alert.job.notification.config.ApplicationProperty;
 import by.gdev.alert.job.notification.model.MessageData;
-import by.gdev.alert.job.notification.model.UserMail;
+import by.gdev.common.model.UserNotification;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ public class MailService {
 	private final Mailer mailer;
 	private final WebClient webClient;
 
-	public Mono<Void> sendMessage(UserMail userMail) {
+	public Mono<Void> sendMessage(UserNotification userMail) {
 		return Mono.defer(() -> {
 			Email mail = EmailBuilder.startingBlank().from(property.getMailLogin()).to(userMail.getToMail())
 					.withSubject("Email").withHTMLText(userMail.getMessage()).buildEmail();
@@ -35,7 +35,7 @@ public class MailService {
 		});
 	}
 
-	public Mono<Void> sendMessageToTelegram(UserMail userMail) {
+	public Mono<Void> sendMessageToTelegram(UserNotification userMail) {
 		return Mono.defer(() -> {
 			MessageData m = new MessageData(Integer.valueOf(userMail.getToMail()), userMail.getMessage());
 			webClient.post()
