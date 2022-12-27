@@ -1,4 +1,4 @@
-package by.gdev.test.service.config;
+package by.gdev.test1.service.config;
 
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
@@ -9,7 +9,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import by.gdev.test.service.service.AppHandler;
+import by.gdev.test1.service.service.AppHandler;
 
 @Configuration
 @EnableScheduling

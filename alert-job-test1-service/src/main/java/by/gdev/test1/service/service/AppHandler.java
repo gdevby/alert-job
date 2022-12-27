@@ -1,4 +1,4 @@
-package by.gdev.test.service.service;
+package by.gdev.test1.service.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,11 +17,7 @@ public class AppHandler {
 	private final WebClient.Builder loadBalancedWebClientBuilder;
 
 	public Mono<ServerResponse> testBalancer(ServerRequest request) {
-		loadBalancedWebClientBuilder.build().get()
-		.uri("http://test-service/message").retrieve().bodyToMono(String.class).doOnNext(e->{
-			log.info("res1 " + e);
-		}).subscribe();
-		return ServerResponse.ok().body(loadBalancedWebClientBuilder.build().get()
-				.uri("http://test-service/message").retrieve().bodyToMono(String.class),String.class);
+		return ServerResponse.ok().body(loadBalancedWebClientBuilder.build().get().uri("http://alert-job-test-service/public/message")
+				.retrieve().bodyToMono(String.class), String.class);
 	}
 }
