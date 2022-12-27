@@ -1,4 +1,4 @@
-package by.gdev.alert.job.notification.model;
+package by.gdev.common.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,10 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-//TODO moved to common and changed to UserNotification
-public class UserMail {
-
+public class UserNotification {
 	private String toMail;
 	private String message;
-	
+
 }
