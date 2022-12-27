@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.ParameterizedTypeReference;
@@ -13,13 +14,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.google.common.collect.Lists;
+
 import by.gdev.alert.job.core.model.AppUser;
 import by.gdev.alert.job.core.model.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.common.model.Order;
 import by.gdev.common.model.Price;
+import by.gdev.common.model.SourceSiteDTO;
+import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -42,16 +48,36 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
 				.doOnNext(e -> System.out.println(e.data().size()));
 		sseEvents.subscribe(event -> {
-
+			List<AppUser> users = Lists.newArrayList(userRepository.findAll());
+			forEachOrders(users, event.data());
 		});
 	}
 
 	
 	public void forEachOrders(List<AppUser> users, List<Order> orders) {
 		users.forEach(user -> {
-			List<Order> suitableOrders = orders.stream().filter(f -> isMatchUserFilter(user, f)).collect(Collectors.toList());
-		});
+			user.getSources().forEach(s -> {
+				List<Order> list = orders.stream().filter(f -> {
+					SourceSiteDTO source = f.getSourceSite();
+					return s.getSiteSource() == source.getSiteSource()
+							&& s.getSiteCategory() == source.getSiteCategory()
+							&& s.getSiteSubCategory() == source.getSiteSubCategory();
+				}).collect(Collectors.toList());
+				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
+						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
+						.collect(Collectors.toList());
+				String sendMessage = StringUtils.isNotEmpty(user.getEmail()) ? "http://notification-alert-job:8019/mail"
+						: "http://notification-alert-job:8019/telegram";
+				UserNotification un = StringUtils.isNotEmpty(user.getEmail()) ? new UserNotification(user.getEmail(), null)
+						: new UserNotification(String.valueOf(user.getTelegram()), null);
+				messages.forEach(message -> {
+					un.setMessage(message);
+					Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
+					mono.subscribe();
+				});
+			});
 
+		});
 	}
 	
 	private boolean isMatchUserFilter(AppUser user, Order order) {
