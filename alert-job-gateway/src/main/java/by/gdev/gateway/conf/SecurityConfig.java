@@ -18,7 +18,8 @@ public class SecurityConfig {
 	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
 			ServerLogoutSuccessHandler handler) {
 		http.csrf().disable().authorizeExchange()
-				.pathMatchers("/alert-job-test-service/public/**", "/logout.html", "/", "/favicon.ico", "/actuator/**")
+				.pathMatchers("/alert-job-test-service/public/**", "/logout.html", "/", "/favicon.ico", "/actuator/**"
+						,"/core-alert-job/api/user/test")
 				.permitAll().pathMatchers("test-service/secure/**").hasAnyRole("admin-test-service-role").and()
 				.authorizeExchange().anyExchange().authenticated().and().oauth2Login().and() // to
 																								// redirect
