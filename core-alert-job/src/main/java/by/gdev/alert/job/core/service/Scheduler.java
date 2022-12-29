@@ -30,9 +30,9 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
-	
+
 	private final WebClient webClient;
-	
+	private final StatisticService statisticService;
 	private final AppUserRepository userRepository;
 	
 	
@@ -57,7 +57,13 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	public void forEachOrders(List<AppUser> users, List<Order> orders) {
 		users.forEach(user -> {
 			user.getSources().forEach(s -> {
-				List<Order> list = orders.stream().filter(f -> {
+				List<Order> list = orders.stream()
+						.peek(p -> {
+							statisticService.statisticTitleWord(p.getTitle());
+							statisticService.statisticTitleWord(p.getTitle());
+							statisticService.statisticTechnologyWord(p.getTechnologies());
+						})
+						.filter(f -> {
 					SourceSiteDTO source = f.getSourceSite();
 					return s.getSiteSource() == source.getSiteSource()
 							&& s.getSiteCategory() == source.getSiteCategory()
@@ -83,7 +89,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	private boolean isMatchUserFilter(AppUser user, Order order) {
 		UserFilter userFilter = user.getCurrentFilter();
 		Price price = order.getPrice();
-		
 		boolean isMinValue = Objects.nonNull(userFilter.getMinValue()) ? userFilter.getMinValue() <= price.getValue()
 				: true;
 		boolean isMaxValue = Objects.nonNull(userFilter.getMaxValue()) ? price.getValue() <= userFilter.getMaxValue()
