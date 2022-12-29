@@ -9,5 +9,4 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 public class TitleWord extends Word {
-	private String hide;
 }
