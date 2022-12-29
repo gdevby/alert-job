@@ -31,7 +31,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	}
 	
 	
-	@Scheduled(cron = "0 0 6 * * *")
+	@Scheduled(cron = "0 0 1 * * *")
 	public void removeParsedLinks() {
 		Lists.newArrayList(linkRepository.findAll()).stream().filter(f -> {
 			LocalDateTime ldt = f.getCreatedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
