@@ -34,6 +34,7 @@ public class AddedUserInfo implements GlobalFilter {
 			try {
 				u.setUsername(jsonObj.getString("preferred_username"));
 				u.setUuid(jsonObj.getString("sub"));
+				u.setEmail(jsonObj.getString("email"));
 				return u;
 			} catch (Exception e) {
 				log.debug(e.getMessage());
@@ -58,6 +59,7 @@ public class AddedUserInfo implements GlobalFilter {
 			UsernameInfo u = getUsername(exchange.getRequest().getHeaders());
 			exchange = filterUtils.setRequestHeader(exchange, HeaderName.USERNAME_HEADER, u.getUsername());
 			exchange = filterUtils.setRequestHeader(exchange, HeaderName.UUID_USER_HEADER, u.getUuid());
+			exchange = filterUtils.setRequestHeader(exchange, HeaderName.EMAIL_USER_HEADER, u.getEmail());
 		}
 		return chain.filter(exchange);
 	}
