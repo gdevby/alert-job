@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 import DropDownList from '../../components/dropDownList/DropDowList'
+import Button from '../../components/button/Button'
 
 import { parserService } from '../../services/parser/endponits/parserService'
 
@@ -31,7 +32,6 @@ const SourcePanel = ({ addSource }) => {
 				.then(response => {
 					let cat = response.data.map(item => item.category)
 					setCategories(cat)
-					console.log(response)
 				})
 		}
 
@@ -39,7 +39,6 @@ const SourcePanel = ({ addSource }) => {
 
 	useEffect(() => {
 		if (currentCat.id) {
-			console.log(currentCat)
 			parserService
 				.getSubcategories(currentCat.id)
 				.then(response => {
@@ -66,10 +65,10 @@ const SourcePanel = ({ addSource }) => {
 			<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />
 		</div>
 		<div>
-			<button onClick={addingSource}>Добавить источник</button>
+			<Button onClick={addingSource} text={'Добавить источник'} />
 		</div>
 		<div>
-			<Link to='/page/notifications'>Уведомления</Link>
+			<Link to='/page/notifications'>Добавить новый фильтр</Link>
 		</div>
 	</div>
 }
