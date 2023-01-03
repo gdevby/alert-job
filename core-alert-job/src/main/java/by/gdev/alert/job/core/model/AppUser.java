@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.model;
 
 import java.util.Set;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
@@ -24,5 +25,8 @@ public class AppUser extends BasicId{
 	private UserFilter currentFilter;
 	private String email;
 	private Integer telegram;
+	@Column(columnDefinition = "boolean default true")
 	private boolean switchOffAlerts;
+	@Column(columnDefinition = "boolean default true")
+	private boolean defaultSendType;
 }
