@@ -3,30 +3,28 @@ import { Link } from 'react-router-dom'
 
 import Button from '../button/Button'
 
-import { coreService } from '../../services/parser/endponits/coreService' 
+import { coreService } from '../../services/parser/endponits/coreService'
 
 import './header.scss'
 
 const Header = () => {
 	const [isAuth, setIsAuth] = useState(false)
-	
-	
+
+
 	const openLoginForm = () => {
 		window.open(`${window.location.origin}/oauth2/authorization/keycloak-spring-gateway-client`, '_parent')
 	}
-	
+
 	useEffect(() => {
-		coreService
-		.checkAuth()
-		.then(response => {
-			coreService.checkAuth1().then(console.log)
-		})
+		coreService.checkAuth1()
+			.then(r => setIsAuth(r.status == 200 || r.status == 201))
+			.catch(error => setIsAuth(false))
 	}, [])
 
 	return <header className='header'>
 		<div className='container'>
 			<div className='header-content'>
-				{!isAuth && <Button text='Логин' onClick={openLoginForm}/>}
+				{!isAuth && <Button text='Логин' onClick={openLoginForm} />}
 				<Link to='/'>Главная</Link>
 				{isAuth && <Link to='/page/filters'>Фильтры</Link>}
 				{isAuth && <Link to='/page/notifications'>Уведомления</Link>}
