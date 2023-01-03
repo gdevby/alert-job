@@ -24,6 +24,12 @@
 .footer {
   height: 10vh;
 }
+/*!********************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/title/title.scss ***!
+  \********************************************************************************************************************************************************************/
+.title {
+  margin-bottom: 1.5rem;
+}
 /*!**********************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/dropDownList/dropDownList.scss ***!
   \**********************************************************************************************************************************************************************************/
@@ -72,6 +78,39 @@
 /*!***************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/index.scss ***!
   \***************************************************************************************************************************************************/
+/* fonts */
+@font-face {
+  font-family: "Roboto";
+  src: url(d592a653abb7a57fedd8.eot);
+  src: url(d592a653abb7a57fedd8.eot?#iefix) format("embedded-opentype"), url(d537674e9e217fa53a13.woff2) format("woff2"), url(df0f59d80526acc6d0cd.woff) format("woff"), url(13d61ef8e609b548d9b5.ttf) format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url(30b57652c88c5dbd65de.eot);
+  src: url(30b57652c88c5dbd65de.eot?#iefix) format("embedded-opentype"), url(a25806274237d06e00a6.woff2) format("woff2"), url(31012f9b3e3da44f87e8.woff) format("woff"), url(25e40da956314b12d333.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url(f9f0c87146a33023da7e.eot);
+  src: url(f9f0c87146a33023da7e.eot?#iefix) format("embedded-opentype"), url(fc0337b9cf1cce2e6e1e.woff2) format("woff2"), url(b14ca2d2b289afceb0b0.woff) format("woff"), url(ef677e217f2009c16854.ttf) format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url(6490694b37b0ee09bd91.eot);
+  src: url(6490694b37b0ee09bd91.eot?#iefix) format("embedded-opentype"), url(6cd35edfbc0d7a417131.woff2) format("woff2"), url(3f2cbde6b72e8d05669f.woff) format("woff"), url(5e9f6556d3c0bf6230f0.ttf) format("truetype");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
 * {
   padding: 0px;
   margin: 0px;
@@ -119,7 +158,15 @@ a:active {
 
 body {
   margin: 0;
-  background-color: #f9f9f9;
+  font-family: "Roboto";
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-style: normal;
+  font-weight: 400;
+  color: #1f1f1f;
+  color: var(--grafit);
+  background-color: #f4f4f4;
 }
 
 code {
@@ -168,4 +215,8 @@ select::-webkit-scrollbar-thumb {
 
 .content {
   padding-top: 1rem;
+}
+
+a {
+  padding-left: 0.5rem;
 }

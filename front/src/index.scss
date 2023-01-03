@@ -1,3 +1,5 @@
+@import 'fonts';
+
 
 * {
 	padding: 0px;
@@ -48,7 +50,13 @@ a:active {
 
 body {
 	margin: 0;
-	background-color: #f9f9f9;
+	font-family: var(--font-family);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-style: normal;
+	font-weight: 400;
+	color: var(--grafit);
+	background-color: #f4f4f4;
 }
 
 code {
@@ -97,6 +105,9 @@ select {
 	//max-height: 80vh;
 }
 
+a {
+	padding-left: .5rem;
+}
 
 
 
