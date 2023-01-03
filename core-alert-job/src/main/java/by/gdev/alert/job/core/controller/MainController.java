@@ -20,9 +20,9 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/")
 @RequiredArgsConstructor
 public class MainController {
-	
+
 	private final CoreService coreService;
-	
+
 	@GetMapping("user/test")
 	public Mono<ResponseEntity<String>> testAuth(
 			@RequestHeader(required = false, name = HeaderName.UUID_USER_HEADER) String uuid) {
@@ -31,21 +31,26 @@ public class MainController {
 		else
 			return Mono.just(ResponseEntity.ok("ok"));
 	}
-	
+
 	@PostMapping("/test-message")
 	public ResponseEntity<Mono<Void>> testMailMessage(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
 		return ResponseEntity.ok(coreService.sendTestMessageOnMai(uuid));
 	}
-	
+
 	@PatchMapping("user/alerts")
-	public ResponseEntity<Mono<Boolean>> diactivateAlerts(
-			@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public ResponseEntity<Mono<Boolean>> diactivateAlerts(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@RequestParam("status") boolean status) {
 		return ResponseEntity.ok(coreService.changeAlertStatus(uuid, status));
 	}
-	
+
 	@GetMapping("user/alerts")
-	public ResponseEntity<Mono<Boolean>> getAlertStatus(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
+	public ResponseEntity<Mono<Boolean>> getAlertStatus(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
 		return ResponseEntity.ok(coreService.showAlertStatus(uuid));
+	}
+
+	@PatchMapping("")
+	public ResponseEntity<Mono<Boolean>> alertType(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestParam("default_send") boolean defaultSend) {
+		return ResponseEntity.ok(coreService.changeDefaultSendType(uuid, defaultSend));
 	}
 }
