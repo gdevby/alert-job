@@ -5,6 +5,7 @@ import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.validation.constraints.Size;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,6 +18,7 @@ public class AppUser extends BasicId{
 	@ManyToMany
 	private Set<SourceSite> sources;
 	@ManyToMany
+	@Size(max = 5, message = "the limit for added filters")
 	private Set<UserFilter> filters;
 	@ManyToOne
 	private UserFilter currentFilter;
