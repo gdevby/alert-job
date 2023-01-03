@@ -48,7 +48,7 @@ public class MainController {
 		return ResponseEntity.ok(coreService.showAlertStatus(uuid));
 	}
 
-	@PatchMapping("")
+	@PatchMapping("user/alerts/type")
 	public ResponseEntity<Mono<Boolean>> alertType(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@RequestParam("default_send") boolean defaultSend) {
 		return ResponseEntity.ok(coreService.changeDefaultSendType(uuid, defaultSend));
