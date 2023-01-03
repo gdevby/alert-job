@@ -31,6 +31,12 @@ public class MainController {
 		else
 			return Mono.just(ResponseEntity.ok("ok"));
 	}
+	
+	@PostMapping("user/authentication")
+	public Mono<ResponseEntity<String>> userAuthentication(@RequestHeader(required = false, name = HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestHeader(required = false, name = HeaderName.EMAIL_USER_HEADER) String mail) {
+		return coreService.authentication(uuid, mail);
+	}
 
 	@PostMapping("/test-message")
 	public ResponseEntity<Mono<Void>> testMailMessage(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {

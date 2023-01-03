@@ -1,5 +1,10 @@
 package by.gdev.alert.job.core.service;
 
+import java.util.Objects;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -17,6 +22,27 @@ public class CoreService {
 	private final WebClient webClient;
 	private final AppUserRepository userRepository;
 
+	
+	public Mono<ResponseEntity<String>> authentication(String uuid, String mail){
+		return Mono.create(m -> {
+			if (Objects.isNull(uuid)) {
+				m.success(ResponseEntity.status(HttpStatus.FORBIDDEN).build());
+			}else {
+				Optional<AppUser> appUser = userRepository.findByUuid(uuid);
+					if (appUser.isPresent()) {
+						m.success(ResponseEntity.ok("ok"));
+					}else {
+						AppUser user = new AppUser();
+						user.setUuid(uuid);
+						user.setEmail(mail);
+						userRepository.save(user);
+						m.success(ResponseEntity.status(HttpStatus.CREATED).body("user created"));
+					}
+			}
+		});
+	}
+	
+	
 	public Mono<Void> sendTestMessageOnMai(String uuid) {
 		return Mono.create(m -> {
 			AppUser user = userRepository.findByUuid(uuid)
