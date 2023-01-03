@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
 import SourcePanel from '../../components/sourcePanel/SourcePanel'
+import Button from '../../components/button/Button'
 
 const FiltersPage = () => {
 
@@ -8,7 +9,6 @@ const FiltersPage = () => {
 
 
 	const addSource = data => {
-		console.log(data)
 		setSources([...sourse, data])
 	}
 	
@@ -23,7 +23,7 @@ const FiltersPage = () => {
 						return <div className='source-card' key={index}>
 							<h5>{item.currentSite.name}</h5>
 							<p>{item.currentCat.name}, {item.currentSubCat.name}</p>
-							<button>Удалить источник</button>
+							<Button text={'Удалить источник'} />
 						</div>
 					}
 					)}

@@ -4,7 +4,7 @@ import Button from '../button/Button'
 
 import './dropDownList.scss'
 
-const DropDownList = ({open, defaultValue, elems, cb}) => {
+const DropDownList = ({open = false, defaultValue, elems, cb}) => {
 	const [isOpen, setIsOpen] = useState(open)
 	const [value, setValue] = useState(defaultValue)
 	

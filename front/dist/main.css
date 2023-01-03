@@ -4,7 +4,8 @@
 .button {
   padding: 0.5rem 0.8rem;
   cursor: pointer;
-  border-radius: 5%;
+  border-radius: 4px;
+  width: 100%;
 }
 /*!**********************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/header/header.scss ***!
@@ -35,7 +36,6 @@
   \**********************************************************************************************************************************************************************************/
 .list {
   position: relative;
-  width: 150px;
 }
 .list_items {
   position: absolute;
@@ -74,6 +74,33 @@
   justify-content: space-between;
   overflow-y: auto;
   height: 70%;
+}
+.sourceList::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+.sourceList::-webkit-scrollbar-track {
+  background-color: #dadada;
+  border-radius: 100px;
+}
+.sourceList::-webkit-scrollbar-thumb {
+  border-radius: 100px;
+  border: 3px solid #6f6f6f;
+  background-clip: content-box;
+  background-color: #6f6f6f;
+}
+/*!***************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/pages/notificationsPage/notificationsPage.scss ***!
+  \***************************************************************************************************************************************************************************************/
+.notification_source {
+  display: flex;
+  margin-bottom: 2rem;
+}
+.notification_source > .list {
+  margin-right: 1rem;
+}
+.notification_source__send-btn {
+  width: 40%;
 }
 /*!***************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/index.scss ***!

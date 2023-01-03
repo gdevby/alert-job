@@ -1,6 +1,5 @@
 .list {
 	position: relative;
-	width: 150px;
 	&_items {
 		position: absolute;
 		background: #e9e6e6;
@@ -9,6 +8,7 @@
     	& > div {
 			padding: .4rem;
 			cursor: pointer;
+			
 		}
 	}
 }

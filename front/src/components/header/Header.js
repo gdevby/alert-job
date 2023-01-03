@@ -18,7 +18,9 @@ const Header = () => {
 	useEffect(() => {
 		coreService
 		.checkAuth()
-		.then(response => setIsAuth(response.status == '200'))
+		.then(response => {
+			coreService.checkAuth1().then(console.log)
+		})
 	}, [])
 
 	return <header className='header'>

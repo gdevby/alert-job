@@ -1,0 +1,11 @@
+.notification_source {
+	display: flex;
+	margin-bottom: 2rem;
+    
+    & > .list {
+	margin-right: 1rem;
+	}
+	&__send-btn {
+		width: 40%;
+	}
+}
