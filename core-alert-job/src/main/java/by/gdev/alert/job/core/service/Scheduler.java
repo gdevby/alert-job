@@ -60,7 +60,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 				List<Order> list = orders.stream()
 						.peek(p -> {
 							statisticService.statisticTitleWord(p.getTitle());
-							statisticService.statisticTitleWord(p.getTitle());
+							statisticService.statisticDescriptionWord(p.getMessage());
 							statisticService.statisticTechnologyWord(p.getTechnologies());
 						})
 						.filter(f -> {
