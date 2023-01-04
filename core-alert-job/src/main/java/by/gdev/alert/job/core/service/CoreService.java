@@ -61,12 +61,12 @@ public class CoreService {
 			if (user.isDefaultSendType()) {
 				UserNotification un = new UserNotification(user.getEmail(), "Test message from alerjob.by");
 				webClient.post().uri("http://notification-alert-job:8019/mail").bodyValue(un).retrieve()
-						.bodyToMono(Void.class);
+						.bodyToMono(Void.class).subscribe();
 			} else {
 				UserNotification un = new UserNotification(String.valueOf(user.getTelegram()),
 						"Test message from alerjob.by");
 				webClient.post().uri("http://notification-alert-job:8019/telegram").bodyValue(un).retrieve()
-						.bodyToMono(Void.class);
+						.bodyToMono(Void.class).subscribe();
 			}
 			m.success();
 		});

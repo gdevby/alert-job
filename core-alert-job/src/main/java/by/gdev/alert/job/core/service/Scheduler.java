@@ -45,8 +45,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 		ParameterizedTypeReference<ServerSentEvent<List<Order>>> type = new ParameterizedTypeReference<ServerSentEvent<List<Order>>>() {
 		};
 		Flux<ServerSentEvent<List<Order>>> sseEvents = webClient.get().uri("http://core-alert-job:8017/api/stream-sse")
-				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
-				.doOnNext(e -> System.out.println(e.data().size()));
+				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type);
 		sseEvents.subscribe(event -> {
 			List<AppUser> users = Lists.newArrayList(userRepository.findAll());
 			forEachOrders(users, event.data());
