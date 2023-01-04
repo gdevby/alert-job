@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.configuration;
 
 import java.util.concurrent.TimeUnit;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,5 +45,9 @@ public class CoreConfig {
 						}).build()).build();
 //				.clientConnector(conn).build();
 	}
-
+	
+	@Bean
+	public ModelMapper createModelMapper() {
+		return new ModelMapper();
+	}
 }

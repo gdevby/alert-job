@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
+import by.gdev.common.model.WordDTO;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Controller
@@ -59,4 +61,19 @@ public class MainController {
 			@RequestParam("default_send") boolean defaultSend) {
 		return ResponseEntity.ok(coreService.changeDefaultSendType(uuid, defaultSend));
 	}
+	
+	@GetMapping("user/title-word")
+	public ResponseEntity<Flux<WordDTO>> getTitleWords(){
+		return ResponseEntity.ok(coreService.showTitleWords());
+	} 
+	
+	@GetMapping("user/technology-word")
+	public ResponseEntity<Flux<WordDTO>> getTechnologyWords(){
+		return ResponseEntity.ok(coreService.showTechnologyWords());
+	} 
+	
+	@GetMapping("user/description-word")
+	public ResponseEntity<Flux<WordDTO>> getDescriptionWords(){
+		return ResponseEntity.ok(coreService.showDescriptionWords());
+	} 
 }
