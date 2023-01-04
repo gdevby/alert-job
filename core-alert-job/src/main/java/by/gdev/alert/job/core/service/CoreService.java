@@ -10,11 +10,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import by.gdev.alert.job.core.model.AppUser;
+import by.gdev.alert.job.core.model.key.DescriptionWord;
+import by.gdev.alert.job.core.model.key.TechnologyWord;
+import by.gdev.alert.job.core.model.key.TitleWord;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
+import by.gdev.common.model.KeyWord;
 import by.gdev.common.model.UserNotification;
 import by.gdev.common.model.WordDTO;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +49,6 @@ public class CoreService {
 						AppUser user = new AppUser();
 						user.setUuid(uuid);
 						user.setEmail(mail);
-						System.out.println(user);
 						userRepository.save(user);
 						m.success(ResponseEntity.status(HttpStatus.CREATED).body("user created"));
 					}
@@ -104,11 +107,53 @@ public class CoreService {
 		return Flux.fromIterable(titleRepository.findAll()).map(e -> mapper.map(e, WordDTO.class));
 	}
 	
+	public Mono<ResponseEntity<WordDTO>> addTitleWord(KeyWord keyWord){
+		return Mono.create(m -> {
+			Optional<TitleWord> t = titleRepository.findByName(keyWord.getName());
+			if (t.isPresent()) {
+				m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
+			}else {
+				TitleWord titleWord = new TitleWord();
+				titleWord.setName(keyWord.getName());
+				titleWord = titleRepository.save(titleWord);
+				m.success(ResponseEntity.ok(mapper.map(titleWord, WordDTO.class)));
+			}
+		});
+	}
+	
 	public Flux<WordDTO> showTechnologyWords() {
 		return Flux.fromIterable(technologyRepository.findAll()).map(e -> mapper.map(e, WordDTO.class));
 	}
 	
+	public Mono<ResponseEntity<WordDTO>> addTechnologyWord(KeyWord keyWord){
+		return Mono.create(m -> {
+			Optional<TechnologyWord> t = technologyRepository.findByName(keyWord.getName());
+			if (t.isPresent()) {
+				m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
+			}else {
+				TechnologyWord technologyWordWord = new TechnologyWord();
+				technologyWordWord.setName(keyWord.getName());
+				technologyWordWord = technologyRepository.save(technologyWordWord);
+				m.success(ResponseEntity.ok(mapper.map(technologyWordWord, WordDTO.class)));
+			}
+		});
+	}
+	
 	public Flux<WordDTO> showDescriptionWords() {
 		return Flux.fromIterable(descriptionRepository.findAll()).map(e -> mapper.map(e, WordDTO.class));
+	}
+	
+	public Mono<ResponseEntity<WordDTO>> addDescriptionWord(KeyWord keyWord){
+		return Mono.create(m -> {
+			Optional<DescriptionWord> t = descriptionRepository.findByName(keyWord.getName());
+			if (t.isPresent()) {
+				m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
+			}else {
+				DescriptionWord descriptionWord = new DescriptionWord();
+				descriptionWord.setName(keyWord.getName());
+				descriptionWord = descriptionRepository.save(descriptionWord);
+				m.success(ResponseEntity.ok(mapper.map(descriptionWord, WordDTO.class)));
+			}
+		});
 	}
 }

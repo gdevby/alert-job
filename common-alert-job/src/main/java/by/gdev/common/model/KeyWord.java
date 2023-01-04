@@ -3,9 +3,7 @@ package by.gdev.common.model;
 import lombok.Data;
 
 @Data
-public class WordDTO {
-	
-	private Long id;
+public class KeyWord {
+
 	private String name;
-	private Long counter;
 }
