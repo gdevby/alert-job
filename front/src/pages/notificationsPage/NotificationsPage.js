@@ -41,7 +41,7 @@ const NotificationsPage = () => {
 			<Title text='Настройка уведомлений' />
 			<div className='notification_source'>
 				<DropDownList open={false} defaultValue={'email'} elems={platforms} cb={handleCurrentPlatform} />
-				<Field type='text' placeholder='Введите адрес' cb={setAlertType}/>
+				{currentPlatform == 'telegram'? <Field type='text' placeholder='Введите адрес' cb={setAlertType}/> : 'Используется почта при регистрации аккаунта'}
 				<div className='notification_source__send-btn'>
 					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} />
 				</div>
