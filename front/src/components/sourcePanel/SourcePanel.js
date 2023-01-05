@@ -68,7 +68,7 @@ const SourcePanel = ({ addSource }) => {
 			<Button onClick={addingSource} text={'Добавить источник'} />
 		</div>
 		<div>
-			<Link to='/page/notifications'>Добавить новый фильтр</Link>
+			<Link to='/page/adding-filter'>Добавить новый фильтр</Link>
 		</div>
 	</div>
 }

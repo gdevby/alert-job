@@ -29,7 +29,7 @@ const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 			<i className={isOpen ? 'arrow arrow-up' : 'arrow arrow-down'}></i>
 		</div>
 		{isOpen && <div className='list_items'>
-			{elems.map((item, index) => <div key={index} id={item.id} onClick={handleValue} className='list_item'>{item.name}</div>)}
+			{elems.map((item, index) => <div key={index} id={item.id} onClick={handleValue} className='list_item'>{item.name || item}</div>)}
 		</div>}
 	</div>
 }
