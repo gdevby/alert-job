@@ -1,18 +1,28 @@
-import React, {useState} from 'react'
+import React, { useState, useEffect } from 'react'
 
 
 import './field.scss'
 
-const Field = ({ type, placeholder, cb, onBlur = () => {} }) => {
-	const [value, setValue] = useState('')
-	
+const Field = ({ defaultValue, type, placeholder, cb, onBlur = () => { }, label = undefined }) => {
+	const [current_value, setValue] = useState('')
+
+	useEffect(() => {
+		setValue(defaultValue)
+	}, [defaultValue])
+
 	const handleValue = event => {
 		const input_text = event.target.value
 		setValue(input_text)
 		cb(input_text)
 	}
-	
-	return <input className='input' type={type} placeholder={placeholder} onChange={handleValue} value={value} onBlur={onBlur}/>
+
+	return <div className='field-container'>
+	{label && label}
+	<input className='input' id='input' 
+			type={type} placeholder={placeholder} 
+			onChange={handleValue} value={current_value} 
+			onBlur={onBlur} />
+	</div>
 }
 
 export default Field

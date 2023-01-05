@@ -1,3 +1,9 @@
 .input {
 	padding: 0.5rem;
+	border-radius: 4px;
+}
+
+.field-container {
+	display: flex;
+	flex-direction: column;
 }
