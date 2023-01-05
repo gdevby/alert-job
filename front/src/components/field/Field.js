@@ -1,7 +1,9 @@
 import React, {useState} from 'react'
 
 
-const Field = ({ type, placeholder, cb }) => {
+import './field.scss'
+
+const Field = ({ type, placeholder, cb, onBlur = () => {} }) => {
 	const [value, setValue] = useState('')
 	
 	const handleValue = event => {
@@ -10,7 +12,7 @@ const Field = ({ type, placeholder, cb }) => {
 		cb(input_text)
 	}
 	
-	return <input type={type} placeholder={placeholder} onChange={handleValue} value={value}/>
+	return <input className='input' type={type} placeholder={placeholder} onChange={handleValue} value={value} onBlur={onBlur}/>
 }
 
 export default Field

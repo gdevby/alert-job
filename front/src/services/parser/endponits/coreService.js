@@ -6,7 +6,8 @@ const coreService = {
 	sendTestMessage: () => api.post('test-message'),
 	getStatue: () => api.get('user/alerts'),
 	changeAlertsStatus: (status) => api.patch(`user/alerts?status=${status}`),
-	changeAlertsType: (default_send) => api.patch(`user/alerts/type?default_send=${default_send}`)
+	changeAlertsType: (default_send) => api.patch(`user/alerts/type?default_send=${default_send}`),
+	changeTgId: (id) => api.patch(`user/telegram?telegram_id=${id}`)
 }
 
 export { coreService }

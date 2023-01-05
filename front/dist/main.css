@@ -6,13 +6,13 @@
   cursor: pointer;
   border-radius: 4px;
   width: 100%;
-  background-color: #ffae4d;
+  background-color: #7988fd;
 }
 /*!**********************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/header/header.scss ***!
   \**********************************************************************************************************************************************************************/
 .header {
-  background-color: #6f6f6f;
+  background-color: #afafaf;
   padding: 1rem;
 }
 
@@ -89,6 +89,12 @@
   border: 3px solid #6f6f6f;
   background-clip: content-box;
   background-color: #6f6f6f;
+}
+/*!********************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/field/field.scss ***!
+  \********************************************************************************************************************************************************************/
+.input {
+  padding: 0.5rem;
 }
 /*!***************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/pages/notificationsPage/notificationsPage.scss ***!
@@ -203,6 +209,7 @@ code {
 
 a {
   text-decoration: none;
+  color: #3d53f9;
 }
 
 input,
