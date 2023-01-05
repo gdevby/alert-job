@@ -7,6 +7,7 @@ const coreService = {
 	getStatue: () => api.get('user/alerts'),
 	changeAlertsStatus: (status) => api.patch(`user/alerts?status=${status}`),
 	changeAlertsType: (default_send) => api.patch(`user/alerts/type?default_send=${default_send}`),
+	getAlertType: () => api.get('user/alerts/type'),
 	changeTgId: (id) => api.patch(`user/telegram?telegram_id=${id}`)
 }
 
