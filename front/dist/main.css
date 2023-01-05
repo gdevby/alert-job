@@ -2,11 +2,14 @@
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/button/button.scss ***!
   \**********************************************************************************************************************************************************************/
 .button {
-  padding: 0.5rem 0.8rem;
   cursor: pointer;
   border-radius: 4px;
   width: 100%;
   background-color: #7988fd;
+  color: #fff;
+  padding: 0.5rem;
+  font-size: medium;
+  font-size: initial;
 }
 /*!**********************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/header/header.scss ***!
@@ -35,17 +38,39 @@
 /*!**********************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/dropDownList/dropDownList.scss ***!
   \**********************************************************************************************************************************************************************************/
+@charset "UTF-8";
 .list {
   position: relative;
 }
 .list_items {
   position: absolute;
-  background: #e9e6e6;
+  background: #ffffff;
   min-width: 100%;
+  border-radius: 4px;
 }
 .list_items > div {
   padding: 0.4rem;
   cursor: pointer;
+}
+.list__button {
+  padding: 0.5rem;
+  background-color: #7988fd;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.arrow-down:after {
+  content: "▼";
+}
+
+.arrow-up:after {
+  content: "▲";
+}
+
+.arrow {
+  margin-left: 8px;
+  font-family: FontAwesome;
 }
 /*!********************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/sourcePanel/sourcePanel.scss ***!
@@ -55,7 +80,6 @@
   padding: 1rem;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 5px 2px 9px grey;
   border-radius: 10px;
 }
 
@@ -65,6 +89,7 @@
   box-shadow: 5px 2px 9px rgb(215, 215, 215);
   width: 24%;
   margin-bottom: 1rem;
+  border-radius: 20px;
 }
 
 .sourceList {
@@ -95,6 +120,36 @@
   \********************************************************************************************************************************************************************/
 .input {
   padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.field-container {
+  display: flex;
+  flex-direction: column;
+}
+/*!******************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/instructionForTg/instructionForTg.scss ***!
+  \******************************************************************************************************************************************************************************************/
+.instruction {
+  margin-top: 1rem;
+  font-size: 18px;
+}
+.instruction__list {
+  padding-left: 1rem;
+}
+.instruction__list li {
+  margin-top: 0.5rem;
+  font-size: 18px;
+}
+.instruction__list li img {
+  width: 40%;
+}
+.instruction__list img {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+.instruction__list-block {
+  margin-top: 1rem;
 }
 /*!***************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/pages/notificationsPage/notificationsPage.scss ***!
@@ -102,12 +157,19 @@
 .notification_source {
   display: flex;
   margin-bottom: 2rem;
+  justify-content: space-between;
+  align-items: center;
+  width: 75%;
 }
 .notification_source > .list {
   margin-right: 1rem;
 }
 .notification_source__send-btn {
   width: 40%;
+}
+
+.alert_status {
+  margin-top: 1rem;
 }
 /*!***************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/index.scss ***!

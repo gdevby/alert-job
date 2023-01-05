@@ -2,8 +2,9 @@
 	position: relative;
 	&_items {
 		position: absolute;
-		background: #e9e6e6;
+		background: #ffffff;
     	min-width: 100%;
+    	border-radius: 4px;
     	
     	& > div {
 			padding: .4rem;
@@ -11,4 +12,24 @@
 			
 		}
 	}
+	&__button {
+		padding: .5rem;
+		background-color: #7988fd;
+		cursor: pointer;
+		border-radius: 4px;
+		color: #fff;
+	}
+}
+
+.arrow-down:after {
+  content: "\25BC";
+}
+
+.arrow-up:after {
+  content: "\25B2";
+}
+
+.arrow {
+	margin-left: 8px;
+  	font-family: FontAwesome;
 }
