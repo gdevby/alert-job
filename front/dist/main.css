@@ -316,4 +316,5 @@ select::-webkit-scrollbar-thumb {
 
 a {
   padding-left: 0.5rem;
+  transition: all 5s ease-out;
 }
