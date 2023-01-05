@@ -156,4 +156,14 @@ public class CoreService {
 			}
 		});
 	}
+	
+	public Mono<Void> changeUserTelegram(String uuid, Long telegramId) {
+		return Mono.create(m -> {
+			AppUser user = userRepository.findByUuid(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			user.setTelegram(telegramId);
+			userRepository.save(user);
+			m.success();
+		});
+	}
 }

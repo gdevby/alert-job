@@ -93,4 +93,10 @@ public class MainController {
 	public Mono<ResponseEntity<WordDTO>> createDescriptionWord(@RequestBody KeyWord keyWord){
 		return coreService.addDescriptionWord(keyWord);
 	}
+	
+	@PatchMapping("user/telegram")
+	public ResponseEntity<Mono<Void>> addUserTelegram(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestParam("telegram_id") Long telegramId) {
+		return ResponseEntity.ok(coreService.changeUserTelegram(uuid, telegramId));
+	}
 }
