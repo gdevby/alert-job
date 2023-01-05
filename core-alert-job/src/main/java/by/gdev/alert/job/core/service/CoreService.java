@@ -19,6 +19,7 @@ import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.KeyWord;
+import by.gdev.common.model.NotificationAlertType;
 import by.gdev.common.model.UserNotification;
 import by.gdev.common.model.WordDTO;
 import lombok.RequiredArgsConstructor;
@@ -100,6 +101,17 @@ public class CoreService {
 			user.setDefaultSendType(defaultSend);
 			user = userRepository.save(user);
 			m.success(user.isDefaultSendType());
+		});
+	}
+	
+	public Mono<NotificationAlertType> notificationUserAlertType(String uuid) {
+		return Mono.create(m -> {
+			AppUser user = userRepository.findByUuid(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			NotificationAlertType alerType = new NotificationAlertType();
+			alerType.setType(user.isDefaultSendType());
+			alerType.setValue(user.isDefaultSendType() ? user.getEmail() : String.valueOf(user.getTelegram()));
+			m.success(alerType);
 		});
 	}
 	

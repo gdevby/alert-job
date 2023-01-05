@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.KeyWord;
+import by.gdev.common.model.NotificationAlertType;
 import by.gdev.common.model.WordDTO;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -62,6 +63,11 @@ public class MainController {
 	public ResponseEntity<Mono<Boolean>> alertType(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@RequestParam("default_send") boolean defaultSend) {
 		return ResponseEntity.ok(coreService.changeDefaultSendType(uuid, defaultSend));
+	}
+	
+	@GetMapping("user/alerts/type")
+	public ResponseEntity<Mono<NotificationAlertType>> getAlearType(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
+		return ResponseEntity.ok(coreService.notificationUserAlertType(uuid));
 	}
 	
 	@GetMapping("user/title-word")
