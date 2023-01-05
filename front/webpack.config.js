@@ -27,7 +27,12 @@ module.exports = {
 					'postcss-loader',
 					'sass-loader',
 				],
-			}
+			},
+			{
+                exclude: "/node_modules/",
+                test: /\.jpg$/,
+                use: ['file-loader'],
+            },
 		]
 	},
 	watch: true,
