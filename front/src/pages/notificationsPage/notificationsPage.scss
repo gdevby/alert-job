@@ -1,6 +1,9 @@
 .notification_source {
 	display: flex;
 	margin-bottom: 2rem;
+	justify-content: space-between;
+	align-items: center;
+    width: 75%;
     
     & > .list {
 	margin-right: 1rem;
@@ -8,4 +11,8 @@
 	&__send-btn {
 		width: 40%;
 	}
+}
+
+.alert_status {
+	margin-top: 1rem;
 }
