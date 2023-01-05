@@ -37,7 +37,7 @@ public class MailService {
 
 	public Mono<Void> sendMessageToTelegram(UserNotification userMail) {
 		return Mono.defer(() -> {
-			MessageData m = new MessageData(Integer.valueOf(userMail.getToMail()), userMail.getMessage());
+			MessageData m = new MessageData(Long.valueOf(userMail.getToMail()), userMail.getMessage());
 			webClient.post()
 					.uri("https://api.telegram.org",
 							u -> u.path("/bot{token}/sendMessage").build(property.getTelegramChatToken()))

@@ -23,7 +23,7 @@ public class AppUser extends BasicId{
 	@ManyToOne
 	private UserFilter currentFilter;
 	private String email;
-	private Integer telegram;
+	private Long telegram;
 	private boolean switchOffAlerts = true;
 	private boolean defaultSendType = true;
 }
