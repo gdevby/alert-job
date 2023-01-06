@@ -1,4 +1,4 @@
-package by.gdev.alert.job.core.model;
+package by.gdev.alert.job.core.model.db;
 
 import javax.persistence.Access;
 import javax.persistence.AccessType;

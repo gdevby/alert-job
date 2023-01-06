@@ -6,9 +6,9 @@ import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 
-import by.gdev.alert.job.core.model.key.DescriptionWord;
-import by.gdev.alert.job.core.model.key.TechnologyWord;
-import by.gdev.alert.job.core.model.key.TitleWord;
+import by.gdev.alert.job.core.model.db.key.DescriptionWord;
+import by.gdev.alert.job.core.model.db.key.TechnologyWord;
+import by.gdev.alert.job.core.model.db.key.TitleWord;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;

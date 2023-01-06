@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import by.gdev.alert.job.core.model.KeyWord;
+import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
-import by.gdev.common.model.KeyWord;
 import by.gdev.common.model.NotificationAlertType;
-import by.gdev.common.model.WordDTO;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

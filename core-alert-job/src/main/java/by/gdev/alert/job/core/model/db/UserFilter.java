@@ -1,4 +1,4 @@
-package by.gdev.alert.job.core.model;
+package by.gdev.alert.job.core.model.db;
 
 import java.util.Set;
 
@@ -6,9 +6,9 @@ import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
 import javax.validation.constraints.Size;
 
-import by.gdev.alert.job.core.model.key.DescriptionWord;
-import by.gdev.alert.job.core.model.key.TechnologyWord;
-import by.gdev.alert.job.core.model.key.TitleWord;
+import by.gdev.alert.job.core.model.db.key.DescriptionWord;
+import by.gdev.alert.job.core.model.db.key.TechnologyWord;
+import by.gdev.alert.job.core.model.db.key.TitleWord;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

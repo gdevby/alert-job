@@ -16,8 +16,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.common.collect.Lists;
 
-import by.gdev.alert.job.core.model.AppUser;
-import by.gdev.alert.job.core.model.UserFilter;
+import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.common.model.Order;
 import by.gdev.common.model.Price;

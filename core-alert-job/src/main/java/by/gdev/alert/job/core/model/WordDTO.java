@@ -1,4 +1,4 @@
-package by.gdev.common.model;
+package by.gdev.alert.job.core.model;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package by.gdev.alert.job.core.model.key;
+package by.gdev.alert.job.core.model.db.key;
 
 import javax.persistence.Entity;
 

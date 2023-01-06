@@ -9,20 +9,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import by.gdev.alert.job.core.model.AppUser;
-import by.gdev.alert.job.core.model.key.DescriptionWord;
-import by.gdev.alert.job.core.model.key.TechnologyWord;
-import by.gdev.alert.job.core.model.key.TitleWord;
+import by.gdev.alert.job.core.model.KeyWord;
+import by.gdev.alert.job.core.model.WordDTO;
+import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.model.db.key.DescriptionWord;
+import by.gdev.alert.job.core.model.db.key.TechnologyWord;
+import by.gdev.alert.job.core.model.db.key.TitleWord;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
-import by.gdev.common.model.KeyWord;
 import by.gdev.common.model.NotificationAlertType;
 import by.gdev.common.model.UserNotification;
-import by.gdev.common.model.WordDTO;
 import lombok.RequiredArgsConstructor;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

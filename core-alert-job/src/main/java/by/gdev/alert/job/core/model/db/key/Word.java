@@ -1,8 +1,8 @@
-package by.gdev.alert.job.core.model.key;
+package by.gdev.alert.job.core.model.db.key;
 
 import javax.persistence.MappedSuperclass;
 
-import by.gdev.alert.job.core.model.BasicId;
+import by.gdev.alert.job.core.model.db.BasicId;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

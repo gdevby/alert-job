@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.repository.CrudRepository;
 
-import by.gdev.alert.job.core.model.key.TitleWord;
+import by.gdev.alert.job.core.model.db.key.TitleWord;
 
 public interface TitleWordRepository extends CrudRepository<TitleWord, Long>{
 	
