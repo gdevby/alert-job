@@ -157,6 +157,11 @@ public class MainController {
 		return ResponseEntity.ok(coreService.createDescriptionWordToFilter(filterId, wordId));
 	}
 	
+	@GetMapping("user/source")
+	public ResponseEntity<Flux<SourceSiteDTO>> getSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
+		return ResponseEntity.ok(coreService.showSourceSite(uuid));
+	}
+	
 	@PostMapping("user/source")
 	public ResponseEntity<Mono<SourceSiteDTO>> addSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody Source source){
 		return ResponseEntity.ok(coreService.createSourceSite(uuid, source));
