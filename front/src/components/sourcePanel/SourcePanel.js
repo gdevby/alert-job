@@ -6,6 +6,7 @@ import Button from '../../components/button/Button'
 
 import { parserService } from '../../services/parser/endponits/parserService'
 import { sourceService } from '../../services/parser/endponits/sourceService'
+import { filterService } from '../../services/parser/endponits/filterService'
 
 import './sourcePanel.scss'
 
@@ -16,6 +17,7 @@ const SourcePanel = ({ addSource }) => {
 	const [sites, setSites] = useState([])
 	const [categories, setCategories] = useState([])
 	const [subcategories, setSubcategories] = useState([])
+	const [currentFilters, setCurrentFilters] = useState([])
 
 
 	useEffect(() => {
@@ -24,6 +26,10 @@ const SourcePanel = ({ addSource }) => {
 			.then(response => {
 				setSites(response.data)
 			})
+	}, [])
+	
+	useEffect(() => {
+		filterService.getFilters().then(console.log)
 	}, [])
 
 	useEffect(() => {
@@ -72,6 +78,9 @@ const SourcePanel = ({ addSource }) => {
 		</div>
 		<div className='subcat'>
 			<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />
+		</div>
+		<div className='current_filter'>
+			<DropDownList defaultValue={'Текущий фильтр'} elems={subcategories} open={false} cb={setCurrentSubCat} />
 		</div>
 		<div>
 			<Button onClick={addingSource} text={'Добавить источник'} />

@@ -12,7 +12,6 @@ const FiltersPage = () => {
 
 	const addSource = data => {
 		setSources([...sourse, data])
-		console.log(data)
 	}
 	
 	const deleteSource = event => {
@@ -22,6 +21,14 @@ const FiltersPage = () => {
 			setSources(newSources)
 		})
 	}
+	
+	useEffect(() => {
+		sourceService
+		.getSources()
+		.then(response => {
+			setSources(response.data)
+		})
+	}, [])
 	
 	
 	
