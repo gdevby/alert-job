@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import by.gdev.alert.job.core.model.Filter;
 import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
+import by.gdev.alert.job.core.model.Source;
 import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
@@ -154,5 +155,15 @@ public class MainController {
 	@PatchMapping("user/filter/{filter_id}/description-word/{word_id}")
 	public ResponseEntity<Mono<Void>> addDescriptionWordToFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
 		return ResponseEntity.ok(coreService.createDescriptionWordToFilter(filterId, wordId));
+	}
+	
+	@PostMapping("user/source")
+	public ResponseEntity<Mono<SourceSiteDTO>> addSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody Source source){
+		return ResponseEntity.ok(coreService.createSourceSite(uuid, source));
+	}
+	
+	@DeleteMapping("user/source/{source_id}")
+	public Mono<ResponseEntity<Void>> deleteSourceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable("source_id") Long sourceId){
+		return coreService.removeSourceSite(uuid, sourceId);
 	}
 }

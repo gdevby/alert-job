@@ -16,19 +16,23 @@ import com.google.common.collect.Sets;
 import by.gdev.alert.job.core.model.Filter;
 import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
+import by.gdev.alert.job.core.model.Source;
 import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
 import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
+import by.gdev.alert.job.core.repository.SourceSiteRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.NotificationAlertType;
+import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -44,6 +48,7 @@ public class CoreService {
 	private final TitleWordRepository titleRepository;
 	private final DescriptionWordRepository descriptionRepository;
 	private final TechnologyWordRepository technologyRepository;
+	private final SourceSiteRepository sourceRepository;
 	
 	private final ModelMapper mapper;
 	
@@ -339,6 +344,38 @@ public class CoreService {
 				filterRepository.save(filter);
 				m.success(ResponseEntity.ok().build());
 			} else {
+				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+			}
+		});
+	}
+	
+	
+	public Mono<SourceSiteDTO> createSourceSite(String uuid, Source source){
+		return Mono.create(m -> {
+			AppUser user = userRepository.findOneEagerSourceSite(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			if (CollectionUtils.isEmpty(user.getSources())) {
+				user.setSources(Sets.newHashSet());
+			}
+			SourceSite sourceSite = mapper.map(source, SourceSite.class);
+			sourceRepository.save(sourceSite);
+			user.getSources().add(sourceSite);
+			userRepository.save(user);
+			m.success(mapper.map(sourceSite, SourceSiteDTO.class));
+		});
+	}
+	
+	public Mono<ResponseEntity<Void>> removeSourceSite(String uuid, Long sourceId){
+		return Mono.create(m -> {
+			AppUser user = userRepository.findOneEagerSourceSite(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			SourceSite sourceSite = sourceRepository.findById(sourceId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found site source with id " + sourceId));
+			
+			if (user.getSources().removeIf(s -> s.equals(sourceSite))) {
+				userRepository.save(user);
+				m.success(ResponseEntity.ok().build());
+			}else {
 				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
 			}
 		});
