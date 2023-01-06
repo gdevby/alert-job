@@ -2,16 +2,23 @@ package by.gdev.alert.job.core.service;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.google.common.collect.Sets;
+
+import by.gdev.alert.job.core.model.Filter;
+import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
 import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
 import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
@@ -19,11 +26,11 @@ import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
+import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.NotificationAlertType;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
-import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,6 +40,7 @@ public class CoreService {
 
 	private final WebClient webClient;
 	private final AppUserRepository userRepository;
+	private final UserFilterRepository filterRepository;
 	private final TitleWordRepository titleRepository;
 	private final DescriptionWordRepository descriptionRepository;
 	private final TechnologyWordRepository technologyRepository;
@@ -175,6 +183,72 @@ public class CoreService {
 			AppUser user = userRepository.findByUuid(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			user.setTelegram(telegramId);
+			userRepository.save(user);
+			m.success();
+		});
+	}
+	
+	public Flux<FilterDTO> showUserFilters(String uuid){
+		return Flux.just(userRepository.findOneEagerUserFilters(uuid).orElseThrow(() -> new ResourceNotFoundException()))
+				.flatMapIterable(u -> u.getFilters()).map(m ->  mapper.map(m, FilterDTO.class));
+	}
+	
+	public Mono<FilterDTO> createUserFilter(String uuid, Filter filter){
+		return Mono.create(m -> {
+			AppUser user = userRepository.findOneEagerUserFilters(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			UserFilter userFilter = new UserFilter();
+			userFilter.setName(filter.getName());
+			userFilter.setMaxValue(filter.getMaxValue());
+			userFilter.setMinValue(filter.getMinValue());
+			filterRepository.save(userFilter);
+			Set<UserFilter> set = CollectionUtils.isEmpty(user.getFilters()) ? Sets.newHashSet()
+					: Sets.newHashSet(user.getFilters());
+			set.add(userFilter);
+			user.setFilters(set);
+			userRepository.save(user);
+			m.success(mapper.map(userFilter, FilterDTO.class));
+		});
+	}
+	
+	public Mono<ResponseEntity<FilterDTO>> updateUserFilter(String uuid, Long filterId, Filter filter){
+		return Mono.create(m -> {
+			AppUser user = userRepository.findOneEagerUserFilters(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			UserFilter userFilter = filterRepository.findById(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			if (!user.getFilters().contains(userFilter))
+				m.success(ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
+			
+			mapper.map(filter, userFilter);
+			userFilter = filterRepository.save(userFilter);
+				m.success(ResponseEntity.ok(mapper.map(userFilter, FilterDTO.class)));
+		});
+	}
+	
+	public Mono<ResponseEntity<Void>> removeUserFilter(String uuid, Long filterId) {
+		return Mono.create(m -> {
+			AppUser user = userRepository.findOneEagerUserFilters(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			UserFilter userFilter = filterRepository.findById(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			if (user.getFilters().removeIf(f -> f.getId() == filterId)) {
+				filterRepository.delete(userFilter);
+				userRepository.save(user);
+				m.success(ResponseEntity.ok().build());
+			} else {
+				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+			}
+		});
+	}
+	
+	public Mono<Void> currentFilter(String uuid, Long filterId){
+		return Mono.create(m -> {
+			AppUser user = userRepository.findOneEagerUserFilters(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			UserFilter userFilter = filterRepository.findById(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			user.setCurrentFilter(userFilter);
 			userRepository.save(user);
 			m.success();
 		});

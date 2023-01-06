@@ -4,14 +4,18 @@ import java.util.Objects;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import by.gdev.alert.job.core.model.Filter;
+import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
 import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.service.CoreService;
@@ -104,5 +108,35 @@ public class MainController {
 	public ResponseEntity<Mono<Void>> addUserTelegram(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@RequestParam("telegram_id") Long telegramId) {
 		return ResponseEntity.ok(coreService.changeUserTelegram(uuid, telegramId));
+	}
+	
+	@GetMapping("user/filter")
+	public ResponseEntity<Flux<FilterDTO>> getUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
+		return ResponseEntity.ok(coreService.showUserFilters(uuid));
+		
+	}
+	
+	@PostMapping("user/filter")
+	public ResponseEntity<Mono<FilterDTO>> addUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestBody Filter filter) {
+		return ResponseEntity.ok(coreService.createUserFilter(uuid, filter));
+	}
+	
+	@PatchMapping("user/filter/{id}")
+	public Mono<ResponseEntity<FilterDTO>> changeUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@PathVariable("id") Long filterId, @RequestBody Filter filter) {
+		return coreService.updateUserFilter(uuid, filterId, filter);
+	}
+	
+	@DeleteMapping("user/filter/{id}")
+	public Mono<ResponseEntity<Void>> deleteFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@PathVariable("id") Long filterId){
+		return coreService.removeUserFilter(uuid, filterId);
+	}
+	
+	@PatchMapping("user/filter/{id}/current")
+	public ResponseEntity<Mono<Void>> setCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@PathVariable("id") Long filterId){
+		return ResponseEntity.ok(coreService.currentFilter(uuid, filterId));
 	}
 }
