@@ -5,6 +5,7 @@ import DropDownList from '../../components/dropDownList/DropDowList'
 import Button from '../../components/button/Button'
 
 import { parserService } from '../../services/parser/endponits/parserService'
+import { sourceService } from '../../services/parser/endponits/sourceService'
 
 import './sourcePanel.scss'
 
@@ -51,7 +52,15 @@ const SourcePanel = ({ addSource }) => {
 
 
 	const addingSource = () => {
-		addSource({ currentSite, currentCat, currentSubCat })
+		sourceService.addSource({
+			siteSource: Number(currentSite.id),
+		 	siteCategory: Number(currentCat.id),
+		  	siteSubCategory: Number(currentSubCat.id),
+		  	flRuForAll: false}
+		  ).then(response => {
+			addSource({ currentSite, currentCat, currentSubCat, id: response.data.id })
+		})
+		
 	}
 
 	return <div className='source_panel'>
