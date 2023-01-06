@@ -253,4 +253,94 @@ public class CoreService {
 			m.success();
 		});
 	}
+	
+	public Mono<Void> createTitleWordToFilter(Long filterId, Long wordId){
+		return Mono.create(m ->{
+			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			TitleWord word = titleRepository.findById(wordId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
+			if (CollectionUtils.isEmpty(filter.getTitles())) {
+				filter.setTitles(Sets.newHashSet());
+			}
+			filter.getTitles().add(word);
+			filterRepository.save(filter);
+			m.success();
+		});
+	}
+	
+	public Mono<ResponseEntity<Void>> removeTitleWordFromFilter(Long filterId, Long wordId) {
+		return Mono.create(m -> {
+			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			TitleWord word = titleRepository.findById(wordId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
+			if (filter.getTitles().removeIf(e -> e.equals(word))) {
+				filterRepository.save(filter);
+				m.success(ResponseEntity.ok().build());
+			} else {
+				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+			}
+		});
+	}
+	
+	public Mono<Void> createTechnologyWordToFilter(Long filterId, Long wordId){
+		return Mono.create(m ->{
+			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			TechnologyWord word = technologyRepository.findById(wordId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
+			if (CollectionUtils.isEmpty(filter.getTechnologies())) {
+				filter.setTechnologies(Sets.newHashSet());
+			}
+			filter.getTechnologies().add(word);
+			filterRepository.save(filter);
+			m.success();
+		});
+	}
+	
+	public Mono<ResponseEntity<Void>> removeTechnologyWordFromFilter(Long filterId, Long wordId) {
+		return Mono.create(m -> {
+			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			TechnologyWord word = technologyRepository.findById(wordId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
+			if (filter.getTechnologies().removeIf(e -> e.equals(word))) {
+				filterRepository.save(filter);
+				m.success(ResponseEntity.ok().build());
+			} else {
+				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+			}
+		});
+	}
+	
+	public Mono<Void> createDescriptionWordToFilter(Long filterId, Long wordId){
+		return Mono.create(m ->{
+			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			DescriptionWord word = descriptionRepository.findById(wordId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
+			if (CollectionUtils.isEmpty(filter.getDescriptions())) {
+				filter.setDescriptions(Sets.newHashSet());
+			}
+			filter.getDescriptions().add(word);
+			filterRepository.save(filter);
+			m.success();
+		});
+	}
+	
+	public Mono<ResponseEntity<Void>> removeDescriptionWordFromFilter(Long filterId, Long wordId) {
+		return Mono.create(m -> {
+			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
+			DescriptionWord word = descriptionRepository.findById(wordId)
+					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
+			if (filter.getDescriptions().removeIf(e -> e.equals(word))) {
+				filterRepository.save(filter);
+				m.success(ResponseEntity.ok().build());
+			} else {
+				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+			}
+		});
+	}
 }

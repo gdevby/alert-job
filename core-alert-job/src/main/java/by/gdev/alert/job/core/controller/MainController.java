@@ -21,6 +21,7 @@ import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.NotificationAlertType;
+import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -138,5 +139,20 @@ public class MainController {
 	public ResponseEntity<Mono<Void>> setCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long filterId){
 		return ResponseEntity.ok(coreService.currentFilter(uuid, filterId));
+	}
+	
+	@PatchMapping("user/filter/{filter_id}/title-word/{word_id}")
+	public ResponseEntity<Mono<Void>> addTitleWordToFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
+		return ResponseEntity.ok(coreService.createTitleWordToFilter(filterId, wordId));
+	}
+	
+	@PatchMapping("user/filter/{filter_id}/technology-word/{word_id}")
+	public ResponseEntity<Mono<Void>> addTechnologyWordToFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
+		return ResponseEntity.ok(coreService.createTechnologyWordToFilter(filterId, wordId));
+	}
+	
+	@PatchMapping("user/filter/{filter_id}/description-word/{word_id}")
+	public ResponseEntity<Mono<Void>> addDescriptionWordToFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
+		return ResponseEntity.ok(coreService.createDescriptionWordToFilter(filterId, wordId));
 	}
 }
