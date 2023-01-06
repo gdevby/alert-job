@@ -172,6 +172,40 @@
 .alert_status {
   margin-top: 1rem;
 }
+/*!*******************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/seachPopup/searchPopup.scss ***!
+  \*******************************************************************************************************************************************************************************/
+.searchPopup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(102, 102, 102, 0.5);
+  display: none;
+}
+.searchPopup__content {
+  width: 500px;
+  height: 500px;
+  background-color: white;
+  border-radius: 4px;
+}
+.searchPopup__open {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.searchPopup__header {
+  padding: 1rem;
+}
+.searchPopup__header-close {
+  display: flex;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+.searchPopup__footer {
+  padding: 1rem;
+}
 /*!***************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/index.scss ***!
   \***************************************************************************************************************************************************/
