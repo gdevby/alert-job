@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.controller;
 
 import java.util.Objects;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -77,8 +78,8 @@ public class MainController {
 	}
 	
 	@GetMapping("user/title-word")
-	public ResponseEntity<Flux<WordDTO>> getTitleWords(){
-		return ResponseEntity.ok(coreService.showTitleWords());
+	public ResponseEntity<Mono<Page<WordDTO>>> getTitleWords(@RequestParam(name = "name", required = false) String name, @RequestParam("page") Integer page){
+		return ResponseEntity.ok(coreService.showTitleWords(name, page));
 	} 
 	
 	@PostMapping("user/title-word")
@@ -87,8 +88,8 @@ public class MainController {
 	}
 	
 	@GetMapping("user/technology-word")
-	public ResponseEntity<Flux<WordDTO>> getTechnologyWords(){
-		return ResponseEntity.ok(coreService.showTechnologyWords());
+	public ResponseEntity<Mono<Page<WordDTO>>> getTechnologyWords(@RequestParam(name = "name", required = false) String name, @RequestParam("page") Integer page){
+		return ResponseEntity.ok(coreService.showTechnologyWords(name, page));
 	} 
 	
 	@PostMapping("user/technology-word")
@@ -97,8 +98,8 @@ public class MainController {
 	}
 	
 	@GetMapping("user/description-word")
-	public ResponseEntity<Flux<WordDTO>> getDescriptionWords(){
-		return ResponseEntity.ok(coreService.showDescriptionWords());
+	public ResponseEntity<Mono<Page<WordDTO>>> getDescriptionWords(@RequestParam(name = "name", required = false) String name, @RequestParam("page") Integer page){
+		return ResponseEntity.ok(coreService.showDescriptionWords(name, page));
 	} 
 	
 	@PostMapping("user/description-word")

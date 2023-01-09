@@ -3,8 +3,12 @@ package by.gdev.alert.job.core.service;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
+import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -129,8 +133,13 @@ public class CoreService {
 		});
 	}
 	
-	public Flux<WordDTO> showTitleWords() {
-		return Flux.fromIterable(titleRepository.findAll()).map(e -> mapper.map(e, WordDTO.class));
+	public Mono<Page<WordDTO>> showTitleWords(String name, Integer page) {
+		return Mono.defer(() -> {
+			PageRequest p = PageRequest.of(page, 10);
+			Function<TitleWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
+			return StringUtils.isEmpty(name) ? Mono.just(titleRepository.findAll(p).map(func))
+					: Mono.just(titleRepository.findByNameIsStartingWith(name).map(func));
+		});
 	}
 	
 	public Mono<ResponseEntity<WordDTO>> addTitleWord(KeyWord keyWord){
@@ -147,8 +156,13 @@ public class CoreService {
 		});
 	}
 	
-	public Flux<WordDTO> showTechnologyWords() {
-		return Flux.fromIterable(technologyRepository.findAll()).map(e -> mapper.map(e, WordDTO.class));
+	public Mono<Page<WordDTO>> showTechnologyWords(String name, Integer page) {
+		return Mono.defer(() -> {
+			PageRequest p = PageRequest.of(page, 10);
+			Function<TechnologyWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
+			return StringUtils.isEmpty(name) ? Mono.just(technologyRepository.findAll(p).map(func))
+					: Mono.just(technologyRepository.findByNameIsStartingWith(name).map(func));
+		});
 	}
 	
 	public Mono<ResponseEntity<WordDTO>> addTechnologyWord(KeyWord keyWord){
@@ -165,8 +179,13 @@ public class CoreService {
 		});
 	}
 	
-	public Flux<WordDTO> showDescriptionWords() {
-		return Flux.fromIterable(descriptionRepository.findAll()).map(e -> mapper.map(e, WordDTO.class));
+	public Mono<Page<WordDTO>> showDescriptionWords(String name, Integer page) {
+		return Mono.defer(() -> {
+			PageRequest p = PageRequest.of(page, 10);
+			Function<DescriptionWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
+			return StringUtils.isEmpty(name) ? Mono.just(descriptionRepository.findAll(p).map(func))
+					: Mono.just(descriptionRepository.findByNameIsStartingWith(name).map(func));
+		});
 	}
 	
 	public Mono<ResponseEntity<WordDTO>> addDescriptionWord(KeyWord keyWord){
@@ -386,4 +405,10 @@ public class CoreService {
 			}
 		});
 	}
+	
+	private Function<?, WordDTO> function(){
+		return x-> mapper.map(x, WordDTO.class);
+	}
+	
+	
 }
