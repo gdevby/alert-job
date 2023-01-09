@@ -14,6 +14,6 @@ public interface TechnologyWordRepository extends CrudRepository<TechnologyWord,
 	
 	Page<TechnologyWord> findAll(Pageable p);
 	
-	Page<TechnologyWord> findByNameIsStartingWith(String name);
+	Page<TechnologyWord> findByNameIsStartingWith(String name, Pageable p);
 	
 }

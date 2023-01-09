@@ -7,7 +7,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
-import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 
 public interface DescriptionWordRepository extends CrudRepository<DescriptionWord, Long>{
 	
@@ -15,5 +14,5 @@ public interface DescriptionWordRepository extends CrudRepository<DescriptionWor
 	
 	Page<DescriptionWord> findAll(Pageable p);
 	
-	Page<DescriptionWord> findByNameIsStartingWith(String name);
+	Page<DescriptionWord> findByNameIsStartingWith(String name, Pageable p);
 }
