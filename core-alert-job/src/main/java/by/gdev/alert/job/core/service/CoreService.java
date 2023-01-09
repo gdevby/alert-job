@@ -138,7 +138,7 @@ public class CoreService {
 			PageRequest p = PageRequest.of(page, 10);
 			Function<TitleWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
 			return StringUtils.isEmpty(name) ? Mono.just(titleRepository.findAll(p).map(func))
-					: Mono.just(titleRepository.findByNameIsStartingWith(name).map(func));
+					: Mono.just(titleRepository.findByNameIsStartingWith(name, p).map(func));
 		});
 	}
 	
@@ -161,7 +161,7 @@ public class CoreService {
 			PageRequest p = PageRequest.of(page, 10);
 			Function<TechnologyWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
 			return StringUtils.isEmpty(name) ? Mono.just(technologyRepository.findAll(p).map(func))
-					: Mono.just(technologyRepository.findByNameIsStartingWith(name).map(func));
+					: Mono.just(technologyRepository.findByNameIsStartingWith(name, p).map(func));
 		});
 	}
 	
@@ -184,7 +184,7 @@ public class CoreService {
 			PageRequest p = PageRequest.of(page, 10);
 			Function<DescriptionWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
 			return StringUtils.isEmpty(name) ? Mono.just(descriptionRepository.findAll(p).map(func))
-					: Mono.just(descriptionRepository.findByNameIsStartingWith(name).map(func));
+					: Mono.just(descriptionRepository.findByNameIsStartingWith(name, p).map(func));
 		});
 	}
 	

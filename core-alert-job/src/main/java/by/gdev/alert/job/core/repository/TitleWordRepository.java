@@ -14,5 +14,5 @@ public interface TitleWordRepository extends CrudRepository<TitleWord, Long>{
 	
 	Page<TitleWord> findAll(Pageable p);
 	
-	Page<TitleWord> findByNameIsStartingWith(String name);
+	Page<TitleWord> findByNameIsStartingWith(String name, Pageable p);
 }
