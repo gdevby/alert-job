@@ -30,6 +30,11 @@ const SourcePanel = ({ addSource }) => {
 	
 	useEffect(() => {
 		filterService.getFilters().then(console.log)
+		
+	}, [])
+	
+	useEffect(() => {
+		sourceService.getSources().then(console.log)
 	}, [])
 
 	useEffect(() => {

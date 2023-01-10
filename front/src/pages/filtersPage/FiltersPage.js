@@ -26,7 +26,7 @@ const FiltersPage = () => {
 		sourceService
 		.getSources()
 		.then(response => {
-			setSources(response.data)
+			//setSources(response.data)
 		})
 	}, [])
 	

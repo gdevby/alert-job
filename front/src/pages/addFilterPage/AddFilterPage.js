@@ -5,6 +5,7 @@ import Field from '../../components/field/Field'
 import Button from '../../components/button/Button'
 import DropDownList from '../../components/dropDownList/DropDowList'
 import SearchPopup from '../../components/seachPopup/SearchPopup'
+import AddFilterForm from '../../components/addFilterForm/AddFilterForm'
 
 import { filterService } from '../../services/parser/endponits/filterService'
 
@@ -51,18 +52,7 @@ const AddFilterPage = () => {
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
 
-			<Field
-				type={'text'} defaultValue=''
-				placeholder={'Введите название'} label={<label>Название фильтра</label>} />
-
-			<div className='price_block'>
-				<Field
-					type={'number'} defaultValue=''
-					placeholder={'Минимальная цена'} label={<label>Минимальная цена</label>} />
-				<Field
-					type={'number'} defaultValue=''
-					placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
-			</div>
+			<AddFilterForm />
 
 			<div className='wordsContains_block'>
 				<div>
