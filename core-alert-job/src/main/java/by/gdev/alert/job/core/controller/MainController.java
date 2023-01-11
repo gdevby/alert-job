@@ -161,7 +161,7 @@ public class MainController {
 	
 	@GetMapping("user/source")
 	public ResponseEntity<Flux<SourceDTO>> getSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
-		return ResponseEntity.ok(coreService.showSourceSite1(uuid));
+		return ResponseEntity.ok(coreService.showSourceSite(uuid));
 	}
 	
 	@PostMapping("user/source")

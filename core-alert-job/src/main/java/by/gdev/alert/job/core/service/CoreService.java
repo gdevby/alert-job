@@ -375,14 +375,7 @@ public class CoreService {
 		});
 	}
 	
-	public Flux<SourceSiteDTO> showSourceSite(String uuid){
-		return Flux
-				.just(userRepository.findOneEagerSourceSite(uuid)
-						.orElseThrow(() -> new ResourceNotFoundException("user not found")))
-				.flatMapIterable(u -> u.getSources()).map(s -> mapper.map(s, SourceSiteDTO.class));
-	} 
-	
-	public Flux<SourceDTO> showSourceSite1(String uuid) {
+	public Flux<SourceDTO> showSourceSite(String uuid) {
 		return Flux
 				.just(userRepository.findOneEagerSourceSite(uuid)
 						.orElseThrow(() -> new ResourceNotFoundException("user not found")))
