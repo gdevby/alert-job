@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.domain;
+package by.gdev.common.model;
 
 import lombok.Data;
 

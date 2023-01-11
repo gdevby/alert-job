@@ -1,9 +1,9 @@
-package by.gdev.alert.job.parser.domain;
+package by.gdev.common.model;
 
 import lombok.Data;
 
 @Data
-public class SubCategoryDTO {
+public class CategoryDTO {
 	
 	private Long id;
 	private String name;

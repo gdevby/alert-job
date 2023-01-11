@@ -19,6 +19,7 @@ import by.gdev.alert.job.core.model.Filter;
 import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
 import by.gdev.alert.job.core.model.Source;
+import by.gdev.alert.job.core.model.SourceDTO;
 import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
@@ -159,8 +160,8 @@ public class MainController {
 	}
 	
 	@GetMapping("user/source")
-	public ResponseEntity<Flux<SourceSiteDTO>> getSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
-		return ResponseEntity.ok(coreService.showSourceSite(uuid));
+	public ResponseEntity<Flux<SourceDTO>> getSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
+		return ResponseEntity.ok(coreService.showSourceSite1(uuid));
 	}
 	
 	@PostMapping("user/source")

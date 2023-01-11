@@ -21,6 +21,7 @@ import by.gdev.alert.job.core.model.Filter;
 import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
 import by.gdev.alert.job.core.model.Source;
+import by.gdev.alert.job.core.model.SourceDTO;
 import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.SourceSite;
@@ -35,12 +36,18 @@ import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
+import by.gdev.common.model.CategoryDTO;
 import by.gdev.common.model.NotificationAlertType;
+import by.gdev.common.model.SiteCategoryDTO;
+import by.gdev.common.model.SiteSourceDTO;
+import by.gdev.common.model.SiteSubCategoryDTO;
 import by.gdev.common.model.SourceSiteDTO;
+import by.gdev.common.model.SubCategoryDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple3;
 
 @Service
 @RequiredArgsConstructor
@@ -375,6 +382,47 @@ public class CoreService {
 				.flatMapIterable(u -> u.getSources()).map(s -> mapper.map(s, SourceSiteDTO.class));
 	} 
 	
+	public Flux<SourceDTO> showSourceSite1(String uuid) {
+		return Flux
+				.just(userRepository.findOneEagerSourceSite(uuid)
+						.orElseThrow(() -> new ResourceNotFoundException("user not found")))
+				.flatMapIterable(u -> u.getSources()).map(s -> {
+					SourceDTO dto = new SourceDTO();
+					dto.setId(s.getId());
+					SiteSourceDTO source = new SiteSourceDTO();
+					source.setId(s.getSiteSource());
+					dto.setSiteSourceDTO(source);
+					CategoryDTO category = new CategoryDTO();
+					category.setId(s.getSiteCategory());
+					dto.setSiteCategoryDTO(category);
+					SubCategoryDTO subcategory = new SubCategoryDTO();
+					subcategory.setId(s.getSiteSubCategory());
+					dto.setSiteSubCategoryDTO(subcategory);
+					return dto;
+				}).flatMap(s -> {
+					Long sourceId = s.getSiteSourceDTO().getId();
+					Long categoryId = s.getSiteCategoryDTO().getId();
+					Long subcategoryId = s.getSiteSubCategoryDTO().getId();
+					Mono<SiteSourceDTO> m1 = webClient.get()
+							.uri(String.format("http://parser-alert-job:8017/api/site/%s", s.getSiteSourceDTO().getId()))
+							.retrieve().bodyToMono(SiteSourceDTO.class);
+					Mono<SiteCategoryDTO> m2 = webClient.get()
+							.uri(String.format("http://parser-alert-job:8017/api/site/%s/category/%s", sourceId, categoryId))
+							.retrieve().bodyToMono(SiteCategoryDTO.class);
+					Mono<SiteSubCategoryDTO> m3 = webClient.get().uri(String
+							.format("http://parser-alert-job:8017/api/category/%s/subcategory/%s", categoryId, subcategoryId))
+							.retrieve().bodyToMono(SiteSubCategoryDTO.class);
+					Mono<Tuple3<SiteSourceDTO, SiteCategoryDTO, SiteSubCategoryDTO>> tuple = Mono.zip(m1, m2, m3);
+					return tuple.map(t -> {
+						SourceDTO dto = s;
+						dto.setSiteSourceDTO(t.getT1());
+						dto.setSiteCategoryDTO(t.getT2().getCategory());
+						dto.setSiteSubCategoryDTO(t.getT3().getSubCategory());
+						return s;
+					});
+				});
+	}
+	
 	public Mono<SourceSiteDTO> createSourceSite(String uuid, Source source){
 		return Mono.create(m -> {
 			AppUser user = userRepository.findOneEagerSourceSite(uuid)
@@ -405,10 +453,4 @@ public class CoreService {
 			}
 		});
 	}
-	
-	private Function<?, WordDTO> function(){
-		return x-> mapper.map(x, WordDTO.class);
-	}
-	
-	
 }

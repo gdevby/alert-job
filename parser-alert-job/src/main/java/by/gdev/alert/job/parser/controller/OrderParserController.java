@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import by.gdev.alert.job.parser.domain.SiteCategoryDTO;
-import by.gdev.alert.job.parser.domain.SiteSourceDTO;
-import by.gdev.alert.job.parser.domain.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.common.model.Order;
+import by.gdev.common.model.SiteCategoryDTO;
+import by.gdev.common.model.SiteSourceDTO;
+import by.gdev.common.model.SiteSubCategoryDTO;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
