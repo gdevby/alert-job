@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 public class FilterDTO {
 	
+	private Long id;
 	private String name;
 	private Integer minValue;
 	private Integer maxValue;
