@@ -6,9 +6,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import by.gdev.alert.job.parser.domain.SiteCategoryDTO;
-import by.gdev.alert.job.parser.domain.SiteSourceDTO;
-import by.gdev.alert.job.parser.domain.SiteSubCategoryDTO;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
 import by.gdev.alert.job.parser.domain.db.SiteCategory;
@@ -20,9 +17,13 @@ import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
 import by.gdev.alert.job.parser.repository.SiteCategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
+import by.gdev.common.model.SiteCategoryDTO;
+import by.gdev.common.model.SiteSourceDTO;
+import by.gdev.common.model.SiteSubCategoryDTO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Data
 @Service
@@ -45,7 +46,7 @@ public class ParserService {
 			flux.complete();
 		});
 	}
-
+	
 	@Transactional(readOnly = true)
 	public Flux<SiteCategoryDTO> getCategories(Long id) {
 		return Flux.create(flux -> {
@@ -58,7 +59,7 @@ public class ParserService {
 			flux.complete();
 		});
 	}
-
+	
 	@Transactional(readOnly = true)
 	public Flux<SiteSubCategoryDTO> getSubCategories(Long category) {
 		return Flux.create(flux -> {
@@ -71,7 +72,7 @@ public class ParserService {
 			flux.complete();
 		});
 	}
-
+	
 	public boolean isExistsOrder(Category category, SubCategory subCategory, String link) {
 		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link);
 	}
@@ -83,5 +84,27 @@ public class ParserService {
 		ol.setLinks(link);
 		linkRepository.save(ol);
 	}
+	
+	public Mono<SiteSourceDTO> getSite(Long id) {
+		return Mono
+				.just(siteSourceJobRepository.findById(id)
+						.orElseThrow(() -> new ResourceNotFoundException("not found site with id " + id)))
+				.map(e -> mapper.map(e, SiteSourceDTO.class));
+	}
+	
+	public Mono<SiteCategoryDTO> getCategory(Long id, Long cId) {
+		return Mono.create(m -> {
+			SiteSourceJob ssj = siteSourceJobRepository.test(id, cId);
+			SiteCategory c = ssj.getSiteCategories().stream().findFirst().get();
+			m.success(mapper.map(c, SiteCategoryDTO.class));
+		});
+	}
 
+	public Mono<SiteSubCategoryDTO> getSubCategory(Long cId, Long sId){
+		return Mono.create(m -> {
+			SiteCategory sc = siteCategoryRepository.test(cId, sId);
+			SiteSubCategory sub = sc.getSiteSubCategories().stream().findFirst().get();
+			m.success(mapper.map(sub, SiteSubCategoryDTO.class));
+		});
+	}
 }
