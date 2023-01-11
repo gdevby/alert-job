@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 
 import Field from '../../components/field/Field'
+import Button from '../button/Button'
 
 import { filterService } from '../../services/parser/endponits/filterService'
 
@@ -15,7 +16,7 @@ const AddFilterForm = () => {
 	}
 	
 	
-	return <form onBlur={addFilter}>
+	return <form>
 		<Field
 			type={'text'} defaultValue='' cb={setFilterName}
 			placeholder={'Введите название'} label={<label>Название фильтра</label>} />
@@ -27,6 +28,9 @@ const AddFilterForm = () => {
 			<Field
 				type={'number'} defaultValue='' cb={setMaxPrice}
 				placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
+		</div>
+		<div>
+			<Button text={'Добавить фильтр'} onClick={addFilter}/>
 		</div>
 	</form>
 }

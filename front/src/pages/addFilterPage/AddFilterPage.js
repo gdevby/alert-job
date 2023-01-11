@@ -9,6 +9,8 @@ import AddFilterForm from '../../components/addFilterForm/AddFilterForm'
 
 import { filterService } from '../../services/parser/endponits/filterService'
 
+import './addFilterPage.scss'
+
 
 const AddFilterPage = () => {
 	const [isOpenPopup, setIsOpenPopup] = useState(false)
@@ -34,8 +36,8 @@ const AddFilterPage = () => {
 	
 	const searchWords = (wordType) => {
 		filterService
-		.getWords(wordType)
-		.then(response => setWords(response.data))
+		.getWords(wordType, '', 0)
+		.then(response => setWords(response.data.content))
 	}
 	
 	const addWord = (word) => {
@@ -76,3 +78,4 @@ const AddFilterPage = () => {
 }
 
 export default AddFilterPage
+
