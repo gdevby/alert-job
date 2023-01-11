@@ -9,7 +9,7 @@ import './searchPopup.scss'
 const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) => {	
 	const [open, setOpen] = useState(isOpen)
 	const [result, setResult] = useState(elements)
-	const [selectValue, setSelectValue] = useState({})
+	const [selectValue, setSelectValue] = useState()
 	
 	
 	useEffect(() => {
@@ -25,21 +25,25 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 		close()
 	}
 	
+	const changeWord = (text) => {
+		setSelectValue(text)	
+	}
 	
-	const handleSelect = (event, item) => {
-		console.log(item)
-		setSelectValue({name: event.target.textContent.trim(), id: event.target.id})
+	
+	const handleSelect = (event) => {
+		console.log(event.target)
+		// setSelectValue({name: event.target.textContent.trim(), id: event.target.id})
 	}
 	
 	const add = () => {
-		adding(selectValue.name)
+		adding(selectValue)
 	}
 	
 	return <div className={open? 'searchPopup searchPopup__open': 'searchPopup searchPopup__close'}>
 		<div className='searchPopup__content'>
 			<div className='searchPopup__header'>
 				<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
-				<Field defaultValue={''} cb={onChange}/>
+				<Field defaultValue={''} cb={changeWord}/>
 			</div>
 			<div className='searchPopup__body'>
 				{result && result.map(item => <div id={item.id} onClick={handleSelect}>{item.name}</div>)}
