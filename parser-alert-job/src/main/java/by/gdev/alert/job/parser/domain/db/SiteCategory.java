@@ -18,7 +18,7 @@ public class SiteCategory extends BasicId {
 	
 	@ManyToOne
 	private Category category;
-	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<SiteSubCategory> siteSubCategories;
 	private String link;
 	private boolean parse;

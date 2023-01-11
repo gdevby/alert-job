@@ -4,7 +4,6 @@ import java.util.Iterator;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
@@ -47,10 +46,9 @@ public class ParserService {
 		});
 	}
 	
-	@Transactional(readOnly = true)
 	public Flux<SiteCategoryDTO> getCategories(Long id) {
 		return Flux.create(flux -> {
-			SiteSourceJob ssj = siteSourceJobRepository.findById(id)
+			SiteSourceJob ssj = siteSourceJobRepository.findOneEager(id)
 					.orElseThrow(() -> new ResourceNotFoundException(""));
 			Iterator<SiteCategory> iterator = ssj.getSiteCategories().iterator();
 			while (iterator.hasNext()) {
@@ -60,10 +58,9 @@ public class ParserService {
 		});
 	}
 	
-	@Transactional(readOnly = true)
 	public Flux<SiteSubCategoryDTO> getSubCategories(Long category) {
 		return Flux.create(flux -> {
-			SiteCategory sc = siteCategoryRepository.findById(category)
+			SiteCategory sc = siteCategoryRepository.findOneEager(category)
 					.orElseThrow(() -> new ResourceNotFoundException());
 			Iterator<SiteSubCategory> iterator = sc.getSiteSubCategories().iterator();
 			while (iterator.hasNext()) {

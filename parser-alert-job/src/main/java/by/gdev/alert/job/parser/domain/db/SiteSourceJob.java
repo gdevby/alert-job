@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 public class SiteSourceJob extends BasicId {
 	
 	private String name;
-	@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<SiteCategory> siteCategories;
 	
 
