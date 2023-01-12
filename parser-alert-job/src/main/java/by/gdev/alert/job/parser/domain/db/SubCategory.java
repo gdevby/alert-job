@@ -13,4 +13,5 @@ public class SubCategory extends BasicId {
 	private String name;
 	private String link;
 	private boolean parse;
+	private String nativeLocName;
 }

@@ -16,6 +16,7 @@ import lombok.EqualsAndHashCode;
 public class Category extends BasicId {
 
 	private String name;
+	private String nativeLocName;
 	private String link;
 	private boolean parse;
 	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
