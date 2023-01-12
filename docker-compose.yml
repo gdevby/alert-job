@@ -92,7 +92,7 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
-  parser-alert-job:
+  parser:
     image: alert-job/parser-alert-job:0.0.1-SNAPSHOT
     ports:
       - "8017:8017"
