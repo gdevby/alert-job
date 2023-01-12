@@ -12,11 +12,11 @@ public interface SiteSourceJobRepository extends CrudRepository<SiteSourceJob, L
 	
 	SiteSourceJob findByName(String name);
 	
-	@Query("select s from SiteSourceJob s left join fetch s.siteCategories where s.id = :id")
+	@Query("select s from SiteSourceJob s left join fetch s.categories where s.id = :id")
 	Optional<SiteSourceJob> findOneEager(@Param("id") Long id);
 	
 	
-	@Query("select s from SiteSourceJob s left join fetch s.siteCategories c where s.id = :id and c.id = :cId")
-	SiteSourceJob test(@Param("id") Long id, @Param("cId") Long cId);
+	@Query("select s from SiteSourceJob s left join fetch s.categories c where s.id = :id and c.id = :cId")
+	SiteSourceJob findByIdAndCategory(@Param("id") Long id, @Param("cId") Long cId);
 	
 }

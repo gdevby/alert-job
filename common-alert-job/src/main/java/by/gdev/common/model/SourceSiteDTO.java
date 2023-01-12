@@ -5,9 +5,9 @@ import lombok.Data;
 @Data
 public class SourceSiteDTO {
 	private Long id;
-	private Long siteSource;
-	private Long siteCategory;
-	private Long siteSubCategory;
+	private Long source;
+	private Long category;
+	private Long subCategory;
 	private boolean flRuForAll;
 
 }

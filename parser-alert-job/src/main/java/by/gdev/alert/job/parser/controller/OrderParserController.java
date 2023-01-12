@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.common.model.CategoryDTO;
 import by.gdev.common.model.Order;
-import by.gdev.common.model.SiteCategoryDTO;
 import by.gdev.common.model.SiteSourceDTO;
-import by.gdev.common.model.SiteSubCategoryDTO;
+import by.gdev.common.model.SubCategoryDTO;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -52,12 +52,12 @@ public class OrderParserController {
 	}
 
 	@GetMapping("categories")
-	public Flux<SiteCategoryDTO> categories(@RequestParam("site_id") Long site) {
+	public Flux<CategoryDTO> categories(@RequestParam("site_id") Long site) {
 		return service.getCategories(site);
 	}
 
 	@GetMapping("subcategories")
-	public Flux<SiteSubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
+	public Flux<SubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
 		return service.getSubCategories(category);
 	}
 
@@ -67,12 +67,12 @@ public class OrderParserController {
 	}
 
 	@GetMapping("site/{id}/category/{category_id}")
-	public Mono<SiteCategoryDTO> category(@PathVariable("id") Long id, @PathVariable("category_id") Long cId) {
+	public Mono<CategoryDTO> category(@PathVariable("id") Long id, @PathVariable("category_id") Long cId) {
 		return service.getCategory(id, cId);
 	}
 
 	@GetMapping("category/{id}/subcategory/{sub_id}")
-	public Mono<SiteSubCategoryDTO> subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
+	public Mono<SubCategoryDTO> subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
 		return service.getSubCategory(id, subId);
 	}
 }

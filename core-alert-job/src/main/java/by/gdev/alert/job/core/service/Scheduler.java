@@ -64,9 +64,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 						})
 						.filter(f -> {
 					SourceSiteDTO source = f.getSourceSite();
-					return s.getSiteSource() == source.getSiteSource()
-							&& s.getSiteCategory() == source.getSiteCategory()
-							&& s.getSiteSubCategory() == source.getSiteSubCategory();
+					return s.getSiteSource().equals(source.getSource())
+							&& s.getSiteCategory().equals(source.getCategory())
+							&& s.getSiteSubCategory().equals(source.getSubCategory());
 				}).collect(Collectors.toList());
 				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))

@@ -38,9 +38,7 @@ import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.CategoryDTO;
 import by.gdev.common.model.NotificationAlertType;
-import by.gdev.common.model.SiteCategoryDTO;
 import by.gdev.common.model.SiteSourceDTO;
-import by.gdev.common.model.SiteSubCategoryDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.SubCategoryDTO;
 import by.gdev.common.model.UserNotification;
@@ -399,18 +397,18 @@ public class CoreService {
 					Mono<SiteSourceDTO> m1 = webClient.get()
 							.uri(String.format("http://parser-alert-job:8017/api/site/%s", s.getSiteSourceDTO().getId()))
 							.retrieve().bodyToMono(SiteSourceDTO.class);
-					Mono<SiteCategoryDTO> m2 = webClient.get()
+					Mono<CategoryDTO> m2 = webClient.get()
 							.uri(String.format("http://parser-alert-job:8017/api/site/%s/category/%s", sourceId, categoryId))
-							.retrieve().bodyToMono(SiteCategoryDTO.class);
-					Mono<SiteSubCategoryDTO> m3 = webClient.get().uri(String
+							.retrieve().bodyToMono(CategoryDTO.class);
+					Mono<SubCategoryDTO> m3 = webClient.get().uri(String
 							.format("http://parser-alert-job:8017/api/category/%s/subcategory/%s", categoryId, subcategoryId))
-							.retrieve().bodyToMono(SiteSubCategoryDTO.class);
-					Mono<Tuple3<SiteSourceDTO, SiteCategoryDTO, SiteSubCategoryDTO>> tuple = Mono.zip(m1, m2, m3);
+							.retrieve().bodyToMono(SubCategoryDTO.class);
+					Mono<Tuple3<SiteSourceDTO, CategoryDTO, SubCategoryDTO>> tuple = Mono.zip(m1, m2, m3);
 					return tuple.map(t -> {
 						SourceDTO dto = s;
 						dto.setSiteSourceDTO(t.getT1());
-						dto.setSiteCategoryDTO(t.getT2().getCategory());
-						dto.setSiteSubCategoryDTO(t.getT3().getSubCategory());
+						dto.setSiteCategoryDTO(t.getT2());
+						dto.setSiteSubCategoryDTO(t.getT3());
 						return s;
 					});
 				});

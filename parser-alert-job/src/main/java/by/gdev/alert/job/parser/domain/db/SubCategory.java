@@ -11,4 +11,6 @@ import lombok.EqualsAndHashCode;
 public class SubCategory extends BasicId {
 	
 	private String name;
+	private String link;
+	private boolean parse;
 }
