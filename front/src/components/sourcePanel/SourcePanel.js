@@ -33,16 +33,13 @@ const SourcePanel = ({ addSource }) => {
 		
 	}, [])
 	
-	useEffect(() => {
-		sourceService.getSources().then(console.log)
-	}, [])
 
 	useEffect(() => {
 		if (currentSite.id) {
 			parserService
 				.getCategories(currentSite.id)
 				.then(response => {
-					let cat = response.data.map(item => item.category)
+					let cat = response.data.map(item => ({id: item.id, name: item.link}))
 					setCategories(cat)
 				})
 		}
@@ -54,7 +51,7 @@ const SourcePanel = ({ addSource }) => {
 			parserService
 				.getSubcategories(currentCat.id)
 				.then(response => {
-					let subcat = response.data.map(item => item.subCategory)
+					let subcat = response.data.map(item => ({id: item.id, name: item.name}))
 					setSubcategories(subcat)
 				})
 		}
