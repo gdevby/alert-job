@@ -24,25 +24,13 @@ const FiltersPage = () => {
 		})
 	}
 	
-	const getSource = async (id, cat_id, subcat_id) => {
-		let site = await parserService.getSiteNameById(id)
-		let cat = await parserService.getCatNameById(id, cat_id)
-		let sub_cat = await parserService.getSubCatNameById(cat_id, subcat_id)
-		
-		
-		return {site: site.data, cat: cat.data.category, sub_cat: sub_cat.data.subCategory}
-
-	}
-	
 	useEffect(() => {
+		
 		sourceService
 		.getSources()
 		.then(response => {
-			const sources = response.data
-			for (let i = 0; i < sources.length; i++ ) {
-					getSource(sources[i].siteSource, sources[i].siteCategory, sources[i].siteSubCategory)
-					.then(response => setSources((prev) => [...prev, {...response, id: sources[i].id}]))			
-			}
+			const sources = response.data.map(item => {return {id: item.id, cat: item.siteCategoryDTO, site: item.siteSourceDTO, sub_cat: item.siteSubCategoryDTO}})
+			setSources((prev) => [...prev, ...sources])
 		})
 	}, [])
 	
