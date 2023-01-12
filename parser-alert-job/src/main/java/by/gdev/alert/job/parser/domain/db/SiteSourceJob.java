@@ -18,6 +18,8 @@ public class SiteSourceJob extends BasicId {
 	private String name;
 	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private Set<Category> categories;
+	private String parsedURI;
+	private boolean parse;
 	
 
 }
