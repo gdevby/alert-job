@@ -39,7 +39,7 @@ const SourcePanel = ({ addSource }) => {
 			parserService
 				.getCategories(currentSite.id)
 				.then(response => {
-					let cat = response.data.map(item => ({id: item.id, name: item.link}))
+					let cat = response.data.map(item => ({id: item.id, name: item.nativeLocName}))
 					setCategories(cat)
 				})
 		}
@@ -51,7 +51,7 @@ const SourcePanel = ({ addSource }) => {
 			parserService
 				.getSubcategories(currentCat.id)
 				.then(response => {
-					let subcat = response.data.map(item => ({id: item.id, name: item.name}))
+					let subcat = response.data.map(item => ({id: item.id, name: item.nativeLocName}))
 					setSubcategories(subcat)
 				})
 		}
