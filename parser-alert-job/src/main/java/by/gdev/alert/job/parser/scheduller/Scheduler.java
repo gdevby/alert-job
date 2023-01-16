@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
@@ -23,18 +24,22 @@ import lombok.extern.slf4j.Slf4j;
 public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
 	private final OrderLinksRepository linkRepository;
-
 	@Value("${parser.update.links.after.days}")
 	private long parserUpdateLinksAfterDay;
 	@Value("${parser.insert.categories.active}")
 	boolean parseCategories;
+	@Value("parser.categories.file.path")
+	private String updateFilePath;
 	private final ParserCategories parserCategories;
 
 	@Override
+	@Transactional
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		try {
-			if (parseCategories)
+			if (parseCategories){
 				parserCategories.parse();
+				parserCategories.updateHubrLink(updateFilePath);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -52,5 +57,5 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			log.info("removed parser link" + e.getLinks());
 		});
 	}
-
+	
 }

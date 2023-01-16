@@ -1,6 +1,8 @@
 package by.gdev.alert.job.parser.service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,15 +10,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.common.collect.Lists;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.FlCategory;
@@ -27,6 +33,7 @@ import by.gdev.alert.job.parser.repository.FlCategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.repository.SubCategoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -139,5 +146,64 @@ public class ParserCategories {
 	}
 
 	public static record ParsedCategory(String name, String translatedName, Long id, String rss) {
+	}
+	
+	@SneakyThrows
+	public void updateHubrLink(String updateFilePath) {
+		SiteSourceJob sites = siteSourceJobRepository.findByName("HABR");
+		Set<Category> categories = sites.getCategories();
+		Map<String, List<String>> map = aggregateByKeys(updateFilePath);
+		map.forEach((k,v) -> {
+			String[] l = k.split("\t");
+			String name = l[0];
+			String link = l[1];
+			Optional<Category> cat = categories.stream().filter(n -> n.getNativeLocName().equals(name)).findAny();
+			if (cat.isPresent()) {
+				Category presentCategory = cat.get();
+				if (StringUtils.isEmpty(presentCategory.getLink()) || !presentCategory.getLink().equals(link)) {
+					presentCategory.setLink(link);
+					presentCategory = categoryRepository.save(presentCategory);
+					log.info(String.format("update link category with id = %s and name %s", presentCategory.getId(),
+							presentCategory.getNativeLocName()));
+					for (String s : v) {
+						String[] l1 = s.split("\t");
+						String name1 = l1[0];
+						String link1 = l1[1];
+						Optional<SubCategory> sub = presentCategory.getSubCategories().stream().filter(n -> n.getNativeLocName().equals(name1)).findAny();
+							if (sub.isPresent()) {
+							SubCategory presentSubCategory = sub.get();
+							if (StringUtils.isEmpty(presentSubCategory.getLink()) || !presentSubCategory.getLink().equals(link1)) {
+								presentSubCategory.setLink(link1);
+								presentSubCategory = subCategoryRepository.save(presentSubCategory);
+								log.info(String.format("update link sub category with id = %s and name %s", presentSubCategory.getId(),
+										presentSubCategory.getNativeLocName()));
+							}
+						} else
+							log.warn("dont find sub category with name " + name1);
+					}
+				} 
+			} else
+				log.warn("dont find category with name " + name);
+		});
+	}
+	
+	@SneakyThrows
+	private Map<String, List<String>> aggregateByKeys(String filePath) {
+		Map<String, List<String>> map = new HashMap<>();
+		String category = "";
+		for (String line : Files.lines(Paths.get(filePath)).toList()) {
+			if (!line.startsWith("\t")) {
+				category = line;
+				map.put(line, Lists.newArrayList());
+			} else {
+				String value = line.replaceFirst("\t", "");
+				if (map.containsKey(category)) {
+					map.get(category).add(value);
+				} else {
+					map.put(category, Lists.newArrayList(value));
+				}
+			}
+		}
+		return map;
 	}
 }
