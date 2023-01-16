@@ -43,7 +43,7 @@ public class HabrOrderParser {
 	public List<Order> hubrParser() {
 		List<Order> orders = new ArrayList<>();
 //		// find elements from database with Hubr.ru name
-		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName("HUBR");
+		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName("HABR");
 		siteSourceJob.getCategories().stream()
 				// parse only categories that can parse=true
 				.filter(categoryFilter -> categoryFilter.isParse())
