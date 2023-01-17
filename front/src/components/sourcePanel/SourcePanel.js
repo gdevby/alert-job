@@ -18,6 +18,7 @@ const SourcePanel = ({ addSource }) => {
 	const [categories, setCategories] = useState([])
 	const [subcategories, setSubcategories] = useState([])
 	const [currentFilters, setCurrentFilters] = useState([])
+	const [filter, setFilter] = useState('')
 
 
 	useEffect(() => {
@@ -29,7 +30,11 @@ const SourcePanel = ({ addSource }) => {
 	}, [])
 	
 	useEffect(() => {
-		filterService.getFilters().then(console.log)
+		filterService
+		.getFilters()
+		.then(response => {
+			setCurrentFilters(response.data)
+		})
 		
 	}, [])
 	
@@ -82,7 +87,7 @@ const SourcePanel = ({ addSource }) => {
 			<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />
 		</div>
 		<div className='current_filter'>
-			<DropDownList defaultValue={'Текущий фильтр'} elems={subcategories} open={false} cb={setCurrentSubCat} />
+			<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={setFilter} />
 		</div>
 		<div>
 			<Button onClick={addingSource} text={'Добавить источник'} />
