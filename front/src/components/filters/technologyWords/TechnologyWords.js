@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { filterService } from '../../../services/parser/endponits/filterService'
 
 import Button from '../../button/Button'
 import Words from '../word/Words'
+
+import { filterService } from '../../../services/parser/endponits/filterService'
 
 const TechnologyWords = ({ filter_id }) => {
 	const [isOpen, setIsOpen] = useState(false)
@@ -57,7 +58,7 @@ const TechnologyWords = ({ filter_id }) => {
 
 	const remove = (id) => {
 		filterService
-		.deleteWord('technology-wrod', filter_id, id)
+		.deleteWord('technology-word', filter_id, id)
 		.then(console.log)
 		
 	}

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 
 import Button from '../../button/Button'
 import Words from '../word/Words'
+import { filterService } from '../../../services/parser/endponits/filterService'
+
 const DescriptionWords = ({filter_id}) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [words, setWords] = useState([])
@@ -55,12 +57,12 @@ const DescriptionWords = ({filter_id}) => {
 
 	const remove = (id) => {
 		filterService
-		.deleteWord('description-wrod', filter_id, id)
+		.deleteWord('description-word', filter_id, id)
 		.then(console.log)
 		
 	}
 
-	const handleSelect = () => {
+	const handleSelect = (event) => {
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
 		addWord(word)
 	}

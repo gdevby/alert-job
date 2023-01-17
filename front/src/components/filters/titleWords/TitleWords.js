@@ -60,7 +60,7 @@ const TitleWords = ({ filter_id }) => {
 
 	const remove = (id) => {
 		filterService
-		.deleteWord('title-wrod', filter_id, id)
+		.deleteWord('title-word', filter_id, id)
 		.then(console.log)
 		
 	}
