@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import Field from '../../components/field/Field'
 import Button from '../button/Button'
+
+import { useDispatch, useSelector } from 'react-redux';
 
 import { filterService } from '../../services/parser/endponits/filterService'
 
@@ -9,33 +11,63 @@ const AddFilterForm = ({ setFilterId }) => {
 	const [filterName, setFilterName] = useState('')
 	const [minPrice, setMinPrice] = useState(0)
 	const [maxPrice, setMaxPrice] = useState(0)
-	
-	
+	const [isAdded, setIsAdded] = useState(false)
+	const [filterId, setId] = useState('')
+
+	const { isChoose, isNew, currentFilter } = useSelector(state => state.filter)
+
 	const addFilter = event => {
-		event.preventDefault()
 		filterService
-		.addFilter({name: filterName, minValue: minPrice, maxValue: maxPrice})
-		.then(response => setFilterId(response.data.id))
+			.addFilter({ name: filterName, minValue: minPrice, maxValue: maxPrice })
+			.then(response => {
+				const id = response.data.id
+				setFilterId(id)
+				setId(id)
+			})
+			.finally(() => setIsAdded(true))
 	}
-	
-	
-	return <form>
+
+	const updateFilter = event => {
+		if (!isNew && isChoose) {
+			filterService
+				.updateFilter(currentFilter.id, { name: filterName, minValue: minPrice, maxValue: maxPrice })
+				.then(console.log)
+		}
+	}
+
+	useEffect(() => {
+		console.log(isNew, isChoose)
+		if (!isNew && isChoose) {
+			console.log('current filter', currentFilter)
+			setFilterName(currentFilter.name)
+			setMinPrice(currentFilter.minPrice)
+			setMaxPrice(currentFilter.maxPrice)
+		}
+	}, [isChoose, isNew])
+
+	useEffect(() => {
+		console.log('isNew', isNew)
+		setIsAdded(isNew)
+	}, [isNew])
+
+
+	return <div>
 		<Field
-			type={'text'} defaultValue='' cb={setFilterName}
+			type={'text'} defaultValue={filterName} cb={setFilterName} onBlur={updateFilter}
 			placeholder={'Введите название'} label={<label>Название фильтра</label>} />
 
 		<div className='price_block'>
 			<Field
-				type={'number'} defaultValue='' cb={setMinPrice}
+				type={'number'} defaultValue={minPrice} cb={setMinPrice}
 				placeholder={'Минимальная цена'} label={<label>Минимальная цена</label>} />
 			<Field
-				type={'number'} defaultValue='' cb={setMaxPrice}
+				type={'number'} defaultValue={maxPrice} cb={setMaxPrice}
 				placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
 		</div>
 		<div>
-			<Button text={'Добавить фильтр'} onClick={addFilter}/>
+			{isAdded && <Button text={'Добавить фильтр'} onClick={addFilter} />}
 		</div>
-	</form>
+	</div>
 }
 
 export default AddFilterForm

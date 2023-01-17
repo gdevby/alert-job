@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react'
 
 import Title from '../../components/title/Title'
-import Field from '../../components/field/Field'
 import Button from '../../components/button/Button'
-import SearchPopup from '../../components/seachPopup/SearchPopup'
 import AddFilterForm from '../../components/addFilterForm/AddFilterForm'
 import TechnologyWords from '../../components/filters/technologyWords/TechnologyWords'
 import TitleWords from '../../components/filters/titleWords/TitleWords'
 import DescriptionWords from '../../components/filters/descriptionWords/DescriptionWords'
 
 
-import { filterService } from '../../services/parser/endponits/filterService'
 
 import './addFilterPage.scss'
+import { useNavigate } from 'react-router-dom'
 
 
 const AddFilterPage = () => {
@@ -21,13 +19,14 @@ const AddFilterPage = () => {
 	const [words, setWords] = useState('')
 	const [filterId, setFilterId] = useState('')
 
+	const navigate = useNavigate()
 
 	const handleCurrentFilterType = (data) => {
 		console.log(data)
 	}
 
 	const addNewFilter = () => {
-		console.log(addFilter)
+		
 	}
 
 	const handlePopup = (wordType) => {
