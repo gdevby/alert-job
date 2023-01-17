@@ -149,14 +149,29 @@ public class MainController {
 		return ResponseEntity.ok(coreService.createTitleWordToFilter(filterId, wordId));
 	}
 	
+	@DeleteMapping("user/filter/{filter_id}/title-word/{word_id}")
+	public Mono<ResponseEntity<Void>> deleteTitleWordFromFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
+		return coreService.removeTitleWordFromFilter(filterId, wordId);
+	}
+	
 	@PatchMapping("user/filter/{filter_id}/technology-word/{word_id}")
 	public ResponseEntity<Mono<Void>> addTechnologyWordToFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
 		return ResponseEntity.ok(coreService.createTechnologyWordToFilter(filterId, wordId));
 	}
 	
+	@DeleteMapping("user/filter/{filter_id}/technology-word/{word_id}")
+	public Mono<ResponseEntity<Void>> deleteTechnologyWordFromFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
+		return coreService.removeTechnologyWordFromFilter(filterId, wordId);
+	}
+	
 	@PatchMapping("user/filter/{filter_id}/description-word/{word_id}")
 	public ResponseEntity<Mono<Void>> addDescriptionWordToFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
 		return ResponseEntity.ok(coreService.createDescriptionWordToFilter(filterId, wordId));
+	}
+	
+	@DeleteMapping("user/filter/{filter_id}/description-word/{word_id}")
+	public Mono<ResponseEntity<Void>> deleteDescriptionWordFromFilter(@PathVariable("filter_id") Long filterId, @PathVariable("word_id") Long wordId){
+		return coreService.removeDescriptionWordFromFilter(filterId, wordId);
 	}
 	
 	@GetMapping("user/source")
