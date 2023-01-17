@@ -44,28 +44,6 @@ services:
     depends_on:
       config:
         condition: service_healthy
-  test-service:
-    image: alert-job/alert-job-test-service:0.0.1-SNAPSHOT
-    ports:
-      - "8013:8013"
-    environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-    depends_on:
-      config:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
-  test1-service:
-    image: alert-job/alert-job-test1-service:0.0.1-SNAPSHOT
-    ports:
-      - "8014:8014"
-    environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-    depends_on:
-      config:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
   gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
