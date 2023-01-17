@@ -9,7 +9,7 @@ import './searchPopup.scss'
 const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) => {	
 	const [open, setOpen] = useState(isOpen)
 	const [result, setResult] = useState(elements)
-	const [selectValue, setSelectValue] = useState()
+	const [selectValue, setSelectValue] = useState('')
 	
 	
 	useEffect(() => {
@@ -25,8 +25,9 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 		close()
 	}
 	
-	const changeWord = (text) => {
-		setSelectValue(text)	
+	const changeWord = (event) => {
+		onChange()
+		setSelectValue(event.target.value)	
 	}
 	
 	
@@ -43,7 +44,7 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 		<div className='searchPopup__content'>
 			<div className='searchPopup__header'>
 				<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
-				<Field defaultValue={''} cb={changeWord}/>
+				<input type='text' onChange={changeWord} value={selectValue}/>
 			</div>
 			<div className='searchPopup__body'>
 				{result && result.map(item => <div id={item.id} onClick={handleSelect}>{item.name}</div>)}

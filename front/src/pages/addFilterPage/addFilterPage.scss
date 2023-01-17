@@ -1,3 +1,21 @@
 .wordsContains_block {
 	margin-top: 1rem;
+	
+	& > div {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 2rem;
+	}
+}
+
+.addFilter {
+	margin-top: 1rem;
+}
+
+.searchPopup__body > div {
+	cursor: pointer;
+}
+
+.price_block {
+	margin-bottom: 1rem;
 }

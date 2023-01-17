@@ -212,6 +212,23 @@
 .wordsContains_block {
   margin-top: 1rem;
 }
+.wordsContains_block > div {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.addFilter {
+  margin-top: 1rem;
+}
+
+.searchPopup__body > div {
+  cursor: pointer;
+}
+
+.price_block {
+  margin-bottom: 1rem;
+}
 /*!***************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/index.scss ***!
   \***************************************************************************************************************************************************/

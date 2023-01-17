@@ -5,14 +5,17 @@ import Button from '../button/Button'
 
 import { filterService } from '../../services/parser/endponits/filterService'
 
-const AddFilterForm = () => {
+const AddFilterForm = ({ setFilterId }) => {
 	const [filterName, setFilterName] = useState('')
 	const [minPrice, setMinPrice] = useState(0)
 	const [maxPrice, setMaxPrice] = useState(0)
 	
 	
 	const addFilter = event => {
-		filterService.addFilter({name: filterName, minValue: minPrice, maxValue: maxPrice})
+		event.preventDefault()
+		filterService
+		.addFilter({name: filterName, minValue: minPrice, maxValue: maxPrice})
+		.then(response => setFilterId(response.data.id))
 	}
 	
 	
