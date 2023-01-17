@@ -79,7 +79,7 @@ const TechnologyWords = ({ filter_id }) => {
 					{result && result.map(item => <div id={item.id} key={item.id} onClick={handleSelect}>{item.name}</div>)}
 				</div>
 				<div className='searchPopup__footer'>
-					<div onClick={add}>Добавить</div>
+					<Button onClick={add} text={'Добавить'}/>
 				</div>
 			</div>
 		</div>
