@@ -1,11 +1,16 @@
 .source_panel {
-	display: flex;
+	//display: flex;
     padding: 1rem;
-    justify-content: space-between;
-    align-items: center;
+    width: 30%;
+    //justify-content: space-between;
+   // align-items: center;
     // box-shadow: 5px 2px 9px grey;
     border-radius: 10px;
-    flex-wrap: wrap;
+    //flex-wrap: wrap;
+    
+    & > div { 
+		margin-top: 1rem;
+	}
 }
 
 

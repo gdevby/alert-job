@@ -47,6 +47,7 @@
   background: #ffffff;
   min-width: 100%;
   border-radius: 4px;
+  z-index: 999;
 }
 .list_items > div {
   padding: 0.4rem;
@@ -76,12 +77,12 @@
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/sourcePanel/sourcePanel.scss ***!
   \********************************************************************************************************************************************************************************/
 .source_panel {
-  display: flex;
   padding: 1rem;
-  justify-content: space-between;
-  align-items: center;
+  width: 30%;
   border-radius: 10px;
-  flex-wrap: wrap;
+}
+.source_panel > div {
+  margin-top: 1rem;
 }
 
 .source-card {
@@ -173,8 +174,44 @@
   margin-top: 1rem;
 }
 /*!*******************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/seachPopup/searchPopup.scss ***!
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/pages/addFilterPage/addFilterPage.scss ***!
   \*******************************************************************************************************************************************************************************/
+.wordsContains_block {
+  margin-top: 1rem;
+}
+.wordsContains_block > div {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.addFilter {
+  margin-top: 1rem;
+}
+
+.searchPopup__body > div {
+  cursor: pointer;
+}
+
+.price_block {
+  margin-bottom: 1rem;
+}
+.price_block > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.addedWords {
+  display: flex;
+  margin-top: 1rem;
+}
+.addedWords > div {
+  background: #FFFFFF;
+  padding: 0.5rem;
+  border-radius: 5px;
+}
+
 .searchPopup {
   position: fixed;
   top: 0;
@@ -205,29 +242,6 @@
 }
 .searchPopup__footer {
   padding: 1rem;
-}
-/*!*******************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/pages/addFilterPage/addFilterPage.scss ***!
-  \*******************************************************************************************************************************************************************************/
-.wordsContains_block {
-  margin-top: 1rem;
-}
-.wordsContains_block > div {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 2rem;
-}
-
-.addFilter {
-  margin-top: 1rem;
-}
-
-.searchPopup__body > div {
-  cursor: pointer;
-}
-
-.price_block {
-  margin-bottom: 1rem;
 }
 /*!***************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/index.scss ***!

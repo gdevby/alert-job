@@ -4,7 +4,6 @@ import Button from '../../button/Button'
 import Words from '../word/Words'
 
 
-
 import { filterService } from '../../../services/parser/endponits/filterService'
 
 const TitleWords = ({ filter_id }) => {
@@ -25,10 +24,6 @@ const TitleWords = ({ filter_id }) => {
 				setWords((prev) => [...prev, word])
 				setIsOpen(false)
 			})
-
-	}
-
-	const deleteWord = (word) => {
 
 	}
 
@@ -65,7 +60,7 @@ const TitleWords = ({ filter_id }) => {
 		
 	}
 
-	const handleSelect = () => {
+	const handleSelect = (event) => {
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
 		addWord(word)
 	}
@@ -87,7 +82,7 @@ const TitleWords = ({ filter_id }) => {
 		</div>
 		Уведомлять, в названии содержится
 		<Button text={'Добавить'} onClick={openSearch} />
-		<div>
+		<div className='addedWords'>
 			<Words items={words} remove={remove} />
 		</div>
 	</>

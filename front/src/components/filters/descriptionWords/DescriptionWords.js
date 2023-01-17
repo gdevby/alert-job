@@ -15,7 +15,6 @@ const DescriptionWords = ({filter_id}) => {
 	}
 
 	const addWord = (word) => {
-		console.log(word)
 		filterService
 			.addWordToFilter('description-word', filter_id, word.id)
 			.then(() => {
@@ -25,9 +24,6 @@ const DescriptionWords = ({filter_id}) => {
 
 	}
 
-	const deleteWord = (word) => {
-
-	}
 
 	const getWords = (text, page = 0) => {
 		filterService
@@ -84,7 +80,7 @@ const DescriptionWords = ({filter_id}) => {
 		</div>
 		Уведомлять, в описании содержится
 		<Button text={'Добавить'} onClick={openSearch} />
-		<div>
+		<div className='addedWords'> 
 			<Words items={words} remove={remove} />
 		</div>
 	</>

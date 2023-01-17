@@ -16,7 +16,6 @@ const TechnologyWords = ({ filter_id }) => {
 	}
 
 	const addWord = (word) => {
-		console.log(word)
 		filterService
 			.addWordToFilter('technology-word', filter_id, word.id)
 			.then(() => {
@@ -63,7 +62,7 @@ const TechnologyWords = ({ filter_id }) => {
 		
 	}
 
-	const handleSelect = () => {
+	const handleSelect = (event) => {
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
 		addWord(word)
 	}
@@ -85,7 +84,7 @@ const TechnologyWords = ({ filter_id }) => {
 		</div>
 		Уведомлять, если технологии содержат
 		<Button text={'Добавить'} onClick={openSearch} />
-		<div>
+		<div className='addedWords'>
 			<Words items={words} remove={remove} />
 		</div>
 	</>

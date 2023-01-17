@@ -1,4 +1,5 @@
 import React from 'react'
+import Button from '../../button/Button'
 
 const Word = ({ item, remove }) => {
 	const removeItem = () => {
@@ -7,7 +8,7 @@ const Word = ({ item, remove }) => {
 
 	return <div>
 		<div>{item.name}</div>
-		<div onClick={removeItem}>удалить</div>
+		<Button text={'удалить'} onClick={removeItem}/> 
 	</div>
 }
 

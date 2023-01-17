@@ -5,6 +5,7 @@
 		display: flex;
 		justify-content: space-between;
 		margin-top: 2rem;
+		flex-wrap: wrap;
 	}
 }
 
@@ -18,4 +19,54 @@
 
 .price_block {
 	margin-bottom: 1rem;
+	
+	& > div {
+		display: flex;
+		flex-direction: column;
+	}
 }
+
+.addedWords {
+	display: flex;
+	& > div  {
+		background: #FFFFFF;
+		padding: .5rem;
+		border-radius: 5px;
+	}
+	margin-top: 1rem;
+}
+
+.searchPopup {
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background: rgba(102, 102, 102, 0.5);
+	display: none;
+	&__content {
+		width: 500px;
+		height: 500px;
+		background-color: white;
+		border-radius: 4px;
+	}
+	
+	&__open {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+	
+	&__header {
+		padding: 1rem;
+		&-close {
+			display: flex;
+			justify-content: flex-end;
+			cursor: pointer;
+		}
+	}
+	&__footer {
+		padding: 1rem;
+	}
+}
+
