@@ -7,8 +7,6 @@
 	<modules>
 		<module>alert-job-config</module>
 		<module>alert-job-eureka</module>
-		<module>alert-job-test-service</module>
-		<module>alert-job-test1-service</module>
 		<module>alert-job-gateway</module>
 		<module>parser-alert-job</module>
 		<module>core-alert-job</module>
