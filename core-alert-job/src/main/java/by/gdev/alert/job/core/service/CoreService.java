@@ -315,7 +315,7 @@ public class CoreService {
 	
 	public Mono<Void> createTechnologyWordToFilter(Long filterId, Long wordId){
 		return Mono.create(m ->{
-			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+			UserFilter filter = filterRepository.findOneEagerTechnologyWords(filterId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
 			TechnologyWord word = technologyRepository.findById(wordId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
@@ -330,7 +330,7 @@ public class CoreService {
 	
 	public Mono<ResponseEntity<Void>> removeTechnologyWordFromFilter(Long filterId, Long wordId) {
 		return Mono.create(m -> {
-			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+			UserFilter filter = filterRepository.findOneEagerTechnologyWords(filterId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
 			TechnologyWord word = technologyRepository.findById(wordId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
@@ -345,7 +345,7 @@ public class CoreService {
 	
 	public Mono<Void> createDescriptionWordToFilter(Long filterId, Long wordId){
 		return Mono.create(m ->{
-			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+			UserFilter filter = filterRepository.findOneEagerDescriptionWords(filterId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
 			DescriptionWord word = descriptionRepository.findById(wordId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
@@ -360,7 +360,7 @@ public class CoreService {
 	
 	public Mono<ResponseEntity<Void>> removeDescriptionWordFromFilter(Long filterId, Long wordId) {
 		return Mono.create(m -> {
-			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
+			UserFilter filter = filterRepository.findOneEagerDescriptionWords(filterId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
 			DescriptionWord word = descriptionRepository.findById(wordId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
