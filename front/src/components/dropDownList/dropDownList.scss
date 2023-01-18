@@ -19,6 +19,9 @@
 		cursor: pointer;
 		border-radius: 4px;
 		color: #fff;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 	}
 }
 
@@ -31,6 +34,5 @@
 }
 
 .arrow {
-	margin-left: 8px;
   	font-family: FontAwesome;
 }
