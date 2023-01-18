@@ -223,6 +223,7 @@
 
 .addedWords {
   display: flex;
+  flex-wrap: wrap;
   margin-top: 1rem;
 }
 .addedWords > div {
@@ -261,6 +262,28 @@
 }
 .searchPopup__footer {
   padding: 1rem;
+}
+
+.filter__actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+.filter__actions > button {
+  width: 45%;
+}
+
+.searchPopup__body-list {
+  padding: 1rem;
+}
+.searchPopup__body-list__item {
+  margin-top: 0.5rem;
+  background-color: #e8e8e8;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+.searchPopup__body-list__item:hover {
+  background-color: #bfbfbf;
 }
 /*!***************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/index.scss ***!
