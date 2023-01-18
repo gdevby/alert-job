@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
 
 import Title from '../../components/title/Title'
 import Button from '../../components/button/Button'
@@ -7,10 +8,11 @@ import TechnologyWords from '../../components/filters/technologyWords/Technology
 import TitleWords from '../../components/filters/titleWords/TitleWords'
 import DescriptionWords from '../../components/filters/descriptionWords/DescriptionWords'
 
-
+import { filterService } from '../../services/parser/endponits/filterService';
 
 import './addFilterPage.scss'
 import { useNavigate } from 'react-router-dom'
+import { removeCurrentFilter } from '../../store/slices/filterSlice';
 
 
 const AddFilterPage = () => {
@@ -20,12 +22,29 @@ const AddFilterPage = () => {
 	const [filterId, setFilterId] = useState('')
 
 	const navigate = useNavigate()
+	const { currentFilter, isNew } = useSelector(state => state.filter)
+	const dispatch = useDispatch()
+	
 
 	const handleCurrentFilterType = (data) => {
 		console.log(data)
 	}
 
 	const addNewFilter = () => {
+		navigate('/page/filters')
+	}
+	const remove = () => {
+		filterService
+		.deleteFilter(filterId)
+		.then(() => {
+			setFilterId('')
+		})
+		.then(() => {
+			dispatch(removeCurrentFilter())
+		})
+		.finally(() => {
+			navigate('/page/filters')
+		})
 		
 	}
 
@@ -36,6 +55,12 @@ const AddFilterPage = () => {
 		setIsOpenPopup(true)
 		console.log(isOpenPopup)
 	}
+	
+	useEffect(() => {
+		if (!isNew) {
+			setFilterId(currentFilter.id)
+		}
+	}, [isNew])
 	
 	
 	
@@ -59,8 +84,9 @@ const AddFilterPage = () => {
 					<DescriptionWords filter_id={filterId}/>
 				</div>
 			</div>
-			<div className='addFilter'>
+			<div className='filter__actions'>
 				<Button text={'Добавить'} onClick={addNewFilter} />
+				{filterId !== '' && <Button text={'Удалить фильтр'} onClick={remove} />}
 			</div>
 		</div>
 	</div>

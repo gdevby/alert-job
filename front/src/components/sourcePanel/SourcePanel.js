@@ -88,7 +88,7 @@ const SourcePanel = ({ addSource }) => {
 		dispatch(
 			setCurrentFilter({
 				description: data.descriptionsDTO,
-				title: data.titleDTO,
+				title: data.titlesDTO,
 				technologies: data.technologiesDTO,
 				maxPrice: data.maxValue,
 				minPrice: data.minValue,

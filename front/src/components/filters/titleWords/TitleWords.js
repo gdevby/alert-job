@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
 
 import Button from '../../button/Button'
 import Words from '../word/Words'
@@ -15,6 +16,9 @@ const TitleWords = ({ filter_id }) => {
 
 
 	const debouncedSearchTerm = useDebounce(selectValue, 1000)
+
+	const { titleWords } = useSelector(state => state.filter.currentFilter)
+	const { isNew } = useSelector(state => state.filter)
 
 	const openSearch = () => {
 		setIsOpen(true)
@@ -60,7 +64,9 @@ const TitleWords = ({ filter_id }) => {
 	const remove = (id) => {
 		filterService
 		.deleteWord('title-word', filter_id, id)
-		.then(console.log)
+		.then(() => {
+			setWords((prev) => prev.filter(item => item.id !== id))
+		})
 		
 	}
 
@@ -68,6 +74,12 @@ const TitleWords = ({ filter_id }) => {
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
 		addWord(word)
 	}
+	
+	useEffect(() => {
+		if (titleWords && !isNew) {
+			setWords((prev) => [...prev, ...titleWords])
+		}
+	}, [])
 	
 	useEffect(() => {
 		if (debouncedSearchTerm) {
@@ -85,7 +97,7 @@ const TitleWords = ({ filter_id }) => {
 					<input type='text' onChange={changeWord}/>
 				</div>
 				<div className='searchPopup__body'>
-					{result && result.map(item => <div id={item.id} onClick={handleSelect}>{item.name}</div>)}
+					{result && result.map(item => <div  key={item.id} id={item.id} onClick={handleSelect}>{item.name}</div>)}
 				</div>
 				<div className='searchPopup__footer'>
 					<Button onClick={add} text={'Добавить'}/>

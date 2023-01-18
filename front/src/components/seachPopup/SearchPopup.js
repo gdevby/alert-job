@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react'
 
 import Field from '../../components/field/Field'
 
+import useDebounce from '../../hooks/use-debounce'
+
 
 import './searchPopup.scss'
 
@@ -11,6 +13,8 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 	const [result, setResult] = useState(elements)
 	const [selectValue, setSelectValue] = useState('')
 	
+	
+	const debouncedSearchTerm = useDebounce(selectValue, 1000)
 	
 	useEffect(() => {
 		setResult(elements)
@@ -40,11 +44,26 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 		adding(selectValue)
 	}
 	
+	useEffect(() => {
+		if (debouncedSearchTerm) {
+        // Выставить состояние isSearching
+        // Сделать запрос к АПИ
+       // searchCharacters(debouncedSearchTerm).then(results => {
+          // Выставить состояние в false, так-как запрос завершен
+         // setIsSearching(false);
+          // Выставит состояние с результатом
+          //setResults(results);
+      //  });
+      } else {
+        setResult([]);
+      }
+	}, [debouncedSearchTerm])
+	
 	return <div className={open? 'searchPopup searchPopup__open': 'searchPopup searchPopup__close'}>
 		<div className='searchPopup__content'>
 			<div className='searchPopup__header'>
 				<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
-				<input type='text' onChange={changeWord} value={selectValue}/>
+				<input type='text' onChange={changeWord}/>
 			</div>
 			<div className='searchPopup__body'>
 				{result && result.map(item => <div id={item.id} onClick={handleSelect}>{item.name}</div>)}

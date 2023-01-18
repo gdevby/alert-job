@@ -275,6 +275,8 @@
 
 .searchPopup__body-list {
   padding: 1rem;
+  overflow-y: auto;
+  height: 75%;
 }
 .searchPopup__body-list__item {
   margin-top: 0.5rem;

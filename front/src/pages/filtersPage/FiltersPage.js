@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react'
 
 import SourcePanel from '../../components/sourcePanel/SourcePanel'
-import Button from '../../components/button/Button'
 
 import { sourceService } from '../../services/parser/endponits/sourceService'
-import { parserService } from '../../services/parser/endponits/parserService'
+import SourceCard from '../../components/sourceCard/SourceCard'
 
 const FiltersPage = () => {
 
@@ -12,12 +11,24 @@ const FiltersPage = () => {
 
 
 	const addSource = data => {
-		console.log(data)
-		setSources([...sourse, {cat: data.currentCat, site: data.currentSite, sub_cat: data.currentSubCat, id: data.id}])
+		const newSource = {
+			cat: {
+				...data.currentCat,
+				nativeLocName: data.currentCat.name
+			},
+			site: {
+				...data.currentSite
+			},
+			sub_cat: {
+				...data.currentSubCat,
+				nativeLocName: data.currentSubCat.name
+			}
+		}
+		console.log(newSource)
+		setSources([...sourse, newSource])
 	}
 	
-	const deleteSource = event => {
-		const id = event.target.id
+	const deleteSource = id => {
 		sourceService.deleteSource(id).then(() => {
 			const newSources = sourse.filter(item => item.id != id)
 			setSources(newSources)
@@ -25,7 +36,6 @@ const FiltersPage = () => {
 	}
 	
 	useEffect(() => {
-		
 		sourceService
 		.getSources()
 		.then(response => {
@@ -45,11 +55,7 @@ const FiltersPage = () => {
 				<SourcePanel addSource={addSource} />
 				<div className='sourceList'>
 					{sourse.length > 0 && sourse.map((item, index) => {
-						return <div className='source-card' key={index}>
-							<h5>{item.site?.name || ''}</h5>
-							<p>{item.cat?.name || ''}, {item.sub_cat?.name || ''}</p>
-							<Button id={item.id} onClick={deleteSource} text={'Удалить источник'} />
-						</div>
+						return <SourceCard removeCard={deleteSource} item={item} key={index}/>
 					}
 					)}
 				</div>

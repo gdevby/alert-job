@@ -1,7 +1,7 @@
 .wordsContains_block {
 	margin-top: 1rem;
-	
-	& > div {
+
+	&>div {
 		display: flex;
 		justify-content: space-between;
 		margin-top: 2rem;
@@ -13,14 +13,14 @@
 	margin-top: 1rem;
 }
 
-.searchPopup__body > div {
+.searchPopup__body>div {
 	cursor: pointer;
 }
 
 .price_block {
 	margin-bottom: 1rem;
-	
-	& > div {
+
+	&>div {
 		display: flex;
 		flex-direction: column;
 	}
@@ -28,11 +28,13 @@
 
 .addedWords {
 	display: flex;
-	& > div  {
+	flex-wrap: wrap;
+	&>div {
 		background: #FFFFFF;
 		padding: .5rem;
 		border-radius: 5px;
 	}
+
 	margin-top: 1rem;
 }
 
@@ -44,29 +46,57 @@
 	right: 0;
 	background: rgba(102, 102, 102, 0.5);
 	display: none;
+
 	&__content {
 		width: 500px;
 		height: 500px;
 		background-color: white;
 		border-radius: 4px;
 	}
-	
+
 	&__open {
 		display: flex;
 		justify-content: center;
 		align-items: center;
 	}
-	
+
 	&__header {
 		padding: 1rem;
+
 		&-close {
 			display: flex;
 			justify-content: flex-end;
 			cursor: pointer;
 		}
 	}
+
 	&__footer {
 		padding: 1rem;
 	}
 }
 
+.filter__actions {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 1rem;
+
+	&>button {
+		width: 45%;
+	}
+}
+
+.searchPopup__body-list {
+	padding: 1rem;
+	overflow-y: auto;
+    height: 75%;
+	&__item {
+		margin-top: 0.5rem;
+		background-color: #e8e8e8;
+		padding: 0.5rem;
+		border-radius: 4px;
+	}
+	
+	&__item:hover {
+		background-color: #bfbfbf;
+	}
+}
