@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import Button from '../../button/Button'
 import Words from '../word/Words'
 
+import useDebounce from '../../../hooks/use-debounce'
 
 import { filterService } from '../../../services/parser/endponits/filterService'
 
@@ -12,6 +13,8 @@ const TitleWords = ({ filter_id }) => {
 	const [selectValue, setSelectValue] = useState('')
 	const [result, setResult] = useState([])
 
+
+	const debouncedSearchTerm = useDebounce(selectValue, 1000)
 
 	const openSearch = () => {
 		setIsOpen(true)
@@ -36,7 +39,7 @@ const TitleWords = ({ filter_id }) => {
 
 	const changeWord = (event) => {
 		setSelectValue(event.target.value)
-		getWords(event.target.value)
+		//getWords(event.target.value)
 	}
 
 
@@ -65,13 +68,21 @@ const TitleWords = ({ filter_id }) => {
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
 		addWord(word)
 	}
+	
+	useEffect(() => {
+		if (debouncedSearchTerm) {
+      		getWords(debouncedSearchTerm)
+      } else {
+        setResult([]);
+      }
+	}, [debouncedSearchTerm])
 
 	return <>
 		<div className={isOpen ? 'searchPopup searchPopup__open' : 'searchPopup searchPopup__close'}>
 			<div className='searchPopup__content'>
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
-					<input type='text' onChange={changeWord} value={selectValue} />
+					<input type='text' onChange={changeWord}/>
 				</div>
 				<div className='searchPopup__body'>
 					{result && result.map(item => <div id={item.id} onClick={handleSelect}>{item.name}</div>)}
