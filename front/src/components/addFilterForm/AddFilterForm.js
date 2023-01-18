@@ -11,7 +11,7 @@ const AddFilterForm = ({ setFilterId }) => {
 	const [filterName, setFilterName] = useState('')
 	const [minPrice, setMinPrice] = useState(0)
 	const [maxPrice, setMaxPrice] = useState(0)
-	const [isAdded, setIsAdded] = useState(false)
+	const [isAdded, setIsAdded] = useState(true)
 	const [filterId, setId] = useState('')
 
 	const { isChoose, isNew, currentFilter } = useSelector(state => state.filter)
@@ -24,7 +24,7 @@ const AddFilterForm = ({ setFilterId }) => {
 				setFilterId(id)
 				setId(id)
 			})
-			.finally(() => setIsAdded(true))
+			.finally(() => setIsAdded(false))
 	}
 
 	const updateFilter = event => {
@@ -65,7 +65,7 @@ const AddFilterForm = ({ setFilterId }) => {
 				placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
 		</div>
 		<div>
-			{isAdded && <Button text={'Добавить фильтр'} onClick={addFilter} />}
+			{isAdded? <Button text={'Добавить фильтр'} onClick={addFilter} /> : ''}
 		</div>
 	</div>
 }

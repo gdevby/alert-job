@@ -22,7 +22,7 @@ const SourcePanel = ({ addSource }) => {
 	const [subcategories, setSubcategories] = useState([])
 	const [currentFilters, setCurrentFilters] = useState([])
 	const [filter, setFilter] = useState('')
-	
+
 	const dispatch = useDispatch()
 	const navigate = useNavigate()
 
@@ -34,23 +34,23 @@ const SourcePanel = ({ addSource }) => {
 				setSites(response.data)
 			})
 	}, [])
-	
+
 	useEffect(() => {
 		filterService
-		.getFilters()
-		.then(response => {
-			setCurrentFilters(response.data)
-		})
+			.getFilters()
+			.then(response => {
+				setCurrentFilters(response.data)
+			})
 
 	}, [])
-	
+
 
 	useEffect(() => {
 		if (currentSite.id) {
 			parserService
 				.getCategories(currentSite.id)
 				.then(response => {
-					let cat = response.data.map(item => ({id: item.id, name: item.nativeLocName}))
+					let cat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
 					setCategories(cat)
 				})
 		}
@@ -62,7 +62,7 @@ const SourcePanel = ({ addSource }) => {
 			parserService
 				.getSubcategories(currentCat.id)
 				.then(response => {
-					let subcat = response.data.map(item => ({id: item.id, name: item.nativeLocName}))
+					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
 					setSubcategories(subcat)
 				})
 		}
@@ -73,13 +73,14 @@ const SourcePanel = ({ addSource }) => {
 	const addingSource = () => {
 		sourceService.addSource({
 			siteSource: Number(currentSite.id),
-		 	siteCategory: Number(currentCat.id),
-		  	siteSubCategory: Number(currentSubCat.id),
-		  	flRuForAll: false}
-		  ).then(response => {
+			siteCategory: Number(currentCat.id),
+			siteSubCategory: Number(currentSubCat.id),
+			flRuForAll: false
+		}
+		).then(response => {
 			addSource({ currentSite, currentCat, currentSubCat, id: response.data.id })
 		})
-		
+
 	}
 
 	const handleCurrentFilter = data => {
@@ -96,7 +97,7 @@ const SourcePanel = ({ addSource }) => {
 			})
 		)
 	}
-	
+
 	const addNewFilter = () => {
 		dispatch(
 			setIsNew({
@@ -105,7 +106,16 @@ const SourcePanel = ({ addSource }) => {
 		)
 		navigate('/page/adding-filter')
 	}
-	
+
+	const editFilter = () => {
+		dispatch(
+			setIsNew({
+				isNew: false
+			})
+		)
+		navigate('/page/adding-filter')
+	}
+
 	return <div className='source_panel'>
 		<div>
 			<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
@@ -120,14 +130,14 @@ const SourcePanel = ({ addSource }) => {
 			<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
 			{filter && <div>
 				{filter.name}
-				<Link to='/page/adding-filter' >Редактировать фильтр</Link>
+				<Button onClick={editFilter} text={'Редактировать фильтр'} />
 			</div>}
 		</div>
 		<div>
 			<Button onClick={addingSource} text={'Добавить источник'} />
 		</div>
 		<div>
-			<Button onClick={addNewFilter}text={'Добавить новый фильтр'}/>
+			<Button onClick={addNewFilter} text={'Добавить новый фильтр'} />
 		</div>
 	</div>
 }

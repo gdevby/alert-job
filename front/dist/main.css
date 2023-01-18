@@ -59,6 +59,9 @@
   cursor: pointer;
   border-radius: 4px;
   color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .arrow-down:after {
@@ -70,7 +73,6 @@
 }
 
 .arrow {
-  margin-left: 8px;
   font-family: FontAwesome;
 }
 /*!********************************************************************************************************************************************************************************!*\
@@ -86,12 +88,19 @@
 }
 
 .source-card {
-  background-color: rgb(241, 241, 241);
+  background-color: #FFFFFF;
   padding: 1rem;
   box-shadow: 5px 2px 9px rgb(215, 215, 215);
   width: 24%;
   margin-bottom: 1rem;
   border-radius: 20px;
+  max-height: 250px;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+}
+.source-card > p {
+  height: 70%;
 }
 
 .sourceList {
@@ -172,6 +181,16 @@
 
 .alert_status {
   margin-top: 1rem;
+}
+/*!***************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/filters/word/words.scss ***!
+  \***************************************************************************************************************************************************************************/
+.word {
+  display: flex;
+}
+.word__remove {
+  margin-left: 5px;
+  cursor: pointer;
 }
 /*!*******************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/pages/addFilterPage/addFilterPage.scss ***!

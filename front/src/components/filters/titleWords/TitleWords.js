@@ -12,6 +12,7 @@ const TitleWords = ({ filter_id }) => {
 	const [selectValue, setSelectValue] = useState('')
 	const [result, setResult] = useState([])
 
+
 	const openSearch = () => {
 		setIsOpen(true)
 	}
@@ -80,7 +81,7 @@ const TitleWords = ({ filter_id }) => {
 				</div>
 			</div>
 		</div>
-		Уведомлять, в названии содержится
+		Уведомлять, если в названии содержится
 		<Button text={'Добавить'} onClick={openSearch} />
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />

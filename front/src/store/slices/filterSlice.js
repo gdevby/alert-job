@@ -12,7 +12,7 @@ const initialState = {
 		minPrice: 0
 	},
 	isChoose: false,
-	isNew: false
+	isNew: true
 };
 
 const filterSlice = createSlice({
