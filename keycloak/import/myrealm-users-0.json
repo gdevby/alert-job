@@ -26,6 +26,7 @@
     "emailVerified" : false,
     "firstName" : "",
     "lastName" : "",
+    "email" : "test@yandex.ru",
     "credentials" : [ {
       "id" : "d6156fa8-d442-4b00-a118-4cb2520dfb66",
       "type" : "password",
