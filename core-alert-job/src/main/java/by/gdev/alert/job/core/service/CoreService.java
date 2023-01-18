@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.service;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -217,9 +219,19 @@ public class CoreService {
 		});
 	}
 	
+	@Transactional(readOnly = true)
 	public Flux<FilterDTO> showUserFilters(String uuid){
 		return Flux.just(userRepository.findOneEagerUserFilters(uuid).orElseThrow(() -> new ResourceNotFoundException()))
-				.flatMapIterable(u -> u.getFilters()).map(m ->  mapper.map(m, FilterDTO.class));
+				.flatMapIterable(u -> u.getFilters()).map(m ->  {
+					FilterDTO f = mapper.map(m, FilterDTO.class);
+					List<WordDTO> title = m.getTitles().stream().map(e -> mapper.map(e, WordDTO.class)).toList();
+					f.setTitlesDTO(title);
+					List<WordDTO> des = m.getDescriptions().stream().map(e -> mapper.map(e, WordDTO.class)).toList();
+					f.setDescriptionsDTO(des);
+					List<WordDTO> tech = m.getTechnologies().stream().map(e -> mapper.map(e, WordDTO.class)).toList();
+					f.setTechnologiesDTO(tech);
+					return f;
+				});
 	}
 	
 	public Mono<FilterDTO> createUserFilter(String uuid, Filter filter){
@@ -244,11 +256,10 @@ public class CoreService {
 		return Mono.create(m -> {
 			AppUser user = userRepository.findOneEagerUserFilters(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
-			UserFilter userFilter = filterRepository.findById(filterId)
+			UserFilter userFilter = filterRepository.findUserFilterById(filterId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
 			if (!user.getFilters().contains(userFilter))
 				m.success(ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
-			
 			mapper.map(filter, userFilter);
 			userFilter = filterRepository.save(userFilter);
 				m.success(ResponseEntity.ok(mapper.map(userFilter, FilterDTO.class)));
