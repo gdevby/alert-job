@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react'
 import Button from '../../button/Button'
 import Words from '../word/Words'
 
+import useDebounce from '../../../hooks/use-debounce'
+
 import { filterService } from '../../../services/parser/endponits/filterService'
 
 const TechnologyWords = ({ filter_id }) => {
@@ -10,6 +12,9 @@ const TechnologyWords = ({ filter_id }) => {
 	const [words, setWords] = useState([])
 	const [selectValue, setSelectValue] = useState('')
 	const [result, setResult] = useState([])
+
+	const debouncedSearchTerm = useDebounce(selectValue, 1000)
+
 
 	const openSearch = () => {
 		setIsOpen(true)
@@ -25,9 +30,6 @@ const TechnologyWords = ({ filter_id }) => {
 
 	}
 
-	const deleteWord = (word) => {
-
-	}
 
 	const getWords = (text, page = 0) => {
 		filterService
@@ -37,7 +39,7 @@ const TechnologyWords = ({ filter_id }) => {
 
 	const changeWord = (event) => {
 		setSelectValue(event.target.value)
-		getWords(event.target.value)
+		//getWords(event.target.value)
 	}
 
 
@@ -67,6 +69,13 @@ const TechnologyWords = ({ filter_id }) => {
 		addWord(word)
 	}
 
+	useEffect(() => {
+		if (debouncedSearchTerm) {
+      		getWords(debouncedSearchTerm)
+      } else {
+        setResult([]);
+      }
+	}, [debouncedSearchTerm])
 	return <>
 		<div className={isOpen ? 'searchPopup searchPopup__open' : 'searchPopup searchPopup__close'}>
 			<div className='searchPopup__content'>

@@ -15,13 +15,22 @@
 
 
 .source-card {
-	background-color: rgb(241 241 241);
+	background-color: #FFFFFF;
+	//background-color: rgb(241 241 241);
 	padding: 1rem;
 	box-shadow: 5px 2px 9px  rgb(215 215 215);
 	width: 24%;
 	margin-bottom: 1rem;
 	border-radius: 20px;
+	max-height: 250px;
 	//height: 24%;
+	display: flex;
+	justify-content: space-between;
+	flex-direction: column;
+	
+	& > p{
+		height: 70%;
+	}
 }
 
 .sourceList {

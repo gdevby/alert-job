@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 
 import Word from '../word/Word'
 
+import './words.scss'
+
 const Words = ({items, remove}) => {
 	const [words, setWords] = useState([])
 	
