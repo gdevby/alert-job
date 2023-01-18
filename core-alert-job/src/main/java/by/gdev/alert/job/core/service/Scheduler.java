@@ -44,7 +44,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	public void sseConnection() {
 		ParameterizedTypeReference<ServerSentEvent<List<Order>>> type = new ParameterizedTypeReference<ServerSentEvent<List<Order>>>() {
 		};
-		Flux<ServerSentEvent<List<Order>>> sseEvents = webClient.get().uri("http://core-alert-job:8017/api/stream-sse")
+		Flux<ServerSentEvent<List<Order>>> sseEvents = webClient.get().uri("http://parser:8017/api/stream-sse")
 				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type);
 		sseEvents.subscribe(event -> {
 			List<AppUser> users = Lists.newArrayList(userRepository.findAll());
@@ -71,8 +71,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
-				String sendMessage = StringUtils.isNotEmpty(user.getEmail()) ? "http://notification-alert-job:8019/mail"
-						: "http://notification-alert-job:8019/telegram";
+				String sendMessage = StringUtils.isNotEmpty(user.getEmail()) ? "http://notification:8019/mail"
+						: "http://notification:8019/telegram";
 				UserNotification un = StringUtils.isNotEmpty(user.getEmail()) ? new UserNotification(user.getEmail(), null)
 						: new UserNotification(String.valueOf(user.getTelegram()), null);
 				messages.forEach(message -> {

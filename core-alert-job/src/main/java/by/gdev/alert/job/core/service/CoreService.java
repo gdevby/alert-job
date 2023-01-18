@@ -89,12 +89,12 @@ public class CoreService {
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			if (user.isDefaultSendType()) {
 				UserNotification un = new UserNotification(user.getEmail(), "Test message from alerjob.by");
-				webClient.post().uri("http://notification-alert-job:8019/mail").bodyValue(un).retrieve()
+				webClient.post().uri("http://notification:8019/mail").bodyValue(un).retrieve()
 						.bodyToMono(Void.class).subscribe();
 			} else {
 				UserNotification un = new UserNotification(String.valueOf(user.getTelegram()),
 						"Test message from alerjob.by");
-				webClient.post().uri("http://notification-alert-job:8019/telegram").bodyValue(un).retrieve()
+				webClient.post().uri("http://notification:8019/telegram").bodyValue(un).retrieve()
 						.bodyToMono(Void.class).subscribe();
 			}
 			m.success();
@@ -406,13 +406,13 @@ public class CoreService {
 					Long categoryId = s.getSiteCategoryDTO().getId();
 					Long subcategoryId = s.getSiteSubCategoryDTO().getId();
 					Mono<SiteSourceDTO> m1 = webClient.get()
-							.uri(String.format("http://parser-alert-job:8017/api/site/%s", s.getSiteSourceDTO().getId()))
+							.uri(String.format("http://parser:8017/api/site/%s", s.getSiteSourceDTO().getId()))
 							.retrieve().bodyToMono(SiteSourceDTO.class);
 					Mono<CategoryDTO> m2 = webClient.get()
-							.uri(String.format("http://parser-alert-job:8017/api/site/%s/category/%s", sourceId, categoryId))
+							.uri(String.format("http://parser:8017/api/site/%s/category/%s", sourceId, categoryId))
 							.retrieve().bodyToMono(CategoryDTO.class);
 					Mono<SubCategoryDTO> m3 = webClient.get().uri(String
-							.format("http://parser-alert-job:8017/api/category/%s/subcategory/%s", categoryId, subcategoryId))
+							.format("http://parser:8017/api/category/%s/subcategory/%s", categoryId, subcategoryId))
 							.retrieve().bodyToMono(SubCategoryDTO.class);
 					Mono<Tuple3<SiteSourceDTO, CategoryDTO, SubCategoryDTO>> tuple = Mono.zip(m1, m2, m3);
 					return tuple.map(t -> {
