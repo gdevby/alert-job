@@ -1,14 +1,16 @@
 import React from 'react'
-import Button from '../../button/Button'
+import { AiOutlineClose } from "react-icons/ai";
 
 const Word = ({ item, remove }) => {
 	const removeItem = () => {
 		remove(item.id)
 	}
 
-	return <div>
-		<div>{item.name}</div>
-		<Button text={'удалить'} onClick={removeItem}/> 
+	//<Button text={'удалить'} onClick={removeItem}/> 
+
+	return <div className='word'>
+		<div className='word__name'>{item.name}</div>
+		<div className='word__remove' onClick={removeItem} ><AiOutlineClose/></div>
 	</div>
 }
 
