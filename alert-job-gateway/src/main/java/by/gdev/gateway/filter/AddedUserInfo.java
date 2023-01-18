@@ -37,7 +37,7 @@ public class AddedUserInfo implements GlobalFilter {
 				u.setEmail(jsonObj.getString("email"));
 				return u;
 			} catch (Exception e) {
-				log.debug(e.getMessage());
+				log.warn(e.getMessage());
 			}
 		}
 		return null;
