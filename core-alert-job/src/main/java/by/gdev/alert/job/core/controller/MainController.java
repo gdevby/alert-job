@@ -2,9 +2,12 @@ package by.gdev.alert.job.core.controller;
 
 import java.util.Objects;
 
+import javax.validation.Valid;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -32,6 +35,7 @@ import reactor.core.publisher.Mono;
 @Controller
 @RequestMapping("/api/")
 @RequiredArgsConstructor
+@Validated
 public class MainController {
 
 	private final CoreService coreService;
@@ -180,7 +184,7 @@ public class MainController {
 	}
 	
 	@PostMapping("user/source")
-	public ResponseEntity<Mono<SourceSiteDTO>> addSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody Source source){
+	public ResponseEntity<Mono<SourceSiteDTO>> addSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody @Valid Source source){
 		return ResponseEntity.ok(coreService.createSourceSite(uuid, source));
 	}
 	
