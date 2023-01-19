@@ -55,7 +55,7 @@
 
 	&__content {
 		display: flex;
-		width: 70%;
+		width: 66%;
 		justify-content: space-between;
 
 		&-actions {
@@ -63,7 +63,7 @@
 			width: 65%;
 			justify-content: space-between;
 
-			&:first-child {
+			& > button {
 				margin-right: .5rem;
 			}
 		}
