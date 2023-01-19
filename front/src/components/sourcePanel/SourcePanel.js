@@ -73,16 +73,17 @@ const SourcePanel = ({ addSource }) => {
 
 
 	const addingSource = () => {
-		sourceService.addSource({
-			siteSource: Number(currentSite.id),
-			siteCategory: Number(currentCat.id),
-			siteSubCategory: Number(currentSubCat.id) == 0 ? null : Number(currentSubCat.id),
-			flRuForAll: false
+		if (Number(currentSite.id) && Number(currentCat.id)) {
+			sourceService.addSource({
+				siteSource: Number(currentSite.id),
+				siteCategory: Number(currentCat.id),
+				siteSubCategory: Number(currentSubCat.id) == 0 ? null : Number(currentSubCat.id),
+				flRuForAll: false
+			}
+			).then(response => {
+				addSource({ currentSite, currentCat, currentSubCat, id: response.data.id })
+			})
 		}
-		).then(response => {
-			addSource({ currentSite, currentCat, currentSubCat, id: response.data.id })
-		})
-
 	}
 
 	const handleCurrentFilter = data => {
