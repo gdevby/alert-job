@@ -95,10 +95,13 @@
 .source_panel > div {
   margin-top: 1rem;
 }
-.source_panel-addingSource {
+.source_panel-addingSource__title {
+  margin-bottom: 1rem;
+}
+.source_panel-addingSource__content {
   display: flex;
   justify-content: space-between;
-  width: 65%;
+  width: 66%;
 }
 .source_panel-actions {
   display: flex;
