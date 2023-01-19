@@ -10,7 +10,8 @@ const SourceCard = ({item, removeCard}) => {
 	
 	return <div className='source-card' >
 							<h5>{item.site?.name || ''}</h5>
-							<p>{item.cat?.nativeLocName || ''}, {item.sub_cat?.nativeLocName || ''}</p>
+							<p>Категория: {item.cat?.nativeLocName || ''}</p>
+							<p>Подкатегория: {item.sub_cat?.nativeLocName || ''}</p>
 							<Button id={item.id} onClick={remove} text={'Удалить источник'} />
 						</div>
 }
