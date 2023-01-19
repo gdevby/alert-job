@@ -21,11 +21,14 @@
 
 .header-content {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
 }
 .header-content > div {
   margin-left: 0.5rem;
+}
+.header-content__navigation {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
 }
 /*!**********************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/components/footer/footer.scss ***!
