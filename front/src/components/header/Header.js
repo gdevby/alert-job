@@ -24,10 +24,13 @@ const Header = () => {
 	return <header className='header'>
 		<div className='container'>
 			<div className='header-content'>
-				{!isAuth && <Button text='Логин' onClick={openLoginForm} />}
+
 				<Link to='/'>Главная</Link>
 				{isAuth && <Link to='/page/filters'>Фильтры</Link>}
 				{isAuth && <Link to='/page/notifications'>Уведомления</Link>}
+				<div>
+					{isAuth && <Button text={<span>Регистрация и <br /> Авторизация</span>} onClick={openLoginForm} />}
+				</div>
 			</div>
 		</div>
 	</header>
