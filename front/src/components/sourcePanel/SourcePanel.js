@@ -121,7 +121,7 @@ const SourcePanel = ({ addSource }) => {
 			<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
 		</div>
 		<div className='cat'>
-			<DropDownList defaultValue={'Категорию'} elems={categories} open={false} cb={setCurrentCat} />
+			<DropDownList defaultValue={'Выберите категорию'} elems={categories} open={false} cb={setCurrentCat} />
 		</div>
 		<div className='subcat'>
 			<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />

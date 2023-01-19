@@ -24,7 +24,6 @@ const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 	}, [elems])
 
 	useEffect(() => {
-		console.log(defaultValue)
 		setValue(defaultValue)
 	}, [defaultValue])
 
