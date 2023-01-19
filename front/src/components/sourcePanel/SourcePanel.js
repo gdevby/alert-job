@@ -9,6 +9,8 @@ import { parserService } from '../../services/parser/endponits/parserService'
 import { sourceService } from '../../services/parser/endponits/sourceService'
 import { filterService } from '../../services/parser/endponits/filterService'
 
+import { removeCurrentFilter } from '../../store/slices/filterSlice'
+
 import { setCurrentFilter, setIsNew } from '../../store/slices/filterSlice'
 
 import './sourcePanel.scss'
@@ -63,7 +65,7 @@ const SourcePanel = ({ addSource }) => {
 				.getSubcategories(currentCat.id)
 				.then(response => {
 					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
-					setSubcategories([{id: 0, name: 'Выбрать все'}, ...subcat])
+					setSubcategories([{ id: 0, name: 'Выбрать все' }, ...subcat])
 				})
 		}
 
@@ -74,7 +76,7 @@ const SourcePanel = ({ addSource }) => {
 		sourceService.addSource({
 			siteSource: Number(currentSite.id),
 			siteCategory: Number(currentCat.id),
-			siteSubCategory: Number(currentSubCat.id) == 0? null : Number(currentSubCat.id),
+			siteSubCategory: Number(currentSubCat.id) == 0 ? null : Number(currentSubCat.id),
 			flRuForAll: false
 		}
 		).then(response => {
@@ -84,18 +86,22 @@ const SourcePanel = ({ addSource }) => {
 	}
 
 	const handleCurrentFilter = data => {
-		setFilter(data)
-		dispatch(
-			setCurrentFilter({
-				description: data.descriptionsDTO,
-				title: data.titlesDTO,
-				technologies: data.technologiesDTO,
-				maxPrice: data.maxValue,
-				minPrice: data.minValue,
-				id: data.id,
-				name: data.name
+		filterService
+			.updateCurrentFilter(data.id)
+			.then(() => {
+				setFilter(data)
+				dispatch(
+					setCurrentFilter({
+						description: data.descriptionsDTO,
+						title: data.titlesDTO,
+						technologies: data.technologiesDTO,
+						maxPrice: data.maxValue,
+						minPrice: data.minValue,
+						id: data.id,
+						name: data.name
+					})
+				)
 			})
-		)
 	}
 
 	const addNewFilter = () => {
@@ -116,12 +122,25 @@ const SourcePanel = ({ addSource }) => {
 		navigate('/page/adding-filter')
 	}
 
+	const removeFilter = () => {
+		filterService
+			.deleteFilter(filter.id)
+			.then(() => {
+				setCurrentFilters(prev => prev.filter(item => item.id != filter.id))
+				dispatch(removeCurrentFilter())
+			})
+	}
+
 	return <div className='source_panel'>
 		<div className='current_filter'>
-			<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
-			{filter && <div>
-				<Button onClick={editFilter} text={'Редактировать фильтр'} />
-			</div>}
+			<div className='current_filter__title'>Выберите активный фильтр, который будет применяться к пришедшим заказам</div>
+			<div className='current_filter__content'>
+				<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
+				{filter && <div className='current_filter__content-actions'>
+					<Button onClick={editFilter} text={'Редактировать фильтр'} />
+					<Button onClick={removeFilter} text={'Удалить фильтр'} />
+				</div>}
+			</div>
 		</div>
 		<div className='source_panel-addingSource'>
 			<div>
