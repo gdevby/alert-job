@@ -13,7 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -47,6 +46,7 @@ import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple3;
 
 @Service
@@ -219,9 +219,8 @@ public class CoreService {
 		});
 	}
 	
-	@Transactional(readOnly = true)
 	public Flux<FilterDTO> showUserFilters(String uuid){
-		return Flux.just(userRepository.findOneEagerUserFilters(uuid).orElseThrow(() -> new ResourceNotFoundException()))
+		return Flux.just(userRepository.findOneEagerUserFilters(uuid).orElseThrow(() -> new ResourceNotFoundException())).publishOn(Schedulers.boundedElastic())
 				.flatMapIterable(u -> u.getFilters()).map(m ->  {
 					FilterDTO f = mapper.map(m, FilterDTO.class);
 					List<WordDTO> title = m.getTitles().stream().map(e -> mapper.map(e, WordDTO.class)).toList();
@@ -233,7 +232,7 @@ public class CoreService {
 					return f;
 				});
 	}
-	
+
 	public Mono<FilterDTO> createUserFilter(String uuid, Filter filter){
 		return Mono.create(m -> {
 			AppUser user = userRepository.findOneEagerUserFilters(uuid)
@@ -268,13 +267,15 @@ public class CoreService {
 	
 	public Mono<ResponseEntity<Void>> removeUserFilter(String uuid, Long filterId) {
 		return Mono.create(m -> {
-			AppUser user = userRepository.findOneEagerUserFilters(uuid)
+			AppUser user = userRepository.findOneEagerUserFiltersAndCurrentFilter(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			UserFilter userFilter = filterRepository.findById(filterId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
-			if (user.getFilters().removeIf(f -> f.getId() == filterId)) {
-				filterRepository.delete(userFilter);
+			if (Objects.equals(user.getCurrentFilter(), userFilter))
+				user.setCurrentFilter(null);
+			if (user.getFilters().removeIf(f -> f.getId().equals(filterId))) {
 				userRepository.save(user);
+				filterRepository.delete(userFilter);
 				m.success(ResponseEntity.ok().build());
 			} else {
 				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());

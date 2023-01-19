@@ -15,6 +15,9 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 	@Query("select u from AppUser u left join fetch u.filters where u.uuid = :uuid")
 	Optional<AppUser> findOneEagerUserFilters(@Param("uuid") String uuid);
 	
+	@Query("select u from AppUser u left join fetch u.filters left join fetch u.currentFilter where u.uuid = :uuid")
+	Optional<AppUser> findOneEagerUserFiltersAndCurrentFilter(@Param("uuid") String uuid);
+	
 	@Query("select u from AppUser u left join fetch u.sources where u.uuid = :uuid")
 	Optional<AppUser> findOneEagerSourceSite(@Param("uuid") String uuid);
 }
