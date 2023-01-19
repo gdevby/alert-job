@@ -115,6 +115,13 @@
   flex-direction: column;
 }
 
+.current_filter {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid;
+}
+.current_filter__title {
+  margin-bottom: 1rem;
+}
 .current_filter__content {
   display: flex;
   width: 70%;
@@ -127,10 +134,6 @@
 }
 .current_filter__content-actions:first-child {
   margin-right: 0.5rem;
-}
-
-.current_filter__title {
-  margin-bottom: 1rem;
 }
 
 .sourceList {
