@@ -7,15 +7,19 @@ import Router from './components/router/Router'
 import './index.scss'
 
 const App = () => {
-	
-	
-	
+
+
+
 	return <>
-		<Header />
-		<div className='content'>
-			<Router />
+		<div className='wrapper'>
+			<div className='top'>
+				<Header />
+				<div className='content'>
+					<Router />
+				</div>
+			</div>
+			<Footer />
 		</div>
-		<Footer />
 	</>
 }
 

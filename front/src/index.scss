@@ -106,6 +106,21 @@ select {
 	//max-height: 80vh;
 }
 
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.top {
+  flex-grow: 1;
+}
+
+.homePage_content {
+	& > h3 {
+		margin-top: 1rem;
+	}
+}
+
 a {
 	padding-left: .5rem;
 	transition: all 5s ease-out;
