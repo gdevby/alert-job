@@ -17,6 +17,7 @@ const DescriptionWords = ({ filter_id }) => {
 	const [nextPage, setNextPage] = useState(false)
 	const [searchedWords, setSearchedWords] = useState([])
 	const [isFetching, setIsFetching] = useState(true)
+	const [totalCount, setTotalCount] = useState(0)
 
 	const listRef = React.createRef()
 
@@ -40,28 +41,32 @@ const DescriptionWords = ({ filter_id }) => {
 
 
 	const getWords = (text, currentPage = 0) => {
-		filterService
-			.getWords('description-word', text, currentPage)
-			.then(response => {
-				if (currentPage == 0) {
-					setResult(response.data.content)
-					setSearchedWords(response.data.content.map(item => item.name))
-				} else {
-					setSearchedWords((prev) => [...prev, ...response.data.content.map(item => item.name)])
-					setResult((prev) => [...prev, ...response.data.content])
-				}
+		if (page == 0 || totalCount != result.length) {
+			filterService
+				.getWords('description-word', text, currentPage)
+				.then(response => {
+					setPage((prev) => prev + 1);
+					setTotalCount((prev) => response.data.totalElements);
 
-				return response
-			})
-			.then(response => {
-				setPage((prev) => prev + 1)
-				setNextPage(response.data.last)
-				setIsFetching(false)
-			})
+					if (currentPage == 0) {
+						setResult(response.data.content);
+						setSearchedWords(response.data.content.map(item => item.name));
+					} else {
+						setSearchedWords((prev) => [...prev, ...response.data.content.map(item => item.name)]);
+						setResult((prev) => [...prev, ...response.data.content]);
+					}
+
+				})
+				.finally(() => {
+					setIsFetching(false)
+				})
+		}else {
+			setIsFetching(false)
+		}
+
 	}
 
 	const changeWord = (event) => {
-		console.log('event.target.value', event.target.value)
 		setSelectValue(event.target.value)
 		//getWords(event.target.value)
 	}
@@ -109,16 +114,16 @@ const DescriptionWords = ({ filter_id }) => {
 
 	useEffect(() => {
 		if (isFetching) {
-			getWords(selectValue, page - 1)
+			getWords(selectValue, page)
 		}
 	}, [isFetching])
 
 	const scrollHandler = (e) => {
-		if (e.target.scrollTop == 84.44445037841797) {
-			console.log(nextPage)
-			if (!nextPage) {
-				setIsFetching(true)
-			}
+		const coordinates = e.target.getBoundingClientRect()
+		const top = e.target.scrollTop
+		const fullHeight = e.target.scrollHeight
+		if (top + coordinates.height == fullHeight) {
+			setIsFetching(true)
 		}
 
 	};
