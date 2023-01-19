@@ -115,10 +115,22 @@
   flex-direction: column;
 }
 
-.current_filter {
+.current_filter__content {
   display: flex;
-  width: 30%;
+  width: 70%;
   justify-content: space-between;
+}
+.current_filter__content-actions {
+  display: flex;
+  width: 65%;
+  justify-content: space-between;
+}
+.current_filter__content-actions:first-child {
+  margin-right: 0.5rem;
+}
+
+.current_filter__title {
+  margin-bottom: 1rem;
 }
 
 .sourceList {
