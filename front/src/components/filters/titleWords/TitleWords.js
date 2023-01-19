@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 
 import Button from '../../button/Button'
@@ -13,7 +13,12 @@ const TitleWords = ({ filter_id }) => {
 	const [words, setWords] = useState([])
 	const [selectValue, setSelectValue] = useState('')
 	const [result, setResult] = useState([])
+	const [page, setPage] = useState(0)
+	const [nextPage, setNextPage] = useState(false)
+	const [searchedWords, setSearchedWords] = useState([])
+	const [isFetching, setIsFetching] = useState(true)
 
+	const listRef = React.createRef()
 
 	const debouncedSearchTerm = useDebounce(selectValue, 1000)
 
@@ -25,30 +30,45 @@ const TitleWords = ({ filter_id }) => {
 	}
 
 	const addWord = (word) => {
-		console.log(word)
 		filterService
 			.addWordToFilter('title-word', filter_id, word.id)
 			.then(() => {
 				setWords((prev) => [...prev, word])
 				setIsOpen(false)
 			})
-
 	}
 
-	const getWords = (text, page = 0) => {
+
+	const getWords = (text, currentPage = 0) => {
 		filterService
-			.getWords('title-word', text, page)
-			.then(response => setResult(response.data.content))
+			.getWords('title-word', text, currentPage)
+			.then(response => {
+				if (currentPage == 0) {
+					setResult(response.data.content)
+					setSearchedWords(response.data.content.map(item => item.name))
+				} else {
+					setSearchedWords((prev) => [...prev, ...response.data.content.map(item => item.name)])
+					setResult((prev) => [...prev, ...response.data.content])
+				}
+
+				return response
+			})
+			.then(response => {
+				setPage((prev) => prev + 1)
+				setNextPage(response.data.last)
+				setIsFetching(false)
+			})
 	}
 
 	const changeWord = (event) => {
+		console.log('event.target.value', event.target.value)
 		setSelectValue(event.target.value)
 		//getWords(event.target.value)
 	}
 
 
 	const add = () => {
-		if (result.length == 0) {
+		if (!searchedWords.includes(selectValue)) {
 			filterService
 				.addWord(selectValue, 'title-word')
 				.then(response => {
@@ -63,48 +83,77 @@ const TitleWords = ({ filter_id }) => {
 
 	const remove = (id) => {
 		filterService
-		.deleteWord('title-word', filter_id, id)
-		.then(() => {
-			setWords((prev) => prev.filter(item => item.id !== id))
-		})
-		
+			.deleteWord('title-word', filter_id, id)
+			.then(() => {
+				setWords((prev) => prev.filter(item => item.id !== id))
+			})
 	}
 
 	const handleSelect = (event) => {
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
 		addWord(word)
 	}
-	
+
 	useEffect(() => {
 		if (titleWords && !isNew) {
 			setWords((prev) => [...prev, ...titleWords])
 		}
 	}, [])
-	
 	useEffect(() => {
 		if (debouncedSearchTerm) {
-      		getWords(debouncedSearchTerm)
-      } else {
-        setResult([]);
-      }
+			getWords(debouncedSearchTerm, 0)
+		} else {
+			setResult([]);
+		}
 	}, [debouncedSearchTerm])
+
+	useEffect(() => {
+		if (isFetching) {
+			getWords(selectValue, page - 1)
+		}
+	}, [isFetching])
+
+	const scrollHandler = (e) => {
+		if (e.target.scrollTop == 84.44445037841797) {
+			console.log(nextPage)
+			if (!nextPage) {
+				setIsFetching(true)
+			}
+		}
+
+	};
+
+	useEffect(() => {
+		const list = listRef.current
+		list.addEventListener('scroll', scrollHandler);
+
+		return function() {
+			list.removeEventListener('scroll', scrollHandler);
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
 
 	return <>
 		<div className={isOpen ? 'searchPopup searchPopup__open' : 'searchPopup searchPopup__close'}>
 			<div className='searchPopup__content'>
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
-					<input type='text' onChange={changeWord}/>
+					<input type='text' onChange={changeWord} value={selectValue} />
 				</div>
 				<div className='searchPopup__body'>
-					{result && result.map(item => <div  key={item.id} id={item.id} onClick={handleSelect}>{item.name}</div>)}
+					<div className='searchPopup__body-list' ref={listRef}>
+						{result && result.map(item => <div className='searchPopup__body-list__item'
+							id={item.id} key={item.id}
+							onClick={handleSelect}>{item.name}</div>
+						)}
+					</div>
 				</div>
 				<div className='searchPopup__footer'>
-					<Button onClick={add} text={'Добавить'}/>
+					<Button onClick={add} text={'Добавить'} />
 				</div>
 			</div>
 		</div>
-		Уведомлять, если в названии содержится
+		Уведомлять, если технологии содержат
 		<Button text={'Добавить'} onClick={openSearch} />
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />
