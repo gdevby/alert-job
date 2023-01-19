@@ -45,28 +45,33 @@
 
 }
 
+.current_filter {
+	padding-bottom: .5rem;
+	border-bottom: 1px solid;
 
-.current_filter__content {
-	display: flex;
-	width: 70%;
-	justify-content: space-between;
-
-	&-actions {
-		display: flex;
-		width: 65%;
-		justify-content: space-between;
-
-		&:first-child {
-			margin-right: .5rem;
-		}
+	&__title {
+		margin-bottom: 1rem;
 	}
 
+	&__content {
+		display: flex;
+		width: 70%;
+		justify-content: space-between;
 
+		&-actions {
+			display: flex;
+			width: 65%;
+			justify-content: space-between;
+
+			&:first-child {
+				margin-right: .5rem;
+			}
+		}
+	}
 }
 
-.current_filter__title {
-	margin-bottom: 1rem;
-}
+
+
 
 .sourceList {
 	padding: 1rem;
