@@ -8,6 +8,7 @@ import ListItem from './ListItem'
 const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 	const [isOpen, setIsOpen] = useState(open)
 	const [value, setValue] = useState(defaultValue)
+	const [items, setItems] = useState([])
 
 
 	const handleValue = data => {
@@ -16,8 +17,14 @@ const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 		cb(data)
 		setIsOpen(false)
 	}
+	
+	useEffect(() => {
+		setItems(elems)
+		setValue(defaultValue)
+	}, [elems])
 
 	useEffect(() => {
+		console.log(defaultValue)
 		setValue(defaultValue)
 	}, [defaultValue])
 
@@ -32,7 +39,7 @@ const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 			<i className={isOpen ? 'arrow arrow-up' : 'arrow arrow-down'}></i>
 		</div>
 		{isOpen && <div className='list_items'>
-			{elems && elems.map((item, index) => <ListItem onClick={handleValue} item={item} key={index}  />)}
+			{items && items.map((item, index) => <ListItem onClick={handleValue} item={item} key={index}  />)}
 		</div>}
 	</div>
 }
