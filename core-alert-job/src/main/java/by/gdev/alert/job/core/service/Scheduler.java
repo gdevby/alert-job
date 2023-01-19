@@ -38,7 +38,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
-		sseConnection();
+//		sseConnection();
 	}
 	
 	public void sseConnection() {
