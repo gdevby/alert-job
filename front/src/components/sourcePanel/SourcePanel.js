@@ -73,16 +73,17 @@ const SourcePanel = ({ addSource }) => {
 
 
 	const addingSource = () => {
-		sourceService.addSource({
-			siteSource: Number(currentSite.id),
-			siteCategory: Number(currentCat.id),
-			siteSubCategory: Number(currentSubCat.id) == 0 ? null : Number(currentSubCat.id),
-			flRuForAll: false
+		if (Number(currentSite.id) && Number(currentCat.id)) {
+			sourceService.addSource({
+				siteSource: Number(currentSite.id),
+				siteCategory: Number(currentCat.id),
+				siteSubCategory: Number(currentSubCat.id) == 0 ? null : Number(currentSubCat.id),
+				flRuForAll: false
+			}
+			).then(response => {
+				addSource({ currentSite, currentCat, currentSubCat, id: response.data.id })
+			})
 		}
-		).then(response => {
-			addSource({ currentSite, currentCat, currentSubCat, id: response.data.id })
-		})
-
 	}
 
 	const handleCurrentFilter = data => {
@@ -143,16 +144,21 @@ const SourcePanel = ({ addSource }) => {
 			</div>
 		</div>
 		<div className='source_panel-addingSource'>
-			<div>
-				<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
-			</div>
-			<div className='cat'>
-				<DropDownList defaultValue={'Выберите категорию'} elems={categories} open={false} cb={setCurrentCat} />
-			</div>
-			<div className='subcat'>
-				<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />
+			<div className='source_panel-addingSource__title'>
+				Источники данных это то, откуда вы будете получать заказы, чтобы фильтровать</div>
+			<div className='source_panel-addingSource__content'>
+				<div>
+					<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
+				</div>
+				<div className='cat'>
+					<DropDownList defaultValue={'Выберите категорию'} elems={categories} open={false} cb={setCurrentCat} />
+				</div>
+				<div className='subcat'>
+					<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />
+				</div>
 			</div>
 		</div>
+
 		<div className='source_panel-actions'>
 			<div>
 				<Button onClick={addingSource} text={'Добавить источник'} />

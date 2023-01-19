@@ -1,18 +1,23 @@
 .header {
 	background-color: #afafaf;
 	padding: 1rem;
-}	
 
-.header-content {
-	display: flex;
-	
-	& > div {
-		margin-left: .5rem;
-	}
-	
-	&__navigation {
+	&-content {
 		display: flex;
-		width: 100%;
-		justify-content: flex-end;
+
+		&__home {
+			display: flex;
+			align-items: center;
+		}
+
+		&>div {
+			margin-left: .5rem;
+		}
+
+		&__navigation {
+			display: flex;
+			width: 100%;
+			justify-content: flex-end;
+		}
 	}
 }
