@@ -17,6 +17,7 @@
 	cursor: pointer;
 }
 
+
 .price_block {
 	margin-bottom: 1rem;
 
@@ -98,5 +99,20 @@
 	
 	&__item:hover {
 		background-color: #bfbfbf;
+	}
+	
+	&::-webkit-scrollbar {
+		width: 3px;
+		height: 3px;
+	}
+	&::-webkit-scrollbar-track {
+		background-color: #dadada;
+		border-radius: 100px;
+	}
+	&::-webkit-scrollbar-thumb {
+		border-radius: 100px;
+		border: 3px solid #6f6f6f;
+		background-clip: content-box;
+		background-color: #6f6f6f;
 	}
 }
