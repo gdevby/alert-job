@@ -1,6 +1,8 @@
 package by.gdev.alert.job.parser.scheduller;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -28,7 +30,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private long parserUpdateLinksAfterDay;
 	@Value("${parser.insert.categories.active}")
 	boolean parseCategories;
-	@Value("parser.categories.file.path")
+	@Value("${parser.categories.file.path}")
 	private String updateFilePath;
 	private final ParserCategories parserCategories;
 
@@ -36,9 +38,14 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	@Transactional
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		try {
-			if (parseCategories){
+			if (parseCategories) {
 				parserCategories.parse();
-				parserCategories.updateHubrLink(updateFilePath);
+				if (Files.notExists(Paths.get(updateFilePath)))
+					throw new RuntimeException(
+							"warn can't find links for habr rss you need to create file and set parser.categories.file.path "
+							+ "for parser service param, the example you can find here link src/test/resources/hubr.txt");
+				else
+					parserCategories.updateHubrLink(updateFilePath);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
