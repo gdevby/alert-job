@@ -1,7 +1,6 @@
 .source_panel {
 	//display: flex;
     padding: 1rem;
-    width: 30%;
     //justify-content: space-between;
    // align-items: center;
     // box-shadow: 5px 2px 9px grey;
@@ -11,6 +10,22 @@
     & > div { 
 		margin-top: 1rem;
 	}
+	
+	&-addingSource {
+		display: flex;
+		justify-content: space-between;
+		width: 50%;
+	}
+	
+	&-actions {
+		display: flex;
+		justify-content: flex-start;
+		
+		& > div:last-child {
+			margin-left: 1.5rem;
+		}
+	}
+	
 }
 
 
@@ -33,7 +48,11 @@
 	}
 }
 
-
+.current_filter {
+	display: flex;
+	width: 30%;
+    justify-content: space-between;
+}
 
 .sourceList {
 	padding: 1rem;
@@ -42,7 +61,7 @@
 	flex-wrap: wrap;
 	justify-content: space-between;
 	overflow-y: auto;
-    height: 70%;
+    height: 70vh;
     
     &::-webkit-scrollbar {
 		width: 3px;

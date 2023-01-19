@@ -63,7 +63,7 @@ const SourcePanel = ({ addSource }) => {
 				.getSubcategories(currentCat.id)
 				.then(response => {
 					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
-					setSubcategories(subcat)
+					setSubcategories([{id: 0, name: 'Выбрать все'}, ...subcat])
 				})
 		}
 
@@ -74,7 +74,7 @@ const SourcePanel = ({ addSource }) => {
 		sourceService.addSource({
 			siteSource: Number(currentSite.id),
 			siteCategory: Number(currentCat.id),
-			siteSubCategory: Number(currentSubCat.id),
+			siteSubCategory: Number(currentSubCat.id) == 0? null : Number(currentSubCat.id),
 			flRuForAll: false
 		}
 		).then(response => {
@@ -117,27 +117,30 @@ const SourcePanel = ({ addSource }) => {
 	}
 
 	return <div className='source_panel'>
-		<div>
-			<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
-		</div>
-		<div className='cat'>
-			<DropDownList defaultValue={'Выберите категорию'} elems={categories} open={false} cb={setCurrentCat} />
-		</div>
-		<div className='subcat'>
-			<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />
-		</div>
 		<div className='current_filter'>
 			<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
 			{filter && <div>
-				{filter.name}
 				<Button onClick={editFilter} text={'Редактировать фильтр'} />
 			</div>}
 		</div>
-		<div>
-			<Button onClick={addingSource} text={'Добавить источник'} />
+		<div className='source_panel-addingSource'>
+			<div>
+				<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
+			</div>
+			<div className='cat'>
+				<DropDownList defaultValue={'Выберите категорию'} elems={categories} open={false} cb={setCurrentCat} />
+			</div>
+			<div className='subcat'>
+				<DropDownList defaultValue={'Выберите подкатегорию'} elems={subcategories} open={false} cb={setCurrentSubCat} />
+			</div>
 		</div>
-		<div>
-			<Button onClick={addNewFilter} text={'Добавить новый фильтр'} />
+		<div className='source_panel-actions'>
+			<div>
+				<Button onClick={addingSource} text={'Добавить источник'} />
+			</div>
+			<div>
+				<Button onClick={addNewFilter} text={'Добавить новый фильтр'} />
+			</div>
 		</div>
 	</div>
 }
