@@ -3,7 +3,6 @@ import React from 'react'
 import Button from '../button/Button'
 
 const SourceCard = ({item, removeCard}) => {
-	console.log(item)
 	
 	const remove = () => {
 		removeCard(item.id)

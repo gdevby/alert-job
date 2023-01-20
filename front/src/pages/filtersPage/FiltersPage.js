@@ -26,7 +26,6 @@ const FiltersPage = () => {
 			},
 			id: data.id
 		}
-		console.log(newSource)
 		setSources([...sourse, newSource])
 	}
 	
