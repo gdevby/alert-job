@@ -30,8 +30,8 @@ const AddFilterForm = ({ setFilterId }) => {
 						description: [],
 						title: [],
 						technologies: [],
-						maxPrice: 0,
-						minPrice: 0,
+						maxPrice: '',
+						minPrice: '',
 						id: id,
 						name: filterName
 					})
