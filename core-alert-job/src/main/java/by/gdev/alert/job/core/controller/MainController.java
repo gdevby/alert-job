@@ -39,15 +39,6 @@ import reactor.core.publisher.Mono;
 public class MainController {
 
 	private final CoreService coreService;
-
-	@GetMapping("user/test")
-	public Mono<ResponseEntity<String>> testAuth(
-			@RequestHeader(required = false, name = HeaderName.UUID_USER_HEADER) String uuid) {
-		if (Objects.isNull(uuid))
-			return Mono.just(ResponseEntity.status(403).build());
-		else
-			return Mono.just(ResponseEntity.ok("ok"));
-	}
 	
 	@PostMapping("user/authentication")
 	public Mono<ResponseEntity<String>> userAuthentication(@RequestHeader(required = false, name = HeaderName.UUID_USER_HEADER) String uuid,
@@ -88,7 +79,7 @@ public class MainController {
 	} 
 	
 	@PostMapping("user/title-word")
-	public Mono<ResponseEntity<WordDTO>> createTitleWord(@RequestBody KeyWord keyWord){
+	public Mono<ResponseEntity<WordDTO>> createTitleWord(@RequestBody @Valid KeyWord keyWord){
 		return coreService.addTitleWord(keyWord);
 	}
 	
@@ -98,7 +89,7 @@ public class MainController {
 	} 
 	
 	@PostMapping("user/technology-word")
-	public Mono<ResponseEntity<WordDTO>> createTechnologyWord(@RequestBody KeyWord keyWord){
+	public Mono<ResponseEntity<WordDTO>> createTechnologyWord(@RequestBody @Valid KeyWord keyWord){
 		return coreService.addTechnologyWord(keyWord);
 	}
 	
@@ -108,7 +99,7 @@ public class MainController {
 	} 
 	
 	@PostMapping("user/description-word")
-	public Mono<ResponseEntity<WordDTO>> createDescriptionWord(@RequestBody KeyWord keyWord){
+	public Mono<ResponseEntity<WordDTO>> createDescriptionWord(@RequestBody @Valid KeyWord keyWord){
 		return coreService.addDescriptionWord(keyWord);
 	}
 	
