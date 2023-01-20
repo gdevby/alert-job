@@ -77,7 +77,7 @@ const SourcePanel = ({ addSource }) => {
 			sourceService.addSource({
 				siteSource: Number(currentSite.id),
 				siteCategory: Number(currentCat.id),
-				siteSubCategory: Number(currentSubCat.id) == 0 ? null : Number(currentSubCat.id),
+				siteSubCategory: Number(currentSubCat.id),
 				flRuForAll: false
 			}
 			).then(response => {
