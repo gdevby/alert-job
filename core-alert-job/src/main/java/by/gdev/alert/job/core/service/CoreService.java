@@ -405,16 +405,16 @@ public class CoreService {
 				}).flatMap(s -> {
 					Long sourceId = s.getSiteSourceDTO().getId();
 					Long categoryId = s.getSiteCategoryDTO().getId();
-					Long subcategoryId = s.getSiteSubCategoryDTO().getId();
 					Mono<SiteSourceDTO> m1 = webClient.get()
 							.uri(String.format("http://parser:8017/api/site/%s", s.getSiteSourceDTO().getId()))
 							.retrieve().bodyToMono(SiteSourceDTO.class);
 					Mono<CategoryDTO> m2 = webClient.get()
 							.uri(String.format("http://parser:8017/api/site/%s/category/%s", sourceId, categoryId))
-							.retrieve().bodyToMono(CategoryDTO.class);
-					Mono<SubCategoryDTO> m3 = webClient.get().uri(String
-							.format("http://parser:8017/api/category/%s/subcategory/%s", categoryId, subcategoryId))
-							.retrieve().bodyToMono(SubCategoryDTO.class);
+							.retrieve().bodyToMono(CategoryDTO.class).onErrorReturn(new CategoryDTO());
+					Mono<SubCategoryDTO> m3 = webClient.get()
+							.uri(String.format("http://parser:8017/api/category/%s/subcategory/%s", categoryId,
+									s.getSiteSubCategoryDTO().getId()))
+							.retrieve().bodyToMono(SubCategoryDTO.class).onErrorReturn(new SubCategoryDTO());
 					Mono<Tuple3<SiteSourceDTO, CategoryDTO, SubCategoryDTO>> tuple = Mono.zip(m1, m2, m3);
 					return tuple.map(t -> {
 						SourceDTO dto = s;
