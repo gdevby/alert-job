@@ -136,7 +136,8 @@ const SourcePanel = ({ addSource }) => {
 
 		<div className='source_panel-addingSource'>
 			<div className='source_panel-addingSource__title'>
-				Сперва вам надо указать источник заказов, откуда вы будете получать заказы, чтобы потом применять фильтры, выберите для начала сайт, потом категорию и подкатегорию, например "Все подкатегории""</div>
+				Сперва вам надо указать источник заказов, откуда вы будете получать заказы, чтобы потом применять фильтры,
+				 выберите для начала сайт, потом категорию и подкатегорию, например "Все подкатегории"</div>
 			<div className='source_panel-addingSource__content'>
 				<div>
 					<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />

@@ -2,14 +2,23 @@
 	display: flex;
 	margin-bottom: 2rem;
 	justify-content: space-between;
-	align-items: center;
-    width: 75%;
+	align-items: flex-end;
+    //width: 75%;
     
     & > .list {
 	margin-right: 1rem;
 	}
 	&__send-btn {
-		width: 40%;
+		width: 60%;
+		display: flex;
+		justify-content: space-between;
+		& > button:first-child {
+			width: 30%;
+		}
+		& > button:last-child {
+			width: 60%;
+		}
+		
 	}
 }
 
