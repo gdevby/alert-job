@@ -147,6 +147,7 @@ const TechnologyWords = ({ filter_id }) => {
 			<div className='searchPopup__content'>
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
+					Поиск по ключевым словам
 					<input type='text' onChange={changeWord} value={selectValue} />
 				</div>
 				<div className='searchPopup__body'>
