@@ -30,3 +30,4 @@ target
 .factorypath
 .dbeaver
 dist
+front/package-lock.json

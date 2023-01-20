@@ -9,6 +9,7 @@ please add to /etc/hosts/
 You need to have java 17 and maven.
 To run application, you need to clone alert-job-parent. After cd to this directory. and execute command mvn clean install.<br>
 Now move to keycloak and execute build.sh<br>
+Now build front move to front folder cd front and exeucte npm install, after nmp run build <br>
 now you can run docker compose pull<br>
 now you can run all modules with docker compose up<br>
 
