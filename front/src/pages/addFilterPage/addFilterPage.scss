@@ -95,7 +95,7 @@
 .searchPopup__body-list {
 	padding: 1rem;
 	overflow-y: auto;
-    height: 75%;
+    max-height: 75%;
 	&__item {
 		margin-top: 0.5rem;
 		background-color: #e8e8e8;
