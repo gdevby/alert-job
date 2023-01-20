@@ -50,7 +50,7 @@
 
 	&__content {
 		width: 500px;
-		height: 500px;
+		max-height: 500px;
 		background-color: white;
 		border-radius: 4px;
 	}
@@ -63,7 +63,13 @@
 
 	&__header {
 		padding: 1rem;
-
+		& > input {
+			padding: .8rem;
+			background-color: #e8e8e8;
+			width: 100%;
+			margin-top: 1rem;
+			border-radius: 4px;
+		}
 		&-close {
 			display: flex;
 			justify-content: flex-end;

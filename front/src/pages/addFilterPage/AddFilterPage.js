@@ -19,12 +19,12 @@ const AddFilterPage = () => {
 	const [isOpenPopup, setIsOpenPopup] = useState(false)
 	const [wordsType, setWordstype] = useState('')
 	const [words, setWords] = useState('')
-	const [filterId, setFilterId] = useState('')
+	const [filterId, setFilterId] = useState()
 
 	const navigate = useNavigate()
 	const { currentFilter, isNew } = useSelector(state => state.filter)
 	const dispatch = useDispatch()
-	
+
 
 	const handleCurrentFilterType = (data) => {
 		console.log(data)
@@ -35,17 +35,17 @@ const AddFilterPage = () => {
 	}
 	const remove = () => {
 		filterService
-		.deleteFilter(filterId)
-		.then(() => {
-			setFilterId('')
-		})
-		.then(() => {
-			dispatch(removeCurrentFilter())
-		})
-		.finally(() => {
-			navigate('/page/filters')
-		})
-		
+			.deleteFilter(filterId)
+			.then(() => {
+				setFilterId('')
+			})
+			.then(() => {
+				dispatch(removeCurrentFilter())
+			})
+			.finally(() => {
+				navigate('/page/filters')
+			})
+
 	}
 
 	const handlePopup = (wordType) => {
@@ -55,39 +55,41 @@ const AddFilterPage = () => {
 		setIsOpenPopup(true)
 		console.log(isOpenPopup)
 	}
-	
+
 	useEffect(() => {
 		if (!isNew) {
 			setFilterId(currentFilter.id)
 		}
 	}, [isNew])
-	
-	
-	
-	
-	
+
+
+
+
+
 
 	return <div className='filtersPage'>
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
 
-			<AddFilterForm setFilterId={setFilterId}/>
+			<AddFilterForm setFilterId={setFilterId} />
 
-			<div className='wordsContains_block'>
-				<div>
-					<TechnologyWords filter_id={filterId}/>
+			{filterId && <>
+				<div className='wordsContains_block'>
+					<div>
+						<TechnologyWords filter_id={filterId} />
+					</div>
+					<div>
+						<TitleWords filter_id={filterId} />
+					</div>
+					<div>
+						<DescriptionWords filter_id={filterId} />
+					</div>
 				</div>
-				<div>
-					<TitleWords filter_id={filterId}/>
+				<div className='filter__actions'>
+					<Button text={'Сохранить'} onClick={addNewFilter} />
 				</div>
-				<div>
-					<DescriptionWords filter_id={filterId}/>
-				</div>
-			</div>
-			<div className='filter__actions'>
-				<Button text={'Добавить'} onClick={addNewFilter} />
-				{filterId !== '' && <Button text={'Удалить фильтр'} onClick={remove} />}
-			</div>
+			</>}
+
 		</div>
 	</div>
 }
