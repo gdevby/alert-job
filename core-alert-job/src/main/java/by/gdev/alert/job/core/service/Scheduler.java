@@ -15,6 +15,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.common.model.Order;
@@ -54,18 +55,12 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	public void forEachOrders(List<AppUser> users, List<Order> orders) {
 		users.forEach(user -> {
 			user.getSources().forEach(s -> {
-				List<Order> list = orders.stream()
-						.peek(p -> {
-							statisticService.statisticTitleWord(p.getTitle());
-							statisticService.statisticDescriptionWord(p.getMessage());
-							statisticService.statisticTechnologyWord(p.getTechnologies());
-						})
-						.filter(f -> {
-					SourceSiteDTO source = f.getSourceSite();
-					return s.getSiteSource().equals(source.getSource())
-							&& s.getSiteCategory().equals(source.getCategory())
-							&& s.getSiteSubCategory().equals(source.getSubCategory());
-				}).collect(Collectors.toList());
+				List<Order> list = orders.stream().peek(p -> {
+					statisticService.statisticTitleWord(p.getTitle());
+					statisticService.statisticDescriptionWord(p.getMessage());
+					statisticService.statisticTechnologyWord(p.getTechnologies());
+				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).collect(Collectors.toList());
+	
 				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
@@ -81,6 +76,17 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 			});
 
 		});
+	}
+	
+	// check for an empty subcategory, if the subcategory is empty, we compare only
+	// by source and category, otherwise all fields are taken
+	private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
+		return (Objects.isNull(orderSource.getSubCategory()))
+				? userSource.getSiteSource().equals(orderSource.getSource())
+						&& userSource.getSiteCategory().equals(orderSource.getCategory())
+				: userSource.getSiteSource().equals(orderSource.getSource())
+						&& userSource.getSiteCategory().equals(orderSource.getCategory())
+						&& userSource.getSiteSubCategory().equals(orderSource.getSubCategory());
 	}
 	
 	private boolean isMatchUserFilter(AppUser user, Order order) {
