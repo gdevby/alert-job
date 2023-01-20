@@ -21,7 +21,7 @@ public class OrderLinks extends BasicId {
 	@OneToOne
 	private Category category;
 	@OneToOne
-	private SubCategory subCategory;
+	private Subcategory subCategory;
 	private String links;
 	
 	@CreationTimestamp

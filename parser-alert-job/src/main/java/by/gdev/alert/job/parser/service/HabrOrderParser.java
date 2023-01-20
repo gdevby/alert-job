@@ -20,7 +20,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.SubCategory;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.rss.Rss;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.Order;
@@ -49,7 +49,7 @@ public class HabrOrderParser {
 				.filter(categoryFilter -> categoryFilter.isParse())
 				// iterate over each category from this collection
 				.forEach(categories -> {
-					Set<SubCategory> siteSubCategories = categories.getSubCategories();
+					Set<Subcategory> siteSubCategories = categories.getSubCategories();
 					// checking if a subcategory exists for this category
 					if (Objects.isNull(siteSubCategories)) {
 						// category does't have a subcategory
@@ -73,7 +73,7 @@ public class HabrOrderParser {
 
 	@SneakyThrows
 	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, Category category,
-			SubCategory subCategory) {
+			Subcategory subCategory) {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));

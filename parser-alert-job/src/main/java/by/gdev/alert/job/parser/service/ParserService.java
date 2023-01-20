@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.SubCategory;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.exeption.ResourceNotFoundException;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
@@ -58,7 +58,7 @@ public class ParserService {
 		return Flux.create(flux -> {
 			Category sc = categoryRepository.findOneEager(category)
 					.orElseThrow(() -> new ResourceNotFoundException());
-			Iterator<SubCategory> iterator = sc.getSubCategories().iterator();
+			Iterator<Subcategory> iterator = sc.getSubCategories().iterator();
 			while (iterator.hasNext()) {
 				flux.next(mapper.map(iterator.next(), SubCategoryDTO.class));
 			}
@@ -66,11 +66,11 @@ public class ParserService {
 		});
 	}
 	
-	public boolean isExistsOrder(Category category, SubCategory subCategory, String link) {
+	public boolean isExistsOrder(Category category, Subcategory subCategory, String link) {
 		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link);
 	}
 
-	public void saveOrderLinks(Category category, SubCategory subCategory, String link) {
+	public void saveOrderLinks(Category category, Subcategory subCategory, String link) {
 		OrderLinks ol = new OrderLinks();
 		ol.setCategory(category);
 		ol.setSubCategory(subCategory);
@@ -96,7 +96,7 @@ public class ParserService {
 	public Mono<SubCategoryDTO> getSubCategory(Long cId, Long sId){
 		return Mono.create(m -> {
 			Category sc = categoryRepository.findByIdAndSubCategory(cId, sId);
-			SubCategory sub = sc.getSubCategories().stream().findFirst().get();
+			Subcategory sub = sc.getSubCategories().stream().findFirst().get();
 			m.success(mapper.map(sub, SubCategoryDTO.class));
 		});
 	}
