@@ -44,6 +44,7 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.SubCategoryDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -51,6 +52,7 @@ import reactor.util.function.Tuple3;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CoreService {
 
 	private final WebClient webClient;
@@ -89,13 +91,16 @@ public class CoreService {
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			if (user.isDefaultSendType()) {
 				UserNotification un = new UserNotification(user.getEmail(), "Test message from alerjob.by");
-				webClient.post().uri("http://notification:8019/mail").bodyValue(un).retrieve()
-						.bodyToMono(Void.class).subscribe();
+				webClient.post().uri("http://notification:8019/mail").bodyValue(un).retrieve().bodyToMono(Void.class)
+						.subscribe(e -> log.debug("successfully sent message on user mail {}", user.getEmail()),
+								ex -> log.debug("can't send message on user mail {}, cause {}", user.getEmail(), ex.getMessage()));
 			} else {
 				UserNotification un = new UserNotification(String.valueOf(user.getTelegram()),
 						"Test message from alerjob.by");
 				webClient.post().uri("http://notification:8019/telegram").bodyValue(un).retrieve()
-						.bodyToMono(Void.class).subscribe();
+						.bodyToMono(Void.class)
+						.subscribe(e -> log.debug("successfully sent message on user mail {}", user.getEmail()),
+								ex -> log.debug("can't send message on user mail {}, cause {}", user.getEmail(), ex.getMessage()));
 			}
 			m.success();
 		});

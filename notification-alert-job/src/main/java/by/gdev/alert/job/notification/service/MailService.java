@@ -32,7 +32,10 @@ public class MailService {
 					.withSubject("Email").withHTMLText(userMail.getMessage()).buildEmail();
 			mailer.sendMail(mail);
 			return Mono.empty();
-		});
+		}).doOnSuccess(r -> log.info("sent message for user email {}, {}", userMail.getToMail(), userMail.getMessage()))
+				.doOnError(e -> log.info("can't send test message for user email  {}, {}", userMail.getToMail(),
+						userMail.getMessage()))
+				.then();
 	}
 
 	public Mono<Void> sendMessageToTelegram(UserNotification userMail) {
@@ -42,7 +45,12 @@ public class MailService {
 					.uri("https://api.telegram.org",
 							u -> u.path("/bot{token}/sendMessage").build(property.getTelegramChatToken()))
 					.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).bodyValue(m).retrieve()
-					.toBodilessEntity().doOnSuccess(r -> log.info("mesaged user {}, {}", userMail.getToMail(), userMail.getMessage())).subscribe();
+					.toBodilessEntity()
+					.doOnSuccess(r -> log.info("sent message for user telegram {}, {}", userMail.getToMail(),
+							userMail.getMessage()))
+					.doOnError(e -> log.info("can't send test message for user telegram {}, {}", userMail.getToMail(),
+							userMail.getMessage()))
+					.subscribe();
 			return Mono.empty();
 		});
 	}
