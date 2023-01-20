@@ -23,7 +23,8 @@ const FiltersPage = () => {
 			sub_cat: {
 				...data.currentSubCat,
 				nativeLocName: data.currentSubCat.name
-			}
+			},
+			id: data.id
 		}
 		console.log(newSource)
 		setSources([...sourse, newSource])
