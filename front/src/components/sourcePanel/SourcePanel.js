@@ -65,7 +65,7 @@ const SourcePanel = ({ addSource }) => {
 				.getSubcategories(currentCat.id)
 				.then(response => {
 					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
-					setSubcategories([{ id: 0, name: 'Выбрать все' }, ...subcat])
+					setSubcategories([{ id: 0, name: 'Все подкатегории' }, ...subcat])
 				})
 		}
 
@@ -133,19 +133,10 @@ const SourcePanel = ({ addSource }) => {
 	}
 
 	return <div className='source_panel'>
-		<div className='current_filter'>
-			<div className='current_filter__title'>Выберите активный фильтр, который будет применяться к пришедшим заказам</div>
-			<div className='current_filter__content'>
-				<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
-				{filter && <div className='current_filter__content-actions'>
-					<Button onClick={editFilter} text={'Редактировать фильтр'} />
-					<Button onClick={removeFilter} text={'Удалить фильтр'} />
-				</div>}
-			</div>
-		</div>
+		
 		<div className='source_panel-addingSource'>
 			<div className='source_panel-addingSource__title'>
-				Источники данных это то, откуда вы будете получать заказы, чтобы фильтровать</div>
+				Сперва вам надо указать источник заказов, откуда вы будете получать заказы, чтобы потом применять фильтры, выберите для начала сайт, потом категорию и подкатегорию, например "Все подкатегории""</div>
 			<div className='source_panel-addingSource__content'>
 				<div>
 					<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
@@ -158,13 +149,25 @@ const SourcePanel = ({ addSource }) => {
 				</div>
 			</div>
 		</div>
+		
 
 		<div className='source_panel-actions'>
 			<div>
 				<Button onClick={addingSource} text={'Добавить источник'} />
 			</div>
-			<div>
+			
+		</div>
+		<div className='current_filter'>
+			<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет заказам из источника заказов</div>
+			<div className='current_filter__content'>
+				<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
+				{filter && <div className='current_filter__content-actions'>
+					<Button onClick={editFilter} text={'Редактировать фильтр'} />
+					<Button onClick={removeFilter} text={'Удалить фильтр'} />
+				</div>}
+				<div>
 				<Button onClick={addNewFilter} text={'Добавить новый фильтр'} />
+			</div>
 			</div>
 		</div>
 	</div>
