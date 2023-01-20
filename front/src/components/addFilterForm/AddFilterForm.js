@@ -54,7 +54,7 @@ const AddFilterForm = ({ setFilterId }) => {
 	return <div>
 		<Field
 			type={'text'} defaultValue={filterName} cb={setFilterName} onBlur={updateFilter}
-			placeholder={'Введите название'} label={<label>Название фильтра</label>} />
+			placeholder={'Введите название'} label={<label>Сначала введите название фильтра</label>} />
 
 		<div className='price_block'>
 			<Field
