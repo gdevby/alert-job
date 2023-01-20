@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +21,8 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 	
 	@Query("select u from AppUser u left join fetch u.sources where u.uuid = :uuid")
 	Optional<AppUser> findOneEagerSourceSite(@Param("uuid") String uuid);
+	
+	@Query("from AppUser u left join fetch u.sources left join fetch u.currentFilter")
+	List<AppUser> findAllUserEagerCurrentFilterAndSourceSite();
+	
 }

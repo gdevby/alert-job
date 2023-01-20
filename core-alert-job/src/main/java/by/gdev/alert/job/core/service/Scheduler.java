@@ -14,8 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.google.common.collect.Lists;
-
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
@@ -38,7 +36,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
-//		sseConnection();
+		sseConnection();
 	}
 	
 	public void sseConnection() {
@@ -47,7 +45,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 		Flux<ServerSentEvent<List<Order>>> sseEvents = webClient.get().uri("http://parser:8017/api/stream-sse")
 				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type);
 		sseEvents.subscribe(event -> {
-			List<AppUser> users = Lists.newArrayList(userRepository.findAll());
+			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
 			forEachOrders(users, event.data());
 		});
 	}
