@@ -1,18 +1,39 @@
 .list {
 	position: relative;
+
 	&_items {
 		position: absolute;
 		background: #ffffff;
-    	min-width: 100%;
-    	border-radius: 4px;
-    	z-index: 999;
-    	
-    	& > div {
+		min-width: 100%;
+		border-radius: 4px;
+		z-index: 999;
+		max-height: 20vh;
+		overflow-y: auto;
+
+		&::-webkit-scrollbar {
+			width: 3px;
+			height: 3px;
+		}
+
+		&::-webkit-scrollbar-track {
+			background-color: #dadada;
+			border-radius: 100px;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			border-radius: 100px;
+			border: 3px solid #6f6f6f;
+			background-clip: content-box;
+			background-color: #6f6f6f;
+		}
+
+		&>div {
 			padding: .4rem;
 			cursor: pointer;
-			
+
 		}
 	}
+
 	&__button {
 		padding: .5rem;
 		background-color: #7988fd;
@@ -26,13 +47,13 @@
 }
 
 .arrow-down:after {
-  content: "\25BC";
+	content: "\25BC";
 }
 
 .arrow-up:after {
-  content: "\25B2";
+	content: "\25B2";
 }
 
 .arrow {
-  	font-family: FontAwesome;
+	font-family: FontAwesome;
 }

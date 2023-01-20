@@ -14,7 +14,7 @@ const NotificationsPage = () => {
 	const [platforms, setPlatforms] = useState([{ name: 'email', id: 1 }, { name: 'telegram', id: 2 }])
 	const [currentPlatform, setCurrentPlatform] = useState('')
 	const [alertStatus, setAlertStatus] = useState(false)
-	const [alertType, setAlertType] = useState(0)
+	const [alertType, setAlertType] = useState('')
 	const [telegramId, setTelegramId] = useState('')
 
 
@@ -33,7 +33,7 @@ const NotificationsPage = () => {
 
 	const saveTgId = () => {
 		if (alertType != '') {
-			coreService.changeTgId(alertType).then(console.log)
+			coreService.changeTgId(telegramId).then(console.log)
 		}
 
 	}
@@ -50,6 +50,11 @@ const NotificationsPage = () => {
 			}
 		})
 	}, [])
+	
+	const handleValue = (text) => {
+		setAlertType(text)
+		setTelegramId(text)
+	}
 
 
 	return <div className='notification_page'>
@@ -60,15 +65,18 @@ const NotificationsPage = () => {
 				{currentPlatform == 'telegram' ?
 					<div><Field 
 						defaultValue={telegramId} type='text' 	
-						placeholder='Введите адрес' cb={setAlertType} 
-						onBlur={saveTgId} label={<label className="label">Введите айди </label>}/>
-					
+						placeholder='Введите адрес' cb={handleValue} 
+						label={<label className="label">Введите айди </label>}/>
+						
 					</div>
 					: 'Используется почта при регистрации аккаунта'}
 				<div className='notification_source__send-btn'>
+					{currentPlatform == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} />}
 					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} />
+					
 				</div>
 			</div>
+			
 			<div className='alert_status'>
 				<input type='checkbox' onChange={handleAlertsStatus} checked={alertStatus} />
 				{alertStatus? 'Включено': 'Отключено'}

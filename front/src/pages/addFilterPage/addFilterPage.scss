@@ -50,7 +50,7 @@
 
 	&__content {
 		width: 500px;
-		height: 500px;
+		max-height: 500px;
 		background-color: white;
 		border-radius: 4px;
 	}
@@ -63,7 +63,13 @@
 
 	&__header {
 		padding: 1rem;
-
+		& > input {
+			padding: .4rem;
+			background-color: #e8e8e8;
+			width: 100%;
+			margin-top: 1rem;
+			border-radius: 4px;
+		}
 		&-close {
 			display: flex;
 			justify-content: flex-end;
@@ -89,7 +95,7 @@
 .searchPopup__body-list {
 	padding: 1rem;
 	overflow-y: auto;
-    height: 75%;
+    max-height: 75%;
 	&__item {
 		margin-top: 0.5rem;
 		background-color: #e8e8e8;
@@ -115,4 +121,9 @@
 		background-clip: content-box;
 		background-color: #6f6f6f;
 	}
+}
+
+.addFilter__button {
+	margin-top: 1rem;
+	width: 50%;
 }

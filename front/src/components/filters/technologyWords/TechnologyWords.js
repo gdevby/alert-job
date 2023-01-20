@@ -41,7 +41,7 @@ const TechnologyWords = ({ filter_id }) => {
 
 
 	const getWords = (text, currentPage = 0) => {
-		if (page == 0 || totalCount != result.length) {
+		if (currentPage == 0 || totalCount != result.length) {
 			filterService
 				.getWords('technology-word', text, currentPage)
 				.then(response => {
@@ -68,6 +68,7 @@ const TechnologyWords = ({ filter_id }) => {
 
 	const changeWord = (event) => {
 		setSelectValue(event.target.value)
+		
 		//getWords(event.target.value)
 	}
 
@@ -78,6 +79,7 @@ const TechnologyWords = ({ filter_id }) => {
 				.addWord(selectValue, 'technology-word')
 				.then(response => {
 					addWord(response.data)
+					setResult(prev => [...prev, response.data])
 				})
 		}
 	}
@@ -104,8 +106,10 @@ const TechnologyWords = ({ filter_id }) => {
 			setWords((prev) => [...prev, ...technologyWords])
 		}
 	}, [])
+	
 	useEffect(() => {
 		if (debouncedSearchTerm) {
+			console.log(debouncedSearchTerm)
 			getWords(debouncedSearchTerm, 0)
 		} else {
 			setResult([]);
@@ -143,6 +147,7 @@ const TechnologyWords = ({ filter_id }) => {
 			<div className='searchPopup__content'>
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
+					Поиск по ключевым словам
 					<input type='text' onChange={changeWord} value={selectValue} />
 				</div>
 				<div className='searchPopup__body'>

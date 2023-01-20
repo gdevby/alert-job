@@ -20,6 +20,7 @@
 			display: flex;
 			justify-content: space-between;
 			width: 66%;
+			
 		}
 	}
 
@@ -28,7 +29,7 @@
 		justify-content: flex-start;
 
 		&>div:last-child {
-			margin-left: 1.5rem;
+			//margin-left: 1.5rem;
 		}
 	}
 
@@ -40,14 +41,26 @@
 	//background-color: rgb(241 241 241);
 	padding: 1rem;
 	box-shadow: 5px 2px 9px rgb(215 215 215);
-	width: 24%;
+	//width: 24%;
 	margin-bottom: 1rem;
 	border-radius: 20px;
 	//max-height: 20vh;
 	//height: 24%;
 	display: flex;
 	justify-content: space-between;
-	flex-direction: column;
+	//flex-direction: column;
+	width: 33%;
+	&__remove {
+		cursor: pointer;
+	}
+	
+	& > div {
+		text-align: center;
+	}
+	
+	&__cat {
+		padding-left: 10px;
+	}
 
 }
 
