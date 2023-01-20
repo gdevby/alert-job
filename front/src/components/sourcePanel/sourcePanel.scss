@@ -43,7 +43,7 @@
 	width: 24%;
 	margin-bottom: 1rem;
 	border-radius: 20px;
-	max-height: 35vh;
+	//max-height: 20vh;
 	//height: 24%;
 	display: flex;
 	justify-content: space-between;
@@ -86,7 +86,7 @@
 	flex-wrap: wrap;
 	justify-content: space-between;
 	overflow-y: auto;
-	height: 70vh;
+	//height: 70vh;
 
 	&::-webkit-scrollbar {
 		width: 3px;

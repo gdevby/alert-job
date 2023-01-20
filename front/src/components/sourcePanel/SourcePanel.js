@@ -133,7 +133,7 @@ const SourcePanel = ({ addSource }) => {
 	}
 
 	return <div className='source_panel'>
-		
+
 		<div className='source_panel-addingSource'>
 			<div className='source_panel-addingSource__title'>
 				Сперва вам надо указать источник заказов, откуда вы будете получать заказы, чтобы потом применять фильтры, выберите для начала сайт, потом категорию и подкатегорию, например "Все подкатегории""</div>
@@ -149,13 +149,10 @@ const SourcePanel = ({ addSource }) => {
 				</div>
 			</div>
 		</div>
-		
-
 		<div className='source_panel-actions'>
 			<div>
 				<Button onClick={addingSource} text={'Добавить источник'} />
 			</div>
-			
 		</div>
 		<div className='current_filter'>
 			<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет заказам из источника заказов</div>
@@ -166,8 +163,8 @@ const SourcePanel = ({ addSource }) => {
 					<Button onClick={removeFilter} text={'Удалить фильтр'} />
 				</div>}
 				<div>
-				<Button onClick={addNewFilter} text={'Добавить новый фильтр'} />
-			</div>
+					<Button onClick={addNewFilter} text={'Добавить новый фильтр'} />
+				</div>
 			</div>
 		</div>
 	</div>
