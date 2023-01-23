@@ -431,19 +431,26 @@ public class CoreService {
 				});
 	}
 	
-	public Mono<SourceSiteDTO> createSourceSite(String uuid, Source source){
-		return Mono.create(m -> {
+	public Mono<ResponseEntity<SourceSiteDTO>> createSourceSite(String uuid, Source source) {
+		return Mono.defer(() -> {
 			AppUser user = userRepository.findOneEagerSourceSite(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			if (CollectionUtils.isEmpty(user.getSources())) {
 				user.setSources(Sets.newHashSet());
 			}
+			Optional<SourceSite> existSource = user.getSources().stream()
+					.filter(s -> s.getSiteCategory().equals(source.getSiteCategory())
+							&& s.getSiteSubCategory().equals(source.getSiteSubCategory()))
+					.findAny();
+			if (existSource.isPresent())
+				return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build());
 			SourceSite sourceSite = mapper.map(source, SourceSite.class);
 			sourceRepository.save(sourceSite);
 			user.getSources().add(sourceSite);
 			userRepository.save(user);
 			changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), true, true).subscribe();
-			m.success(mapper.map(sourceSite, SourceSiteDTO.class));
+			return Mono.just(ResponseEntity.ok(mapper.map(sourceSite, SourceSiteDTO.class)));
+
 		});
 	}
 	
