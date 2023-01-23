@@ -45,6 +45,13 @@ public class OrderParserController {
 						.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build());
 		return Flux.merge(flruFlux, hubrFlux);
 	}
+	
+	
+	@GetMapping("test/hubr")
+	public void test() {
+		System.out.println(hubr.hubrParser().size());
+	}
+	
 
 	@GetMapping("sites")
 	public Flux<SiteSourceDTO> sites() {

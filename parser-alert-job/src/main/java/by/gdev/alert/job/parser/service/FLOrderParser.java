@@ -55,22 +55,19 @@ public class FLOrderParser {
 				.forEach(categories -> {
 					Set<Subcategory> siteSubCategories = categories.getSubCategories();
 					// checking if a subcategory exists for this category
-					if (Objects.isNull(siteSubCategories)) {
 						// category does't have a subcategory
 						List<Order> list = flruMapItems(categories.getLink(), siteSourceJob.getId(), categories, null);
 						orders.addAll(list);
-					} else {
 						// category have a subcategory
 						siteSubCategories.stream()
 								// parse only sub categories that can parse=true
 								.filter(subCategoryFilter -> subCategoryFilter.isParse())
 								// Iterate all sub category
 								.forEach(subCategories -> {
-									List<Order> list = flruMapItems(subCategories.getLink(), siteSourceJob.getId(),
+									List<Order> list1 = flruMapItems(subCategories.getLink(), siteSourceJob.getId(),
 											categories, subCategories);
-									orders.addAll(list);
+									orders.addAll(list1);
 								});
-					}
 				});
 		return orders;
 	}
@@ -92,7 +89,7 @@ public class FLOrderParser {
 					SourceSiteDTO dto = new SourceSiteDTO();
 					dto.setSource(siteSourceJobId);
 					dto.setCategory(category.getId());
-					dto.setSubCategory(subCategory.getId());
+					dto.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
 					dto.setFlRuForAll(o.isFlRuForAll());
 					o.setSourceSite(dto);
 					return o;
