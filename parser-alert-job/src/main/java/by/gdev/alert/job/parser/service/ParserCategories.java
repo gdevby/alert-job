@@ -27,7 +27,7 @@ import com.google.common.collect.Lists;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.FlCategory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.SubCategory;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.FlCategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
@@ -72,15 +72,15 @@ public class ParserCategories {
 		}
 		Category sc = op.get();
 		if (Objects.isNull(sc.getSubCategories()))
-			sc.setSubCategories(new HashSet<SubCategory>());
+			sc.setSubCategories(new HashSet<Subcategory>());
 		v.forEach(sub -> {
-			Optional<SubCategory> sscOp = sc.getSubCategories().stream()
+			Optional<Subcategory> sscOp = sc.getSubCategories().stream()
 					.filter(ssc -> (Objects.nonNull(ssc.getName()) && Objects.equals(ssc.getName(), sub.name()))
 							|| (Objects.nonNull(ssc.getNativeLocName())
 									&& Objects.equals(ssc.getNativeLocName(), sub.translatedName())))
 					.findAny();
 			if (sscOp.isEmpty()) {
-				SubCategory ssc1 = new SubCategory();
+				Subcategory ssc1 = new Subcategory();
 				ssc1.setName(sub.name());
 				ssc1.setNativeLocName(sub.translatedName);
 				sc.getSubCategories().add(subCategoryRepository.save(ssc1));
@@ -173,10 +173,10 @@ public class ParserCategories {
 						String[] l1 = s.split("\t");
 						String name1 = l1[0];
 						String link1 = l1[1];
-						Optional<SubCategory> sub = presentCategory.getSubCategories().stream()
+						Optional<Subcategory> sub = presentCategory.getSubCategories().stream()
 								.filter(n -> n.getNativeLocName().equals(name1)).findAny();
 						if (sub.isPresent()) {
-							SubCategory presentSubCategory = sub.get();
+							Subcategory presentSubCategory = sub.get();
 							if (StringUtils.isEmpty(presentSubCategory.getLink())
 									|| !presentSubCategory.getLink().equals(link1)) {
 								presentSubCategory.setLink(link1);

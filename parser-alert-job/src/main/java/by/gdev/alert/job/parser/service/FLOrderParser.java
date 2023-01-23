@@ -1,5 +1,6 @@
 package by.gdev.alert.job.parser.service;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.SubCategory;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.rss.Rss;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.Order;
@@ -30,10 +31,12 @@ import by.gdev.common.model.SourceSiteDTO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 @Data
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FLOrderParser {
 
 	private final WebClient webClient;
@@ -53,30 +56,27 @@ public class FLOrderParser {
 				.filter(categoryFilter -> categoryFilter.isParse())
 				// iterate over each category from this collection
 				.forEach(categories -> {
-					Set<SubCategory> siteSubCategories = categories.getSubCategories();
+					Set<Subcategory> siteSubCategories = categories.getSubCategories();
 					// checking if a subcategory exists for this category
-					if (Objects.isNull(siteSubCategories)) {
 						// category does't have a subcategory
 						List<Order> list = flruMapItems(categories.getLink(), siteSourceJob.getId(), categories, null);
 						orders.addAll(list);
-					} else {
 						// category have a subcategory
 						siteSubCategories.stream()
 								// parse only sub categories that can parse=true
 								.filter(subCategoryFilter -> subCategoryFilter.isParse())
 								// Iterate all sub category
 								.forEach(subCategories -> {
-									List<Order> list = flruMapItems(subCategories.getLink(), siteSourceJob.getId(),
+									List<Order> list1 = flruMapItems(subCategories.getLink(), siteSourceJob.getId(),
 											categories, subCategories);
-									orders.addAll(list);
+									orders.addAll(list1);
 								});
-					}
 				});
 		return orders;
 	}
 	
 	@SneakyThrows
-	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, Category category, SubCategory subCategory) {
+	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
@@ -92,23 +92,32 @@ public class FLOrderParser {
 					SourceSiteDTO dto = new SourceSiteDTO();
 					dto.setSource(siteSourceJobId);
 					dto.setCategory(category.getId());
-					dto.setSubCategory(subCategory.getId());
+					dto.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
 					dto.setFlRuForAll(o.isFlRuForAll());
 					o.setSourceSite(dto);
 					return o;
-				}).collect(Collectors.toList());
+				}).filter(e -> e.isValidOrder()).collect(Collectors.toList());
 	}
 	
 	@SneakyThrows
-	private void parsePrice(Order order) {
+	private Order parsePrice(Order order) {
 		Matcher m = paymentPatter.matcher(order.getTitle());
 		if (m.find()) {
 			order.setPrice(new Price("", Integer.valueOf(m.group(1))));
 		}
-		Document doc = Jsoup.parse(new URL(order.getLink()), 30000);
+		Document doc = null;
+		try {
+			doc = Jsoup.parse(new URL(order.getLink()), 30000);
+		} catch (IOException ex) {
+			order.setValidOrder(false);
+			log.debug("invalid flru link " + order.getLink());
+			return order;
+		}
 		Element el = doc.selectFirst(".b-layout__txt_lineheight_1");
 		if (Objects.nonNull(el) && (el.text().contains("Срочный заказ") || el.text().contains("Для всех"))) {
 			order.setFlRuForAll(true);
 		}
+		order.setValidOrder(true);
+		return order;
 	}
 }

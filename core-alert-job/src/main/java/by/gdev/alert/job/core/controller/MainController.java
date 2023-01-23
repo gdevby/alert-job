@@ -175,8 +175,8 @@ public class MainController {
 	}
 	
 	@PostMapping("user/source")
-	public ResponseEntity<Mono<SourceSiteDTO>> addSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody @Valid Source source){
-		return ResponseEntity.ok(coreService.createSourceSite(uuid, source));
+	public Mono<ResponseEntity<SourceSiteDTO>> addSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody @Valid Source source){
+		return coreService.createSourceSite(uuid, source);
 	}
 	
 	@DeleteMapping("user/source/{source_id}")

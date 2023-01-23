@@ -20,5 +20,5 @@ public class Category extends BasicId {
 	private String link;
 	private boolean parse;
 	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-	private Set<SubCategory> subCategories;
+	private Set<Subcategory> subCategories;
 }

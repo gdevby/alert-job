@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,6 +46,7 @@ public class OrderParserController {
 						.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build());
 		return Flux.merge(flruFlux, hubrFlux);
 	}
+	
 
 	@GetMapping("sites")
 	public Flux<SiteSourceDTO> sites() {
@@ -74,5 +76,12 @@ public class OrderParserController {
 	@GetMapping("category/{id}/subcategory/{sub_id}")
 	public Mono<SubCategoryDTO> subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
 		return service.getSubCategory(id, subId);
+	}
+	
+	@PatchMapping("subscribe/sources")
+	public Mono<Void> subscribeSources(@RequestParam("category_id") Long categoryId,
+			@RequestParam(name = "subcategory_id", required = false) Long subCategoryId,
+			@RequestParam("category_value") boolean cValue, @RequestParam(name = "subcategory_value", required =  false) boolean sValue) {
+		return service.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
 	}
 }

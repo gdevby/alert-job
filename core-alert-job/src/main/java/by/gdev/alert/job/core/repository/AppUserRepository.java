@@ -8,6 +8,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.model.db.SourceSite;
 
 public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 	
@@ -25,4 +26,5 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 	@Query("from AppUser u left join fetch u.sources left join fetch u.currentFilter")
 	List<AppUser> findAllUserEagerCurrentFilterAndSourceSite();
 	
+	boolean existsBySources(SourceSite sources);
 }

@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @Entity(name = "parser_sub_category")
 @EqualsAndHashCode(callSuper = true)
-public class SubCategory extends BasicId {
+public class Subcategory extends BasicId {
 	
 	private String name;
 	private String link;

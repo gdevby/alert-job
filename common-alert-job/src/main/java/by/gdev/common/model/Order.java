@@ -19,4 +19,5 @@ public class Order {
 	private List<String> technologies;
 	private SourceSiteDTO sourceSite;
 	private boolean flRuForAll;
+	private boolean validOrder;
 }
