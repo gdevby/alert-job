@@ -442,23 +442,43 @@ public class CoreService {
 			sourceRepository.save(sourceSite);
 			user.getSources().add(sourceSite);
 			userRepository.save(user);
+			changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), true, true).subscribe();
 			m.success(mapper.map(sourceSite, SourceSiteDTO.class));
 		});
 	}
 	
-	public Mono<ResponseEntity<Void>> removeSourceSite(String uuid, Long sourceId){
+	public Mono<ResponseEntity<Void>> removeSourceSite(String uuid, Long sourceId) {
 		return Mono.create(m -> {
 			AppUser user = userRepository.findOneEagerSourceSite(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			SourceSite sourceSite = sourceRepository.findById(sourceId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found site source with id " + sourceId));
-			
 			if (user.getSources().removeIf(s -> s.equals(sourceSite))) {
 				userRepository.save(user);
+				if(!userRepository.existsBySources(sourceSite)) {
+					sourceRepository.delete(sourceSite);
+					boolean cValue = sourceRepository.existsBySiteCategory(sourceSite.getSiteCategory());
+					boolean sValue = sourceRepository.existsBySiteCategoryAndSiteSubCategory(sourceSite.getSiteCategory(),
+							sourceSite.getSiteSubCategory());
+						changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), cValue, sValue)
+								.subscribe();
+				}
 				m.success(ResponseEntity.ok().build());
-			}else {
+			} else {
 				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
 			}
 		});
+	}
+	
+	private Mono<Void> changeParserSubcribe(Long category, Long subcategory, boolean cValue, boolean sValue) {
+		return webClient.patch().uri("http://parser:8017/api/subscribe/sources", b -> {
+			b.queryParam("category_id", category);
+			b.queryParam("category_value", cValue);
+			if (Objects.nonNull(subcategory)) {
+				b.queryParam("subcategory_id", subcategory);
+				b.queryParam("subcategory_value", sValue);
+			}
+			return b.build();
+		}).retrieve().bodyToMono(Void.class);
 	}
 }

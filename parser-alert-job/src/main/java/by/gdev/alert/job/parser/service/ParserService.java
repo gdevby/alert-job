@@ -1,6 +1,7 @@
 package by.gdev.alert.job.parser.service;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import by.gdev.alert.job.parser.exeption.ResourceNotFoundException;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
+import by.gdev.alert.job.parser.repository.SubCategoryRepository;
 import by.gdev.common.model.CategoryDTO;
 import by.gdev.common.model.SiteSourceDTO;
 import by.gdev.common.model.SubCategoryDTO;
@@ -28,6 +30,7 @@ public class ParserService {
 
 	private final SiteSourceJobRepository siteSourceJobRepository;
 	private final CategoryRepository categoryRepository;
+	private final SubCategoryRepository subCategoryRepository;
 	private final OrderLinksRepository linkRepository;
 
 	private final ModelMapper mapper;
@@ -98,6 +101,20 @@ public class ParserService {
 			Category sc = categoryRepository.findByIdAndSubCategory(cId, sId);
 			Subcategory sub = sc.getSubCategories().stream().findFirst().get();
 			m.success(mapper.map(sub, SubCategoryDTO.class));
+		});
+	}
+	
+	public Mono<Void> subcribeOnSource(Long categoryId, Long subCategoryId, boolean cValue, boolean sValue){
+		return Mono.create(m -> {
+			Category c = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException());
+			c.setParse(cValue);
+			categoryRepository.save(c);
+			if (Objects.nonNull(subCategoryId)) {
+				Subcategory s = subCategoryRepository.findById(subCategoryId).orElseThrow(() -> new ResourceNotFoundException());
+				s.setParse(sValue);
+				subCategoryRepository.save(s);
+			}
+			m.success();
 		});
 	}
 }
