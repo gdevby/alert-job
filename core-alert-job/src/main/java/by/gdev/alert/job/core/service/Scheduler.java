@@ -36,7 +36,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 	private final StatisticService statisticService;
 	private final AppUserRepository userRepository;
 	
-	
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		sseConnection();
@@ -62,14 +61,17 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 					statisticService.statisticDescriptionWord(p.getMessage());
 					statisticService.statisticTechnologyWord(p.getTechnologies());
 				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).collect(Collectors.toList());
-	
-				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
+				log.debug("size elements after filtering {}", list.size());
+				List<String> messages = list.stream()
+						.filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
+				log.debug("send message size {}", messages.size());
 				String sendMessage = StringUtils.isNotEmpty(user.getEmail()) ? "http://notification:8019/mail"
 						: "http://notification:8019/telegram";
 				UserNotification un = StringUtils.isNotEmpty(user.getEmail()) ? new UserNotification(user.getEmail(), null)
 						: new UserNotification(String.valueOf(user.getTelegram()), null);
+				log.debug("send message from user email {}", un.getToMail());
 				messages.forEach(message -> {
 					un.setMessage(message);
 					Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
