@@ -49,7 +49,7 @@ const SourcePanel = ({ addSource }) => {
 				.getSubcategories(currentCat.id)
 				.then(response => {
 					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
-					setSubcategories([{ id: 0, name: 'Все подкатегории' }, ...subcat])
+					setSubcategories([{ id: null, name: 'Все подкатегории' }, ...subcat])
 				})
 		}
 
