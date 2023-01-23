@@ -1,5 +1,6 @@
 package by.gdev.alert.job.parser.service;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +30,12 @@ import by.gdev.common.model.SourceSiteDTO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 @Data
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class HabrOrderParser {
 
 	private final WebClient webClient;
@@ -89,12 +92,18 @@ public class HabrOrderParser {
 					dto.setFlRuForAll(o.isFlRuForAll());
 					o.setSourceSite(dto);
 					return o;
-				}).collect(Collectors.toList());
+				}).filter(e -> e.isValidOrder()).collect(Collectors.toList());
 	}
 
-	@SneakyThrows
 	private Order parsePrice(Order order) {
-		Document doc = Jsoup.parse(new URL(order.getLink()), 30000);
+		Document doc = null;
+		try {
+			doc = Jsoup.parse(new URL(order.getLink()), 30000);
+		} catch (IOException ex) {
+			order.setValidOrder(false);
+			log.debug("invalid hubr link " + order.getLink());
+			return order;
+		}
 		Element el = doc.selectFirst("span.count");
 		Element elPaymentType = el.selectFirst(".suffix");
 		if (Objects.nonNull(elPaymentType) && elPaymentType.text().equals("за проект")) {
@@ -103,6 +112,7 @@ public class HabrOrderParser {
 		}
 		Elements elements = doc.select(".tags__item_link");
 		order.setTechnologies(elements.eachText().stream().map(e -> e.toLowerCase()).collect(Collectors.toList()));
+		order.setValidOrder(true);
 		return order;
 	}
 }
