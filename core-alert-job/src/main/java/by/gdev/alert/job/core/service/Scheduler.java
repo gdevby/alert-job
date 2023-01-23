@@ -23,11 +23,13 @@ import by.gdev.common.model.Price;
 import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 
 	private final WebClient webClient;
@@ -48,7 +50,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 		sseEvents.subscribe(event -> {
 			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
 			forEachOrders(users, event.data());
-		});
+		}, error -> log.debug("failed to get orders from parser"));
 	}
 
 	
@@ -71,7 +73,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 				messages.forEach(message -> {
 					un.setMessage(message);
 					Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
-					mono.subscribe();
+					mono.subscribe(e -> log.debug("sent new order for user alert {}", un.getToMail()),
+							e -> log.debug("failed to get new order for user alert {}", un.getToMail()));
 				});
 			});
 
