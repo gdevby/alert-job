@@ -1,10 +1,10 @@
 package by.gdev.alert.job.core.service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.ParameterizedTypeReference;
@@ -24,7 +24,9 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 @Service
 @RequiredArgsConstructor
@@ -43,11 +45,15 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	public void sseConnection() {
 		ParameterizedTypeReference<ServerSentEvent<List<Order>>> type = new ParameterizedTypeReference<ServerSentEvent<List<Order>>>() {
 		};
-		webClient.get().uri("http://parser:8017/api/stream-sse").accept(MediaType.TEXT_EVENT_STREAM).retrieve()
-				.bodyToFlux(type).doOnSubscribe(s -> log.info("subscribed on orders")).subscribe(event -> {
-					List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
-					forEachOrders(users, event.data());
-				}, error -> log.warn("failed to get orders from parser"));
+		Flux<ServerSentEvent<List<Order>>> sseConection = webClient.get().uri("http://parser:8017/api/stream-sse")
+				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
+				.doOnSubscribe(s -> log.info("subscribed on orders"))
+				.retryWhen(Retry.backoff(5, Duration.ofSeconds(2)));
+		sseConection.subscribe(event -> {
+			System.out.println(event.data().size());
+			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
+			forEachOrders(users, event.data());
+		}, error -> log.warn("failed to get orders from parser {}", error.getMessage()));
 	}
 
 	public void forEachOrders(List<AppUser> users, List<Order> orders) {
@@ -59,16 +65,16 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 					statisticService.statisticTechnologyWord(p.getTechnologies());
 				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).collect(Collectors.toList());
 				log.debug("size elements after filtering {}", list.size());
-				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
+				List<String> messages = list.stream()
+						.filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
 				log.debug("send message size {}", messages.size());
-				String sendMessage = StringUtils.isNotEmpty(user.getEmail()) ? "http://notification:8019/mail"
-						: "http://notification:8019/telegram";
-				UserNotification un = StringUtils.isNotEmpty(user.getEmail())
+				String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail" : "http://notification:8019/telegram";
+				UserNotification un = user.isDefaultSendType()
 						? new UserNotification(user.getEmail(), null)
 						: new UserNotification(String.valueOf(user.getTelegram()), null);
-				log.debug("send message from user email {}", un.getToMail());
+				log.debug("send message from user on {}", un.getToMail());
 				messages.forEach(message -> {
 					un.setMessage(message);
 					Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
@@ -94,9 +100,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private boolean isMatchUserFilter(AppUser user, Order order) {
 		UserFilter userFilter = user.getCurrentFilter();
 		Price price = order.getPrice();
-		boolean isMinValue = Objects.nonNull(userFilter.getMinValue()) ? userFilter.getMinValue() <= price.getValue()
+		boolean isMinValue = Objects.nonNull(price) || Objects.nonNull(userFilter.getMinValue()) ? userFilter.getMinValue() <= price.getValue()
 				: true;
-		boolean isMaxValue = Objects.nonNull(userFilter.getMaxValue()) ? price.getValue() <= userFilter.getMaxValue()
+		boolean isMaxValue = Objects.nonNull(price) || Objects.nonNull(userFilter.getMinValue()) ? price.getValue() <= userFilter.getMaxValue()
 				: true;
 		boolean isContainsTitle = CollectionUtils.isEmpty(userFilter.getTitles())
 				? userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()))
