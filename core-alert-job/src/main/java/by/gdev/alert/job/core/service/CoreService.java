@@ -448,7 +448,12 @@ public class CoreService {
 			sourceRepository.save(sourceSite);
 			user.getSources().add(sourceSite);
 			userRepository.save(user);
-			changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), true, true).subscribe();
+			changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), true, true)
+			.subscribe(
+					c -> log.info("changed status for {}, {}", sourceSite.getSiteCategory(),
+							sourceSite.getSiteSubCategory()),
+					ex -> log.info("failed to change parser status for {} {}",
+							sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory()));
 			return Mono.just(ResponseEntity.ok(mapper.map(sourceSite, SourceSiteDTO.class)));
 
 		});
@@ -462,13 +467,17 @@ public class CoreService {
 					.orElseThrow(() -> new ResourceNotFoundException("not found site source with id " + sourceId));
 			if (user.getSources().removeIf(s -> s.equals(sourceSite))) {
 				userRepository.save(user);
-				if(!userRepository.existsBySources(sourceSite)) {
+				if (!userRepository.existsBySources(sourceSite)) {
 					sourceRepository.delete(sourceSite);
 					boolean cValue = sourceRepository.existsBySiteCategory(sourceSite.getSiteCategory());
-					boolean sValue = sourceRepository.existsBySiteCategoryAndSiteSubCategory(sourceSite.getSiteCategory(),
-							sourceSite.getSiteSubCategory());
-						changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), cValue, sValue)
-								.subscribe();
+					boolean sValue = sourceRepository.existsBySiteCategoryAndSiteSubCategory(
+							sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory());
+					changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), cValue, sValue)
+							.subscribe(
+									c -> log.debug("changed status for {}, {}", sourceSite.getSiteCategory(),
+											sourceSite.getSiteSubCategory()),
+									ex -> log.debug("failed to change parser status for {} {}",
+											sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory()));
 				}
 				m.success(ResponseEntity.ok().build());
 			} else {
