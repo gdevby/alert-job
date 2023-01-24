@@ -21,13 +21,15 @@ const DescriptionWords = ({ filter_id }) => {
 
 	const listRef = React.createRef()
 
-	const debouncedSearchTerm = useDebounce(selectValue, 1000)
+	const debouncedSearchTerm = useDebounce(selectValue, 500)
 
 	const { descriptionWords } = useSelector(state => state.filter.currentFilter)
 	const { isNew } = useSelector(state => state.filter)
 
 	const openSearch = () => {
 		setIsOpen(true)
+		setPage(0)
+		getWords('')
 	}
 
 	const addWord = (word) => {
@@ -35,13 +37,15 @@ const DescriptionWords = ({ filter_id }) => {
 			.addWordToFilter('description-word', filter_id, word.id)
 			.then(() => {
 				setWords((prev) => [...prev, word])
+				setResult((prev) => [...prev, word]);
 				setIsOpen(false)
+				setSelectValue('')
 			})
 	}
 
 
 	const getWords = (text, currentPage = 0) => {
-		if (page == 0 || totalCount != result.length) {
+		if (currentPage == 0 || totalCount != result.length) {
 			filterService
 				.getWords('description-word', text, currentPage)
 				.then(response => {
@@ -55,7 +59,6 @@ const DescriptionWords = ({ filter_id }) => {
 						setSearchedWords((prev) => [...prev, ...response.data.content.map(item => item.name)]);
 						setResult((prev) => [...prev, ...response.data.content]);
 					}
-
 				})
 				.finally(() => {
 					setIsFetching(false)
@@ -105,10 +108,12 @@ const DescriptionWords = ({ filter_id }) => {
 		}
 	}, [])
 	useEffect(() => {
-		if (debouncedSearchTerm) {
-			getWords(debouncedSearchTerm, 0)
-		} else {
-			setResult([]);
+		if (!isFetching) {
+			if (debouncedSearchTerm) {
+				getWords(debouncedSearchTerm, 0)
+			} else {
+				setResult([]);
+			}
 		}
 	}, [debouncedSearchTerm])
 

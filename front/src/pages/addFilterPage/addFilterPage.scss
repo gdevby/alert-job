@@ -50,7 +50,7 @@
 
 	&__content {
 		width: 500px;
-		max-height: 500px;
+		//max-height: 500px;
 		background-color: white;
 		border-radius: 4px;
 	}
@@ -95,7 +95,7 @@
 .searchPopup__body-list {
 	padding: 1rem;
 	overflow-y: auto;
-    max-height: 75%;
+    max-height: 300px;
 	&__item {
 		margin-top: 0.5rem;
 		background-color: #e8e8e8;

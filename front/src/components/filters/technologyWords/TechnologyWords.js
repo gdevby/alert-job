@@ -28,6 +28,8 @@ const TechnologyWords = ({ filter_id }) => {
 
 	const openSearch = () => {
 		setIsOpen(true)
+		setPage(0)
+		getWords('')
 	}
 
 	const addWord = (word) => {
@@ -35,7 +37,9 @@ const TechnologyWords = ({ filter_id }) => {
 			.addWordToFilter('technology-word', filter_id, word.id)
 			.then(() => {
 				setWords((prev) => [...prev, word])
+				setResult((prev) => [...prev, word]);
 				setIsOpen(false)
+				setSelectValue('')
 			})
 	}
 
@@ -108,11 +112,12 @@ const TechnologyWords = ({ filter_id }) => {
 	}, [])
 	
 	useEffect(() => {
-		if (debouncedSearchTerm) {
-			console.log(debouncedSearchTerm)
-			getWords(debouncedSearchTerm, 0)
-		} else {
-			setResult([]);
+		if (!isFetching) {
+			if (debouncedSearchTerm) {
+				getWords(debouncedSearchTerm, 0)
+			} else {
+				setResult([]);
+			}
 		}
 	}, [debouncedSearchTerm])
 
