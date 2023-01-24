@@ -20,12 +20,14 @@ import by.gdev.common.model.SiteSourceDTO;
 import by.gdev.common.model.SubCategoryDTO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Data
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ParserService {
 
 	private final SiteSourceJobRepository siteSourceJobRepository;
@@ -114,6 +116,7 @@ public class ParserService {
 				s.setParse(sValue);
 				subCategoryRepository.save(s);
 			}
+			log.trace("changed parser value {} {}, {} {}",categoryId, cValue, subCategoryId, sValue);
 			m.success();
 		});
 	}

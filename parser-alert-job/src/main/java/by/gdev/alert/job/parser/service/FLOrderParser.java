@@ -55,20 +55,23 @@ public class FLOrderParser {
 				// parse only categories that can parse=true
 				.filter(categoryFilter -> categoryFilter.isParse())
 				// iterate over each category from this collection
-				.forEach(categories -> {
-					Set<Subcategory> siteSubCategories = categories.getSubCategories();
+				.forEach(category -> {
+					log.trace("getting order by category {}", category.getNativeLocName());
+					Set<Subcategory> siteSubCategories = category.getSubCategories();
 					// checking if a subcategory exists for this category
 						// category does't have a subcategory
-						List<Order> list = flruMapItems(categories.getLink(), siteSourceJob.getId(), categories, null);
+						List<Order> list = flruMapItems(category.getLink(), siteSourceJob.getId(), category, null);
 						orders.addAll(list);
 						// category have a subcategory
 						siteSubCategories.stream()
 								// parse only sub categories that can parse=true
 								.filter(subCategoryFilter -> subCategoryFilter.isParse())
 								// Iterate all sub category
-								.forEach(subCategories -> {
-									List<Order> list1 = flruMapItems(subCategories.getLink(), siteSourceJob.getId(),
-											categories, subCategories);
+								.forEach(subCategory -> {
+									log.trace("getting order by category {} and subcategory  {}",
+											category.getNativeLocName(), subCategory.getNativeLocName());
+									List<Order> list1 = flruMapItems(subCategory.getLink(), siteSourceJob.getId(),
+											category, subCategory);
 									orders.addAll(list1);
 								});
 				});
@@ -80,8 +83,8 @@ public class FLOrderParser {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return rss.getChannel().getItem().stream().filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
-				.map(m -> {
+		return rss.getChannel().getItem().stream()
+				.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
 					service.saveOrderLinks(category, subCategory, m.getLink());
 					Order o = new Order();
 					o.setTitle(m.getTitle().toLowerCase());
@@ -96,7 +99,8 @@ public class FLOrderParser {
 					dto.setFlRuForAll(o.isFlRuForAll());
 					o.setSourceSite(dto);
 					return o;
-				}).filter(e -> e.isValidOrder()).collect(Collectors.toList());
+				}).filter(e -> e.isValidOrder())
+				.peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink())).collect(Collectors.toList());
 	}
 	
 	@SneakyThrows
