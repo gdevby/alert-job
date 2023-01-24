@@ -159,7 +159,7 @@ const DescriptionWords = ({ filter_id }) => {
 				</div>
 			</div>
 		</div>
-		Уведомлять, если технологии содержат
+		Уведомлять, если описание содержат
 		<Button text={'Добавить'} onClick={openSearch} />
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />

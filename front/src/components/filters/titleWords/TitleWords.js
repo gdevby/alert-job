@@ -159,7 +159,7 @@ const TitleWords = ({ filter_id }) => {
 				</div>
 			</div>
 		</div>
-		Уведомлять, если технологии содержат
+		Уведомлять, если в названии содержится
 		<Button text={'Добавить'} onClick={openSearch} />
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />
