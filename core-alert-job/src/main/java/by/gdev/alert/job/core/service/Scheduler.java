@@ -50,7 +50,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				.doOnSubscribe(s -> log.info("subscribed on orders"))
 				.retryWhen(Retry.backoff(5, Duration.ofSeconds(2)));
 		sseConection.subscribe(event -> {
-			System.out.println(event.data().size());
 			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
 			forEachOrders(users, event.data());
 		}, error -> log.warn("failed to get orders from parser {}", error.getMessage()));
