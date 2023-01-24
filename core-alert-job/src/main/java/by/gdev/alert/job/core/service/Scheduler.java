@@ -24,35 +24,32 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
+public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
 	private final WebClient webClient;
 	private final StatisticService statisticService;
 	private final AppUserRepository userRepository;
-	
+
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		sseConnection();
 	}
-	
+
 	public void sseConnection() {
 		ParameterizedTypeReference<ServerSentEvent<List<Order>>> type = new ParameterizedTypeReference<ServerSentEvent<List<Order>>>() {
 		};
-		Flux<ServerSentEvent<List<Order>>> sseEvents = webClient.get().uri("http://parser:8017/api/stream-sse")
-				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type);
-		sseEvents.subscribe(event -> {
-			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
-			forEachOrders(users, event.data());
-		}, error -> log.debug("failed to get orders from parser"));
+		webClient.get().uri("http://parser:8017/api/stream-sse").accept(MediaType.TEXT_EVENT_STREAM).retrieve()
+				.bodyToFlux(type).doOnSubscribe(s -> log.info("subscribed on orders")).subscribe(event -> {
+					List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
+					forEachOrders(users, event.data());
+				}, error -> log.warn("failed to get orders from parser"));
 	}
 
-	
 	public void forEachOrders(List<AppUser> users, List<Order> orders) {
 		users.forEach(user -> {
 			user.getSources().forEach(s -> {
@@ -62,14 +59,14 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 					statisticService.statisticTechnologyWord(p.getTechnologies());
 				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).collect(Collectors.toList());
 				log.debug("size elements after filtering {}", list.size());
-				List<String> messages = list.stream()
-						.filter(f1 -> isMatchUserFilter(user, f1))
+				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
 				log.debug("send message size {}", messages.size());
 				String sendMessage = StringUtils.isNotEmpty(user.getEmail()) ? "http://notification:8019/mail"
 						: "http://notification:8019/telegram";
-				UserNotification un = StringUtils.isNotEmpty(user.getEmail()) ? new UserNotification(user.getEmail(), null)
+				UserNotification un = StringUtils.isNotEmpty(user.getEmail())
+						? new UserNotification(user.getEmail(), null)
 						: new UserNotification(String.valueOf(user.getTelegram()), null);
 				log.debug("send message from user email {}", un.getToMail());
 				messages.forEach(message -> {
@@ -82,7 +79,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 
 		});
 	}
-	
+
 	// check for an empty subcategory, if the subcategory is empty, we compare only
 	// by source and category, otherwise all fields are taken
 	private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
@@ -93,14 +90,14 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 						&& userSource.getSiteCategory().equals(orderSource.getCategory())
 						&& userSource.getSiteSubCategory().equals(orderSource.getSubCategory());
 	}
-	
+
 	private boolean isMatchUserFilter(AppUser user, Order order) {
 		UserFilter userFilter = user.getCurrentFilter();
 		Price price = order.getPrice();
 		boolean isMinValue = Objects.nonNull(userFilter.getMinValue()) ? userFilter.getMinValue() <= price.getValue()
 				: true;
 		boolean isMaxValue = Objects.nonNull(userFilter.getMaxValue()) ? price.getValue() <= userFilter.getMaxValue()
-				:true;
+				: true;
 		boolean isContainsTitle = CollectionUtils.isEmpty(userFilter.getTitles())
 				? userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()))
 				: true;
@@ -110,6 +107,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent>{
 		boolean isContainsTech = CollectionUtils.isEmpty(userFilter.getTechnologies())
 				? userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().contains(e.getName()))
 				: true;
-			return isMinValue && isMaxValue && isContainsTitle && isContainsDesc && isContainsTech;
+		return isMinValue && isMaxValue && isContainsTitle && isContainsDesc && isContainsTech;
 	}
 }

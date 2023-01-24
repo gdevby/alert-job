@@ -43,7 +43,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				if (Files.notExists(Paths.get(updateFilePath)))
 					throw new RuntimeException(
 							"warn can't find links for habr rss you need to create file and set parser.categories.file.path "
-							+ "for parser service param, the example you can find here link src/test/resources/hubr.txt");
+									+ "for parser service param, the example you can find here link src/test/resources/hubr.txt");
 				else
 					parserCategories.updateHubrLink(updateFilePath);
 			}
@@ -61,8 +61,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			return now.isAfter(plusLdt);
 		}).forEach(e -> {
 			linkRepository.delete(e);
-			log.info("removed parser link" + e.getLinks());
+			log.debug("removed parser link" + e.getLinks());
 		});
 	}
-	
+
 }

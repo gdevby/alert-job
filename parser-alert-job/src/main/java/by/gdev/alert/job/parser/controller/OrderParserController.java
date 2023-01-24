@@ -21,12 +21,14 @@ import by.gdev.common.model.Order;
 import by.gdev.common.model.SiteSourceDTO;
 import by.gdev.common.model.SubCategoryDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/")
 @RequiredArgsConstructor
+@Slf4j
 public class OrderParserController {
 
 	public final HabrOrderParser hubr;
@@ -38,6 +40,7 @@ public class OrderParserController {
 
 	@GetMapping(value = "/stream-sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<List<Order>>> streamFlruEvents() {
+		log.trace("subscribed on orders");
 		Flux<ServerSentEvent<List<Order>>> flruFlux = Flux.interval(Duration.ofSeconds(parserInterval))
 				.map(sequence -> ServerSentEvent.<List<Order>>builder().id(String.valueOf(sequence))
 						.event("periodic-flru-parse-event").data(fl.flruParser()).build());
@@ -46,7 +49,6 @@ public class OrderParserController {
 						.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build());
 		return Flux.merge(flruFlux, hubrFlux);
 	}
-	
 
 	@GetMapping("sites")
 	public Flux<SiteSourceDTO> sites() {
@@ -77,11 +79,12 @@ public class OrderParserController {
 	public Mono<SubCategoryDTO> subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
 		return service.getSubCategory(id, subId);
 	}
-	
+
 	@PatchMapping("subscribe/sources")
 	public Mono<Void> subscribeSources(@RequestParam("category_id") Long categoryId,
 			@RequestParam(name = "subcategory_id", required = false) Long subCategoryId,
-			@RequestParam("category_value") boolean cValue, @RequestParam(name = "subcategory_value", required =  false) boolean sValue) {
+			@RequestParam("category_value") boolean cValue,
+			@RequestParam(name = "subcategory_value", required = false) boolean sValue) {
 		return service.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
 	}
 }

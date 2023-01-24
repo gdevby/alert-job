@@ -51,28 +51,30 @@ public class HabrOrderParser {
 				// parse only categories that can parse=true
 				.filter(categoryFilter -> categoryFilter.isParse())
 				// iterate over each category from this collection
-				.forEach(categories -> {
-					Set<Subcategory> siteSubCategories = categories.getSubCategories();
-						// category does't have a subcategory
-						List<Order> list = flruMapItems(categories.getLink(), siteSourceJob.getId(), categories, null);
-						orders.addAll(list);
-						// category have a subcategory
-						siteSubCategories.stream()
-								// parse only sub categories that can parse=true
-								.filter(subCategoryFilter -> subCategoryFilter.isParse())
-								// Iterate all sub category
-								.forEach(subCategories -> {
-									List<Order> list2 = flruMapItems(subCategories.getLink(), siteSourceJob.getId(),
-											categories, subCategories);
-									orders.addAll(list2);
-								});
+				.forEach(category -> {
+					log.trace("getting order by category {}", category.getNativeLocName());
+					Set<Subcategory> siteSubCategories = category.getSubCategories();
+					// category does't have a subcategory
+					List<Order> list = flruMapItems(category.getLink(), siteSourceJob.getId(), category, null);
+					orders.addAll(list);
+					// category have a subcategory
+					siteSubCategories.stream()
+							// parse only sub categories that can parse=true
+							.filter(subCategoryFilter -> subCategoryFilter.isParse())
+							// Iterate all sub category
+							.forEach(subCategory -> {
+								log.trace("getting order by category {} and subcategory  {}",
+										category.getNativeLocName(), subCategory.getNativeLocName());
+								List<Order> list2 = flruMapItems(subCategory.getLink(), siteSourceJob.getId(), category,
+										subCategory);
+								orders.addAll(list2);
+							});
 				});
 		return orders;
 	}
 
 	@SneakyThrows
-	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, Category category,
-			Subcategory subCategory) {
+	private List<Order> flruMapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
@@ -92,7 +94,9 @@ public class HabrOrderParser {
 					dto.setFlRuForAll(o.isFlRuForAll());
 					o.setSourceSite(dto);
 					return o;
-				}).filter(e -> e.isValidOrder()).collect(Collectors.toList());
+				}).filter(e -> e.isValidOrder()).peek(e -> {
+					log.debug("found new order {} {}", e.getTitle(), e.getLink());
+				}).collect(Collectors.toList());
 	}
 
 	private Order parsePrice(Order order) {
