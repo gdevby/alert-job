@@ -47,7 +47,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		Flux<ServerSentEvent<List<Order>>> sseConection = webClient.get().uri("http://parser:8017/api/stream-sse")
 				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
 				.doOnSubscribe(s -> log.info("subscribed on orders"))
-				.retryWhen(Retry.backoff(5, Duration.ofSeconds(2)));
+				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(2)));
 		sseConection.subscribe(event -> {
 			log.info("size elements {}", event.data().size());
 			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
@@ -64,14 +64,13 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 					statisticService.statisticTechnologyWord(p.getTechnologies());
 				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).collect(Collectors.toList());
 				log.debug("size elements that match the categories {}", list.size());
-				List<String> messages = list.stream()
-						.filter(f1 -> isMatchUserFilter(user, f1))
+				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
 				log.debug("size elemets that match user filter {}", messages.size());
-				String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail" : "http://notification:8019/telegram";
-				UserNotification un = user.isDefaultSendType()
-						? new UserNotification(user.getEmail(), null)
+				String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
+						: "http://notification:8019/telegram";
+				UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
 						: new UserNotification(String.valueOf(user.getTelegram()), null);
 				log.debug("send message from user on {}", un.getToMail());
 				messages.forEach(message -> {
@@ -103,20 +102,22 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		}
 		UserFilter userFilter = user.getCurrentFilter();
 		boolean minValue = true, maxValue = true, containsTitle = true, containsDesc = true, containsTech = true;
-		if(Objects.nonNull(order.getPrice())) {
-			if(Objects.nonNull(userFilter.getMinValue())) 
-				minValue =  userFilter.getMinValue() <= order.getPrice().getValue();
-			if(Objects.nonNull(userFilter.getMaxValue())) 
+		if (Objects.nonNull(order.getPrice())) {
+			if (Objects.nonNull(userFilter.getMinValue()))
+				minValue = userFilter.getMinValue() <= order.getPrice().getValue();
+			if (Objects.nonNull(userFilter.getMaxValue()))
 				maxValue = userFilter.getMaxValue() >= order.getPrice().getValue();
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getTitles()))
 			containsTitle = userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
-		
+
 		if (!CollectionUtils.isEmpty(userFilter.getDescriptions()))
-			containsTitle = userFilter.getDescriptions().stream().anyMatch(e -> order.getMessage().contains(e.getName()));
-		
+			containsTitle = userFilter.getDescriptions().stream()
+					.anyMatch(e -> order.getMessage().contains(e.getName()));
+
 		if (!CollectionUtils.isEmpty(userFilter.getTechnologies()))
-			containsTitle = userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().contains(e.getName()));
+			containsTitle = userFilter.getTechnologies().stream()
+					.anyMatch(e -> order.getTechnologies().contains(e.getName()));
 		log.debug("filter value min price {}, max price {}, title words {}, technology {}, description {}", minValue,
 				maxValue, containsTitle, containsTech, containsTech);
 		return minValue && maxValue && containsTitle && containsDesc && containsTech;
