@@ -20,7 +20,7 @@ const AddFilterForm = ({ setFilterId }) => {
 
 	const addFilter = event => {
 		filterService
-			.addFilter({ name: filterName, minValue: 0, maxValue: 0 })
+			.addFilter({ name: filterName, minValue: null,maxValue: null })
 			.then(response => {
 				const id = response.data.id
 				setFilterId(id)
