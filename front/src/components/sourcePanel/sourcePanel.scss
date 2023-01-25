@@ -1,6 +1,7 @@
 .source_panel {
 	//display: flex;
 	padding: 1rem;
+	padding-left: 0;
 	//justify-content: space-between;
 	// align-items: center;
 	// box-shadow: 5px 2px 9px grey;
@@ -74,12 +75,12 @@
 
 	&__content {
 		display: flex;
-		width: 66%;
+		width: 67%;
 		justify-content: space-between;
 
 		&-actions {
 			display: flex;
-			width: 65%;
+			width: 50%;
 			justify-content: space-between;
 
 			&>button {

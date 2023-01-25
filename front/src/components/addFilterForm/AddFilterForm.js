@@ -36,6 +36,10 @@ const AddFilterForm = ({ setFilterId }) => {
 						name: filterName
 					})
 				)
+				return id
+			})
+			.then((id) => {
+				filterService.updateCurrentFilter(id)
 			})
 			.finally(() => setIsAdded(false))
 	}
