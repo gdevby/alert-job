@@ -46,7 +46,7 @@ const NotificationsPage = () => {
 				setCurrentPlatform('email')
 			}else {
 				setCurrentPlatform('telegram')
-				setTelegramId(response.data.value)
+				setTelegramId(response.data.value == 'null'? '' : response.data.value)
 			}
 		})
 	}, [])
