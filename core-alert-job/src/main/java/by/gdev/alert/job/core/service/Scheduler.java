@@ -19,7 +19,6 @@ import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.common.model.Order;
-import by.gdev.common.model.Price;
 import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +49,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				.doOnSubscribe(s -> log.info("subscribed on orders"))
 				.retryWhen(Retry.backoff(5, Duration.ofSeconds(2)));
 		sseConection.subscribe(event -> {
+			log.info("size elements {}", event.data().size());
 			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
 			forEachOrders(users, event.data());
 		}, error -> log.warn("failed to get orders from parser {}", error.getMessage()));
@@ -63,12 +63,12 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 					statisticService.statisticDescriptionWord(p.getMessage());
 					statisticService.statisticTechnologyWord(p.getTechnologies());
 				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).collect(Collectors.toList());
-				log.debug("size elements after filtering {}", list.size());
+				log.debug("size elements that match the categories {}", list.size());
 				List<String> messages = list.stream()
 						.filter(f1 -> isMatchUserFilter(user, f1))
 						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
-				log.debug("send message size {}", messages.size());
+				log.debug("size elemets that match user filter {}", messages.size());
 				String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail" : "http://notification:8019/telegram";
 				UserNotification un = user.isDefaultSendType()
 						? new UserNotification(user.getEmail(), null)
@@ -97,21 +97,28 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
 
 	private boolean isMatchUserFilter(AppUser user, Order order) {
+		if (Objects.isNull(user.getCurrentFilter())) {
+			log.debug("current user filter is empty");
+			return false;
+		}
 		UserFilter userFilter = user.getCurrentFilter();
-		Price price = order.getPrice();
-		boolean isMinValue = Objects.nonNull(price) || Objects.nonNull(userFilter.getMinValue()) ? userFilter.getMinValue() <= price.getValue()
-				: true;
-		boolean isMaxValue = Objects.nonNull(price) || Objects.nonNull(userFilter.getMinValue()) ? price.getValue() <= userFilter.getMaxValue()
-				: true;
-		boolean isContainsTitle = CollectionUtils.isEmpty(userFilter.getTitles())
-				? userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()))
-				: true;
-		boolean isContainsDesc = CollectionUtils.isEmpty(userFilter.getDescriptions())
-				? userFilter.getDescriptions().stream().anyMatch(e -> order.getMessage().contains(e.getName()))
-				: true;
-		boolean isContainsTech = CollectionUtils.isEmpty(userFilter.getTechnologies())
-				? userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().contains(e.getName()))
-				: true;
-		return isMinValue && isMaxValue && isContainsTitle && isContainsDesc && isContainsTech;
+		boolean minValue = true, maxValue = true, containsTitle = true, containsDesc = true, containsTech = true;
+		if(Objects.nonNull(order.getPrice())) {
+			if(Objects.nonNull(userFilter.getMinValue())) 
+				minValue =  userFilter.getMinValue() <= order.getPrice().getValue();
+			if(Objects.nonNull(userFilter.getMaxValue())) 
+				maxValue = userFilter.getMaxValue() >= order.getPrice().getValue();
+		}
+		if (!CollectionUtils.isEmpty(userFilter.getTitles()))
+			containsTitle = userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
+		
+		if (!CollectionUtils.isEmpty(userFilter.getDescriptions()))
+			containsTitle = userFilter.getDescriptions().stream().anyMatch(e -> order.getMessage().contains(e.getName()));
+		
+		if (!CollectionUtils.isEmpty(userFilter.getTechnologies()))
+			containsTitle = userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().contains(e.getName()));
+		log.debug("filter value min price {}, max price {}, title words {}, technology {}, description {}", minValue,
+				maxValue, containsTitle, containsTech, containsTech);
+		return minValue && maxValue && containsTitle && containsDesc && containsTech;
 	}
 }
