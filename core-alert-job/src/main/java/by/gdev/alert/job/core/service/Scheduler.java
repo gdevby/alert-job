@@ -49,7 +49,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				.doOnSubscribe(s -> log.info("subscribed on orders"))
 				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(2)));
 		sseConection.subscribe(event -> {
-			log.info("size elements {}", event.data().size());
+			log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
 			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
 			forEachOrders(users, event.data());
 		}, error -> log.warn("failed to get orders from parser {}", error.getMessage()));
@@ -58,29 +58,27 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	public void forEachOrders(List<AppUser> users, List<Order> orders) {
 		users.forEach(user -> {
 			user.getSources().forEach(s -> {
-				List<Order> list = orders.stream().peek(p -> {
+				List<String> list = orders.stream().peek(p -> {
 					statisticService.statisticTitleWord(p.getTitle());
 					statisticService.statisticDescriptionWord(p.getMessage());
 					statisticService.statisticTechnologyWord(p.getTechnologies());
-				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).collect(Collectors.toList());
-				log.debug("size elements that match the categories {}", list.size());
-				List<String> messages = list.stream().filter(f1 -> isMatchUserFilter(user, f1))
-						.map(e -> String.format("New order - %s \n %s", e.getTitle(), e.getLink()))
+				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).filter(f -> isMatchUserFilter(user, f))
+						.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
 						.collect(Collectors.toList());
-				log.debug("size elemets that match user filter {}", messages.size());
 				String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
 						: "http://notification:8019/telegram";
-				UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
-						: new UserNotification(String.valueOf(user.getTelegram()), null);
-				log.debug("send message from user on {}", un.getToMail());
-				messages.forEach(message -> {
-					un.setMessage(message);
+				if (!list.isEmpty()) {
+					UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
+							: new UserNotification(String.valueOf(user.getTelegram()), null);
+					un.setMessage(list.stream().collect(Collectors.joining(", ")));
 					Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
-					mono.subscribe(e -> log.debug("sent new order for user alert {}", un.getToMail()),
-							e -> log.debug("failed to get new order for user alert {}", un.getToMail()));
-				});
+					mono.subscribe(
+							e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(),
+									un.getToMail()),
+							e -> log.debug("failed to sent user's message by mail: {}, to {}", user.isDefaultSendType(),
+									un.getToMail()));
+				}
 			});
-
 		});
 	}
 
