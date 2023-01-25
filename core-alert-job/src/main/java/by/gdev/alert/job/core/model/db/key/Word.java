@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public abstract class Word extends BasicId {
 	private String name;
-	private Long counter;
+	private Long counter = 0L;
 	private boolean hidden;
 
 }
