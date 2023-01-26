@@ -313,12 +313,12 @@ public class CoreService {
 		return Mono.create(m -> {
 			AppUser user = userRepository.findOneEagerUserCurrentFilter(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
-			m.success(mapper.map(user.getCurrentFilter(), FilterDTO.class));
+			if (Objects.isNull(user.getCurrentFilter()))
+				m.success();
+			else
+				m.success(mapper.map(user.getCurrentFilter(), FilterDTO.class));
 		});
 	}
-	
-	
-	
 	
 	public Mono<Void> createTitleWordToFilter(Long filterId, Long wordId){
 		return Mono.create(m ->{
