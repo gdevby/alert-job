@@ -24,9 +24,19 @@
 		<spring-cloud.version>2021.0.5</spring-cloud.version>
 		<docker.image.prefix>alert-job</docker.image.prefix>
 		<revision>0.0.1-SNAPSHOT</revision>
+		<logstash.version>7.2</logstash.version>
 	</properties>
 		
 	<dependencies>
+			<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-sleuth</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>${logstash.version}</version>
+		</dependency>
 	<dependency>
            <groupId>jakarta.xml.bind</groupId>
            <artifactId>jakarta.xml.bind-api</artifactId>

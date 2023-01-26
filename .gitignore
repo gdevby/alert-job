@@ -31,3 +31,4 @@ target
 .dbeaver
 dist
 front/package-lock.json
+/public/
