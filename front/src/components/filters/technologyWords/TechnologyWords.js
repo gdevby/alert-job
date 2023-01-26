@@ -37,6 +37,7 @@ const TechnologyWords = ({ filter_id }) => {
 			.addWordToFilter('technology-word', filter_id, word.id)
 			.then(() => {
 				setWords((prev) => [...prev, word])
+				console.log(words)
 				setResult((prev) => [...prev, word]);
 				setIsOpen(false)
 				setSelectValue('')
@@ -100,13 +101,25 @@ const TechnologyWords = ({ filter_id }) => {
 			})
 	}
 
+	/*useEffect(() => {
+		if (filter_id) {
+			filterService
+			.getCurrentFilter()
+			.then((response) => {
+				response.data.technologiesDTO && setWords(response.data.technologiesDTO)
+			})
+		}
+	}, [filter_id])*/
+
 	const handleSelect = (event) => {
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
+		console.log(word)
 		addWord(word)
 	}
 
 	useEffect(() => {
 		if (technologyWords && !isNew) {
+			console.log(technologyWords)
 			setWords((prev) => [...prev, ...technologyWords])
 		}
 	}, [])

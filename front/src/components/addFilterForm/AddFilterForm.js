@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { filterService } from '../../services/parser/endponits/filterService'
 import { setCurrentFilter } from '../../store/slices/filterSlice';
+import { useNavigate } from 'react-router-dom';
 
 const AddFilterForm = ({ setFilterId }) => {
 	const [filterName, setFilterName] = useState('')
@@ -17,6 +18,7 @@ const AddFilterForm = ({ setFilterId }) => {
 
 	const { isChoose, isNew, currentFilter } = useSelector(state => state.filter)
 	const dispatch = useDispatch()
+	const navigate = useNavigate()
 
 	const addFilter = event => {
 		filterService
@@ -40,13 +42,14 @@ const AddFilterForm = ({ setFilterId }) => {
 			})
 			.then((id) => {
 				filterService.updateCurrentFilter(id)
+				navigate(`/page/edit-filter/${id}`)
 			})
-			.finally(() => setIsAdded(false))
+			.finally((response) => {
+				setIsAdded(false)
+			})
 	}
 
 	const updateFilter = event => {
-		console.log(!isNew || isChoose)
-		console.log(!isNew, isChoose)
 		if (!isNew || isChoose || !isAdded) {
 			console.log('dfdsfs')
 			filterService
@@ -57,7 +60,6 @@ const AddFilterForm = ({ setFilterId }) => {
 
 	useEffect(() => {
 		if (!isNew || isChoose) {
-			console.log('current filter', currentFilter)
 			setFilterName(currentFilter.name)
 			setMinPrice(currentFilter.minPrice)
 			setMaxPrice(currentFilter.maxPrice)
@@ -65,7 +67,6 @@ const AddFilterForm = ({ setFilterId }) => {
 	}, [isChoose, isNew])
 
 	useEffect(() => {
-		console.log('isNew', isNew)
 		setIsAdded(isNew)
 	}, [isNew])
 

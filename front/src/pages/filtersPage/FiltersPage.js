@@ -24,8 +24,8 @@ const FiltersPage = () => {
 
 	const dispatch = useDispatch()
 	const navigate = useNavigate()
-	
-	const {currentFilter, isChoose} = useSelector(state => state.filter)
+
+	const { currentFilter, isChoose } = useSelector(state => state.filter)
 
 
 	const addSource = data => {
@@ -75,6 +75,7 @@ const FiltersPage = () => {
 				isNew: true
 			})
 		)
+		dispatch(removeCurrentFilter())
 		navigate('/page/adding-filter')
 	}
 
@@ -84,7 +85,7 @@ const FiltersPage = () => {
 				isNew: false
 			})
 		)
-		navigate('/page/adding-filter')
+		navigate(`/page/edit-filter/${filter.id}`)
 	}
 
 	const removeFilter = () => {
@@ -93,6 +94,7 @@ const FiltersPage = () => {
 			.then(() => {
 				setCurrentFilters(prev => prev.filter(item => item.id != filter.id))
 				dispatch(removeCurrentFilter())
+				setFilter('')
 			})
 	}
 
@@ -121,15 +123,29 @@ const FiltersPage = () => {
 			.then(response => {
 				setCurrentFilters(response.data)
 			})
-			
+
 		filterService
-		.getCurrentFilter()
-		.then((response) => {
-			setFilter(response.data)
-		})
+			.getCurrentFilter()
+			.then((response) => {
+				if (response.data !== '') {
+					setFilter(response.data)
+					dispatch(
+						setCurrentFilter({
+							description: response.data.descriptionsDTO,
+							title: response.data.titlesDTO,
+							technologies: response.data.technologiesDTO,
+							maxPrice: response.data.maxValue,
+							minPrice: response.data.minValue,
+							id: response.data.id,
+							name: response.data.name
+						})
+					)
+				}
+
+			})
 	}, [])
 
-	
+
 
 
 	return <div className='filtersPage'>

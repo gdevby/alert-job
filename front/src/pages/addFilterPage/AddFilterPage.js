@@ -11,8 +11,10 @@ import DescriptionWords from '../../components/filters/descriptionWords/Descript
 import { filterService } from '../../services/parser/endponits/filterService';
 
 import './addFilterPage.scss'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { removeCurrentFilter } from '../../store/slices/filterSlice';
+import { setCurrentFilter } from '../../store/slices/filterSlice';
+import { setIsNew } from '../../store/slices/filterSlice';
 
 
 const AddFilterPage = () => {
@@ -20,6 +22,8 @@ const AddFilterPage = () => {
 	const [wordsType, setWordstype] = useState('')
 	const [words, setWords] = useState('')
 	const [filterId, setFilterId] = useState()
+
+	const { id } = useParams()
 
 	const navigate = useNavigate()
 	const { currentFilter, isNew } = useSelector(state => state.filter)
@@ -62,6 +66,33 @@ const AddFilterPage = () => {
 		}
 	}, [isNew])
 
+	useEffect(() => {
+		if (id) {
+			filterService
+				.getCurrentFilter()
+				.then(response => {
+					console.log(response)
+					setFilterId(id)
+					dispatch(
+						setCurrentFilter({
+							description: response.data.descriptionsDTO,
+							title: response.data.titlesDTO,
+							technologies: response.data.technologiesDTO,
+							maxPrice: response.data.maxValue,
+							minPrice: response.data.minValue,
+							id: response.data.id,
+							name: response.data.name
+						})
+					)
+					dispatch(
+						setIsNew({
+							isNew: false
+						})
+					)
+					
+				})
+		}
+	}, [id])
 
 
 

@@ -6,7 +6,6 @@ import './words.scss'
 
 const Words = ({items, remove}) => {
 	const [words, setWords] = useState([])
-	
 	useEffect(() => {
 		setWords(items)
 	}, [items])

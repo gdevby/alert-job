@@ -84,6 +84,16 @@ const DescriptionWords = ({ filter_id }) => {
 				})
 		}
 	}
+	
+	/*useEffect(() => {
+		if (filter_id) {
+			filterService
+			.getCurrentFilter()
+			.then((response) => {
+				response.data.descriptionsDTO && setWords(response.data.descriptionsDTO)
+			})
+		}
+	}, [filter_id])*/
 
 	const closePopup = () => {
 		setIsOpen(false)

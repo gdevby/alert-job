@@ -98,6 +98,7 @@ const TitleWords = ({ filter_id }) => {
 	}
 
 	const handleSelect = (event) => {
+		console.log(event.target)
 		const word = { id: event.target.id, name: event.target.textContent.trim() }
 		addWord(word)
 	}
@@ -107,6 +108,17 @@ const TitleWords = ({ filter_id }) => {
 			setWords((prev) => [...prev, ...titleWords])
 		}
 	}, [])
+	
+	/*useEffect(() => {
+		if (filter_id) {
+			filterService
+			.getCurrentFilter()
+			.then((response) => {
+				response.data.titlesDTO &&setWords(response.data.titlesDTO)
+			})
+		}
+	}, [filter_id])*/
+	
 	useEffect(() => {
 		if (!isFetching) {
 			if (debouncedSearchTerm) {
