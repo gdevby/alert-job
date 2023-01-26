@@ -5,4 +5,4 @@ ADD ./import /opt/keycloak/data/import
 RUN /opt/keycloak/bin/kc.sh import --dir=/opt/keycloak/data/import/ --override true; exit 0
 # Start image
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "-v"]
-HEALTHCHECK --retries=10 --interval=2s --timeout=1s CMD curl -sS http://keycloak:8080 || exit 1
+HEALTHCHECK --retries=10 --interval=10s --timeout=1s CMD curl -sS http://keycloak:8080 || exit 1
