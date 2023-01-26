@@ -27,4 +27,8 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 	List<AppUser> findAllUserEagerCurrentFilterAndSourceSite();
 	
 	boolean existsBySources(SourceSite sources);
+	
+	@Query("select u from AppUser u left join fetch u.currentFilter where u.uuid = :uuid")
+	Optional<AppUser> findOneEagerUserCurrentFilter(@Param("uuid") String uuid);
+	
 }

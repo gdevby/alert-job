@@ -1,7 +1,5 @@
 package by.gdev.alert.job.core.controller;
 
-import java.util.Objects;
-
 import javax.validation.Valid;
 
 import org.springframework.data.domain.Page;
@@ -116,9 +114,9 @@ public class MainController {
 	}
 	
 	@PostMapping("user/filter")
-	public ResponseEntity<Mono<FilterDTO>> addUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public Mono<ResponseEntity<FilterDTO>> addUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@RequestBody Filter filter) {
-		return ResponseEntity.ok(coreService.createUserFilter(uuid, filter));
+		return coreService.createUserFilter(uuid, filter);
 	}
 	
 	@PatchMapping("user/filter/{id}")
@@ -136,7 +134,12 @@ public class MainController {
 	@PatchMapping("user/filter/{id}/current")
 	public ResponseEntity<Mono<Void>> setCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long filterId){
-		return ResponseEntity.ok(coreService.currentFilter(uuid, filterId));
+		return ResponseEntity.ok(coreService.updatecurrentFilter(uuid, filterId));
+	}
+	
+	@GetMapping("user/filter/current")
+	public ResponseEntity<Mono<FilterDTO>> getCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid){
+		return ResponseEntity.ok(coreService.showUserCurrentFilter(uuid));
 	}
 	
 	@PatchMapping("user/filter/{filter_id}/title-word/{word_id}")
