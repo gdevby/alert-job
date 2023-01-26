@@ -19,6 +19,13 @@ import { Link, useNavigate } from 'react-router-dom'
 const FiltersPage = () => {
 
 	const [sourse, setSources] = useState([])
+	const [currentFilters, setCurrentFilters] = useState([])
+	const [filter, setFilter] = useState('')
+
+	const dispatch = useDispatch()
+	const navigate = useNavigate()
+	
+	const {currentFilter, isChoose} = useSelector(state => state.filter)
 
 
 	const addSource = data => {
@@ -45,6 +52,12 @@ const FiltersPage = () => {
 			setSources(newSources)
 		})
 	}
+
+	useEffect(() => {
+		if (isChoose) {
+			setFilter(currentFilter)
+		}
+	}, [isChoose])
 
 	useEffect(() => {
 		sourceService
@@ -111,11 +124,7 @@ const FiltersPage = () => {
 
 	}, [])
 
-	const [currentFilters, setCurrentFilters] = useState([])
-	const [filter, setFilter] = useState('')
-
-	const dispatch = useDispatch()
-	const navigate = useNavigate()
+	
 
 
 	return <div className='filtersPage'>
@@ -131,7 +140,7 @@ const FiltersPage = () => {
 				<div className='current_filter'>
 					<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет заказам из источника заказов</div>
 					<div className='current_filter__content'>
-						<DropDownList defaultValue={'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
+						<DropDownList defaultValue={filter.name || 'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
 						{filter && <div className='current_filter__content-actions'>
 							<Button onClick={editFilter} text={'Редактировать фильтр'} />
 							<Button onClick={removeFilter} text={'Удалить фильтр'} />
