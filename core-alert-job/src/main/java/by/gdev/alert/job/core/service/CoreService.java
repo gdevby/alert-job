@@ -238,21 +238,30 @@ public class CoreService {
 				});
 	}
 
-	public Mono<FilterDTO> createUserFilter(String uuid, Filter filter){
+	public Mono<ResponseEntity<FilterDTO>> createUserFilter(String uuid, Filter filter){
 		return Mono.create(m -> {
 			AppUser user = userRepository.findOneEagerUserFilters(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			Set<UserFilter> filters = Sets.newHashSet();
+			if (!CollectionUtils.isEmpty(user.getFilters())) {
+				filters = Sets.newHashSet(user.getFilters());
+				boolean repeatsName = false;
+				for (UserFilter f : filters) {
+					if (f.getName().equals(filter.getName()))
+						repeatsName = true;
+				}
+				if (repeatsName)
+					m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
+			}
 			UserFilter userFilter = new UserFilter();
 			userFilter.setName(filter.getName());
 			userFilter.setMaxValue(filter.getMaxValue());
 			userFilter.setMinValue(filter.getMinValue());
 			filterRepository.save(userFilter);
-			Set<UserFilter> set = CollectionUtils.isEmpty(user.getFilters()) ? Sets.newHashSet()
-					: Sets.newHashSet(user.getFilters());
-			set.add(userFilter);
-			user.setFilters(set);
+			filters.add(userFilter);
+			user.setFilters(filters);
 			userRepository.save(user);
-			m.success(mapper.map(userFilter, FilterDTO.class));
+			m.success(ResponseEntity.ok(mapper.map(userFilter, FilterDTO.class)));
 		});
 	}
 	
@@ -288,9 +297,9 @@ public class CoreService {
 		});
 	}
 	
-	public Mono<Void> currentFilter(String uuid, Long filterId){
+	public Mono<Void> updatecurrentFilter(String uuid, Long filterId){
 		return Mono.create(m -> {
-			AppUser user = userRepository.findOneEagerUserFilters(uuid)
+			AppUser user = userRepository.findOneEagerUserCurrentFilter(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			UserFilter userFilter = filterRepository.findById(filterId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
@@ -299,6 +308,17 @@ public class CoreService {
 			m.success();
 		});
 	}
+	
+	public Mono<FilterDTO> showUserCurrentFilter(String uuid){
+		return Mono.create(m -> {
+			AppUser user = userRepository.findOneEagerUserCurrentFilter(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			m.success(mapper.map(user.getCurrentFilter(), FilterDTO.class));
+		});
+	}
+	
+	
+	
 	
 	public Mono<Void> createTitleWordToFilter(Long filterId, Long wordId){
 		return Mono.create(m ->{
