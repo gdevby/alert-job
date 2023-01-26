@@ -56,7 +56,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
 
 	public void forEachOrders(List<AppUser> users, List<Order> orders) {
-		users.forEach(user -> {
+		users.stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(user -> {
 			user.getSources().forEach(s -> {
 				List<String> list = orders.stream().peek(p -> {
 					statisticService.statisticTitleWord(p.getTitle());
@@ -94,10 +94,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
 
 	private boolean isMatchUserFilter(AppUser user, Order order) {
-		if (Objects.isNull(user.getCurrentFilter())) {
-			log.debug("current user filter is empty");
-			return false;
-		}
 		UserFilter userFilter = user.getCurrentFilter();
 		boolean minValue = true, maxValue = true, containsTitle = true, containsDesc = true, containsTech = true;
 		if (Objects.nonNull(order.getPrice())) {
