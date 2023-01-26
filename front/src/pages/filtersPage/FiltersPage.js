@@ -121,7 +121,12 @@ const FiltersPage = () => {
 			.then(response => {
 				setCurrentFilters(response.data)
 			})
-
+			
+		filterService
+		.getCurrentFilter()
+		.then((response) => {
+			setFilter(response.data)
+		})
 	}, [])
 
 	
