@@ -11,6 +11,28 @@ services:
       - MYSQL_PASSWORD=$database_user_password
       - MYSQL_USER=$database_user_login
       - MYSQL_DATABASE=keycloak
+  dbcore:
+    image: mariadb:10.9.4-jammy
+    ports:
+      - 3310:33010
+    volumes:
+      - ~/prod/apps/mariadbcore:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=$database_user_password
+      - MYSQL_PASSWORD=$database_user_password
+      - MYSQL_USER=$database_user_login
+      - MYSQL_DATABASE=dbcore
+  dbparser:
+    image: mariadb:10.9.4-jammy
+    ports:
+      - 3311:3311
+    volumes:
+      - ~/prod/apps/mariadbparser:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=$database_user_password
+      - MYSQL_PASSWORD=$database_user_password
+      - MYSQL_USER=$database_user_login
+      - MYSQL_DATABASE=dbparser
   keycloak:
     image: quay.io/keycloak/keycloak:20.0.1
     command:
@@ -52,6 +74,48 @@ services:
     depends_on:
       config:
         condition: service_healthy
+  elasticsearch:
+    image: elasticsearch:8.6.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+    #ulimits:
+     # memlock:
+      #  soft: -1
+       # hard: -1
+    volumes:
+       - ./public:/usr/share/elasticsearch/data
+    ports:
+      - 9300:9300
+      - 9200:9200
+  kibana:
+    image: kibana:8.6.0
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_URL: "http://elasticsearch:9300"
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+  logstash:
+    image: logstash:8.6.0
+    container_name: logstash
+    command: logstash -f /etc/logstash/conf.d/logstash.conf
+    volumes:
+      - ./logstash/config:/etc/logstash/conf.d
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9600/?pretty"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
@@ -63,8 +127,10 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
-  email:
-    image: alert-job/email-alert-job:0.0.1-SNAPSHOT
+      logstash:
+        condition: service_healthy
+  notification:
+    image: alert-job/notification-alert-job:0.0.1-SNAPSHOT
     ports:
       - "8016:8016"
     environment:
@@ -73,6 +139,8 @@ services:
       config:
         condition: service_healthy
       eureka:
+        condition: service_healthy
+      logstash:
         condition: service_healthy
   parser:
     image: alert-job/parser-alert-job:0.0.1-SNAPSHOT
@@ -85,17 +153,11 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
-  notification:
-    image: alert-job/notification-alert-job:0.0.1-SNAPSHOT
-    ports:
-      - "8019:8019"
-    environment:
-       - "SPRING_PROFILES_ACTIVE=prod"
-    depends_on:
-      config:
+      dbparser:
+        condition: service_started
+      logstash:
         condition: service_healthy
-      eureka:
-        condition: service_healthy
+        
   core:
     image: alert-job/core-alert-job:0.0.1-SNAPSHOT
     ports:
@@ -107,3 +169,9 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+      dbcore:
+        condition: service_started
+      logstash:
+        condition: service_healthy
+        
+      
