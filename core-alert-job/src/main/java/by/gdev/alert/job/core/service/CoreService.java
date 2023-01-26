@@ -315,8 +315,17 @@ public class CoreService {
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			if (Objects.isNull(user.getCurrentFilter()))
 				m.success();
-			else
-				m.success(mapper.map(user.getCurrentFilter(), FilterDTO.class));
+			else {
+				UserFilter current = user.getCurrentFilter();
+				FilterDTO dto = mapper.map(current, FilterDTO.class);
+				List<WordDTO> title = current.getTitles().stream().map(e -> mapper.map(e, WordDTO.class)).toList();
+				dto.setTitlesDTO(title);
+				List<WordDTO> des = current.getDescriptions().stream().map(e -> mapper.map(e, WordDTO.class)).toList();
+				dto.setDescriptionsDTO(des);
+				List<WordDTO> tech = current.getTechnologies().stream().map(e -> mapper.map(e, WordDTO.class)).toList();
+				dto.setTechnologiesDTO(tech);
+				m.success(dto);
+			}
 		});
 	}
 	
