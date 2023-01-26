@@ -14,7 +14,7 @@ services:
   dbcore:
     image: mariadb:10.9.4-jammy
     ports:
-      - 3310:33010
+      - 3310:3310
     volumes:
       - ~/prod/apps/mariadbcore:/var/lib/mysql
     environment:
@@ -90,7 +90,10 @@ services:
     ports:
       - "8016:8016"
     environment:
-       - "SPRING_PROFILES_ACTIVE=prod"
+       - SPRING_PROFILES_ACTIVE=prod
+       - telegram.chat.token=$telegram_chat_token
+       - mail.login=$mail_login
+       - mail.password=$mail_pasword
     depends_on:
       config:
         condition: service_healthy
@@ -102,6 +105,12 @@ services:
       - "8017:8017"
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
+       - spring.datasource.username=$database_user_login
+       - spring.datasource.password=$database_user_password
+       - spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect
+       - "spring.datasource.url=jdbc:maraidb://dbparser:3311/dbcore?useUnicode=true&characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&autoReconnect=true"
+       - spring.datasource.driverClassName=
+       - parser.categories.file.path=$parser_categories_file_path
     depends_on:
       config:
         condition: service_healthy
@@ -116,6 +125,11 @@ services:
       - "8018:8018"
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
+       - spring.datasource.username=$database_user_login
+       - spring.datasource.password=$database_user_password
+       - spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect
+       - "spring.datasource.url=jdbc:maraidb://dbcore:3310/dbcore?useUnicode=true&characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&autoReconnect=true"
+       - spring.datasource.driverClassName=
     depends_on:
       config:
         condition: service_healthy
