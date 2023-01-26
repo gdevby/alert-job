@@ -8,13 +8,13 @@
 	<artifactId>alert-job-gateway</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-sleuth</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>by.gdev</groupId>
-			<artifactId>common-alert-job</artifactId>
-			<version>${revision}</version>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>${logstash.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
