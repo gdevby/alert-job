@@ -10,7 +10,8 @@ const filterService = {
 	updateFilter: (id, filter) => api.patch(`user/filter/${id}`, filter),
 	updateCurrentFilter: (id) => api.patch(`user/filter/${id}/current`),
 	addWordToFilter: (word_type, filter_id, word_id) => api.patch(`user/filter/${filter_id}/${word_type}/${word_id}`),
-	deleteWord: (word_type, filter_id, word_id) => api.delete(`user/filter/${filter_id}/${word_type}/${word_id}`)
+	deleteWord: (word_type, filter_id, word_id) => api.delete(`user/filter/${filter_id}/${word_type}/${word_id}`),
+	getCurrentFilter: () => api.get(`user/filter/current`)
 }
 
 export { filterService }
