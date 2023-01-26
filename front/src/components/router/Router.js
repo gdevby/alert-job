@@ -15,6 +15,7 @@ const Router = () => {
 			<Route path="/page/filters" element={<FiltersPage />} />
 			<Route path="/page/notifications" element={<NotificationsPage />} />
 			<Route path="/page/adding-filter" element={<AddFilterPage />} />
+			<Route path="/page/edit-filter/:id" element={<AddFilterPage />} />
 			<Route path="/index.html" element={<HomePage />} />
 			<Route path="*" element={<div>не найдено</div>} />
 		</Routes>
