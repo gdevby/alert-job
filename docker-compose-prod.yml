@@ -93,7 +93,7 @@ services:
        - SPRING_PROFILES_ACTIVE=prod
        - telegram.chat.token=$telegram_chat_token
        - mail.login=$mail_login
-       - mail.password=$mail_pasword
+       - mail.password=$mail_password
     depends_on:
       config:
         condition: service_healthy
