@@ -26,7 +26,7 @@ services:
       - MYSQL_ROOT_PASSWORD=$database_user_password
       - MYSQL_PASSWORD=$database_user_password
       - MYSQL_USER=$database_user_login
-      - MYSQL_DATABASE=parse_db
+      - MYSQL_DATABASE=parser_db
   keycloak:
     image: quay.io/keycloak/keycloak:20.0.1
     command:
