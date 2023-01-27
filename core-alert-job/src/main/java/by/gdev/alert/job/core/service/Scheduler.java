@@ -82,38 +82,42 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		});
 	}
 
-	// check for an empty subcategory, if the subcategory is empty, we compare only
-	// by source and category, otherwise all fields are taken
 	private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
-		return (Objects.isNull(orderSource.getSubCategory()) || Objects.isNull(userSource.getSiteSubCategory()))
-				? userSource.getSiteSource().equals(orderSource.getSource())
-						&& userSource.getSiteCategory().equals(orderSource.getCategory())
-				: userSource.getSiteSource().equals(orderSource.getSource())
-						&& userSource.getSiteCategory().equals(orderSource.getCategory())
-						&& userSource.getSiteSubCategory().equals(orderSource.getSubCategory());
+		return userSource.getSiteSource().equals(orderSource.getSource())
+				&& userSource.getSiteCategory().equals(orderSource.getCategory())
+				&& Objects.equals(userSource.getSiteSubCategory(), orderSource.getSubCategory());
 	}
 
 	private boolean isMatchUserFilter(AppUser user, Order order) {
 		UserFilter userFilter = user.getCurrentFilter();
-		boolean minValue = true, maxValue = true, containsTitle = true, containsDesc = true, containsTech = true;
+		boolean minValue = true, maxValue = true, containsTitle = true, containsTech = true, containsDesc = true;
+		StringBuilder sb = new StringBuilder("order comparing");
 		if (Objects.nonNull(order.getPrice())) {
-			if (Objects.nonNull(userFilter.getMinValue()))
+			if (Objects.nonNull(userFilter.getMinValue())) {
 				minValue = userFilter.getMinValue() <= order.getPrice().getValue();
-			if (Objects.nonNull(userFilter.getMaxValue()))
+				sb.append("min val ").append(minValue).append(" ");
+			}
+			if (Objects.nonNull(userFilter.getMaxValue())) {
 				maxValue = userFilter.getMaxValue() >= order.getPrice().getValue();
+				sb.append("max val ").append(minValue).append(" ");
+			}
 		}
-		if (!CollectionUtils.isEmpty(userFilter.getTitles()))
+		if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
 			containsTitle = userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
-
-		if (!CollectionUtils.isEmpty(userFilter.getDescriptions()))
-			containsTitle = userFilter.getDescriptions().stream()
-					.anyMatch(e -> order.getMessage().contains(e.getName()));
-
-		if (!CollectionUtils.isEmpty(userFilter.getTechnologies()))
-			containsTitle = userFilter.getTechnologies().stream()
+			sb.append("title ").append(containsTitle).append(" ");
+		}
+		if (!CollectionUtils.isEmpty(userFilter.getTechnologies())) {
+			containsTech = userFilter.getTechnologies().stream()
 					.anyMatch(e -> order.getTechnologies().contains(e.getName()));
-		log.debug("filter value min price {}, max price {}, title words {}, technology {}, description {}", minValue,
-				maxValue, containsTitle, containsTech, containsTech);
+			sb.append("tech ").append(containsTech).append(" ");
+		}
+		if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
+			containsDesc = userFilter.getDescriptions().stream()
+					.anyMatch(e -> order.getMessage().contains(e.getName()));
+			sb.append("desc ").append(containsDesc).append(" ");
+		}
+		sb.append(order.getLink()).append(" ").append(order.getTitle());
+		log.debug(sb.toString());
 		return minValue && maxValue && containsTitle && containsDesc && containsTech;
 	}
 }
