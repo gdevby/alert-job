@@ -109,7 +109,6 @@ services:
        - spring.datasource.password=$database_user_password
        - spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect
        - "spring.datasource.url=jdbc:mariadb://dbparser:3311/dbcore?useUnicode=true&characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&autoReconnect=true"
-       - spring.datasource.driverClassName=org.mariadb.jdbc.Driver
        - parser.categories.file.path=$parser_categories_file_path
     depends_on:
       config:
@@ -129,7 +128,6 @@ services:
        - spring.datasource.password=$database_user_password
        - spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect
        - "spring.datasource.url=jdbc:mariadb://dbcore:3310/dbcore?useUnicode=true&characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&autoReconnect=true"
-       - spring.datasource.driverClassName=org.mariadb.jdbc.Driver
     depends_on:
       config:
         condition: service_healthy
