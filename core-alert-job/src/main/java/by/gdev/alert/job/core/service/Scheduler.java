@@ -85,7 +85,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	// check for an empty subcategory, if the subcategory is empty, we compare only
 	// by source and category, otherwise all fields are taken
 	private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
-		return (Objects.isNull(orderSource.getSubCategory()))
+		return (Objects.isNull(orderSource.getSubCategory()) || Objects.isNull(userSource.getSiteSubCategory()))
 				? userSource.getSiteSource().equals(orderSource.getSource())
 						&& userSource.getSiteCategory().equals(orderSource.getCategory())
 				: userSource.getSiteSource().equals(orderSource.getSource())
