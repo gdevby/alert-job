@@ -2,8 +2,6 @@ version: "3.9"
 services:
   db:
     image: mariadb:10.9.4-jammy
-    ports:
-      - 3307:3306
     volumes:
       - ~/prod/apps/mariadb:/var/lib/mysql
     environment:
@@ -13,26 +11,22 @@ services:
       - MYSQL_DATABASE=keycloak
   dbcore:
     image: mariadb:10.9.4-jammy
-    ports:
-      - 3310:3306
     volumes:
       - ~/prod/apps/mariadbcore:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=$database_user_password
       - MYSQL_PASSWORD=$database_user_password
       - MYSQL_USER=$database_user_login
-      - MYSQL_DATABASE=dbcore
+      - MYSQL_DATABASE=core_db
   dbparser:
     image: mariadb:10.9.4-jammy
-    ports:
-      - 3311:3306
     volumes:
       - ~/prod/apps/mariadbparser:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=$database_user_password
       - MYSQL_PASSWORD=$database_user_password
       - MYSQL_USER=$database_user_login
-      - MYSQL_DATABASE=dbparser
+      - MYSQL_DATABASE=parse_db
   keycloak:
     image: quay.io/keycloak/keycloak:20.0.1
     command:
@@ -108,7 +102,6 @@ services:
        - spring.datasource.username=$database_user_login
        - spring.datasource.password=$database_user_password
        - spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect
-       - "spring.datasource.url=jdbc:mariadb://dbparser:3311/dbcore?useUnicode=true&characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&autoReconnect=true"
        - parser.categories.file.path=$parser_categories_file_path
        - parser.insert.categories.active=true
     depends_on:
@@ -125,10 +118,8 @@ services:
       - "8018:8018"
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
-       - spring.datasource.username=$database_user_login
-       - spring.datasource.password=$database_user_password
-       - spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect
-       - "spring.datasource.url=jdbc:mariadb://dbcore:3310/dbcore?useUnicode=true&characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&autoReconnect=true"
+       - "spring_datasource_username=$database_user_login"
+       - "spring_datasource_password=$database_user_password"
     depends_on:
       config:
         condition: service_healthy
