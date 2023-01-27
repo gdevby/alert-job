@@ -91,7 +91,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private boolean isMatchUserFilter(AppUser user, Order order) {
 		UserFilter userFilter = user.getCurrentFilter();
 		boolean minValue = true, maxValue = true, containsTitle = true, containsTech = true, containsDesc = true;
-		StringBuilder sb = new StringBuilder("order comparing");
+		StringBuilder sb = new StringBuilder("order comparing ");
 		if (Objects.nonNull(order.getPrice())) {
 			if (Objects.nonNull(userFilter.getMinValue())) {
 				minValue = userFilter.getMinValue() <= order.getPrice().getValue();
