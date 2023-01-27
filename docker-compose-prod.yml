@@ -14,7 +14,7 @@ services:
   dbcore:
     image: mariadb:10.9.4-jammy
     ports:
-      - 3310:3310
+      - 3310:3306
     volumes:
       - ~/prod/apps/mariadbcore:/var/lib/mysql
     environment:
@@ -25,7 +25,7 @@ services:
   dbparser:
     image: mariadb:10.9.4-jammy
     ports:
-      - 3311:3311
+      - 3311:3306
     volumes:
       - ~/prod/apps/mariadbparser:/var/lib/mysql
     environment:

@@ -16,7 +16,10 @@
 			<artifactId>logstash-logback-encoder</artifactId>
 			<version>${logstash.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>by.gdev</groupId>
 			<artifactId>common-alert-job</artifactId>

@@ -6,5 +6,9 @@ export keycloak_admin=admin
 export local_config_directory=/home/ubuntu/alert-job-config-repo
 export keycloak_url=https://auth.gdev.by
 export configuration_override_parameters_directory_docker=/alert-job-config-repo
+export telegram_chat_token=
+export mail_login=
+export mail_password=
+export parser_categories_file_path=
 
 docker compose -f docker-compose-prod.yml $1 $2
