@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import useOnClickOutside from '../../hooks/useOnClickOutside'
 
 import Button from '../button/Button'
 
@@ -10,6 +11,7 @@ const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 	const [value, setValue] = useState(defaultValue)
 	const [items, setItems] = useState([])
 
+	const ref = useRef()
 
 	const handleValue = data => {
 		console.log(data)
@@ -17,7 +19,11 @@ const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 		cb(data)
 		setIsOpen(false)
 	}
-	
+
+	const handleOpen = () => {
+		setIsOpen(!isOpen)
+	}
+
 	useEffect(() => {
 		setItems(elems)
 		setValue(defaultValue)
@@ -27,19 +33,19 @@ const DropDownList = ({ open = false, defaultValue, elems, cb }) => {
 		setValue(defaultValue)
 	}, [defaultValue])
 
-	const handleOpen = () => {
-		setIsOpen(!isOpen)
-	}
-	
+
+	useOnClickOutside(ref, setIsOpen)
 
 	return <div className='list'>
-		<div className='list__button' onClick={handleOpen} >
-			{value} 
-			<i className={isOpen ? 'arrow arrow-up' : 'arrow arrow-down'}></i>
+		<div ref={ref}>
+			<div className='list__button' onClick={handleOpen} >
+				{value}
+				<i className={isOpen ? 'arrow arrow-up' : 'arrow arrow-down'}></i>
+			</div>
+			{isOpen && <div className='list_items' >
+				{items && items.map((item, index) => <ListItem onClick={handleValue} item={item} key={index} />)}
+			</div>}
 		</div>
-		{isOpen && <div className='list_items'>
-			{items && items.map((item, index) => <ListItem onClick={handleValue} item={item} key={index}  />)}
-		</div>}
 	</div>
 }
 
