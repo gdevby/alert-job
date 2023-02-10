@@ -1,5 +1,29 @@
 version: "3.9"
 services:
+  swag:
+    image: linuxserver/swag:2.2.0
+    ports:
+      - 80:80
+      - 443:443
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - cap-add=NET_ADMIN
+      - TZ=Europe/Minsk
+      - URL=aj.gdev.by
+      - VALIDATION=http
+      - EXTRA_DOMAINS=auth.gdev.by
+    volumes:
+      - $swag_config:/config
+      - $front_directory:/front
+    depends_on:
+      - gateway
+      - keycloak
+    networks:
+      default:
+        aliases:
+          - aj.gdev.by
+          - auth.gdev.by
   db:
     image: mariadb:10.9.4-jammy
     volumes:

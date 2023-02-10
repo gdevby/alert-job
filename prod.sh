@@ -10,5 +10,7 @@ export telegram_chat_token=
 export mail_login=
 export mail_password=
 export parser_categories_file_path=
+export swag_config=
+export front_directory=
 
 docker compose -f docker-compose-prod.yml $1 $2
