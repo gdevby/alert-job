@@ -10,12 +10,12 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Order {
+public class OrderDTO {
 	private String title;
 	private String message;
 	private String link;
 	private Date dateTime;
-	private Price price;
+	private PriceDTO price;
 	private List<String> technologies;
 	private SourceSiteDTO sourceSite;
 	private boolean flRuForAll;

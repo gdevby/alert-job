@@ -18,7 +18,7 @@ import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
-import by.gdev.common.model.Order;
+import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
@@ -42,9 +42,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
 
 	public void sseConnection() {
-		ParameterizedTypeReference<ServerSentEvent<List<Order>>> type = new ParameterizedTypeReference<ServerSentEvent<List<Order>>>() {
+		ParameterizedTypeReference<ServerSentEvent<List<OrderDTO>>> type = new ParameterizedTypeReference<ServerSentEvent<List<OrderDTO>>>() {
 		};
-		Flux<ServerSentEvent<List<Order>>> sseConection = webClient.get().uri("http://parser:8017/api/stream-sse")
+		Flux<ServerSentEvent<List<OrderDTO>>> sseConection = webClient.get().uri("http://parser:8017/api/stream-sse")
 				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
 				.doOnSubscribe(s -> log.info("subscribed on orders"))
 				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(2)));
@@ -56,7 +56,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
 	
 	
-	private void forEachOrders(List<AppUser> users, List<Order> orders) {
+	private void forEachOrders(List<AppUser> users, List<OrderDTO> orders) {
 		users.forEach(user -> {
 			user.getOrderModules().stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
 				o.getSources().forEach(s -> {
@@ -101,7 +101,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				&& Objects.equals(userSource.getSiteSubCategory(), orderSource.getSubCategory());
 	}
 
-	private boolean isMatchUserFilter(AppUser user, Order order, UserFilter userFilter) {
+	private boolean isMatchUserFilter(AppUser user, OrderDTO order, UserFilter userFilter) {
 		boolean minValue = true, maxValue = true, containsTitle = true, containsTech = true, containsDesc = true;
 		StringBuilder sb = new StringBuilder("order comparing ");
 		if (Objects.nonNull(order.getPrice())) {

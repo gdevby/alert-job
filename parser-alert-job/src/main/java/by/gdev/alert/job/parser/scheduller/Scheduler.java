@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.google.common.collect.Lists;
 
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
+import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.service.ParserCategories;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	@Value("${parser.categories.file.path}")
 	private String updateFilePath;
 	private final ParserCategories parserCategories;
+	private final OrderRepository orderRepository;
 
 	@Override
 	@Transactional
@@ -64,5 +66,17 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			log.debug("removed parser link" + e.getLinks());
 		});
 	}
-
+	
+	@Scheduled(cron = "0 0 1 * * *")
+	public void removeOrders() {
+		Lists.newArrayList(orderRepository.findAll()).stream().filter(f -> {
+			LocalDateTime ldt = f.getDateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+			LocalDateTime plusLdt = ldt.plusDays(parserUpdateLinksAfterDay);
+			LocalDateTime now = LocalDateTime.now();
+			return now.isAfter(plusLdt);
+		}).forEach(e -> {
+			orderRepository.delete(e);
+			log.debug("removed order with title" + e.getTitle());
+		});
+	}
 }
