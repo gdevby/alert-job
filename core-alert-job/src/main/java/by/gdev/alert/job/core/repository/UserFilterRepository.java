@@ -22,4 +22,7 @@ public interface UserFilterRepository extends CrudRepository<UserFilter, Long> {
 	@Query("select f from UserFilter f  left join fetch f.descriptions left join fetch f.technologies left join fetch f.titles where f.id = :id")
 	Optional<UserFilter> findUserFilterById(@Param("id") Long id);
 	
+	
+	@Query("select f from UserFilter f left join fetch f.module m where f.id = :id and m.id = :mid")
+	Optional<UserFilter> findByIdAndOrderModuleId(@Param("id") Long id, @Param("mid") Long mid);
 }

@@ -50,34 +50,47 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(2)));
 		sseConection.subscribe(event -> {
 			log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
-			List<AppUser> users = userRepository.findAllUserEagerCurrentFilterAndSourceSite();
+			List<AppUser> users = userRepository.findAllUsersEagerOrderModules();
 			forEachOrders(users, event.data());
 		}, error -> log.warn("failed to get orders from parser {}", error.getMessage()));
 	}
+	
+	
+	private void forEachOrders(List<AppUser> users, List<Order> orders) {
+		users.forEach(user -> {
+			user.getOrderModules().stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
+				o.getSources().forEach(s -> {
+					List<String> list = orders.stream().peek(p -> {
+						statisticService.statisticTitleWord(p.getTitle());
+						statisticService.statisticDescriptionWord(p.getMessage());
+						statisticService.statisticTechnologyWord(p.getTechnologies());
+					}).filter(f -> {
+						boolean b = compareSiteSources(f.getSourceSite(), s);
+						System.out.println("catefory filter return " + b);
+						return b;
+					}).filter(f -> {
+						boolean b = isMatchUserFilter(user, f, o.getCurrentFilter());
+						System.out.println("filter return " + b);
+						return b;
+					})
+							.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
+							.collect(Collectors.toList());
+					String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
+							: "http://notification:8019/telegram";
+					if (!list.isEmpty()) {
+						UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
+								: new UserNotification(String.valueOf(user.getTelegram()), null);
+						un.setMessage(list.stream().collect(Collectors.joining(", ")));
+						Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve()
+								.bodyToMono(Void.class);
+						mono.subscribe(
+								e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(),
+										un.getToMail()),
+								e -> log.debug("failed to sent user's message by mail: {}, to {}",
+										user.isDefaultSendType(), un.getToMail()));
+					}
+				});
 
-	public void forEachOrders(List<AppUser> users, List<Order> orders) {
-		users.stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(user -> {
-			user.getSources().forEach(s -> {
-				List<String> list = orders.stream().peek(p -> {
-					statisticService.statisticTitleWord(p.getTitle());
-					statisticService.statisticDescriptionWord(p.getMessage());
-					statisticService.statisticTechnologyWord(p.getTechnologies());
-				}).filter(f -> compareSiteSources(f.getSourceSite(), s)).filter(f -> isMatchUserFilter(user, f))
-						.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
-						.collect(Collectors.toList());
-				String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
-						: "http://notification:8019/telegram";
-				if (!list.isEmpty()) {
-					UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
-							: new UserNotification(String.valueOf(user.getTelegram()), null);
-					un.setMessage(list.stream().collect(Collectors.joining(", ")));
-					Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
-					mono.subscribe(
-							e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(),
-									un.getToMail()),
-							e -> log.debug("failed to sent user's message by mail: {}, to {}", user.isDefaultSendType(),
-									un.getToMail()));
-				}
 			});
 		});
 	}
@@ -88,8 +101,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				&& Objects.equals(userSource.getSiteSubCategory(), orderSource.getSubCategory());
 	}
 
-	private boolean isMatchUserFilter(AppUser user, Order order) {
-		UserFilter userFilter = user.getCurrentFilter();
+	private boolean isMatchUserFilter(AppUser user, Order order, UserFilter userFilter) {
 		boolean minValue = true, maxValue = true, containsTitle = true, containsTech = true, containsDesc = true;
 		StringBuilder sb = new StringBuilder("order comparing ");
 		if (Objects.nonNull(order.getPrice())) {

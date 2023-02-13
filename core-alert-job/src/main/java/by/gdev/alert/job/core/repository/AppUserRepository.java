@@ -8,27 +8,18 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import by.gdev.alert.job.core.model.db.AppUser;
-import by.gdev.alert.job.core.model.db.SourceSite;
 
 public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 	
 	Optional<AppUser> findByUuid(String uuid);
 	
-	@Query("select u from AppUser u left join fetch u.filters where u.uuid = :uuid")
-	Optional<AppUser> findOneEagerUserFilters(@Param("uuid") String uuid);
+	@Query("select u from AppUser u left join fetch u.orderModules where u.uuid = :uuid")
+	Optional<AppUser> findOneEagerOrderModules(String uuid);
 	
-	@Query("select u from AppUser u left join fetch u.filters left join fetch u.currentFilter where u.uuid = :uuid")
-	Optional<AppUser> findOneEagerUserFiltersAndCurrentFilter(@Param("uuid") String uuid);
+	@Query("select u from AppUser u left join fetch u.orderModules o left join fetch o.filters where u.uuid = :uuid and o.id = :oid")
+	Optional<AppUser> findByUuidAndOrderModulesId(@Param("uuid") String uuid, @Param("oid") Long oid);
 	
-	@Query("select u from AppUser u left join fetch u.sources where u.uuid = :uuid")
-	Optional<AppUser> findOneEagerSourceSite(@Param("uuid") String uuid);
 	
-	@Query("from AppUser u left join fetch u.sources left join fetch u.currentFilter")
-	List<AppUser> findAllUserEagerCurrentFilterAndSourceSite();
-	
-	boolean existsBySources(SourceSite sources);
-	
-	@Query("select u from AppUser u left join fetch u.currentFilter where u.uuid = :uuid")
-	Optional<AppUser> findOneEagerUserCurrentFilter(@Param("uuid") String uuid);
-	
+	@Query("select u from AppUser u left join fetch u.orderModules")
+	List<AppUser> findAllUsersEagerOrderModules();
 }
