@@ -13,5 +13,6 @@ export parser_categories_file_path=
 export swag_config=
 export front_directory=
 export logstash_config_directory=
+export logger_level=INFO
 
 docker compose -f docker-compose-prod.yml $1 $2
