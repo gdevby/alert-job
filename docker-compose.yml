@@ -46,18 +46,12 @@ services:
         condition: service_healthy
   #set directory rules chmod 777 public
   elasticsearch:
-  #8.6.0
-#    image: elasticsearch:7.7.0
     image: elasticsearch:8.6.0
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - xpack.security.enabled=false
-    #ulimits:
-     # memlock:
-      #  soft: -1
-       # hard: -1
     volumes:
        - ./public:/usr/share/elasticsearch/data
     ports:
@@ -69,6 +63,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    mem_limit: 1g
   kibana:
     image: kibana:8.6.0
     container_name: kibana
@@ -78,6 +73,7 @@ services:
       - 5601:5601
     depends_on:
       - elasticsearch
+    mem_limit: 512m
   logstash:
     image: logstash:8.6.0
     container_name: logstash
@@ -94,6 +90,7 @@ services:
       start_period: 60s
     depends_on:
       - elasticsearch
+    mem_limit: 512m
   gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
