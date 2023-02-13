@@ -81,6 +81,7 @@ services:
     environment:
       - "SPRING_PROFILES_ACTIVE=dev,native"
       - "spring.cloud.config.server.native.search-locations=file://$configuration_override_parameters_directory_docker"
+      - "spring.cloud.config.server.overrides.logging.level.by.gdev=$logger_level"
     volumes:
       - "$local_config_directory:$configuration_override_parameters_directory_docker"
   eureka:
@@ -92,6 +93,54 @@ services:
     depends_on:
       config:
         condition: service_healthy
+        #set directory rules sudo chmod 777 ~/prod/elastic
+  elasticsearch:
+    image: elasticsearch:8.6.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+    volumes:
+       - ~/prod/elastic:/usr/share/elasticsearch/data
+    ports:
+      - 9300:9300
+      - 9200:9200
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9600/?pretty"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    mem_limit: 1g
+  kibana:
+    image: kibana:8.6.0
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_URL: "http://elasticsearch:9300"
+      SERVER_BASEPATH: $kibana_secret_path
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    mem_limit: 512m
+  logstash:
+    image: logstash:8.6.0
+    container_name: logstash
+    command: logstash -f /etc/logstash/conf.d/logstash.conf
+    volumes:
+      - $logstash_config_directory:/etc/logstash/conf.d
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9600/?pretty"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - elasticsearch
+    mem_limit: 512m
   gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
@@ -146,5 +195,6 @@ services:
         condition: service_healthy
       dbcore:
         condition: service_started
+  
         
       

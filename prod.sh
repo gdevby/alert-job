@@ -12,5 +12,8 @@ export mail_password=
 export parser_categories_file_path=
 export swag_config=
 export front_directory=
+export logstash_config_directory=
+export logger_level=INFO
+export kibana_secret_path=
 
 docker compose -f docker-compose-prod.yml $1 $2
