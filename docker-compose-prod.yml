@@ -93,6 +93,7 @@ services:
     depends_on:
       config:
         condition: service_healthy
+        #set directory rules sudo chmod 777 ~/prod/elastic
   elasticsearch:
     image: elasticsearch:8.6.0
     container_name: elasticsearch
@@ -117,6 +118,7 @@ services:
     container_name: kibana
     environment:
       ELASTICSEARCH_URL: "http://elasticsearch:9300"
+      SERVER_BASEPATH: $kibana_secret_path
     ports:
       - 5601:5601
     depends_on:
