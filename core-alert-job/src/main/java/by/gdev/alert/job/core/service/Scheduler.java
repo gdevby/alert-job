@@ -57,35 +57,37 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
 	private void forEachOrders(List<AppUser> users, List<OrderDTO> orders) {
 		users.forEach(user -> {
-			user.getOrderModules().stream().filter(e -> e.isAvailable())
-					.filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
-						o.getSources().forEach(s -> {
-							List<String> list = orders.stream().peek(p -> {
-								statisticService.statisticTitleWord(p.getTitle());
-								statisticService.statisticDescriptionWord(p.getMessage());
-								statisticService.statisticTechnologyWord(p.getTechnologies());
-							}).filter(f -> compareSiteSources(f.getSourceSite(), s))
-									.filter(f -> isMatchUserFilter(f, o.getCurrentFilter()))
-									.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
-									.collect(Collectors.toList());
-							String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
-									: "http://notification:8019/telegram";
-							if (!list.isEmpty()) {
-								UserNotification un = user.isDefaultSendType()
-										? new UserNotification(user.getEmail(), null)
-										: new UserNotification(String.valueOf(user.getTelegram()), null);
-								un.setMessage(list.stream().collect(Collectors.joining(", ")));
-								Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve()
-										.bodyToMono(Void.class);
-								mono.subscribe(
-										e -> log.debug("sent new order for user by mail: {}, to {}",
-												user.isDefaultSendType(), un.getToMail()),
-										e -> log.debug("failed to sent user's message by mail: {}, to {}",
-												user.isDefaultSendType(), un.getToMail()));
-							}
-						});
-
+			if (user.isSwitchOffAlerts()) {
+				user.getOrderModules().stream().filter(e -> e.isAvailable())
+				.filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
+					o.getSources().forEach(s -> {
+						List<String> list = orders.stream().peek(p -> {
+							statisticService.statisticTitleWord(p.getTitle());
+							statisticService.statisticDescriptionWord(p.getMessage());
+							statisticService.statisticTechnologyWord(p.getTechnologies());
+						}).filter(f -> compareSiteSources(f.getSourceSite(), s))
+								.filter(f -> isMatchUserFilter(f, o.getCurrentFilter()))
+								.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
+								.collect(Collectors.toList());
+						String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
+								: "http://notification:8019/telegram";
+						if (!list.isEmpty()) {
+							UserNotification un = user.isDefaultSendType()
+									? new UserNotification(user.getEmail(), null)
+									: new UserNotification(String.valueOf(user.getTelegram()), null);
+							un.setMessage(list.stream().collect(Collectors.joining(", ")));
+							Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve()
+									.bodyToMono(Void.class);
+							mono.subscribe(
+									e -> log.debug("sent new order for user by mail: {}, to {}",
+											user.isDefaultSendType(), un.getToMail()),
+									e -> log.debug("failed to sent user's message by mail: {}, to {}",
+											user.isDefaultSendType(), un.getToMail()));
+						}
 					});
+
+				});
+			}
 		});
 	}
 
