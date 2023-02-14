@@ -1,4 +1,4 @@
-package by.gdev.alert.job.core.exeption;
+package by.gdev.common.exeption;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
