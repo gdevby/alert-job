@@ -3,7 +3,6 @@ package by.gdev.alert.job.parser.controller;
 import java.time.Duration;
 import java.util.List;
 
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -14,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.ParserService;
@@ -89,5 +86,10 @@ public class OrderParserController {
 			@RequestParam("category_value") boolean cValue,
 			@RequestParam(name = "subcategory_value", required = false) boolean sValue) {
 		return service.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
+	}
+	
+	@GetMapping("orders")
+	public Flux<OrderDTO> showOrdersBySource(@RequestParam("site_id") Long site, @RequestParam("category_id") Long category, @RequestParam(name = "sub_id", required = false) Long subId){
+		return service.getOrdersBySource(site, category, subId);
 	}
 }

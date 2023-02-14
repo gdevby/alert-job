@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import by.gdev.alert.job.core.model.Filter;
 import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
+import by.gdev.alert.job.core.model.Modules;
 import by.gdev.alert.job.core.model.OrderModulesDTO;
 import by.gdev.alert.job.core.model.Source;
 import by.gdev.alert.job.core.model.SourceDTO;
@@ -26,6 +27,7 @@ import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.NotificationAlertType;
+import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -120,18 +122,22 @@ public class MainController {
 	}
 
 	@PostMapping("user/order-module")
-	public Mono<ResponseEntity<OrderModulesDTO>> addOrderModule(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-			@RequestParam("name") String name) {
-		return coreService.createOrderModules(uuid, name);
+	public Mono<ResponseEntity<OrderModulesDTO>> addOrderModules(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody Modules modules) {
+		return coreService.createOrderModules(uuid, modules);
+	}
+	
+	@PatchMapping("user/order-module/{id}")
+	public ResponseEntity<Mono<OrderModulesDTO>> changeOrderModulew(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, 
+			@PathVariable("id") Long moduleId, @RequestBody Modules modules){
+		return ResponseEntity.ok(coreService.updateOrderModules(uuid, moduleId, modules));
 	}
 
 	@DeleteMapping("user/order-module/{id}")
-	public Mono<ResponseEntity<Void>> deleteOrderModule(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public Mono<ResponseEntity<Void>> deleteOrderModules(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long id) {
 		return coreService.removeOrderModules(uuid, id);
 	}
-
-	// TODO изменил
+	
 	@GetMapping("user/module/{module_id}/filter")
 	public ResponseEntity<Flux<FilterDTO>> getUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("module_id") Long moduleId) {
@@ -139,7 +145,6 @@ public class MainController {
 
 	}
 
-	// TODO изменил
 	@PostMapping("user/module/{module_id}/filter")
 	public Mono<ResponseEntity<FilterDTO>> addUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("module_id") Long id, @RequestBody Filter filter) {
@@ -222,5 +227,11 @@ public class MainController {
 	public Mono<ResponseEntity<Void>> deleteSourceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long id, @PathVariable("source_id") Long sourceId) {
 		return coreService.removeSourceSite(uuid, id, sourceId);
+	}
+	
+	@GetMapping("user/module/{id}/orders")
+	public ResponseEntity<Flux<OrderDTO>> getOrdersByModule(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@PathVariable("id") Long moduleId){
+		return ResponseEntity.ok(coreService.showOrdersByModule(uuid, moduleId));
 	}
 }

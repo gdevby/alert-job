@@ -9,6 +9,7 @@ public class OrderModulesDTO {
 
 	private Long id;
 	private String name;
+	private boolean available;
 	private List<SourceDTO> sourceDTO;
 	private List<FilterDTO> filterDTO;
 	private FilterDTO currentFilter;
