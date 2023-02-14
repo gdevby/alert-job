@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
+import by.gdev.common.exeption.ConflictExeption;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.exeption.ResponseExeption;
 
@@ -26,6 +27,13 @@ public class ErrorHandlingController {
 	@ExceptionHandler(ResourceNotFoundException.class)
 	@ResponseBody
 	public ResponseExeption resourceNotFoundExceptionHandler(ResourceNotFoundException ex) {
+		return new ResponseExeption(ex.getMessage());
+	}
+
+	@ResponseStatus(value = HttpStatus.CONFLICT)
+	@ExceptionHandler(ConflictExeption.class)
+	@ResponseBody
+	public ResponseExeption conflictExceptionHandler(ConflictExeption ex) {
 		return new ResponseExeption(ex.getMessage());
 	}
 }

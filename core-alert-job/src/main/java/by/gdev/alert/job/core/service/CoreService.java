@@ -39,6 +39,7 @@ import by.gdev.alert.job.core.repository.SourceSiteRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
+import by.gdev.common.exeption.ConflictExeption;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.CategoryDTO;
 import by.gdev.common.model.NotificationAlertType;
@@ -240,11 +241,13 @@ public class CoreService {
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			if (!CollectionUtils.isEmpty(user.getOrderModules())) {
 				for (OrderModules f : user.getOrderModules()) {
-					if (f.getName().equals(modules.getName()))
-						e.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
+					if (f.getName().equals(modules.getName())) {
+						throw new ConflictExeption(String.format("module with name %s exists" , modules.getName()));
+					}
 				}
 			} else
 				user.setOrderModules(Sets.newHashSet());
+			System.out.println(123);
 			OrderModules module = mapper.map(modules, OrderModules.class);
 			module = modulesRepository.save(module);
 			user.getOrderModules().add(module);
@@ -307,7 +310,7 @@ public class CoreService {
 			if (!CollectionUtils.isEmpty(modules.getFilters())) {
 				for (UserFilter f : modules.getFilters()) {
 					if (f.getName().equals(filter.getName()))
-						m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
+						throw new ConflictExeption(String.format("filter with name %s exists" , modules.getName()));
 				}
 			}else
 				modules.setFilters(Sets.newHashSet());
