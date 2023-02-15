@@ -211,6 +211,42 @@ public class MainController {
 		return coreService.removeDescriptionWordFromFilter(filterId, wordId);
 	}
 
+	@PatchMapping("user/negative-filter/{filter_id}/title-word/{word_id}")
+	public ResponseEntity<Mono<FilterDTO>> addTitleWordToNegativeFilter(@PathVariable("filter_id") Long filterId,
+			@PathVariable("word_id") Long wordId) {
+		return ResponseEntity.ok(coreService.createTitleWordToNegativeFilter(filterId, wordId));
+	}
+
+	@DeleteMapping("user/negative-filter/{filter_id}/title-word/{word_id}")
+	public Mono<ResponseEntity<Void>> deleteTitleWordFromNegativeFilter(@PathVariable("filter_id") Long filterId,
+			@PathVariable("word_id") Long wordId) {
+		return coreService.removeTitleWordFromNegativeFilter(filterId, wordId);
+	}
+
+	@PatchMapping("user/negative-filter/{filter_id}/technology-word/{word_id}")
+	public ResponseEntity<Mono<FilterDTO>> addTechnologyWordToNegativeFilter(@PathVariable("filter_id") Long filterId,
+			@PathVariable("word_id") Long wordId) {
+		return ResponseEntity.ok(coreService.createTechnologyWordToNegativeFilter(filterId, wordId));
+	}
+
+	@DeleteMapping("user/negative-filter/{filter_id}/technology-word/{word_id}")
+	public Mono<ResponseEntity<Void>> deleteTechnologyWordFromNegativeFilter(@PathVariable("filter_id") Long filterId,
+			@PathVariable("word_id") Long wordId) {
+		return coreService.removeTechnologyWordFromNegativeFilter(filterId, wordId);
+	}
+
+	@PatchMapping("user/negative-filter/{filter_id}/description-word/{word_id}")
+	public ResponseEntity<Mono<FilterDTO>> addDescriptionWordToNegativeFilter(@PathVariable("filter_id") Long filterId,
+			@PathVariable("word_id") Long wordId) {
+		return ResponseEntity.ok(coreService.createDescriptionWordToNegativeFilter(filterId, wordId));
+	}
+
+	@DeleteMapping("user/negative-filter/{filter_id}/description-word/{word_id}")
+	public Mono<ResponseEntity<Void>> deleteDescriptionWordFromNegativeFilter(@PathVariable("filter_id") Long filterId,
+			@PathVariable("word_id") Long wordId) {
+		return coreService.removeDescriptionWordFromFilter(filterId, wordId);
+	}
+	
 	@GetMapping("user/module/{id}/source")
 	public ResponseEntity<Flux<SourceDTO>> getSouceSite(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long id) {

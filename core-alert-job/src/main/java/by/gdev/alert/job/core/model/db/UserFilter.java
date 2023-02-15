@@ -35,4 +35,15 @@ public class UserFilter extends BasicId {
 	@ManyToMany(fetch = FetchType.EAGER)
 	@Size(max = 50, message = "the limit for added description word")
 	private Set<DescriptionWord> descriptions;
+	
+	private boolean activatedNegativeFilters = false;
+	@ManyToMany(fetch = FetchType.EAGER)
+	@Size(max = 50, message = "the limit for added negative technology word")
+	private Set<TechnologyWord> negativeTechnologies;
+	@ManyToMany(fetch = FetchType.EAGER)
+	@Size(max = 50, message = "the limit for added negative title word")
+	private Set<TitleWord> negativeTitles;
+	@ManyToMany(fetch = FetchType.EAGER)
+	@Size(max = 50, message = "the limit for added negative description word")
+	private Set<DescriptionWord> negativeDescriptions;
 }

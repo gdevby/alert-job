@@ -15,4 +15,8 @@ public class FilterDTO {
 	private List<WordDTO> titlesDTO;
 	private List<WordDTO> descriptionsDTO;
 	
+	private boolean activatedNegativeFilters;
+	private List<WordDTO> negativeTechnologiesDTO;
+	private List<WordDTO> negativeTitlesDTO;
+	private List<WordDTO> negativeDescriptionsDTO;
 }
