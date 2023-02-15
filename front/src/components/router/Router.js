@@ -6,13 +6,15 @@ import HomePage from '../../pages/homePage/HomePage'
 import FiltersPage from '../../pages/filtersPage/FiltersPage'
 import NotificationsPage from '../../pages/notificationsPage/NotificationsPage'
 import AddFilterPage from '../../pages/addFilterPage/AddFilterPage'
+import ModulesPage from '../../pages/modulesPage/ModulesPage';
 
 
 
 const Router = () => {
 	return <Routes>
 			<Route path="/" element={<HomePage />} />
-			<Route path="/page/filters" element={<FiltersPage />} />
+			<Route path="/page/filters/:id" element={<FiltersPage />} />
+			<Route path="/page/modules" element={<ModulesPage />} />
 			<Route path="/page/notifications" element={<NotificationsPage />} />
 			<Route path="/page/adding-filter" element={<AddFilterPage />} />
 			<Route path="/page/edit-filter/:id" element={<AddFilterPage />} />

@@ -28,7 +28,7 @@ const Header = () => {
 					<Link to='/'>Главная</Link>
 				</div>
 				<div className='header-content__navigation'>
-					{isAuth && <Link to='/page/filters'>Фильтры</Link>}
+					{isAuth && <Link to='/page/modules'>Модули</Link>}
 					{isAuth && <Link to='/page/notifications'>Уведомления</Link>}
 					<div>
 						{!isAuth && <Button text={<span>Регистрация и <br /> Авторизация</span>} onClick={openLoginForm} />}

@@ -14,19 +14,21 @@ import { removeCurrentFilter } from '../../store/slices/filterSlice'
 
 import { setCurrentFilter, setIsNew } from '../../store/slices/filterSlice'
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { moduleService } from '../../services/parser/endponits/moduleService'
 
 const FiltersPage = () => {
 
 	const [sourse, setSources] = useState([])
 	const [currentFilters, setCurrentFilters] = useState([])
 	const [filter, setFilter] = useState('')
+	
+	const { id } = useParams()
 
 	const dispatch = useDispatch()
 	const navigate = useNavigate()
 
 	const { currentFilter, isChoose } = useSelector(state => state.filter)
-
 
 	const addSource = data => {
 		const newSource = {
@@ -144,8 +146,6 @@ const FiltersPage = () => {
 
 			})
 	}, [])
-
-
 
 
 	return <div className='filtersPage'>
