@@ -26,8 +26,7 @@ public class ApplicationConfig {
 	@Bean
 	public WebClient createWebClient() {
 		HttpClient httpClient = HttpClient.create().followRedirect(true)
-				//TODO why?
-				.doOnConnected(con -> con.addHandler(new ReadTimeoutHandler(60, TimeUnit.SECONDS)))
+				.doOnConnected(con -> con.addHandlerFirst(new ReadTimeoutHandler(60, TimeUnit.SECONDS)))
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 60000).option(ChannelOption.SO_KEEPALIVE, true)
 				.option(EpollChannelOption.TCP_KEEPIDLE, 300).option(EpollChannelOption.TCP_KEEPINTVL, 60)
 				.option(EpollChannelOption.TCP_KEEPCNT, 8);
