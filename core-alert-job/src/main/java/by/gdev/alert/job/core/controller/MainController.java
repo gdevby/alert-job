@@ -2,7 +2,6 @@ package by.gdev.alert.job.core.controller;
 
 import javax.validation.Valid;
 
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -16,14 +15,10 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import by.gdev.alert.job.core.model.Filter;
-import by.gdev.alert.job.core.model.FilterDTO;
-import by.gdev.alert.job.core.model.KeyWord;
 import by.gdev.alert.job.core.model.Modules;
 import by.gdev.alert.job.core.model.OrderModulesDTO;
 import by.gdev.alert.job.core.model.Source;
 import by.gdev.alert.job.core.model.SourceDTO;
-import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.service.CoreService;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.NotificationAlertType;
@@ -76,39 +71,6 @@ public class MainController {
 		return ResponseEntity.ok(coreService.notificationUserAlertType(uuid));
 	}
 
-	@GetMapping("user/title-word")
-	public ResponseEntity<Mono<Page<WordDTO>>> getTitleWords(@RequestParam(name = "name", required = false) String name,
-			@RequestParam("page") Integer page) {
-		return ResponseEntity.ok(coreService.showTitleWords(name, page));
-	}
-
-	@PostMapping("user/title-word")
-	public Mono<ResponseEntity<WordDTO>> createTitleWord(@RequestBody @Valid KeyWord keyWord) {
-		return coreService.addTitleWord(keyWord);
-	}
-
-	@GetMapping("user/technology-word")
-	public ResponseEntity<Mono<Page<WordDTO>>> getTechnologyWords(
-			@RequestParam(name = "name", required = false) String name, @RequestParam("page") Integer page) {
-		return ResponseEntity.ok(coreService.showTechnologyWords(name, page));
-	}
-
-	@PostMapping("user/technology-word")
-	public Mono<ResponseEntity<WordDTO>> createTechnologyWord(@RequestBody @Valid KeyWord keyWord) {
-		return coreService.addTechnologyWord(keyWord);
-	}
-
-	@GetMapping("user/description-word")
-	public ResponseEntity<Mono<Page<WordDTO>>> getDescriptionWords(
-			@RequestParam(name = "name", required = false) String name, @RequestParam("page") Integer page) {
-		return ResponseEntity.ok(coreService.showDescriptionWords(name, page));
-	}
-
-	@PostMapping("user/description-word")
-	public Mono<ResponseEntity<WordDTO>> createDescriptionWord(@RequestBody @Valid KeyWord keyWord) {
-		return coreService.addDescriptionWord(keyWord);
-	}
-
 	@PatchMapping("user/telegram")
 	public ResponseEntity<Mono<Void>> addUserTelegram(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@RequestParam("telegram_id") Long telegramId) {
@@ -136,115 +98,6 @@ public class MainController {
 	public Mono<ResponseEntity<Void>> deleteOrderModules(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long id) {
 		return coreService.removeOrderModules(uuid, id);
-	}
-	
-	@GetMapping("user/module/{module_id}/filter")
-	public ResponseEntity<Flux<FilterDTO>> getUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-			@PathVariable("module_id") Long moduleId) {
-		return ResponseEntity.ok(coreService.showUserFilters(uuid, moduleId));
-
-	}
-
-	@PostMapping("user/module/{module_id}/filter")
-	public Mono<ResponseEntity<FilterDTO>> addUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-			@PathVariable("module_id") Long id, @RequestBody Filter filter) {
-		return coreService.createUserFilter(uuid, id, filter);
-	}
-
-	@DeleteMapping("user/module/{id}/filter/{filter_id}")
-	public Mono<ResponseEntity<Void>> deleteFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId) {
-		return coreService.removeUserFilter(uuid, moduleId, filterId);
-	}
-
-	@PostMapping("user/module/{id}/current-filter/{filter_id}")
-	public ResponseEntity<Mono<Void>> setCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId) {
-		return ResponseEntity.ok(coreService.replaceCurrentFilter(uuid, moduleId, filterId));
-	}
-
-	@GetMapping("user/module/{id}/current-filter")
-	public ResponseEntity<Mono<FilterDTO>> getCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-			@PathVariable("id") Long moduleId) {
-		return ResponseEntity.ok(coreService.showUserCurrentFilter(uuid, moduleId));
-	}
-
-	@PatchMapping("user/module/{id}/current-filter/{filter_id}")
-	public ResponseEntity<Mono<FilterDTO>> changeCurrrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId, @RequestBody Filter filter) {
-		return ResponseEntity.ok(coreService.updateCurrentFilter(uuid, moduleId, filterId, filter));
-	}
-
-	@PatchMapping("user/filter/{filter_id}/title-word/{word_id}")
-	public ResponseEntity<Mono<Void>> addTitleWordToFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return ResponseEntity.ok(coreService.createTitleWordToFilter(filterId, wordId));
-	}
-
-	@DeleteMapping("user/filter/{filter_id}/title-word/{word_id}")
-	public Mono<ResponseEntity<Void>> deleteTitleWordFromFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return coreService.removeTitleWordFromFilter(filterId, wordId);
-	}
-
-	@PatchMapping("user/filter/{filter_id}/technology-word/{word_id}")
-	public ResponseEntity<Mono<Void>> addTechnologyWordToFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return ResponseEntity.ok(coreService.createTechnologyWordToFilter(filterId, wordId));
-	}
-
-	@DeleteMapping("user/filter/{filter_id}/technology-word/{word_id}")
-	public Mono<ResponseEntity<Void>> deleteTechnologyWordFromFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return coreService.removeTechnologyWordFromFilter(filterId, wordId);
-	}
-
-	@PatchMapping("user/filter/{filter_id}/description-word/{word_id}")
-	public ResponseEntity<Mono<Void>> addDescriptionWordToFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return ResponseEntity.ok(coreService.createDescriptionWordToFilter(filterId, wordId));
-	}
-
-	@DeleteMapping("user/filter/{filter_id}/description-word/{word_id}")
-	public Mono<ResponseEntity<Void>> deleteDescriptionWordFromFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return coreService.removeDescriptionWordFromFilter(filterId, wordId);
-	}
-
-	@PatchMapping("user/negative-filter/{filter_id}/title-word/{word_id}")
-	public ResponseEntity<Mono<FilterDTO>> addTitleWordToNegativeFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return ResponseEntity.ok(coreService.createTitleWordToNegativeFilter(filterId, wordId));
-	}
-
-	@DeleteMapping("user/negative-filter/{filter_id}/title-word/{word_id}")
-	public Mono<ResponseEntity<Void>> deleteTitleWordFromNegativeFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return coreService.removeTitleWordFromNegativeFilter(filterId, wordId);
-	}
-
-	@PatchMapping("user/negative-filter/{filter_id}/technology-word/{word_id}")
-	public ResponseEntity<Mono<FilterDTO>> addTechnologyWordToNegativeFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return ResponseEntity.ok(coreService.createTechnologyWordToNegativeFilter(filterId, wordId));
-	}
-
-	@DeleteMapping("user/negative-filter/{filter_id}/technology-word/{word_id}")
-	public Mono<ResponseEntity<Void>> deleteTechnologyWordFromNegativeFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return coreService.removeTechnologyWordFromNegativeFilter(filterId, wordId);
-	}
-
-	@PatchMapping("user/negative-filter/{filter_id}/description-word/{word_id}")
-	public ResponseEntity<Mono<FilterDTO>> addDescriptionWordToNegativeFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return ResponseEntity.ok(coreService.createDescriptionWordToNegativeFilter(filterId, wordId));
-	}
-
-	@DeleteMapping("user/negative-filter/{filter_id}/description-word/{word_id}")
-	public Mono<ResponseEntity<Void>> deleteDescriptionWordFromNegativeFilter(@PathVariable("filter_id") Long filterId,
-			@PathVariable("word_id") Long wordId) {
-		return coreService.removeDescriptionWordFromFilter(filterId, wordId);
 	}
 	
 	@GetMapping("user/module/{id}/source")
