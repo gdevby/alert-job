@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -65,7 +64,7 @@ public class FLOrderParser {
 				// iterate over each category from this collection
 				.forEach(category -> {
 					log.trace("getting order by category {}", category.getNativeLocName());
-					Set<Subcategory> siteSubCategories = category.getSubCategories();
+					List<Subcategory> siteSubCategories = category.getSubCategories();
 					// checking if a subcategory exists for this category
 						// category does't have a subcategory
 						List<OrderDTO> list = flruMapItems(category.getLink(), siteSourceJob.getId(), category, null);

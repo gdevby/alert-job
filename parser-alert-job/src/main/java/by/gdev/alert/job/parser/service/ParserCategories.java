@@ -4,13 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -66,13 +65,14 @@ public class ParserCategories {
 			Category siteCategory = new Category();
 			siteCategory.setName(k.name());
 			siteCategory.setNativeLocName(k.translatedName);
+			siteCategory.setSiteSourceJob(site);
 			op = Optional.of(categoryRepository.save(siteCategory));
 			site.getCategories().add(op.get());
 			log.debug("added site category {},{}, {}", site.getName(), k.name(), k.translatedName());
 		}
 		Category sc = op.get();
 		if (Objects.isNull(sc.getSubCategories()))
-			sc.setSubCategories(new HashSet<Subcategory>());
+			sc.setSubCategories(new ArrayList<Subcategory>());
 		v.forEach(sub -> {
 			Optional<Subcategory> sscOp = sc.getSubCategories().stream()
 					.filter(ssc -> (Objects.nonNull(ssc.getName()) && Objects.equals(ssc.getName(), sub.name()))
@@ -83,6 +83,7 @@ public class ParserCategories {
 				Subcategory ssc1 = new Subcategory();
 				ssc1.setName(sub.name());
 				ssc1.setNativeLocName(sub.translatedName);
+				ssc1.setCategory(sc);
 				sc.getSubCategories().add(subCategoryRepository.save(ssc1));
 				log.debug("added site subcategory {}, {},{}, ", site.getName(), ssc1.getName(),
 						ssc1.getNativeLocName());
@@ -155,7 +156,7 @@ public class ParserCategories {
 	@SneakyThrows
 	public void updateHubrLink(String updateFilePath) {
 		SiteSourceJob sites = siteSourceJobRepository.findByName("HABR");
-		Set<Category> categories = sites.getCategories();
+		List<Category> categories = sites.getCategories();
 		Map<String, List<String>> map = aggregateByKeys(updateFilePath);
 		map.forEach((k, v) -> {
 			String[] l = k.split("\t");

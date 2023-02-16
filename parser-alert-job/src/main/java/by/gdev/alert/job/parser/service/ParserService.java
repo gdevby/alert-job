@@ -1,6 +1,5 @@
 package by.gdev.alert.job.parser.service;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
-import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
@@ -42,37 +40,18 @@ public class ParserService {
 	private final ModelMapper mapper;
 
 	public Flux<SiteSourceDTO> getSites() {
-		return Flux.create(flux -> {
-			Iterator<SiteSourceJob> iterator = siteSourceJobRepository.findAll().iterator();
-			while (iterator.hasNext()) {
-				flux.next(mapper.map(iterator.next(), SiteSourceDTO.class));
-			}
-			flux.complete();
-		});
+		return Flux.fromIterable(siteSourceJobRepository.findAll()).map(e -> mapper.map(e, SiteSourceDTO.class));
 	}
 	
 	public Flux<CategoryDTO> getCategories(Long id) {
-		return Flux.create(flux -> {
-			SiteSourceJob ssj = siteSourceJobRepository.findOneEager(id)
-					.orElseThrow(() -> new ResourceNotFoundException(""));
-			Iterator<Category> iterator = ssj.getCategories().iterator();
-			while (iterator.hasNext()) {
-				flux.next(mapper.map(iterator.next(), CategoryDTO.class));
-			}
-			flux.complete();
-		});
+		return Flux.fromIterable(categoryRepository.findAllBySourceId(id)).map(e -> mapper.map(e, CategoryDTO.class))
+				.switchIfEmpty(Flux.error(new ResourceNotFoundException("not found category with source id " + id)));
 	}
 	
 	public Flux<SubCategoryDTO> getSubCategories(Long category) {
-		return Flux.create(flux -> {
-			Category sc = categoryRepository.findOneEager(category)
-					.orElseThrow(() -> new ResourceNotFoundException());
-			Iterator<Subcategory> iterator = sc.getSubCategories().iterator();
-			while (iterator.hasNext()) {
-				flux.next(mapper.map(iterator.next(), SubCategoryDTO.class));
-			}
-			flux.complete();
-		});
+		return Flux.fromIterable(subCategoryRepository.findAllByCategoryId(category))
+				.map(e -> mapper.map(e, SubCategoryDTO.class))
+				.switchIfEmpty(Flux.error(new ResourceNotFoundException("not found sub category with category id " + category)));
 	}
 	
 	public boolean isExistsOrder(Category category, Subcategory subCategory, String link) {
@@ -88,26 +67,20 @@ public class ParserService {
 	}
 	
 	public Mono<SiteSourceDTO> getSite(Long id) {
-		return Mono
-				.just(siteSourceJobRepository.findById(id)
-						.orElseThrow(() -> new ResourceNotFoundException("not found site with id " + id)))
-				.map(e -> mapper.map(e, SiteSourceDTO.class));
+		return Mono.justOrEmpty(siteSourceJobRepository.findById(id)).map(e -> mapper.map(e, SiteSourceDTO.class))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found site with id " + id)));
 	}
 	
 	public Mono<CategoryDTO> getCategory(Long id, Long cId) {
-		return Mono.create(m -> {
-			SiteSourceJob ssj = siteSourceJobRepository.findByIdAndCategory(id, cId);
-			Category c = ssj.getCategories().stream().findFirst().get();
-			m.success(mapper.map(c, CategoryDTO.class));
-		});
+		return Mono.justOrEmpty(categoryRepository.findByIdAndSourceId(cId, id))
+				.map(e -> mapper.map(e, CategoryDTO.class)).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found category by category %s and source %s", cId, id))));
 	}
 
 	public Mono<SubCategoryDTO> getSubCategory(Long cId, Long sId){
-		return Mono.create(m -> {
-			Category sc = categoryRepository.findByIdAndSubCategory(cId, sId);
-			Subcategory sub = sc.getSubCategories().stream().findFirst().get();
-			m.success(mapper.map(sub, SubCategoryDTO.class));
-		});
+		return Mono.justOrEmpty(subCategoryRepository.findByIdAndCategoryId(sId, cId))
+				.map(e -> mapper.map(e, SubCategoryDTO.class)).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found sub category by sub category %s and category %s", sId, cId))));
 	}
 	
 	public Mono<Void> subcribeOnSource(Long categoryId, Long subCategoryId, boolean cValue, boolean sValue){

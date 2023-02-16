@@ -1,5 +1,6 @@
 package by.gdev.alert.job.parser.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
@@ -10,11 +11,9 @@ import by.gdev.alert.job.parser.domain.db.Category;
 
 public interface CategoryRepository extends CrudRepository<Category, Long>{
 	
-	@Query("select c from parser_category c left join fetch c.subCategories where c.id = :id")
-	Optional<Category> findOneEager(@Param("id") Long id);
+	@Query("select c from parser_category c left join fetch c.siteSourceJob s where s.id = :id")
+	List<Category> findAllBySourceId(@Param("id") Long id);
 	
-	@Query("select c from parser_category c left join fetch c.subCategories s where c.id= :id and s.id = :sId")
-	Category findByIdAndSubCategory(@Param("id") Long id, @Param("sId") Long sId);
-	
-
+	@Query("select c from parser_category c left join fetch c.siteSourceJob s where c.id = :id and s.id = :sid")
+	Optional<Category> findByIdAndSourceId(@Param("id") Long id, @Param("sid") Long sid);
 }

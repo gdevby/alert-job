@@ -1,11 +1,13 @@
 package by.gdev.alert.job.parser.domain.db;
 
-import java.util.Set;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,6 +21,9 @@ public class Category extends BasicId {
 	private String nativeLocName;
 	private String link;
 	private boolean parse;
-	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-	private Set<Subcategory> subCategories;
+	@ManyToOne(cascade = CascadeType.ALL , fetch = FetchType.LAZY)
+	private SiteSourceJob siteSourceJob;
+	@OrderColumn(name = "POSITION")
+	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "category")
+	private List<Subcategory> subCategories;
 }
