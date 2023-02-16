@@ -15,8 +15,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {"filters"})
-@ToString(callSuper = true, exclude = {"filters"})
+@EqualsAndHashCode(callSuper = true, exclude = {"filters", "sources"})
+@ToString(callSuper = true, exclude = {"filters", "sources"})
 @Entity
 public class OrderModules extends BasicId {
 	

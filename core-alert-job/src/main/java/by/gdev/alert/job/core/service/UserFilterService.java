@@ -1,6 +1,7 @@
 package by.gdev.alert.job.core.service;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -187,7 +188,8 @@ public class UserFilterService {
 	
 	public Mono<FilterDTO> showUserCurrentFilter(String uuid, Long moduleId) {
 		return Mono.just(userRepository.findByUuidAndOrderModulesIdOneEagerCurrentFilter(uuid, moduleId))
-				.map(o -> o.get().getOrderModules().stream().findAny().get()).map(e -> {
+				.map(o -> o.get().getOrderModules().stream().findAny().get())
+				.filter(e -> Objects.nonNull(e.getCurrentFilter())).map(e -> {
 					FilterDTO dto = mapper.map(e.getCurrentFilter(), FilterDTO.class);
 					return dto;
 				}).onErrorResume(NoSuchElementException.class,
