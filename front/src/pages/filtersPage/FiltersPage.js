@@ -63,7 +63,7 @@ const FiltersPage = () => {
 
 	useEffect(() => {
 		sourceService
-			.getSources()
+			.getSources(id)
 			.then(response => {
 				const sources = response.data.map(item => { return { id: item.id, cat: item.siteCategoryDTO, site: item.siteSourceDTO, sub_cat: item.siteSubCategoryDTO } })
 				setSources((prev) => [...prev, ...sources])
@@ -121,13 +121,13 @@ const FiltersPage = () => {
 
 	useEffect(() => {
 		filterService
-			.getFilters()
+			.getFilters(id)
 			.then(response => {
 				setCurrentFilters(response.data)
 			})
 
 		filterService
-			.getCurrentFilter()
+			.getCurrentFilter(id)
 			.then((response) => {
 				if (response.data !== '') {
 					setFilter(response.data)

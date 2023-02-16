@@ -15,9 +15,7 @@ const ModulesPage = () => {
 			.then(response => {
 				setModules(prev => [...prev, response.data])
 			})
-		
 	}
-
 
 	useEffect(() => {
 		moduleService
@@ -34,7 +32,7 @@ const ModulesPage = () => {
 	}
 	
 	const openModule = (id) => {
-		navigate(id)
+		navigate(`/page/filters/${id}`)
 	}
 
 	return <div className='modulesPage'>

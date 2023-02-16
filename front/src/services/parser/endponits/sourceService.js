@@ -7,7 +7,7 @@ const sourceService = {
 		siteSource, siteCategory, siteSubCategory, flRuForAll
 	}),
 	deleteSource: (source_id) => api.delete(`user/source/${source_id}`),
-	getSources: () => api.get('user/source')
+	getSources: (module_id) => api.get(`user/module/${module_id}/source`)
 }
 
 export { sourceService }
