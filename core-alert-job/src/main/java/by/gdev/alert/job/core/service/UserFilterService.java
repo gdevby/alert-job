@@ -1,6 +1,5 @@
 package by.gdev.alert.job.core.service;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -20,13 +19,11 @@ import by.gdev.alert.job.core.model.Filter;
 import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
 import by.gdev.alert.job.core.model.WordDTO;
-import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
 import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
-import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
@@ -37,13 +34,11 @@ import by.gdev.common.exeption.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
 public class UserFilterService {
 	
-	private final AppUserRepository userRepository;
 	private final OrderModulesRepository modulesRepository;
 	private final UserFilterRepository filterRepository;
 	private final TitleWordRepository titleRepository;
@@ -122,112 +117,98 @@ public class UserFilterService {
 	}
 	
 	public Flux<FilterDTO> showUserFilters(String uuid, Long moduleId) {
-		return Flux.just(userRepository.findByUuidAndOrderModulesIdOneEagerFilters(uuid, moduleId)).publishOn(Schedulers.boundedElastic())
-			.flatMapIterable(u -> u.get().getOrderModules()).flatMapIterable(e -> e.getFilters()).map(e -> {
-				FilterDTO dto = mapper.map(e, FilterDTO.class);
-				dto.setTitlesDTO(e.getTitles().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-				dto.setDescriptionsDTO(
-						e.getDescriptions().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-				dto.setTechnologiesDTO(
-						e.getTechnologies().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-				return dto;
-			}).onErrorResume(NoSuchElementException.class,
-					e -> Mono.error(new ResourceNotFoundException("order not found")));
+	return 	Flux.fromIterable(filterRepository.findAllByModuleIdAndUserUuid(moduleId, uuid)).map(e -> {
+			FilterDTO dto = mapper.map(e, FilterDTO.class);
+			dto.setTitlesDTO(e.getTitles().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+			dto.setDescriptionsDTO(e.getDescriptions().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+			dto.setTechnologiesDTO(e.getTechnologies().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+			return dto;
+		});
 	}
 
-	public Mono<ResponseEntity<FilterDTO>> createUserFilter(String uuid, Long moduleId, Filter filter){
-		return Mono.create(m -> {
-			AppUser user = userRepository.findByUuidAndOrderModulesIdOneEagerFilters(uuid, moduleId).orElseThrow(() -> new ResourceNotFoundException("user not found"));
-			OrderModules modules = user.getOrderModules().stream().findAny().get();
-			if (!CollectionUtils.isEmpty(modules.getFilters())) {
-				for (UserFilter f : modules.getFilters()) {
-					if (f.getName().equals(filter.getName()))
-						throw new ConflictExeption(String.format("filter with name %s exists" , modules.getName()));
-				}
-			}else
-				modules.setFilters(Sets.newHashSet());
+	public Mono<FilterDTO> createUserFilter(String uuid, Long moduleId, Filter filter){
+		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuid(moduleId, uuid))
+		.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found module with id " + moduleId)))
+		.map(e -> {
+			if (filterRepository.existsByNameAndModule(filter.getName(), e))
+				throw new ConflictExeption(String.format("filter with name %s exists", filter.getName()));
 			UserFilter userFilter = new UserFilter();
 			userFilter.setName(filter.getName());
 			userFilter.setMaxValue(filter.getMaxValue());
 			userFilter.setMinValue(filter.getMinValue());
-			userFilter.setModule(modules);
-			userFilter.setModule(modules);
-			filterRepository.save(userFilter);
-			m.success(ResponseEntity.ok(mapper.map(userFilter, FilterDTO.class)));
+			userFilter.setModule(e);
+			userFilter = filterRepository.save(userFilter);
+			return mapper.map(userFilter, FilterDTO.class);
+			
 		});
 	}
 	
 	public Mono<ResponseEntity<Void>> removeUserFilter(String uuid, Long moduleId, Long filterId) {
-		Mono<AppUser> user = Mono.justOrEmpty(userRepository.findOneEagerOrderModules(uuid))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
-		Mono<UserFilter> userFilterTest = Mono.justOrEmpty(filterRepository.findByIdAndOrderModuleId(filterId, moduleId))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user filter not found")));
-		return Mono.zip(user, userFilterTest).map(e -> {
-			OrderModules module = e.getT1().getOrderModules().stream().findAny().get();
-			UserFilter filter = e.getT2();
-			if (module.getFilters().removeIf(f -> f.getId().equals(filter.getId()))) {
-				modulesRepository.save(module);
-				filterRepository.delete(filter);
-				return ResponseEntity.ok().build();
-			} else
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-		});
+		return Mono.justOrEmpty(filterRepository.findByIdAndModuleIdAndUserUuid(filterId, moduleId, uuid))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found filter by module %s and filter %s", moduleId, filterId))))
+				.map(e -> {
+					filterRepository.delete(e);
+					return ResponseEntity.ok().build();
+				});
 	}
 	
-	public Mono<Void> replaceCurrentFilter(String uuid, Long moduleId, Long filterId){
-		return Mono.create(m -> {
-			AppUser user = userRepository.findByUuidAndOrderModulesIdOneEagerCurrentFilter(uuid, moduleId)
-					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
-			UserFilter userFilterTest = filterRepository.findById(filterId).orElseThrow(() -> new ResourceNotFoundException("user filter not found"));
-			OrderModules module = user.getOrderModules().stream().findAny().get();
-			module.setCurrentFilter(userFilterTest);
-			modulesRepository.save(module);
-			m.success();
+	public Mono<FilterDTO> replaceCurrentFilter(String uuid, Long moduleId, Long filterId){
+		Mono<UserFilter> filter = Mono.justOrEmpty(filterRepository.findByIdAndOrderModuleId(filterId, moduleId))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(String.format("not found filter by module %s and filter", moduleId, filterId))));
+		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuid(filterId, uuid))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(String.format("not found module by %s", moduleId))));
+		return Mono.zip(filter, modules).map(tuple -> {
+			UserFilter f = tuple.getT1();
+			OrderModules o = tuple.getT2();
+			o.setCurrentFilter(f);
+			modulesRepository.save(o);
+			return mapper.map(f, FilterDTO.class);
 		});
 	}
 	
 	public Mono<FilterDTO> showUserCurrentFilter(String uuid, Long moduleId) {
-		return Mono.just(userRepository.findByUuidAndOrderModulesIdOneEagerCurrentFilter(uuid, moduleId))
-				.map(o -> o.get().getOrderModules().stream().findAny().get())
-				.filter(e -> Objects.nonNull(e.getCurrentFilter())).map(e -> {
-					FilterDTO dto = mapper.map(e.getCurrentFilter(), FilterDTO.class);
-					return dto;
-				}).onErrorResume(NoSuchElementException.class,
-						e -> Mono.error(new ResourceNotFoundException("current filter not found")));
+		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerCurrentFilter(moduleId, uuid))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException("current filter not found")))
+				.filter(f -> Objects.nonNull(f.getCurrentFilter())).map(e -> {
+					return mapper.map(e.getCurrentFilter(), FilterDTO.class);
+				});
 	}
 	
-	public Mono<FilterDTO> updateCurrentFilter(String uuid, Long moduleId, Long filterId, Filter filter){
-	return Mono.create(m -> {
-		AppUser user = userRepository.findByUuidAndOrderModulesIdOneEagerFilters(uuid, moduleId)
-				.orElseThrow(() -> new ResourceNotFoundException("not found user with"));
-		UserFilter currentFilter = user.getOrderModules().stream().findAny().get().getCurrentFilter();
-		mapper.map(filter, currentFilter);
-		currentFilter = filterRepository.save(currentFilter);
-		m.success(mapper.map(currentFilter, FilterDTO.class));
-	});
-}
-	
-	public Mono<Void> createTitleWordToFilter(Long filterId, Long wordId){
-		return Mono.create(m ->{
-			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
-			TitleWord word = titleRepository.findById(wordId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
-			if (CollectionUtils.isEmpty(filter.getTitles())) {
-				filter.setTitles(Sets.newHashSet());
-			}
-			filter.getTitles().add(word);
-			filterRepository.save(filter);
-			m.success();
-		});
+	public Mono<FilterDTO> updateFilter(String uuid, Long moduleId, Long filterId, Filter filter) {
+		return Mono.justOrEmpty(filterRepository.findByIdAndModuleIdAndUserUuid(filterId, moduleId, uuid))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found filter by module %s and filter %s", moduleId, filterId))))
+				.map(e -> {
+					if (filterRepository.existsByNameAndModule(filter.getName(), e.getModule()))
+						throw new ConflictExeption(String.format("filter with name %s exists", filter.getName()));
+					UserFilter userFilter = e;
+					mapper.map(filter, userFilter);
+					userFilter = filterRepository.save(userFilter);
+					return mapper.map(userFilter, FilterDTO.class);
+				});
 	}
-	
-	public Mono<FilterDTO> createTitleWordToNegativeFilter(Long filterId, Long wordId){
+
+	public Mono<FilterDTO> createTitleWordToFilter(Long filterId, Long wordId) {
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId))).map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TitleWord w = tuple.getT2();
+					if (CollectionUtils.isEmpty(f.getTitles()))
+						f.setTitles(Sets.newHashSet());
+					f.getNegativeTitles().add(w);
+					filterRepository.save(f);
+					return mapper.map(f, FilterDTO.class);
+				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))));
+	}
+
+	public Mono<FilterDTO> createTitleWordToNegativeFilter(Long filterId, Long wordId) {
 		return Mono.justOrEmpty(filterRepository.findById(filterId))
 				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId))).map(tuple -> {
 					UserFilter filter = tuple.getT1();
 					TitleWord word = tuple.getT2();
-					if (CollectionUtils.isEmpty(filter.getNegativeTitles())) 
+					if (CollectionUtils.isEmpty(filter.getNegativeTitles()))
 						filter.setNegativeTitles(Sets.newHashSet());
 					filter.getNegativeTitles().add(word);
 					filterRepository.save(filter);
@@ -237,46 +218,49 @@ public class UserFilterService {
 	}
 	
 	public Mono<ResponseEntity<Void>> removeTitleWordFromFilter(Long filterId, Long wordId) {
-		return Mono.create(m -> {
-			UserFilter filter = filterRepository.findOneEagerTitleWords(filterId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
-			TitleWord word = titleRepository.findById(wordId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
-			if (filter.getTitles().removeIf(e -> e.equals(word))) {
-				filterRepository.save(filter);
-				m.success(ResponseEntity.ok().build());
-			} else {
-				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
-			}
-		});
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId)))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))))
+				.map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TitleWord t = tuple.getT2();
+					if (f.getTitles().removeIf(e -> e.getId().equals(t.getId()))) {
+						filterRepository.save(f);
+						return ResponseEntity.ok().build();
+					} else
+						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+				});
 	}
 	
 	public Mono<ResponseEntity<Void>> removeTitleWordFromNegativeFilter(Long filterId, Long wordId) {
 		return Mono.justOrEmpty(filterRepository.findById(filterId))
-		.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId))).map(tuple -> {
-			UserFilter filter = tuple.getT1();
-			TitleWord word = tuple.getT2();
-			if (filter.getNegativeTitles().removeIf(e -> e.equals(word))) {
-				filterRepository.save(filter);
-				return ResponseEntity.ok().build();
-			}else
-				return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-		});
+				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId)))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))))
+				.map(tuple -> {
+					UserFilter filter = tuple.getT1();
+					TitleWord word = tuple.getT2();
+					if (filter.getNegativeTitles().removeIf(e -> e.equals(word))) {
+						filterRepository.save(filter);
+						return ResponseEntity.ok().build();
+					} else
+						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+				});
 	}
 	
-	public Mono<Void> createTechnologyWordToFilter(Long filterId, Long wordId){
-		return Mono.create(m ->{
-			UserFilter filter = filterRepository.findOneEagerTechnologyWords(filterId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
-			TechnologyWord word = technologyRepository.findById(wordId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
-			if (CollectionUtils.isEmpty(filter.getTechnologies())) {
-				filter.setTechnologies(Sets.newHashSet());
-			}
-			filter.getTechnologies().add(word);
-			filterRepository.save(filter);
-			m.success();
-		});
+	public Mono<FilterDTO> createTechnologyWordToFilter(Long filterId, Long wordId){
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId))).map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TechnologyWord w = tuple.getT2();
+					if (CollectionUtils.isEmpty(f.getTechnologies()))
+						f.setTechnologies(Sets.newHashSet());
+					f.getTechnologies().add(w);
+					filterRepository.save(f);
+					return mapper.map(f, FilterDTO.class);
+				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))));
 	}
 	
 	public Mono<FilterDTO> createTechnologyWordToNegativeFilter(Long filterId, Long wordId){
@@ -294,18 +278,19 @@ public class UserFilterService {
 	}
 	
 	public Mono<ResponseEntity<Void>> removeTechnologyWordFromFilter(Long filterId, Long wordId) {
-		return Mono.create(m -> {
-			UserFilter filter = filterRepository.findOneEagerTechnologyWords(filterId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
-			TechnologyWord word = technologyRepository.findById(wordId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
-			if (filter.getTechnologies().removeIf(e -> e.equals(word))) {
-				filterRepository.save(filter);
-				m.success(ResponseEntity.ok().build());
-			} else {
-				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
-			}
-		});
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId)))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))))
+				.map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TechnologyWord t = tuple.getT2();
+					if (f.getTechnologies().removeIf(e -> e.getId().equals(t.getId()))) {
+						filterRepository.save(f);
+						return ResponseEntity.ok().build();
+					} else
+						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+				});
 	}
 	
 	public Mono<ResponseEntity<Void>> removeTechnologyWordFromNegativeFilter(Long filterId, Long wordId) {
@@ -321,19 +306,18 @@ public class UserFilterService {
 		});
 	}
 	
-	public Mono<Void> createDescriptionWordToFilter(Long filterId, Long wordId){
-		return Mono.create(m ->{
-			UserFilter filter = filterRepository.findOneEagerDescriptionWords(filterId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
-			DescriptionWord word = descriptionRepository.findById(wordId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
-			if (CollectionUtils.isEmpty(filter.getDescriptions())) {
-				filter.setDescriptions(Sets.newHashSet());
-			}
-			filter.getDescriptions().add(word);
-			filterRepository.save(filter);
-			m.success();
-		});
+	public Mono<FilterDTO> createDescriptionWordToFilter(Long filterId, Long wordId){
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(descriptionRepository.findById(wordId))).map(tuple -> {
+					UserFilter f = tuple.getT1();
+					DescriptionWord w = tuple.getT2();
+					if (CollectionUtils.isEmpty(f.getDescriptions()))
+						f.setDescriptions(Sets.newHashSet());
+					f.getDescriptions().add(w);
+					filterRepository.save(f);
+					return mapper.map(f, FilterDTO.class);
+				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))));
 	}
 	
 	public Mono<FilterDTO> createDescriptionWordToNegativeFilter(Long filterId, Long wordId){
@@ -351,17 +335,15 @@ public class UserFilterService {
 	}
 	
 	public Mono<ResponseEntity<Void>> removeDescriptionWordFromFilter(Long filterId, Long wordId) {
-		return Mono.create(m -> {
-			UserFilter filter = filterRepository.findOneEagerDescriptionWords(filterId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found filter with id " + filterId));
-			DescriptionWord word = descriptionRepository.findById(wordId)
-					.orElseThrow(() -> new ResourceNotFoundException("not found word with id " + wordId));
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+		.zipWith(Mono.justOrEmpty(descriptionRepository.findById(wordId))).map(tuple -> {
+			UserFilter filter = tuple.getT1();
+			DescriptionWord word = tuple.getT2();
 			if (filter.getDescriptions().removeIf(e -> e.equals(word))) {
 				filterRepository.save(filter);
-				m.success(ResponseEntity.ok().build());
-			} else {
-				m.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
-			}
+				return ResponseEntity.ok().build();
+			}else
+				return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 		});
 	}
 	

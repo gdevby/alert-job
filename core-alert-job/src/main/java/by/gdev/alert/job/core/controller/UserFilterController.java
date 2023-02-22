@@ -69,43 +69,43 @@ public class UserFilterController {
 	}
 	
 	@GetMapping("user/module/{module_id}/filter")
-	public ResponseEntity<Flux<FilterDTO>> getUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public ResponseEntity<Flux<FilterDTO>> getUserFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
 			@PathVariable("module_id") Long moduleId) {
 		return ResponseEntity.ok(filterService.showUserFilters(uuid, moduleId));
 	}
 
 	@PostMapping("user/module/{module_id}/filter")
-	public Mono<ResponseEntity<FilterDTO>> addUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public ResponseEntity<Mono<FilterDTO>> addUserFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
 			@PathVariable("module_id") Long id, @RequestBody Filter filter) {
-		return filterService.createUserFilter(uuid, id, filter);
+		return ResponseEntity.ok(filterService.createUserFilter(uuid, id, filter));
 	}
 
 	@DeleteMapping("user/module/{id}/filter/{filter_id}")
-	public Mono<ResponseEntity<Void>> deleteFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public Mono<ResponseEntity<Void>> deleteFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
 			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId) {
 		return filterService.removeUserFilter(uuid, moduleId, filterId);
 	}
 
 	@PostMapping("user/module/{id}/current-filter/{filter_id}")
-	public ResponseEntity<Mono<Void>> setCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public ResponseEntity<Mono<FilterDTO>> setCurrentFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
 			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId) {
 		return ResponseEntity.ok(filterService.replaceCurrentFilter(uuid, moduleId, filterId));
 	}
 
 	@GetMapping("user/module/{id}/current-filter")
-	public ResponseEntity<Mono<FilterDTO>> getCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	public ResponseEntity<Mono<FilterDTO>> getCurrentFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
 			@PathVariable("id") Long moduleId) {
 		return ResponseEntity.ok(filterService.showUserCurrentFilter(uuid, moduleId));
 	}
 
-	@PatchMapping("user/module/{id}/current-filter/{filter_id}")
-	public ResponseEntity<Mono<FilterDTO>> changeCurrrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	@PatchMapping("user/module/{id}/filter/{filter_id}")
+	public ResponseEntity<Mono<FilterDTO>> changeFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
 			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId, @RequestBody Filter filter) {
-		return ResponseEntity.ok(filterService.updateCurrentFilter(uuid, moduleId, filterId, filter));
+		return ResponseEntity.ok(filterService.updateFilter(uuid, moduleId, filterId, filter));
 	}
 
 	@PatchMapping("user/filter/{filter_id}/title-word/{word_id}")
-	public ResponseEntity<Mono<Void>> addTitleWordToFilter(@PathVariable("filter_id") Long filterId,
+	public ResponseEntity<Mono<FilterDTO>> addTitleWordToFilter(@PathVariable("filter_id") Long filterId,
 			@PathVariable("word_id") Long wordId) {
 		return ResponseEntity.ok(filterService.createTitleWordToFilter(filterId, wordId));
 	}
@@ -117,7 +117,7 @@ public class UserFilterController {
 	}
 
 	@PatchMapping("user/filter/{filter_id}/technology-word/{word_id}")
-	public ResponseEntity<Mono<Void>> addTechnologyWordToFilter(@PathVariable("filter_id") Long filterId,
+	public ResponseEntity<Mono<FilterDTO>> addTechnologyWordToFilter(@PathVariable("filter_id") Long filterId,
 			@PathVariable("word_id") Long wordId) {
 		return ResponseEntity.ok(filterService.createTechnologyWordToFilter(filterId, wordId));
 	}
@@ -129,7 +129,7 @@ public class UserFilterController {
 	}
 
 	@PatchMapping("user/filter/{filter_id}/description-word/{word_id}")
-	public ResponseEntity<Mono<Void>> addDescriptionWordToFilter(@PathVariable("filter_id") Long filterId,
+	public ResponseEntity<Mono<FilterDTO>> addDescriptionWordToFilter(@PathVariable("filter_id") Long filterId,
 			@PathVariable("word_id") Long wordId) {
 		return ResponseEntity.ok(filterService.createDescriptionWordToFilter(filterId, wordId));
 	}

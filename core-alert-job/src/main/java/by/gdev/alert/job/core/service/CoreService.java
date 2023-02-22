@@ -144,106 +144,91 @@ public class CoreService {
 		});
 	}
 	
-	public Mono<ResponseEntity<OrderModulesDTO>> createOrderModules(String uuid, Modules modules) {
-		return Mono.create(e -> {
-			AppUser user = userRepository.findOneEagerOrderModules(uuid)
-					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
-			if (!CollectionUtils.isEmpty(user.getOrderModules())) {
-				for (OrderModules f : user.getOrderModules()) {
-					if (f.getName().equals(modules.getName())) {
-						throw new ConflictExeption(String.format("module with name %s exists" , modules.getName()));
-					}
-				}
-			} else
-				user.setOrderModules(Sets.newHashSet());
-			OrderModules module = mapper.map(modules, OrderModules.class);
-			module = modulesRepository.save(module);
-			user.getOrderModules().add(module);
-			userRepository.save(user);
-			e.success(ResponseEntity.ok(mapper.map(module, OrderModulesDTO.class)));
-		});
+	public Mono<OrderModulesDTO> createOrderModules(String uuid, Modules modules) {
+		return Mono.justOrEmpty(userRepository.findByUuid(uuid))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")))
+				.map(u -> {
+					if (modulesRepository.existsByNameAndUserUuid(modules.getName(), uuid))
+						throw new ConflictExeption(String.format("module with name %s exists", modules.getName()));
+					OrderModules module = mapper.map(modules, OrderModules.class);
+					module.setUser(u);
+					module = modulesRepository.save(module);
+					return mapper.map(module, OrderModulesDTO.class);
+				});
 	}
 	
 	public Mono<OrderModulesDTO> updateOrderModules(String uuid, Long moduleId, Modules modules){
-		return Mono.just(userRepository.findByUuidAndOrderModulesId(uuid, moduleId))
-		.map(e -> {
-			OrderModules m = e.get().getOrderModules().stream().findAny().get();
-			mapper.map(modules, m);
-			m = modulesRepository.save(m);
-			return mapper.map(m, OrderModulesDTO.class);
-		})
-		.onErrorResume(NoSuchElementException.class, 	e -> Mono.error(new ResourceNotFoundException("not found module " + moduleId)));
+		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuid(moduleId, uuid))
+			.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found module with id " + moduleId)))
+			.map(e -> {
+				if (modulesRepository.existsByNameAndUserUuid(modules.getName(), uuid))
+					throw new ConflictExeption(String.format("module with name %s exists", modules.getName()));
+				mapper.map(modules, e);
+				e = modulesRepository.save(e);
+				return  mapper.map(e, OrderModulesDTO.class);
+			});
 	}
-	
-	
 	
 	public Flux<OrderModulesDTO> showOrderModules(String uuid) {
-		return Flux.just(userRepository.findOneEagerOrderModules(uuid)).flatMapIterable(u -> u.get().getOrderModules())
-				.map(e -> mapper.map(e, OrderModulesDTO.class)).onErrorResume(NoSuchElementException.class,
-						e -> Mono.error(new ResourceNotFoundException("user not found")));
+		return Flux.fromIterable(modulesRepository.findAllByUserUuid(uuid))
+				.map(e -> mapper.map(e, OrderModulesDTO.class));
 	}
 	
+	
+	
 	public Mono<ResponseEntity<Void>> removeOrderModules(String uuid, Long moduleId){
-		return Mono.create(e -> {
-			AppUser user = userRepository.findOneEagerOrderModules(uuid)
-					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
-			OrderModules module = modulesRepository.findById(moduleId).orElseThrow(() -> new ResourceNotFoundException("not found module id " + moduleId));
-			if (user.getOrderModules().removeIf(i -> i.getId().equals(module.getId()))) {
-				userRepository.save(user);
-				modulesRepository.delete(module);
-				e.success(ResponseEntity.ok().build());
-			}else 
-				e.success(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
-		});
+		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuid(moduleId, uuid))
+			.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found module with id " + moduleId)))
+			.map(e -> {
+				modulesRepository.delete(e);
+				return ResponseEntity.ok().build();
+			});
 	}
 	
 	public Flux<SourceDTO> showSourceSite(String uuid, Long id) {
-		return Flux.just(userRepository.findByUuidAndOrderModulesIdOneEagerSources(uuid, id))
-				.map(e -> e.get().getOrderModules().stream().findAny().get()).flatMapIterable(o -> o.getSources())
-				.map(s -> {
-					SourceDTO dto = new SourceDTO();
-					dto.setId(s.getId());
-					SiteSourceDTO source = new SiteSourceDTO();
-					source.setId(s.getSiteSource());
-					dto.setSiteSourceDTO(source);
-					CategoryDTO category = new CategoryDTO();
-					category.setId(s.getSiteCategory());
-					dto.setSiteCategoryDTO(category);
-					SubCategoryDTO subcategory = new SubCategoryDTO();
-					subcategory.setId(s.getSiteSubCategory());
-					dto.setSiteSubCategoryDTO(subcategory);
-					return dto;
-				}).flatMap(s -> {
-					Long sourceId = s.getSiteSourceDTO().getId();
-					Long categoryId = s.getSiteCategoryDTO().getId();
-					Mono<SiteSourceDTO> m1 = webClient.get()
-							.uri(String.format("http://parser:8017/api/site/%s", s.getSiteSourceDTO().getId()))
-							.retrieve().bodyToMono(SiteSourceDTO.class);
-					Mono<CategoryDTO> m2 = webClient.get()
-							.uri(String.format("http://parser:8017/api/site/%s/category/%s", sourceId, categoryId))
-							.retrieve().bodyToMono(CategoryDTO.class).onErrorReturn(new CategoryDTO());
-					Mono<SubCategoryDTO> m3 = webClient.get()
-							.uri(String.format("http://parser:8017/api/category/%s/subcategory/%s", categoryId,
-									s.getSiteSubCategoryDTO().getId()))
-							.retrieve().bodyToMono(SubCategoryDTO.class).onErrorReturn(new SubCategoryDTO());
-					Mono<Tuple3<SiteSourceDTO, CategoryDTO, SubCategoryDTO>> tuple = Mono.zip(m1, m2, m3);
-					return tuple.map(t -> {
-						SourceDTO dto = s;
-						dto.setSiteSourceDTO(t.getT1());
-						dto.setSiteCategoryDTO(t.getT2());
-						dto.setSiteSubCategoryDTO(t.getT3());
-						return s;
-					});
-				}).onErrorResume(NoSuchElementException.class,
-						e -> Mono.error(new ResourceNotFoundException("user not found")));
+		return Flux.just(modulesRepository.findByIdAndUserUuidOneEagerSources(id, uuid))
+		.flatMapIterable(m -> m.get().getSources())
+		.map(s -> {
+			SourceDTO dto = new SourceDTO();
+			dto.setId(s.getId());
+			SiteSourceDTO source = new SiteSourceDTO();
+			source.setId(s.getSiteSource());
+			dto.setSiteSourceDTO(source);
+			CategoryDTO category = new CategoryDTO();
+			category.setId(s.getSiteCategory());
+			dto.setSiteCategoryDTO(category);
+			SubCategoryDTO subcategory = new SubCategoryDTO();
+			subcategory.setId(s.getSiteSubCategory());
+			dto.setSiteSubCategoryDTO(subcategory);
+			return dto;
+		}).flatMap(s -> {
+			Long sourceId = s.getSiteSourceDTO().getId();
+			Long categoryId = s.getSiteCategoryDTO().getId();
+			Mono<SiteSourceDTO> m1 = webClient.get()
+					.uri(String.format("http://parser:8017/api/site/%s", s.getSiteSourceDTO().getId()))
+					.retrieve().bodyToMono(SiteSourceDTO.class);
+			Mono<CategoryDTO> m2 = webClient.get()
+					.uri(String.format("http://parser:8017/api/site/%s/category/%s", sourceId, categoryId))
+					.retrieve().bodyToMono(CategoryDTO.class).onErrorReturn(new CategoryDTO());
+			Mono<SubCategoryDTO> m3 = webClient.get()
+					.uri(String.format("http://parser:8017/api/category/%s/subcategory/%s", categoryId,
+							s.getSiteSubCategoryDTO().getId()))
+					.retrieve().bodyToMono(SubCategoryDTO.class).onErrorReturn(new SubCategoryDTO());
+			Mono<Tuple3<SiteSourceDTO, CategoryDTO, SubCategoryDTO>> tuple = Mono.zip(m1, m2, m3);
+			return tuple.map(t -> {
+				SourceDTO dto = s;
+				dto.setSiteSourceDTO(t.getT1());
+				dto.setSiteCategoryDTO(t.getT2());
+				dto.setSiteSubCategoryDTO(t.getT3());
+				return s;
+			});
+		}).onErrorResume(NoSuchElementException.class, e -> Mono.error(new ResourceNotFoundException("not found module with id " + id)));
 	}
 	
 	public Mono<ResponseEntity<SourceSiteDTO>> createSourceSite(String uuid, Long id, Source source) {
 		return Mono.defer(() -> {
-			AppUser user = userRepository.findByUuidAndOrderModulesIdOneEagerSources(uuid, id)
+			OrderModules module = modulesRepository.findByIdAndUserUuidOneEagerSources(id, uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("not found module with id " + id));
-			
-			OrderModules module = user.getOrderModules().stream().findFirst().get();
 			if (CollectionUtils.isEmpty(module.getSources())) {
 				module.setSources(Sets.newHashSet());
 			}
@@ -252,7 +237,7 @@ public class CoreService {
 							&& s.getSiteSubCategory().equals(source.getSiteSubCategory()))
 					.findAny();
 			if (existSource.isPresent())
-				return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build());
+				return Mono.error(new ConflictExeption("source exists"));
 			SourceSite sourceSite = mapper.map(source, SourceSite.class);
 			sourceRepository.save(sourceSite);
 			module.getSources().add(sourceSite);
@@ -265,16 +250,14 @@ public class CoreService {
 							sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory()));
 			return Mono.just(ResponseEntity.ok(mapper.map(sourceSite, SourceSiteDTO.class)));
 		});
-		
 	}
 	
 	public Mono<ResponseEntity<Void>> removeSourceSite(String uuid, Long id, Long sourceId) {
 		return Mono.create(m -> {
-			AppUser user = userRepository.findByUuidAndOrderModulesIdOneEagerSources(uuid, id)
-					.orElseThrow(() -> new ResourceNotFoundException("not found module with id " + id));
 			SourceSite sourceSite = sourceRepository.findById(sourceId)
 					.orElseThrow(() -> new ResourceNotFoundException("not found site source with id " + sourceId));
-			OrderModules module = user.getOrderModules().stream().findFirst().get();
+			OrderModules module = modulesRepository.findByIdAndUserUuidOneEagerSources(id, uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("not found module with id " + id));
 			if (module.getSources().removeIf(s -> s.equals(sourceSite))) {
 				modulesRepository.save(module);
 				if (!modulesRepository.existsBySources(sourceSite)) {
@@ -297,12 +280,10 @@ public class CoreService {
 	}
 	
 	public Flux<OrderDTO> showOrdersByModule(String uuid, Long moduleId) {
-		Flux<OrderModules> modules = Flux.just(userRepository.findByUuidAndOrderModulesId(uuid, moduleId))
-				.map(u -> u.get().getOrderModules().stream().findAny().get())
-				.onErrorResume(NoSuchElementException.class,
-						e -> Flux.error(new ResourceNotFoundException("user not found")));
+		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
 		//TODO check if this logic works 
-		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).next();
+		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter());
 		Flux<OrderDTO> source = 
 				modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
 					return webClient.get().uri("http://parser:8017/api/orders", b -> {

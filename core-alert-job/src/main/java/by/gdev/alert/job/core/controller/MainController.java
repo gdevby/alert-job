@@ -84,8 +84,8 @@ public class MainController {
 	}
 
 	@PostMapping("user/order-module")
-	public Mono<ResponseEntity<OrderModulesDTO>> addOrderModules(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody Modules modules) {
-		return coreService.createOrderModules(uuid, modules);
+	public ResponseEntity<Mono<OrderModulesDTO>> addOrderModules(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody Modules modules) {
+		return ResponseEntity.ok(coreService.createOrderModules(uuid, modules));
 	}
 	
 	@PatchMapping("user/order-module/{id}")

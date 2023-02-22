@@ -22,6 +22,8 @@ public class OrderModules extends BasicId {
 	
 	private String name;
 	private boolean available;
+	@ManyToOne(fetch = FetchType.LAZY)
+	private AppUser user;
 	@ManyToMany(fetch = FetchType.LAZY)
 	private Set<SourceSite> sources;
 	@OneToMany(mappedBy = "module", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

@@ -1,28 +1,26 @@
 package by.gdev.alert.job.core.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.UserFilter;
 
 public interface UserFilterRepository extends CrudRepository<UserFilter, Long> {
 
-	@Query("select f from UserFilter f left join fetch f.titles where f.id = :id")
-	Optional<UserFilter> findOneEagerTitleWords(@Param("id") Long id);
-
-	@Query("select f from UserFilter f left join fetch f.technologies where f.id = :id")
-	Optional<UserFilter> findOneEagerTechnologyWords(@Param("id") Long id);
-	
-	@Query("select f from UserFilter f left join fetch f.descriptions where f.id = :id")
-	Optional<UserFilter> findOneEagerDescriptionWords(@Param("id") Long id);
-	
-	@Query("select f from UserFilter f  left join fetch f.descriptions left join fetch f.technologies left join fetch f.titles where f.id = :id")
-	Optional<UserFilter> findUserFilterById(@Param("id") Long id);
-	
-	
 	@Query("select f from UserFilter f left join fetch f.module m where f.id = :id and m.id = :mid")
 	Optional<UserFilter> findByIdAndOrderModuleId(@Param("id") Long id, @Param("mid") Long mid);
+	
+	@Query("select f from UserFilter f left join fetch f.module m left join fetch m.user u where m.id = :mid and u.uuid = :uuid")
+	List<UserFilter> findAllByModuleIdAndUserUuid(@Param("mid") Long mid, @Param("uuid") String uuid);
+	
+	@Query("select f from UserFilter f left join fetch f.module m left join fetch m.user u where f.id = :id and m.id = :mid and u.uuid = :uuid")
+	Optional<UserFilter> findByIdAndModuleIdAndUserUuid(@Param("id") Long id, @Param("mid") Long mid, @Param("uuid") String uuid);
+	
+	boolean existsByNameAndModule(String name, OrderModules module);
+	
 }
