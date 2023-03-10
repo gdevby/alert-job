@@ -17,8 +17,8 @@ import lombok.ToString;
 
 @Entity
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {"technologies", "titles", "descriptions"})
-@ToString(callSuper = true, exclude = {"technologies", "titles", "descriptions"})
+@EqualsAndHashCode(callSuper = true, exclude = {"technologies", "titles", "descriptions", "module"})
+@ToString(callSuper = true, exclude = {"technologies", "titles", "descriptions", "module"})
 public class UserFilter extends BasicId {
 	
 	private String name;

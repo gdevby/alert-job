@@ -171,7 +171,13 @@ public class CoreService {
 	
 	public Flux<OrderModulesDTO> showOrderModules(String uuid) {
 		return Flux.fromIterable(modulesRepository.findAllByUserUuid(uuid))
-				.map(e -> mapper.map(e, OrderModulesDTO.class));
+				.map(e -> {
+					OrderModulesDTO dto = new OrderModulesDTO();
+					dto.setId(e.getId());
+					dto.setAvailable(e.isAvailable());
+					dto.setName(e.getName());
+					return dto;
+				});
 	}
 	
 	

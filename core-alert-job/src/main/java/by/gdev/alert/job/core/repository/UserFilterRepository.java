@@ -12,8 +12,7 @@ import by.gdev.alert.job.core.model.db.UserFilter;
 
 public interface UserFilterRepository extends CrudRepository<UserFilter, Long> {
 
-	@Query("select f from UserFilter f left join fetch f.module m where f.id = :id and m.id = :mid")
-	Optional<UserFilter> findByIdAndOrderModuleId(@Param("id") Long id, @Param("mid") Long mid);
+	Optional<UserFilter> findByIdAndModuleId(@Param("id") Long id, @Param("mid") Long mid);
 	
 	@Query("select f from UserFilter f left join fetch f.module m left join fetch m.user u where m.id = :mid and u.uuid = :uuid")
 	List<UserFilter> findAllByModuleIdAndUserUuid(@Param("mid") Long mid, @Param("uuid") String uuid);

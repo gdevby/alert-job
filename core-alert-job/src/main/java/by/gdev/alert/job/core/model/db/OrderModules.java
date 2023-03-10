@@ -24,9 +24,9 @@ public class OrderModules extends BasicId {
 	private boolean available;
 	@ManyToOne(fetch = FetchType.LAZY)
 	private AppUser user;
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany
 	private Set<SourceSite> sources;
-	@OneToMany(mappedBy = "module", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true )
 	@Size(max = 5, message = "the limit for added filters")
 	private Set<UserFilter> filters;
 	@ManyToOne(fetch = FetchType.LAZY)
