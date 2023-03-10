@@ -4,9 +4,12 @@
 	}
 	
 	&__items {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr 1fr; 
+		grid-column-gap: 10px;
+   		grid-row-gap: 1em;
+		//flex-wrap: wrap;
+		//justify-content: space-between;
 		margin-top: 2rem;
 
 	}
