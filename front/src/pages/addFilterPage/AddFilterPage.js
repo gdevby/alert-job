@@ -23,7 +23,7 @@ const AddFilterPage = () => {
 	const [words, setWords] = useState('')
 	const [filterId, setFilterId] = useState()
 
-	const { id } = useParams()
+	const { module_id, filter_id } = useParams()
 
 	const navigate = useNavigate()
 	const { currentFilter, isNew } = useSelector(state => state.filter)
@@ -35,7 +35,7 @@ const AddFilterPage = () => {
 	}
 
 	const addNewFilter = () => {
-		navigate('/page/filters')
+		navigate(`/page/filters/${module_id}`)
 	}
 	const remove = () => {
 		filterService
@@ -47,7 +47,7 @@ const AddFilterPage = () => {
 				dispatch(removeCurrentFilter())
 			})
 			.finally(() => {
-				navigate('/page/filters')
+				navigate(`/page/filters/${module_id}`)
 			})
 
 	}
@@ -67,12 +67,12 @@ const AddFilterPage = () => {
 	}, [isNew])
 
 	useEffect(() => {
-		if (id) {
+		if (filter_id) {
 			filterService
 				.getCurrentFilter()
 				.then(response => {
 					console.log(response)
-					setFilterId(id)
+					setFilterId(filter_id)
 					dispatch(
 						setCurrentFilter({
 							description: response.data.descriptionsDTO,

@@ -1,9 +1,12 @@
 import React from 'react'
+import cn from 'classnames'
 
 import './button.scss'
 
-const Button = ({text, onClick, id}) => {
-	return <button id={id} className='button' onClick={onClick}>{text}</button>
+const Button = ({className = '', text, onClick, id}) => {
+	
+	const classes = cn(...className.split(' '), 'button')
+	return <button id={id} className={classes} onClick={onClick}>{text}</button>
 }
 
 

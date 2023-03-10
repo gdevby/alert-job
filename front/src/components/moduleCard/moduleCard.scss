@@ -1,0 +1,15 @@
+.modules__item {
+	width: 12%;
+	position: relative;
+
+	&_remove {
+		cursor: pointer;
+		position: absolute;
+		top: 0;
+		left: 90%;
+	}
+
+	&_openModule {
+		margin-top: 1rem;
+	}
+}

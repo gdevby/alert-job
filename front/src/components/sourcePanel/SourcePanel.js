@@ -10,7 +10,7 @@ import { sourceService } from '../../services/parser/endponits/sourceService'
 
 import './sourcePanel.scss'
 
-const SourcePanel = ({ addSource }) => {
+const SourcePanel = ({ addSource, module_id }) => {
 	const [currentSite, setCurrentSite] = useState('')
 	const [currentCat, setCurrentCat] = useState('')
 	const [currentSubCat, setCurrentSubCat] = useState([])
@@ -58,7 +58,7 @@ const SourcePanel = ({ addSource }) => {
 
 	const addingSource = () => {
 		if (Number(currentSite.id) && Number(currentCat.id)) {
-			sourceService.addSource({
+			sourceService.addSource(module_id, {
 				siteSource: Number(currentSite.id),
 				siteCategory: Number(currentCat.id),
 				siteSubCategory: currentSubCat.id,

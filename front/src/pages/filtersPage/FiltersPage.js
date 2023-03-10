@@ -48,9 +48,9 @@ const FiltersPage = () => {
 		setSources([...sourse, newSource])
 	}
 
-	const deleteSource = id => {
-		sourceService.deleteSource(id).then(() => {
-			const newSources = sourse.filter(item => item.id != id)
+	const deleteSource = source_id => {
+		sourceService.deleteSource(id, source_id).then(() => {
+			const newSources = sourse.filter(item => item.id != source_id)
 			setSources(newSources)
 		})
 	}
@@ -78,7 +78,7 @@ const FiltersPage = () => {
 			})
 		)
 		dispatch(removeCurrentFilter())
-		navigate('/page/adding-filter')
+		navigate(`/page/adding-filter/${id}`)
 	}
 
 	const editFilter = () => {
@@ -87,7 +87,7 @@ const FiltersPage = () => {
 				isNew: false
 			})
 		)
-		navigate(`/page/edit-filter/${filter.id}`)
+		navigate(`/page/edit-filter/${id}/${filter.id}`)
 	}
 
 	const removeFilter = () => {
@@ -151,7 +151,7 @@ const FiltersPage = () => {
 	return <div className='filtersPage'>
 		<div className='container'>
 			<div>
-				<SourcePanel addSource={addSource} />
+				<SourcePanel addSource={addSource} module_id={id}/>
 				<div className='sourceList'>
 					{sourse.length > 0 && sourse.map((item, index) => {
 						return <SourceCard removeCard={deleteSource} item={item} key={index} />

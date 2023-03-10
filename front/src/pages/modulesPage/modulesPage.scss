@@ -1,0 +1,20 @@
+.modules {
+	&__adding-form{
+		display: flex;
+	}
+	
+	&__items {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		margin-top: 2rem;
+
+	}
+	
+	&__add-module-btn {
+		align-self: flex-end;
+		margin-left: 1rem;
+	}
+}
+
+

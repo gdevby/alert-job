@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import useOnClickOutside from '../../hooks/useOnClickOutside'
 
-import Button from '../button/Button'
-
 import './dropDownList.scss'
 import ListItem from './ListItem'
 

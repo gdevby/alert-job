@@ -17,7 +17,7 @@ const Field = ({ defaultValue, type, placeholder, cb, onBlur = () => { }, label 
 	}
 
 	return <div className='field-container'>
-	{label && label}
+	{label && <label htmlFor='input'>{label}</label>}
 	<input className='input' id='input' 
 			type={type} placeholder={placeholder} 
 			onChange={handleValue} value={current_value} 
