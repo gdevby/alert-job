@@ -9,7 +9,7 @@ import { filterService } from '../../services/parser/endponits/filterService'
 import { setCurrentFilter } from '../../store/slices/filterSlice';
 import { useNavigate } from 'react-router-dom';
 
-const AddFilterForm = ({ setFilterId }) => {
+const AddFilterForm = ({ setFilterId, module_id }) => {
 	const [filterName, setFilterName] = useState('')
 	const [minPrice, setMinPrice] = useState('')
 	const [maxPrice, setMaxPrice] = useState('')
@@ -22,7 +22,7 @@ const AddFilterForm = ({ setFilterId }) => {
 
 	const addFilter = event => {
 		filterService
-			.addFilter({ name: filterName, minValue: null,maxValue: null })
+			.addFilter(module_id, { name: filterName, minValue: null,maxValue: null })
 			.then(response => {
 				const id = response.data.id
 				setFilterId(id)
@@ -41,8 +41,8 @@ const AddFilterForm = ({ setFilterId }) => {
 				return id
 			})
 			.then((id) => {
-				filterService.updateCurrentFilter(id)
-				navigate(`/page/edit-filter/${id}`)
+				filterService.updateCurrentFilter(module_id, id)
+				navigate(`/page/edit-filter/${module_id}/${id}`)
 			})
 			.finally((response) => {
 				setIsAdded(false)
@@ -53,7 +53,7 @@ const AddFilterForm = ({ setFilterId }) => {
 		if (!isNew || isChoose || !isAdded) {
 			console.log('dfdsfs')
 			filterService
-				.updateFilter(currentFilter.id, { name: filterName, minValue: minPrice, maxValue: maxPrice })
+				.updateFilter(module_id, currentFilter.id, { name: filterName, minValue: minPrice, maxValue: maxPrice })
 				.then(console.log)
 		}
 	}

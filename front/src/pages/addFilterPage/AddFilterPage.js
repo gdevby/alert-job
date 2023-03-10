@@ -92,7 +92,7 @@ const AddFilterPage = () => {
 					
 				})
 		}
-	}, [id])
+	}, [filter_id])
 
 
 
@@ -102,7 +102,7 @@ const AddFilterPage = () => {
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
 
-			<AddFilterForm setFilterId={setFilterId} />
+			<AddFilterForm setFilterId={setFilterId} module_id={module_id}/>
 
 			{filterId && <>
 				<div className='wordsContains_block'>
