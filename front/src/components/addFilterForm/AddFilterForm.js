@@ -51,7 +51,6 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 
 	const updateFilter = event => {
 		if (!isNew || isChoose || !isAdded) {
-			console.log('dfdsfs')
 			filterService
 				.updateFilter(module_id, currentFilter.id, { name: filterName, minValue: minPrice, maxValue: maxPrice })
 				.then(console.log)
