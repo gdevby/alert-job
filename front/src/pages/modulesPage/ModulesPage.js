@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { moduleService } from '../../services/parser/endponits/moduleService'
 import { useNavigate } from "react-router-dom";
 
+import TextField from '@mui/material/TextField';
 
 import ModuleCard from '../../components/moduleCard/ModuleCard';
 import Field from '../../components/field/Field';
-import Button from '../../components/button/Button';
+import Btn from '../../components/button/Button';
+import List from '@mui/material/List';
 
 import './modulesPage.scss'
 
@@ -40,26 +42,35 @@ const ModulesPage = () => {
 		navigate(`/page/filters/${id}`)
 	}
 
-	return <div className='modules'>
-		<div className='container'>
-			<div className='modules__adding-form'>
-				<Field 
+	const changeModuleName = (e) => {
+		setModuleName(e.target.value)
+	}
+
+	/*<Field 
 					label={'Введите название модуля'}
 					placeholder={'Название модуля'}
 					defaultValue={moduleName}
 					cb={setModuleName}
-				/>
-				
+					
+				/>*/
+
+	return <div className='modules'>
+		<div className='container'>
+			<div className='modules__adding-form'>
+				<TextField id="standard-basic" label="Введите название модуля" variant="standard" placeholder='Название модуля' onChange={changeModuleName} />
+
+
 				<div className='modules__add-module-btn'>
-					<Button text={'Добавить модуль'} onClick={addModule} />
+					<Btn text={'Добавить модуль'} onClick={addModule} />
+
 				</div>
 			</div>
-			<div className='modules__items'>
-				{modules.length > 0 && modules.map(item => <ModuleCard key={item.id} item={item}
-					removeCard={deleteModule}
-					openModule={openModule}
-				/>)}
-			</div>
+			<List className='modules__items'>
+					{modules.length > 0 && modules.map(item => <ModuleCard key={item.id} item={item}
+						removeCard={deleteModule}
+						openModule={openModule}
+					/>)}
+			</List>
 		</div>
 
 	</div>

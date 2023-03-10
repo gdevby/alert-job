@@ -20,7 +20,19 @@
 		&__content {
 			display: flex;
 			justify-content: space-between;
-			width: 66%;
+			width: 100%;
+
+			&>.site {
+				width: 20%;
+			}
+
+			&>.cat {
+				width: 20%;
+			}
+
+			&>.subcat {
+				width: 20%;
+			}
 
 		}
 	}

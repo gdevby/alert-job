@@ -61,7 +61,7 @@ const NotificationsPage = () => {
 		<div className='container'>
 			<Title text='Настройка уведомлений' />
 			<div className='notification_source'>
-				<DropDownList open={false} defaultValue={currentPlatform} elems={platforms} cb={handleCurrentPlatform} />
+				<DropDownList open={false} label={currentPlatform} elems={platforms} onClick={handleCurrentPlatform} />
 				{currentPlatform == 'telegram' ?
 					<div><Field 
 						defaultValue={telegramId} type='text' 	

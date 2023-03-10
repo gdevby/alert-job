@@ -161,7 +161,7 @@ const FiltersPage = () => {
 				<div className='current_filter'>
 					<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет заказам из источника заказов</div>
 					<div className='current_filter__content'>
-						<DropDownList defaultValue={filter.name || 'Текущий фильтр'} elems={currentFilters} open={false} cb={handleCurrentFilter} />
+						<DropDownList label={filter.name || 'Текущий фильтр'} elems={currentFilters} onClick={handleCurrentFilter} defaultLabe={'Выберите фильтр'}/>
 						{filter && <div className='current_filter__content-actions'>
 							<Button onClick={editFilter} text={'Редактировать фильтр'} />
 							<Button onClick={removeFilter} text={'Удалить фильтр'} />

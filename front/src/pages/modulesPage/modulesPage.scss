@@ -5,13 +5,16 @@
 	
 	&__items {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr 1fr; 
+		grid-template-columns:  repeat(4, 1fr); 
 		grid-column-gap: 10px;
    		grid-row-gap: 1em;
+   		grid-auto-rows: minmax(100px, auto);
 		//flex-wrap: wrap;
 		//justify-content: space-between;
-		margin-top: 2rem;
-
+		margin-top: 2rem !important;
+	& > li {
+		display: block;
+	}
 	}
 	
 	&__add-module-btn {

@@ -5,6 +5,10 @@
 	align-items: flex-end;
     //width: 75%;
     
+    & > .MuiFormControl-root {
+		width: 15% !important;
+	}
+    
     & > .list {
 	margin-right: 1rem;
 	}
