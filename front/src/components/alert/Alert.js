@@ -3,9 +3,9 @@ import { AiOutlineClose } from "react-icons/ai";
 
 const Alert = () => {
 	return <div className='alert'>
-		<div className='alert-content'>
-			<div className='alert-content__body'></div>
-			<div className='alert-content__action'><AiOutlineClose/></div>
+		<div className='alert__content'>
+			<div className='alert__body'></div>
+			<div className='alert__action'><AiOutlineClose /></div>
 		</div>
 	</div>
 }

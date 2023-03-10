@@ -69,9 +69,8 @@ const AddFilterPage = () => {
 	useEffect(() => {
 		if (filter_id) {
 			filterService
-				.getCurrentFilter()
+				.getCurrentFilter(module_id)
 				.then(response => {
-					console.log(response)
 					setFilterId(filter_id)
 					dispatch(
 						setCurrentFilter({

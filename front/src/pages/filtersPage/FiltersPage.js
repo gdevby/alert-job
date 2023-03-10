@@ -92,7 +92,7 @@ const FiltersPage = () => {
 
 	const removeFilter = () => {
 		filterService
-			.deleteFilter(filter.id)
+			.deleteFilter(id, filter.id)
 			.then(() => {
 				setCurrentFilters(prev => prev.filter(item => item.id != filter.id))
 				dispatch(removeCurrentFilter())
@@ -102,7 +102,7 @@ const FiltersPage = () => {
 
 	const handleCurrentFilter = data => {
 		filterService
-			.updateCurrentFilter(data.id)
+			.updateCurrentFilter(id, data.id)
 			.then(() => {
 				setFilter(data)
 				dispatch(
