@@ -54,6 +54,7 @@
 	background: rgba(102, 102, 102, 0.5);
 	display: none;
 	z-index: 9;
+
 	&__content {
 		width: 500px;
 		//max-height: 500px;
@@ -68,7 +69,7 @@
 	}
 
 	&__header {
-		padding: 1rem;
+		//padding: 1rem;
 
 		&>input {
 			padding: .4rem;
@@ -101,9 +102,9 @@
 }
 
 .searchPopup__body-list {
-	padding: 1rem;
-	overflow-y: auto;
-	max-height: 300px;
+	//padding: 1rem;
+	//overflow-y: auto;
+	//max-height: 300px;
 
 	&__item {
 		margin-top: 0.5rem;
@@ -116,7 +117,7 @@
 		background-color: #bfbfbf;
 	}
 
-	&::-webkit-scrollbar {
+	/*&::-webkit-scrollbar {
 		width: 3px;
 		height: 3px;
 	}
@@ -131,6 +132,22 @@
 		border: 3px solid #6f6f6f;
 		background-clip: content-box;
 		background-color: #6f6f6f;
-	}
+	}*/
 }
 
+.scroll::-webkit-scrollbar {
+	width: 3px;
+	height: 3px;
+}
+
+.scroll::-webkit-scrollbar-track {
+	background-color: #dadada;
+	border-radius: 100px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+	border-radius: 100px;
+	border: 3px solid #6f6f6f;
+	background-clip: content-box;
+	background-color: #6f6f6f;
+}

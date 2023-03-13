@@ -4,6 +4,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../button/Button'
 import Words from '../word/Words'
 
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle'
 import useDebounce from '../../../hooks/use-debounce'
 
 import { filterService } from '../../../services/parser/endponits/filterService'
@@ -108,7 +112,7 @@ const TitleWords = ({ filter_id }) => {
 			setWords((prev) => [...prev, ...titleWords])
 		}
 	}, [])
-	
+
 	/*useEffect(() => {
 		if (filter_id) {
 			filterService
@@ -118,7 +122,7 @@ const TitleWords = ({ filter_id }) => {
 			})
 		}
 	}, [filter_id])*/
-	
+
 	useEffect(() => {
 		if (!isFetching) {
 			if (debouncedSearchTerm) {
@@ -140,7 +144,7 @@ const TitleWords = ({ filter_id }) => {
 		const coordinates = e.target.getBoundingClientRect()
 		const top = e.target.scrollTop
 		const fullHeight = e.target.scrollHeight
-		if (top + coordinates.height == fullHeight) {
+		if (Math.floor(top + coordinates.height) + 1 == fullHeight) {
 			setIsFetching(true)
 		}
 
@@ -148,37 +152,40 @@ const TitleWords = ({ filter_id }) => {
 
 	useEffect(() => {
 		const list = listRef.current
-		list.addEventListener('scroll', scrollHandler);
+		if (list) {
+			list.addEventListener('scroll', scrollHandler);
 
-		return function() {
-			list.removeEventListener('scroll', scrollHandler);
-		};
+			return function() {
+				list.removeEventListener('scroll', scrollHandler);
+			};
+		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
 	return <>
-		<div className={isOpen ? 'searchPopup searchPopup__open' : 'searchPopup searchPopup__close'}>
-			<div className='searchPopup__content'>
+		<Dialog open={isOpen} onClose={closePopup}>
+			<DialogTitle>
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
 					Поиск по ключевым словам
 					<input type='text' onChange={changeWord} value={selectValue} />
 				</div>
-				<div className='searchPopup__body'>
-					<div className='searchPopup__body-list' ref={listRef}>
-						{result && result.map(item => <div className='searchPopup__body-list__item'
-							id={item.id} key={item.id}
-							onClick={handleSelect}>{item.name}</div>
-						)}
-					</div>
+			</DialogTitle>
+			<DialogContent className='scroll'  ref={listRef}>
+				<div className='searchPopup__body-list'>
+					{result && result.map(item => <div className='searchPopup__body-list__item'
+						id={item.id} key={item.name}
+						onClick={handleSelect}>{item.name}</div>
+					)}
 				</div>
-				<div className='searchPopup__footer'>
-					<Button onClick={add} text={'Добавить'} variant='contained'/>
-				</div>
-			</div>
-		</div>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={add} text={'Добавить'} variant='contained' />
+			</DialogActions>
+		</Dialog>
 		Уведомлять, если в названии содержится
-		<Button text={'Добавить'} onClick={openSearch} variant='contained'/>
+		<Button text={'Добавить'} onClick={openSearch} variant='contained' />
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />
 		</div>

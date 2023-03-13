@@ -61,7 +61,7 @@ const NotificationsPage = () => {
 		<div className='container'>
 			<Title text='Настройка уведомлений' />
 			<div className='notification_source'>
-				<DropDownList open={false} label={currentPlatform} elems={platforms} onClick={handleCurrentPlatform} />
+				<DropDownList open={false} label={currentPlatform} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений'/>
 				{currentPlatform == 'telegram' ?
 					<div><Field 
 						defaultValue={telegramId} type='text' 	
@@ -71,7 +71,7 @@ const NotificationsPage = () => {
 					</div>
 					: 'Используется почта при регистрации аккаунта'}
 				<div className='notification_source__send-btn'>
-					{currentPlatform == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} />}
+					{currentPlatform == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} variant='contained'/>}
 					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained'/>
 					
 				</div>
