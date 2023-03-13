@@ -2,18 +2,18 @@
 	display: flex;
 	margin-bottom: 2rem;
 	justify-content: space-between;
-	align-items: flex-end;
+	align-items: center;
     //width: 75%;
     
     & > .MuiFormControl-root {
-		width: 15% !important;
+		width: 20% !important;
 	}
     
     & > .list {
 	margin-right: 1rem;
 	}
 	&__send-btn {
-		width: 60%;
+		width: 45%;
 		display: flex;
 		justify-content: space-between;
 		& > button:first-child {

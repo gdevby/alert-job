@@ -23,7 +23,8 @@ const NotificationsPage = () => {
 	}
 
 	const handleCurrentPlatform = (data) => {
-		setCurrentPlatform(data.name)
+		console.log(data)
+		setCurrentPlatform(data)
 		coreService.changeAlertsType(data.name == 'email')
 	}
 
@@ -43,9 +44,9 @@ const NotificationsPage = () => {
 		coreService.getStatue().then(response => setAlertStatus(response.data))
 		coreService.getAlertType().then(response => {
 			if (response.data.type) {
-				setCurrentPlatform('email')
+				setCurrentPlatform({ name: 'email', id: 1 })
 			}else {
-				setCurrentPlatform('telegram')
+				setCurrentPlatform({ name: 'telegram', id: 2 })
 				setTelegramId(response.data.value == 'null'? '' : response.data.value)
 			}
 		})
@@ -61,17 +62,17 @@ const NotificationsPage = () => {
 		<div className='container'>
 			<Title text='Настройка уведомлений' />
 			<div className='notification_source'>
-				<DropDownList open={false} label={'Тип уведомлений'} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений'/>
-				{currentPlatform == 'telegram' ?
+				<DropDownList open={false} label={'Тип уведомлений'} defaultValue={currentPlatform.id} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений'/>
+				{currentPlatform.name == 'telegram' ?
 					<div><Field 
 						defaultValue={telegramId} type='text' 	
 						placeholder='Введите адрес' cb={handleValue} 
 						label={<label className="label">Введите айди </label>}/>
 						
 					</div>
-					: 'Используется почта при регистрации аккаунта'}
+					: <p>Используется почта при регистрации аккаунта</p>}
 				<div className='notification_source__send-btn'>
-					{currentPlatform == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} variant='contained'/>}
+					{currentPlatform.name == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} variant='contained'/>}
 					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained'/>
 					
 				</div>
@@ -81,7 +82,7 @@ const NotificationsPage = () => {
 				<input type='checkbox' onChange={handleAlertsStatus} checked={alertStatus} />
 				{alertStatus? 'Включено': 'Отключено'}
 			</div>
-			{currentPlatform == 'telegram' && <InstructionForTg />}
+			{currentPlatform.name == 'telegram' && <InstructionForTg />}
 		</div>
 	</div>
 }
