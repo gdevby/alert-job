@@ -15,8 +15,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {"filters", "sources"})
-@ToString(callSuper = true, exclude = {"filters", "sources"})
+@EqualsAndHashCode(callSuper = true, exclude = {"filters", "sources", "currentFilter"})
+@ToString(callSuper = true, exclude = {"filters", "sources", "currentFilter"})
 @Entity
 public class OrderModules extends BasicId {
 	
@@ -26,10 +26,10 @@ public class OrderModules extends BasicId {
 	private AppUser user;
 	@ManyToMany
 	private Set<SourceSite> sources;
-	@OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true )
+	@OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Size(max = 5, message = "the limit for added filters")
 	private Set<UserFilter> filters;
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	private UserFilter currentFilter;
 	
 }

@@ -17,10 +17,12 @@ import lombok.ToString;
 
 @Entity
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {"technologies", "titles", "descriptions", "module"})
-@ToString(callSuper = true, exclude = {"technologies", "titles", "descriptions", "module"})
+@EqualsAndHashCode(callSuper = true, exclude = { "technologies", "titles", "descriptions", "negativeTechnologies",
+		"negativeTitles", "negativeDescriptions"})
+@ToString(callSuper = true, exclude = { "technologies", "titles", "descriptions", "negativeTechnologies",
+		"negativeTitles", "negativeDescriptions"})
 public class UserFilter extends BasicId {
-	
+
 	private String name;
 	private Integer minValue;
 	private Integer maxValue;
@@ -35,7 +37,7 @@ public class UserFilter extends BasicId {
 	@ManyToMany(fetch = FetchType.EAGER)
 	@Size(max = 50, message = "the limit for added description word")
 	private Set<DescriptionWord> descriptions;
-	
+
 	private boolean activatedNegativeFilters = false;
 	@ManyToMany(fetch = FetchType.EAGER)
 	@Size(max = 50, message = "the limit for added negative technology word")

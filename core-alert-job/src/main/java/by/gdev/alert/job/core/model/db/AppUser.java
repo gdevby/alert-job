@@ -12,13 +12,13 @@ import lombok.ToString;
 
 @Entity
 @Data
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = "orderModules")
+@ToString(callSuper = true, exclude = "orderModules")
 
 public class AppUser extends BasicId{
 
 	private String uuid;
-	@OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+	@OneToMany(mappedBy = "user")
 	private Set<OrderModules> orderModules;
 	private String email;
 	private Long telegram;
