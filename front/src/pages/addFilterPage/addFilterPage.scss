@@ -53,7 +53,7 @@
 	right: 0;
 	background: rgba(102, 102, 102, 0.5);
 	display: none;
-
+	z-index: 9;
 	&__content {
 		width: 500px;
 		//max-height: 500px;
