@@ -117,13 +117,8 @@ public class UserFilterService {
 	}
 	
 	public Flux<FilterDTO> showUserFilters(String uuid, Long moduleId) {
-	return 	Flux.fromIterable(filterRepository.findAllByModuleIdAndUserUuid(moduleId, uuid)).map(e -> {
-			FilterDTO dto = mapper.map(e, FilterDTO.class);
-			dto.setTitlesDTO(e.getTitles().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-			dto.setDescriptionsDTO(e.getDescriptions().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-			dto.setTechnologiesDTO(e.getTechnologies().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-			return dto;
-		});
+		return Flux.fromIterable(filterRepository.findAllByModuleIdAndUserUuid(moduleId, uuid))
+				.map(e -> mapper.map(e, FilterDTO.class));
 	}
 
 	public Mono<FilterDTO> createUserFilter(String uuid, Long moduleId, Filter filter){
@@ -171,7 +166,12 @@ public class UserFilterService {
 		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerCurrentFilter(moduleId, uuid))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException("current filter not found")))
 				.filter(f -> Objects.nonNull(f.getCurrentFilter())).map(e -> {
-					return mapper.map(e.getCurrentFilter(), FilterDTO.class);
+					UserFilter currentFilter = e.getCurrentFilter();
+					FilterDTO dto =  mapper.map(currentFilter, FilterDTO.class);
+					dto.setTitlesDTO(currentFilter.getTitles().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+					dto.setDescriptionsDTO(currentFilter.getDescriptions().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+					dto.setTechnologiesDTO(currentFilter.getTechnologies().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+					return dto;
 				});
 	}
 	
