@@ -50,14 +50,16 @@
 
 
 .source-card {
-	background-color: #FFFFFF;
+	//background-color: #FFFFFF;
 	//background-color: rgb(241 241 241);
 	padding: 1rem;
-	box-shadow: 5px 2px 9px rgb(215 215 215);
+	//box-shadow: 5px 2px 9px rgb(215 215 215);
 	//width: 24%;
-	border-radius: 20px;
+	//border-radius: 10px;
 	//max-height: 20vh;
+	font-size: 15px;
 	//height: 24%;
+	//margin-bottom: 1rem;
 	display: flex;
 	justify-content: space-between;
 	//flex-direction: column;
@@ -108,7 +110,7 @@
 .sourceList {
 	//padding: 1rem;
 	margin-top: 2rem;
-	margin-bottom: 1rem;
+	padding-bottom: 1rem;
 	/*display: flex;
 	flex-wrap: wrap;
 	justify-content: space-between;*/
@@ -119,7 +121,9 @@
 	grid-auto-rows: minmax(100px, auto);
 	overflow-y: auto;
 	//height: 70vh;
-
+	& > div {
+		color: black;
+	}
 	&::-webkit-scrollbar {
 		width: 3px;
 		height: 3px;

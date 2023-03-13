@@ -35,6 +35,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 
 	useEffect(() => {
+		console.log(currentSite)
 		if (currentSite.id) {
 			parserService
 				.getCategories(currentSite.id)
@@ -90,12 +91,12 @@ const SourcePanel = ({ addSource, module_id }) => {
 	}
 
 	const handleCurrentSubCat = data => {
-		
+
 		if (data.id != 0) {
 			//const currentId = e.target.id
 			//const subCat = subcategories.find(item => item.id == currentId)
 			setCurrentSubCat(data)
-		}else {
+		} else {
 			setCurrentSubCat({
 				id: null,
 				name: 'Все подкатегории'
@@ -103,6 +104,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 		}
 
 	}
+	
 
 
 	//<DropDownList defaultValue={'Выберите сайт'} elems={sites} open={false} cb={setCurrentSite} />
@@ -116,17 +118,17 @@ const SourcePanel = ({ addSource, module_id }) => {
 				выберите для начала сайт, потом категорию и подкатегорию, например "Все подкатегории"</div>
 			<div className='source_panel-addingSource__content'>
 				<div className='site'>
-					<DropDownList label={'Выберите сайт'} elems={sites} onClick={setCurrentSite} defaultLabe={'Выберите сайт'}/>
+					<DropDownList label={'Выберите сайт'} elems={sites} onClick={setCurrentSite} defaultLabe={'Выберите сайт'} />
 				</div>
 				<div className='cat'>
-					<DropDownList label={'Выберите категорию'} elems={categories} onClick={setCurrentCat} defaultLabe={'Выберите категорию'}/>
+					<DropDownList label={'Выберите категорию'} elems={categories} onClick={setCurrentCat} defaultLabe={'Выберите категорию'} />
 
 				</div>
 				<div className='subcat'>
-					<DropDownList label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'}/>
+					<DropDownList label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'} />
 				</div>
 				<div>
-					<Button onClick={addingSource} text={'Добавить источник'} variant='contained'/>
+					<Button onClick={addingSource} text={'Добавить источник'} variant='contained' />
 				</div>
 			</div>
 		</div>
