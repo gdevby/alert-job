@@ -49,7 +49,7 @@ public class CoreConfig {
 	@Bean
 	public ModelMapper createModelMapper() {
 		ModelMapper mapper = new ModelMapper();
-		mapper.getConfiguration().setPropertyCondition(new Condition<Object, Object>() {
+		mapper.getConfiguration().setSkipNullEnabled(true).setPropertyCondition(new Condition<Object, Object>() {
 			public boolean applies(MappingContext<Object, Object> context) {
 				return (!(context.getSource() instanceof PersistentCollection)
 						|| ((PersistentCollection) context.getSource()).wasInitialized());

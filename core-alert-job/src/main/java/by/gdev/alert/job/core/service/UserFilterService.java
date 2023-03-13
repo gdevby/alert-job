@@ -156,7 +156,7 @@ public class UserFilterService {
 	public Mono<FilterDTO> replaceCurrentFilter(String uuid, Long moduleId, Long filterId){
 		Mono<UserFilter> filter = Mono.justOrEmpty(filterRepository.findByIdAndModuleId(filterId, moduleId))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException(String.format("not found filter by module %s and filter", moduleId, filterId))));
-		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerCurrentFilter(filterId, uuid))
+		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerCurrentFilter(moduleId, uuid))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException(String.format("not found module by %s", moduleId))));
 		return Mono.zip(filter, modules).map(tuple -> {
 			UserFilter f = tuple.getT1();
@@ -180,7 +180,8 @@ public class UserFilterService {
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
 						String.format("not found filter by module %s and filter %s", moduleId, filterId))))
 				.map(e -> {
-					if (filterRepository.existsByNameAndModule(filter.getName(), e.getModule()))
+					if (Objects.nonNull(filter.getName())
+							&& filterRepository.existsByNameAndModule(filter.getName(), e.getModule()))
 						throw new ConflictExeption(String.format("filter with name %s exists", filter.getName()));
 					UserFilter userFilter = e;
 					mapper.map(filter, userFilter);

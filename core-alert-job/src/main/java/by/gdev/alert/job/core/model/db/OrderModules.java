@@ -22,7 +22,7 @@ public class OrderModules extends BasicId {
 	
 	private String name;
 	private boolean available;
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	private AppUser user;
 	@ManyToMany
 	private Set<SourceSite> sources;
