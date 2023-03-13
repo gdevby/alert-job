@@ -16,7 +16,8 @@ import { setCurrentFilter, setIsNew } from '../../store/slices/filterSlice'
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { moduleService } from '../../services/parser/endponits/moduleService'
-
+import { styled } from '@mui/material/styles';
+import Paper from '@mui/material/Paper';
 
 import './filtersPage.scss'
 
@@ -151,6 +152,13 @@ const FiltersPage = () => {
 			})
 	}, [])
 
+	const Item = styled(Paper)(({ theme }) => ({
+		backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
+		...theme.typography.body2,
+		padding: theme.spacing(0.5),
+		textAlign: 'center',
+		color: theme.palette.text.secondary,
+	}));
 
 	return <div className='filtersPage'>
 		<div className='container'>
@@ -158,7 +166,7 @@ const FiltersPage = () => {
 				<SourcePanel addSource={addSource} module_id={id}/>
 				<div className='sourceList'>
 					{sourse.length > 0 && sourse.map((item, index) => {
-						return <SourceCard removeCard={deleteSource} item={item} key={index} />
+						return <Item key={index}><SourceCard removeCard={deleteSource} item={item}  /></Item>
 					}
 					)}
 				</div>
