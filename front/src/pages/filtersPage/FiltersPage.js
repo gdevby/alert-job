@@ -14,8 +14,7 @@ import { removeCurrentFilter } from '../../store/slices/filterSlice'
 
 import { setCurrentFilter, setIsNew } from '../../store/slices/filterSlice'
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { moduleService } from '../../services/parser/endponits/moduleService'
+import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 

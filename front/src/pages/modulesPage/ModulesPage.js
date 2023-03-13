@@ -5,9 +5,11 @@ import { useNavigate } from "react-router-dom";
 import TextField from '@mui/material/TextField';
 
 import ModuleCard from '../../components/moduleCard/ModuleCard';
-import Field from '../../components/field/Field';
 import Btn from '../../components/button/Button';
 import List from '@mui/material/List';
+import { styled } from '@mui/material/styles';
+import Paper from '@mui/material/Paper';
+
 
 import './modulesPage.scss'
 
@@ -54,6 +56,14 @@ const ModulesPage = () => {
 					
 				/>*/
 
+	const Item = styled(Paper)(({ theme }) => ({
+		backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
+		...theme.typography.body2,
+		padding: theme.spacing(0.5),
+		textAlign: 'center',
+		color: theme.palette.text.secondary,
+	}));
+
 	return <div className='modules'>
 		<div className='container'>
 			<div className='modules__adding-form'>
@@ -66,10 +76,10 @@ const ModulesPage = () => {
 				</div>
 			</div>
 			<List className='modules__items'>
-					{modules.length > 0 && modules.map(item => <ModuleCard key={item.id} item={item}
-						removeCard={deleteModule}
-						openModule={openModule}
-					/>)}
+				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
+					removeCard={deleteModule}
+					openModule={openModule}
+				/></Item>)}
 			</List>
 		</div>
 

@@ -1,12 +1,22 @@
 .modules__item {
 	//width: 12%;
 	position: relative;
+
 	//background-color: #afafaf;
 	//padding: 1rem;
 	//border-radius: 10px;
 	&__module-name {
 		//min-height: 80px;
 	}
+
+	&-box {
+		justify-content: center !important;
+		align-items: center !important;
+		height: 100%;
+		text-align: center !important;
+		color: black;
+	}
+
 	&_remove {
 		cursor: pointer;
 		position: absolute;

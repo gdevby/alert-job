@@ -27,7 +27,7 @@ const ModuleCard = ({ item, removeCard, openModule }) => {
 
 
 
-	return <ListItem disablePadding>
+	return <ListItem disablePadding className='modules__item-box'>
 		<div className='modules__item' key={item.id}>
 			<div className='modules__item__module-name'>{item.name}</div>
 			<ButtonGroup variant="outlined" aria-label="outlined button group">
