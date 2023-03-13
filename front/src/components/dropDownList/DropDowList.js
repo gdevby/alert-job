@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react'
-import useOnClickOutside from '../../hooks/useOnClickOutside'
-
+import cn from 'classnames'
 import './dropDownList.scss'
-import ListItem from './ListItem'
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 
-const DropDownList = ({ elems, onClick, label, defaultLabe }) => {
+const DropDownList = ({ elems, onClick, label, defaultLabe, className = '', defaultValue = '' }) => {
 	//const [isOpen, setIsOpen] = useState(open)
 	//const [value, setValue] = useState(defaultValue)
 	const [items, setItems] = useState([])
 	const [current, setCurrent] = useState('')
 
+
+	const classes = cn(...className.split(' '))
 	/*const ref = useRef()
 
 	const handleValue = data => {
@@ -28,7 +28,7 @@ const DropDownList = ({ elems, onClick, label, defaultLabe }) => {
 		}
 	*/
 	useEffect(() => {
-		console.log(elems)
+		console.log(label)
 		setItems(elems)
 		//setValue(defaultValue)
 	}, [elems])
@@ -44,18 +44,18 @@ const DropDownList = ({ elems, onClick, label, defaultLabe }) => {
 	const handleChange = e => {
 		if (e.target.value) {
 			setCurrent(e.target.value)
-		}else {
+		} else {
 			setCurrent(0)
 		}
-		
+
 	}
 
-	return <FormControl fullWidth>
+	return <FormControl fullWidth size='small' className={classes}>
 		<InputLabel id="demo-simple-select-label">{defaultLabe}</InputLabel>
 		<Select
 			labelId="demo-simple-select-label"
 			id="demo-simple-select"
-			value={current}
+			value={defaultValue}
 			label={label}
 			onChange={handleChange}
 		>
