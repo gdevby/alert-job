@@ -116,7 +116,7 @@ const AddFilterPage = () => {
 					</div>
 				</div>
 				<div className='filter__actions'>
-					<Button text={'Сохранить'} onClick={addNewFilter} />
+					<Button text={'Сохранить'} onClick={addNewFilter} variant='contained' />
 				</div>
 			</>}
 

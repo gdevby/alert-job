@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 import SourcePanel from '../../components/sourcePanel/SourcePanel'
 import DropDownList from '../../components/dropDownList/DropDowList'
-import Button from '../../components/button/Button'
+import Btn from '../../components/button/Button'
 
 import { sourceService } from '../../services/parser/endponits/sourceService'
 
@@ -16,6 +16,9 @@ import { setCurrentFilter, setIsNew } from '../../store/slices/filterSlice'
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { moduleService } from '../../services/parser/endponits/moduleService'
+
+
+import './filtersPage.scss'
 
 const FiltersPage = () => {
 
@@ -56,6 +59,7 @@ const FiltersPage = () => {
 	}
 
 	useEffect(() => {
+		console.log(isChoose)
 		if (isChoose) {
 			setFilter(currentFilter)
 		}
@@ -161,13 +165,13 @@ const FiltersPage = () => {
 				<div className='current_filter'>
 					<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет заказам из источника заказов</div>
 					<div className='current_filter__content'>
-						<DropDownList label={filter.name || 'Текущий фильтр'} elems={currentFilters} onClick={handleCurrentFilter} defaultLabe={'Выберите фильтр'}/>
+						<DropDownList className='current_filter__list' defaultValue={filter.id} label={filter.name || 'Текущий фильтр'} elems={currentFilters} onClick={handleCurrentFilter} defaultLabe={'Выберите фильтр'}/>
 						{filter && <div className='current_filter__content-actions'>
-							<Button onClick={editFilter} text={'Редактировать фильтр'} />
-							<Button onClick={removeFilter} text={'Удалить фильтр'} />
+							<Btn onClick={editFilter} text={'Редактировать фильтр'} variant='contained'/>
+							<Btn onClick={removeFilter} text={'Удалить фильтр'} variant='contained'/>
 						</div>}
 						<div>
-							<Button onClick={addNewFilter} text={'Добавить новый фильтр'} />
+							<Btn onClick={addNewFilter} text={'Добавить новый фильтр'} variant='contained'/>
 						</div>
 					</div>
 				</div>

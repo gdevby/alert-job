@@ -72,7 +72,7 @@ const NotificationsPage = () => {
 					: 'Используется почта при регистрации аккаунта'}
 				<div className='notification_source__send-btn'>
 					{currentPlatform == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} />}
-					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} />
+					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained'/>
 					
 				</div>
 			</div>

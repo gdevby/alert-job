@@ -2,17 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
-import CssBaseline from '@mui/material/CssBaseline';
-import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import Btn from '../button/Button'
 
 //import Button from '../button/Button'
 
@@ -34,8 +27,6 @@ const Header = () => {
 			.catch(error => setIsAuth(false))
 	}, [])
 
-	const navItems = ['Модули', 'Уведомления']
-	const drawerWidth = 240;
 	return <AppBar component="nav" position='static'>
 		<Toolbar>
 			<Typography
@@ -46,14 +37,12 @@ const Header = () => {
 				<Link to='/'>Главная</Link>
 			</Typography>
 			<Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-				{isAuth ? <><Button sx={{ color: '#fff' }}>
-					<Link to='/page/modules'>Модули</Link>
-				</Button>
-					<Button sx={{ color: '#fff' }}>
-						<Link to='/page/notifications'>Уведомления</Link>
-					</Button></> : <Button onClick={openLoginForm}>
-					<span>Регистрация и <br /> Авторизация</span>
-				</Button>}
+				{isAuth ? <>
+					<Btn text={<Link to='/page/modules'>Модули</Link>} styles={{ color: '#fff' }} />
+					<Btn text={<Link to='/page/notifications'>Уведомления</Link>} styles={{ color: '#fff' }} />
+				</> :
+					<Btn text={<span>Регистрация и <br /> Авторизация</span>} onClick={openLoginForm} styles={{ color: '#fff'  }} />
+				}
 			</Box>
 		</Toolbar>
 	</AppBar>
@@ -72,6 +61,15 @@ const Header = () => {
 				</div>
 			</div>
 		</div>
+		<Button sx={{ color: '#fff' }}>
+					<Link to='/page/modules'>Модули</Link>
+				</Button>
+				<Button sx={{ color: '#fff' }}>
+						<Link to='/page/notifications'>Уведомления</Link>
+					</Button>
+					<Button onClick={openLoginForm}>
+					<span>Регистрация и <br /> Авторизация</span>
+				</Button>
 	</header>*/
 }
 

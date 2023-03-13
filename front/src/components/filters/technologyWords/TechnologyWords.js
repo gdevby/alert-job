@@ -177,12 +177,12 @@ const TechnologyWords = ({ filter_id }) => {
 					</div>
 				</div>
 				<div className='searchPopup__footer'>
-					<Button onClick={add} text={'Добавить'} />
+					<Button onClick={add} text={'Добавить'} variant='contained'/>
 				</div>
 			</div>
 		</div>
 		Уведомлять, если технологии содержат
-		<Button text={'Добавить'} onClick={openSearch} />
+		<Button text={'Добавить'} onClick={openSearch} variant='contained'/>
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />
 		</div>
