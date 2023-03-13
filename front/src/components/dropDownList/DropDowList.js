@@ -27,6 +27,10 @@ const DropDownList = ({ elems, onClick, label, defaultLabe, className = '', defa
 			setIsOpen(!isOpen)
 		}
 	*/
+	
+	useEffect(() => {
+		setCurrent(defaultValue)
+	}, [defaultValue])
 	useEffect(() => {
 		console.log(label)
 		setItems(elems)
@@ -55,7 +59,7 @@ const DropDownList = ({ elems, onClick, label, defaultLabe, className = '', defa
 		<Select
 			labelId="demo-simple-select-label"
 			id="demo-simple-select"
-			value={defaultValue}
+			value={current}
 			label={label}
 			onChange={handleChange}
 		>
