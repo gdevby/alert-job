@@ -3,7 +3,6 @@ package by.gdev.alert.job.core.model.db;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 
 import lombok.Data;

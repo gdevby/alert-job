@@ -3,6 +3,7 @@ package by.gdev.alert.job.core.service;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationListener;
@@ -50,15 +51,14 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(2)));
 		sseConection.subscribe(event -> {
 			log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
-			List<AppUser> users = userRepository.findAllUsersEagerOrderModules();
+			Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
 			forEachOrders(users, event.data());
 		}, error -> log.warn("failed to get orders from parser {}", error.getMessage()));
 	}
 
-	private void forEachOrders(List<AppUser> users, List<OrderDTO> orders) {
+	private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		users.forEach(user -> {
-			if (user.isSwitchOffAlerts()) {
-				user.getOrderModules().stream().filter(e -> e.isAvailable())
+				user.getOrderModules().stream()
 				.filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
 					o.getSources().forEach(s -> {
 						List<String> list = orders.stream().peek(p -> {
@@ -87,7 +87,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 					});
 
 				});
-			}
 		});
 	}
 
