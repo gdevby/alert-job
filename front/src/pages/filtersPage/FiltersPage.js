@@ -9,6 +9,7 @@ import { sourceService } from '../../services/parser/endponits/sourceService'
 import SourceCard from '../../components/sourceCard/SourceCard'
 
 import { filterService } from '../../services/parser/endponits/filterService'
+import { ordersService } from '../../services/parser/endponits/orderService'
 
 import { removeCurrentFilter } from '../../store/slices/filterSlice'
 
@@ -149,6 +150,12 @@ const FiltersPage = () => {
 				}
 
 			})
+	}, [])
+
+	useEffect(() => {
+		ordersService
+		.getOrders(id)
+		.then(console.log)
 	}, [])
 
 	const Item = styled(Paper)(({ theme }) => ({
