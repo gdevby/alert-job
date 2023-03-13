@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react'
-
-
-import Field from '../../components/field/Field'
-
 import useDebounce from '../../hooks/use-debounce'
-
 
 import './searchPopup.scss'
 
@@ -12,7 +7,6 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 	const [open, setOpen] = useState(isOpen)
 	const [result, setResult] = useState(elements)
 	const [selectValue, setSelectValue] = useState('')
-	
 	
 	const debouncedSearchTerm = useDebounce(selectValue, 1000)
 	
@@ -63,7 +57,7 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 		<div className='searchPopup__content'>
 			<div className='searchPopup__header'>
 				<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
-				<input type='text' onChange={changeWord}/>
+				<input type='text' onChange={changeWord} value={selectValue}/>
 			</div>
 			<div className='searchPopup__body'>
 				{result && result.map(item => <div id={item.id} onClick={handleSelect}>{item.name}</div>)}
