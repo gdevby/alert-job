@@ -280,8 +280,9 @@ public class CoreService {
 	public Flux<OrderDTO> showOrdersByModule(String uuid, Long moduleId) {
 		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
-		//TODO check if this logic works 
-		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter());
+		// TODO check if this logic works
+		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
+				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		Flux<OrderDTO> source = 
 				modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
 					return webClient.get().uri("http://parser:8017/api/orders", b -> {
