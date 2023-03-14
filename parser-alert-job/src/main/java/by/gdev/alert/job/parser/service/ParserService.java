@@ -1,6 +1,5 @@
 package by.gdev.alert.job.parser.service;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.modelmapper.ModelMapper;
@@ -11,7 +10,7 @@ import by.gdev.alert.job.parser.domain.db.OrderLinks;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
+import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.repository.SubCategoryRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
@@ -35,7 +34,7 @@ public class ParserService {
 	private final CategoryRepository categoryRepository;
 	private final SubCategoryRepository subCategoryRepository;
 	private final OrderLinksRepository linkRepository;
-	private final ParserSourceRepository parserSourceRepository;
+	private final OrderRepository orderRepository;
 
 	private final ModelMapper mapper;
 
@@ -99,8 +98,7 @@ public class ParserService {
 	}
 	
 	public Flux<OrderDTO> getOrdersBySource(Long source, Long category, Long subcategory) {
-		return Flux.just(parserSourceRepository.findBySourceAndCategoryAndSubCategory(source, category, subcategory))
-				.flatMapIterable(e -> e.get().getOrders()).map(e -> mapper.map(e, OrderDTO.class)).onErrorResume(
-						NoSuchElementException.class, e -> Flux.error(new ResourceNotFoundException("user not found")));
+		return Flux.fromIterable(orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory))
+				.map(e -> mapper.map(e, OrderDTO.class));
 	}
 }
