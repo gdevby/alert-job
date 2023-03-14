@@ -1,8 +1,6 @@
 package by.gdev.alert.job.parser.service;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -154,10 +152,10 @@ public class ParserCategories {
 	}
 
 	@SneakyThrows
-	public void updateHubrLink(String updateFilePath) {
+	public void updateHubrLink(List<String> lineFies) {
 		SiteSourceJob sites = siteSourceJobRepository.findByName("HABR");
 		List<Category> categories = sites.getCategories();
-		Map<String, List<String>> map = aggregateByKeys(updateFilePath);
+		Map<String, List<String>> map = aggregateByKeys(lineFies);
 		map.forEach((k, v) -> {
 			String[] l = k.split("\t");
 			String name = l[0];
@@ -195,10 +193,10 @@ public class ParserCategories {
 	}
 
 	@SneakyThrows
-	private Map<String, List<String>> aggregateByKeys(String filePath) {
+	private Map<String, List<String>> aggregateByKeys(List<String> filePath) {
 		Map<String, List<String>> map = new HashMap<>();
 		String category = "";
-		for (String line : Files.lines(Paths.get(filePath)).toList()) {
+		for (String line : filePath) {
 			if (!line.startsWith("\t")) {
 				category = line;
 				map.put(line, Lists.newArrayList());
