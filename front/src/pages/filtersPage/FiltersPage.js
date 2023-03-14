@@ -26,7 +26,7 @@ const FiltersPage = () => {
 	const [sourse, setSources] = useState([])
 	const [currentFilters, setCurrentFilters] = useState([])
 	const [filter, setFilter] = useState('')
-	
+
 	const { id } = useParams()
 
 	const dispatch = useDispatch()
@@ -152,11 +152,12 @@ const FiltersPage = () => {
 			})
 	}, [])
 
-	useEffect(() => {
+	const showOrders = () => {
 		ordersService
-		.getOrders(id)
-		.then(console.log)
-	}, [])
+			.getOrders(id)
+			.then(console.log)
+	}
+
 
 	const Item = styled(Paper)(({ theme }) => ({
 		backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -169,25 +170,28 @@ const FiltersPage = () => {
 	return <div className='filtersPage'>
 		<div className='container'>
 			<div>
-				<SourcePanel addSource={addSource} module_id={id}/>
+				<SourcePanel addSource={addSource} module_id={id} />
 				<div className='sourceList'>
 					{sourse.length > 0 && sourse.map((item, index) => {
-						return <Item key={index}><SourceCard removeCard={deleteSource} item={item}  /></Item>
+						return <Item key={index}><SourceCard removeCard={deleteSource} item={item} /></Item>
 					}
 					)}
 				</div>
 				<div className='current_filter'>
 					<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет заказам из источника заказов</div>
 					<div className='current_filter__content'>
-						<DropDownList className='current_filter__list' defaultValue={filter.id} label={'Выберите фильтр'} elems={currentFilters} onClick={handleCurrentFilter} defaultLabe={'Выберите фильтр'}/>
+						<DropDownList className='current_filter__list' defaultValue={filter.id} label={'Выберите фильтр'} elems={currentFilters} onClick={handleCurrentFilter} defaultLabe={'Выберите фильтр'} />
 						{filter && <div className='current_filter__content-actions'>
-							<Btn onClick={editFilter} text={'Редактировать фильтр'} variant='contained'/>
-							<Btn onClick={removeFilter} text={'Удалить фильтр'} variant='contained'/>
+							<Btn onClick={editFilter} text={'Редактировать фильтр'} variant='contained' />
+							<Btn onClick={removeFilter} text={'Удалить фильтр'} variant='contained' />
 						</div>}
 						<div>
-							<Btn onClick={addNewFilter} text={'Добавить новый фильтр'} variant='contained'/>
+							<Btn onClick={addNewFilter} text={'Добавить новый фильтр'} variant='contained' />
 						</div>
 					</div>
+				</div>
+				<div>
+					<Btn onClick={showOrders} text={'Показать заказы'} variant='contained' />
 				</div>
 			</div>
 		</div>
