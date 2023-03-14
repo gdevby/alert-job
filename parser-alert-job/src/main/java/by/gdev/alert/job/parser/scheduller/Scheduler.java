@@ -1,14 +1,14 @@
 package by.gdev.alert.job.parser.scheduller;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,19 +35,24 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private String updateFilePath;
 	private final ParserCategories parserCategories;
 	private final OrderRepository orderRepository;
+	
+	private final ApplicationContext context;
+	
 
 	@Override
 	@Transactional
 	public void onApplicationEvent(ContextRefreshedEvent event) {
+		Resource res = context.getResource(updateFilePath);
 		try {
 			if (parseCategories) {
 				parserCategories.parse();
-				if (Files.notExists(Paths.get(updateFilePath)))
-					throw new RuntimeException(
-							"warn can't find links for habr rss you need to create file and set parser.categories.file.path "
-									+ "for parser service param, the example you can find here link src/test/resources/hubr.txt");
-				else
-					parserCategories.updateHubrLink(updateFilePath);
+				if (updateFilePath.startsWith("classpath")) {
+					log.info(
+							"Used one rss link for every categories and subcategory of the habr orders for dev environment."
+									+ " For prod or dev needs you can changed parser.categories.file.path with proper rss for parser service."
+									+ " The example you can find here src/main/resources/hubr.txt");
+					parserCategories.updateHubrLink(res.getFile().getPath());
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
