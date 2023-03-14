@@ -41,8 +41,12 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 				return id
 			})
 			.then((id) => {
-				filterService.updateCurrentFilter(module_id, id)
-				navigate(`/page/edit-filter/${module_id}/${id}`)
+				filterService
+					.updateCurrentFilter(module_id, id)
+					.finally(() => {
+						navigate(`/page/edit-filter/${module_id}/${id}`)
+					})
+				
 			})
 			.finally((response) => {
 				setIsAdded(false)
