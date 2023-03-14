@@ -30,6 +30,8 @@ const DropDownList = ({ elems, onClick, label, defaultLabe, className = '', defa
 	
 	useEffect(() => {
 		setCurrent(defaultValue)
+		console.log(defaultValue)
+		console.log(current)
 	}, [defaultValue])
 	useEffect(() => {
 		console.log(label)

@@ -4,18 +4,15 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
 import Btn from '../button/Button'
-
-//import Button from '../button/Button'
 
 import { coreService } from '../../services/parser/endponits/coreService'
 
 import './header.scss'
+import MobileMenu from '../mobileMenu/MobileMenu';
 
 const Header = () => {
 	const [isAuth, setIsAuth] = useState(false)
-
 
 	const openLoginForm = () => {
 		window.open(`${window.location.origin}/oauth2/authorization/keycloak-spring-gateway-client`, '_parent')
@@ -29,6 +26,7 @@ const Header = () => {
 
 	return <AppBar component="nav" position='static'>
 		<Toolbar>
+			<MobileMenu isAuth={isAuth} openLoginForm={openLoginForm} />
 			<Typography
 				variant="h6"
 				component="div"
@@ -41,7 +39,7 @@ const Header = () => {
 					<Btn text={<Link to='/page/modules'>Модули</Link>} styles={{ color: '#fff' }} />
 					<Btn text={<Link to='/page/notifications'>Уведомления</Link>} styles={{ color: '#fff' }} />
 				</> :
-					<Btn text={<span>Регистрация и <br /> Авторизация</span>} onClick={openLoginForm} styles={{ color: '#fff'  }} />
+					<Btn text={<span>Регистрация и <br /> Авторизация</span>} onClick={openLoginForm} styles={{ color: '#fff' }} />
 				}
 			</Box>
 		</Toolbar>

@@ -6,6 +6,16 @@
 		justify-content: space-between;
 		margin-top: 2rem;
 		flex-wrap: wrap;
+		flex-direction: column;
+		
+		& > div {
+			display: flex;
+			align-items: center;
+			
+			& > button {
+				margin-left: 1rem;	
+			}
+		}
 	}
 }
 
