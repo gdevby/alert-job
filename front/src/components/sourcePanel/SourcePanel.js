@@ -5,12 +5,6 @@ import Button from '../../components/button/Button'
 
 import { parserService } from '../../services/parser/endponits/parserService'
 import { sourceService } from '../../services/parser/endponits/sourceService'
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import InputLabel from '@mui/material/InputLabel';
-import Alert from '@mui/material/Alert';
-
 
 import './sourcePanel.scss'
 
@@ -126,7 +120,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 				</div>
 				<div className='subcat'>
-					<DropDownList label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'} />
+					<DropDownList defaultValue={0} label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'} />
 				</div>
 				<div>
 					<Button onClick={addingSource} text={'Добавить источник'} variant='contained' />
