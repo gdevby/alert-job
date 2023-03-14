@@ -213,8 +213,10 @@ const TechnologyWords = ({ filter_id }) => {
 				<Button onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
-		Уведомлять, если технологии содержат
-		<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+		<div>
+			<p>Уведомлять, если технологии содержат</p>
+			<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+		</div>
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />
 		</div>

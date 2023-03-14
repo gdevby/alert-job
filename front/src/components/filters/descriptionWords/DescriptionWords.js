@@ -180,8 +180,10 @@ const DescriptionWords = ({ filter_id }) => {
 				<Button onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
-		Уведомлять, если описание содержат
-		<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+		<div>
+			<p>Уведомлять, если описание содержат</p>
+			<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+		</div>
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />
 		</div>

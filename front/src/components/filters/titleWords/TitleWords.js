@@ -172,7 +172,7 @@ const TitleWords = ({ filter_id }) => {
 					<input type='text' onChange={changeWord} value={selectValue} />
 				</div>
 			</DialogTitle>
-			<DialogContent className='scroll'  ref={listRef}>
+			<DialogContent className='scroll' ref={listRef}>
 				<div className='searchPopup__body-list'>
 					{result && result.map(item => <div className='searchPopup__body-list__item'
 						id={item.id} key={item.name}
@@ -184,8 +184,10 @@ const TitleWords = ({ filter_id }) => {
 				<Button onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
-		Уведомлять, если в названии содержится
-		<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+		<div>
+			<p>Уведомлять, если в названии содержится</p>
+			<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+		</div>
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />
 		</div>
