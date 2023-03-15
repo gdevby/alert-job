@@ -9,7 +9,10 @@ const initialState = {
 		titleWords: [],
 		technologyWords: [],
 		maxPrice: 0,
-		minPrice: 0
+		minPrice: 0,
+		negativeDescriptionWords: [],
+		negativeTitleWords: [],
+		negativeTechnologyWords: []
 	},
 	isChoose: false,
 	isNew: true
@@ -23,6 +26,9 @@ const filterSlice = createSlice({
 			state.currentFilter.descriptionWords = action.payload.description
 			state.currentFilter.titleWords = action.payload.title
 			state.currentFilter.technologyWords = action.payload.technologies
+			state.currentFilter.negativeDescriptionWords = action.payload.negativeDescription
+			state.currentFilter.negativeTitleWords = action.payload.negativeTitle
+			state.currentFilter.negativeTechnologyWords = action.payload.negativeTechnologies
 			state.currentFilter.name = action.payload.name
 			state.currentFilter.id = action.payload.id
 			state.currentFilter.maxPrice = action.payload.maxPrice
@@ -33,6 +39,9 @@ const filterSlice = createSlice({
 			state.currentFilter.descriptionWords = []
 			state.currentFilter.titleWords = []
 			state.currentFilter.technologyWords = []
+			state.currentFilter.negativeDescriptionWords = []
+			state.currentFilter.negativeTitleWords = []
+			state.currentFilter.negativeTechnologyWords = []
 			state.currentFilter.name = ''
 			state.currentFilter.id = null
 			state.currentFilter.maxPrice = 0

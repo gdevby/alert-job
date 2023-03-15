@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom'
 
 import Title from '../../components/title/Title'
-import Button from '../../components/button/Button'
 import AddFilterForm from '../../components/addFilterForm/AddFilterForm'
 import TechnologyWords from '../../components/filters/technologyWords/TechnologyWords'
 import TitleWords from '../../components/filters/titleWords/TitleWords'
 import DescriptionWords from '../../components/filters/descriptionWords/DescriptionWords'
+import Btn from '../../components/button/Button'
+import Filters from '../../layouts/addFilterPage/filters/Filter';
 
 import { filterService } from '../../services/parser/endponits/filterService';
 
+import { removeCurrentFilter, setIsNew, setCurrentFilter } from '../../store/slices/filterSlice';
+
 import './addFilterPage.scss'
-import { useNavigate, useParams } from 'react-router-dom'
-import { removeCurrentFilter } from '../../store/slices/filterSlice';
-import { setCurrentFilter } from '../../store/slices/filterSlice';
-import { setIsNew } from '../../store/slices/filterSlice';
 
 
 const AddFilterPage = () => {
@@ -22,6 +22,7 @@ const AddFilterPage = () => {
 	const [wordsType, setWordstype] = useState('')
 	const [words, setWords] = useState('')
 	const [filterId, setFilterId] = useState()
+	const [isShowNegativeFilters, setIsShowNegativeFilters] = useState(false)
 
 	const { module_id, filter_id } = useParams()
 
@@ -34,9 +35,7 @@ const AddFilterPage = () => {
 		console.log(data)
 	}
 
-	const addNewFilter = () => {
-		navigate(`/page/filters/${module_id}`)
-	}
+
 	const remove = () => {
 		filterService
 			.deleteFilter(filterId)
@@ -77,6 +76,9 @@ const AddFilterPage = () => {
 							description: response.data.descriptionsDTO,
 							title: response.data.titlesDTO,
 							technologies: response.data.technologiesDTO,
+							negativeDescription: response.data.negativeDescriptionsDTO,
+							negativeTitle: response.data.negativeTechnologiesDTO,
+							negativeTechnologies: response.data.negativeTitlesDTO,
 							maxPrice: response.data.maxValue,
 							minPrice: response.data.minValue,
 							id: response.data.id,
@@ -88,37 +90,40 @@ const AddFilterPage = () => {
 							isNew: false
 						})
 					)
-					
+
 				})
 		}
 	}, [filter_id])
 
 
 
+	const showNegativeFilters = () => {
+		setIsShowNegativeFilters(prev => !prev)
+	}
 
+	const addNewFilter = () => {
+		navigate(`/page/filters/${module_id}`)
+	}
 
 	return <div className='filtersPage'>
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
 
-			<AddFilterForm setFilterId={setFilterId} module_id={module_id}/>
+			<AddFilterForm setFilterId={setFilterId} module_id={module_id} />
 
 			{filterId && <>
-				<div className='wordsContains_block'>
-					<div>
-						<TechnologyWords filter_id={filterId} />
-					</div>
-					<div>
-						<TitleWords filter_id={filterId} />
-					</div>
-					<div>
-						<DescriptionWords filter_id={filterId} />
-					</div>
-				</div>
+				<Filters />
+				<Btn text={isShowNegativeFilters ? 'Скрыть негативные фильтра' : 'Показать негативные фильтры'}
+					variant='contained' onClick={showNegativeFilters} className='filtersPage__show-negative' />
+				{isShowNegativeFilters && <Filters type={'negative-'} />}
 				<div className='filter__actions'>
-					<Button text={'Сохранить'} onClick={addNewFilter} variant='contained' />
+					<Btn text={'Сохранить'} onClick={addNewFilter} variant='contained' />
 				</div>
-			</>}
+			</>
+
+			}
+
+
 
 		</div>
 	</div>

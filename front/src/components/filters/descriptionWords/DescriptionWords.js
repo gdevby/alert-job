@@ -12,7 +12,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle'
 import { filterService } from '../../../services/parser/endponits/filterService'
 
-const DescriptionWords = ({ filter_id }) => {
+const DescriptionWords = ({ filter_id, type }) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [words, setWords] = useState([])
 	const [selectValue, setSelectValue] = useState('')
@@ -27,7 +27,10 @@ const DescriptionWords = ({ filter_id }) => {
 
 	const debouncedSearchTerm = useDebounce(selectValue, 500)
 
-	const { descriptionWords } = useSelector(state => state.filter.currentFilter)
+	const descriptionWords =
+		type == '' ? useSelector(state => state.filter.currentFilter.descriptionWords)
+			: useSelector(state => state.filter.currentFilter.negativeDescriptionWords)
+
 	const { isNew } = useSelector(state => state.filter)
 
 	const openSearch = () => {
@@ -38,7 +41,7 @@ const DescriptionWords = ({ filter_id }) => {
 
 	const addWord = (word) => {
 		filterService
-			.addWordToFilter('description-word', filter_id, word.id)
+			.addWordToFilter('description-word', filter_id, word.id, type)
 			.then(() => {
 				setWords((prev) => [...prev, word])
 				setResult((prev) => [...prev, word]);
@@ -105,7 +108,7 @@ const DescriptionWords = ({ filter_id }) => {
 
 	const remove = (id) => {
 		filterService
-			.deleteWord('description-word', filter_id, id)
+			.deleteWord('description-word', filter_id, id, type)
 			.then(() => {
 				setWords((prev) => prev.filter(item => item.id !== id))
 			})
@@ -181,7 +184,7 @@ const DescriptionWords = ({ filter_id }) => {
 			</DialogActions>
 		</Dialog>
 		<div>
-			<p>Уведомлять, если описание содержат</p>
+			{type == '' ? <p>Уведомлять, если описание содержит</p> : <p>Уведомлять, если описание не содержит</p>}
 			<Button text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>
 		<div className='addedWords'>

@@ -22,7 +22,7 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 
 	const addFilter = event => {
 		filterService
-			.addFilter(module_id, { name: filterName, minValue: null,maxValue: null })
+			.addFilter(module_id, { name: filterName, minValue: null, maxValue: null })
 			.then(response => {
 				const id = response.data.id
 				setFilterId(id)
@@ -32,6 +32,9 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 						description: [],
 						title: [],
 						technologies: [],
+						negativeDescription: [],
+						negativeTitle: [],
+						negativeTechnologies: [],
 						maxPrice: '',
 						minPrice: '',
 						id: id,
@@ -46,7 +49,7 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 					.finally(() => {
 						navigate(`/page/edit-filter/${module_id}/${id}`)
 					})
-				
+
 			})
 			.finally((response) => {
 				setIsAdded(false)
@@ -55,11 +58,11 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 
 	const updateFilter = (type) => {
 		if (!isNew || isChoose || !isAdded) {
-		const data = {
-			name: type === 'name'? filterName: null,
-			minValue: type === 'minPrice'? minPrice: null,
-			maxValue: type === 'maxPrice'? maxPrice: null
-		}
+			const data = {
+				name: type === 'name' ? filterName : null,
+				minValue: type === 'minPrice' ? minPrice : null,
+				maxValue: type === 'maxPrice' ? maxPrice : null
+			}
 			filterService
 				.updateFilter(module_id, currentFilter.id, data)
 				.then(console.log)
@@ -79,7 +82,7 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 	}, [isNew])
 
 
-	
+
 
 	return <div>
 		<Field

@@ -14,7 +14,7 @@ import useDebounce from '../../../hooks/use-debounce'
 
 import { filterService } from '../../../services/parser/endponits/filterService'
 
-const TechnologyWords = ({ filter_id }) => {
+const TechnologyWords = ({ filter_id, type }) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [words, setWords] = useState([])
 	const [selectValue, setSelectValue] = useState('')
@@ -29,7 +29,10 @@ const TechnologyWords = ({ filter_id }) => {
 
 	const debouncedSearchTerm = useDebounce(selectValue, 1000)
 
-	const { technologyWords } = useSelector(state => state.filter.currentFilter)
+	const technologyWords =
+		type == '' ? useSelector(state => state.filter.currentFilter.technologyWords)
+			: useSelector(state => state.filter.currentFilter.negativeTechnologyWords)
+
 	const { isNew } = useSelector(state => state.filter)
 
 	const openSearch = () => {
@@ -40,7 +43,7 @@ const TechnologyWords = ({ filter_id }) => {
 
 	const addWord = (word) => {
 		filterService
-			.addWordToFilter('technology-word', filter_id, word.id)
+			.addWordToFilter('technology-word', filter_id, word.id, type)
 			.then(() => {
 				setWords((prev) => [...prev, word])
 				console.log(words)
@@ -101,7 +104,7 @@ const TechnologyWords = ({ filter_id }) => {
 
 	const remove = (id) => {
 		filterService
-			.deleteWord('technology-word', filter_id, id)
+			.deleteWord('technology-word', filter_id, id, type)
 			.then(() => {
 				setWords((prev) => prev.filter(item => item.id !== id))
 			})
@@ -214,7 +217,7 @@ const TechnologyWords = ({ filter_id }) => {
 			</DialogActions>
 		</Dialog>
 		<div>
-			<p>Уведомлять, если технологии содержат</p>
+			{type == '' ? <p>Уведомлять, если технологии содержат</p> : <p>Уведомлять, если технологии не содержат</p>}
 			<Button text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>
 		<div className='addedWords'>
