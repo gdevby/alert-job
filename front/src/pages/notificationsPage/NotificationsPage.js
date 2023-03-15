@@ -5,6 +5,7 @@ import Field from '../../components/field/Field'
 import DropDownList from '../../components/dropDownList/DropDowList'
 import Button from '../../components/button/Button'
 import InstructionForTg from '../../components/instructionForTg/InstructionForTg'
+import Switch from '@mui/material/Switch';
 
 import { coreService } from '../../services/parser/endponits/coreService'
 
@@ -45,13 +46,13 @@ const NotificationsPage = () => {
 		coreService.getAlertType().then(response => {
 			if (response.data.type) {
 				setCurrentPlatform({ name: 'email', id: 1 })
-			}else {
+			} else {
 				setCurrentPlatform({ name: 'telegram', id: 2 })
-				setTelegramId(response.data.value == 'null'? '' : response.data.value)
+				setTelegramId(response.data.value == 'null' ? '' : response.data.value)
 			}
 		})
 	}, [])
-	
+
 	const handleValue = (text) => {
 		setAlertType(text)
 		setTelegramId(text)
@@ -62,25 +63,30 @@ const NotificationsPage = () => {
 		<div className='container'>
 			<Title text='Настройка уведомлений' />
 			<div className='notification_source'>
-				<DropDownList open={false} label={'Тип уведомлений'} defaultValue={currentPlatform.id} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений'/>
+				<DropDownList open={false} label={'Тип уведомлений'} defaultValue={currentPlatform.id} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений' />
 				{currentPlatform.name == 'telegram' ?
-					<div><Field 
-						defaultValue={telegramId} type='text' 	
-						placeholder='Введите адрес' cb={handleValue} 
-						label={<label className="label">Введите айди </label>}/>
-						
+					<div><Field
+						defaultValue={telegramId} type='text'
+						placeholder='Введите адрес' cb={handleValue}
+						label={<label className="label">Введите айди </label>} />
+
 					</div>
 					: <p>Используется почта при регистрации аккаунта</p>}
 				<div className='notification_source__send-btn'>
-					{currentPlatform.name == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} variant='contained'/>}
-					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained'/>
-					
+					{currentPlatform.name == 'telegram' && <Button text={'Сохранить'} onClick={saveTgId} variant='contained' />}
+					<Button text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained' />
+
 				</div>
 			</div>
-			
+
 			<div className='alert_status'>
-				<input type='checkbox' onChange={handleAlertsStatus} checked={alertStatus} />
-				{alertStatus? 'Включено': 'Отключено'}
+				<Switch
+					checked={alertStatus}
+					onChange={handleAlertsStatus}
+					inputProps={{ 'aria-label': 'controlled' }}
+					size="small"
+				/>
+				{alertStatus ? 'Включено' : 'Отключено'}
 			</div>
 			{currentPlatform.name == 'telegram' && <InstructionForTg />}
 		</div>
