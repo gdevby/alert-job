@@ -54,7 +54,7 @@ const Orders = () => {
 	return <div className='orders'>
 		<div className='orders__actions'>
 			<Btn onClick={showOrders} text={!isShowingOrders ? 'Показать заказы' : 'Скрыть заказы'} variant='contained' />
-			{isShowingOrders && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
+			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 		</div>
 		{
 			isShowingOrders && (isFetching ? <CircularProgress /> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
