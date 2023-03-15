@@ -37,7 +37,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 
 @Service
@@ -280,9 +279,6 @@ public class CoreService {
 	public Flux<OrderDTO> showOrdersByModule(String uuid, Long moduleId) {
 		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
-		// TODO check if this logic works
-		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
-				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		Flux<OrderDTO> source = 
 				modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
 					return webClient.get().uri("http://parser:8017/api/orders", b -> {
@@ -293,9 +289,9 @@ public class CoreService {
 						return b.build();
 					}).retrieve().bodyToFlux(OrderDTO.class);
 				});
-		Flux<Tuple2<OrderDTO, UserFilter>> zip = Flux.zip(source, currentFilter);
-		// f.getT1() - order, f.getT2() - user filter
-		return zip.filter(f -> scheduler.isMatchUserFilter(f.getT1(), f.getT2())).map(e -> e.getT1());
+		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
+				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
+		 return source.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)));
 	}
 	
 	private Mono<Void> changeParserSubcribe(Long category, Long subcategory, boolean cValue, boolean sValue) {

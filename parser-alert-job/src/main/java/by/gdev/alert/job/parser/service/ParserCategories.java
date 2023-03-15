@@ -3,7 +3,7 @@ package by.gdev.alert.job.parser.service;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +54,7 @@ public class ParserCategories {
 	}
 
 	private void saveData(SiteSourceJob site, ParsedCategory k, List<ParsedCategory> v) {
+		log.info("name " +k.name + " " + k.translatedName);
 		Optional<Category> op = site.getCategories().stream()
 				.filter(sc -> (Objects.nonNull(sc.getName()) && Objects.equals(sc.getName(), k.name()))
 						|| (Objects.nonNull(sc.getNativeLocName())
@@ -104,7 +105,7 @@ public class ParserCategories {
 		int end = s.indexOf("filter_specs_ids", start);
 		String res1 = s.substring(start, end);
 		String[] filter_specs = res1.split("filter_specs");
-		Map<ParsedCategory, List<ParsedCategory>> result = new HashMap<>();
+		Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
 		for (String fs : filter_specs) {
 			if (fs.isEmpty())
 				continue;
@@ -134,6 +135,7 @@ public class ParserCategories {
 		Document doc = Jsoup.connect(site.getParsedURI()).get();
 		Elements res = doc.getElementsByClass("category-group__folder");
 		return res.stream().map(ee -> {
+			
 			String categoryString = ee.getElementsByClass("link_dotted js-toggle").text();
 			String engNameCategory = ee.getElementsByClass("checkbox_flat").attr("for");
 			ParsedCategory catNew = new ParsedCategory(engNameCategory, categoryString, null, null);
@@ -147,7 +149,10 @@ public class ParserCategories {
 			}).collect(Collectors.toList());
 			log.debug("			subcategory size {}", subList.size());
 			return new SimpleEntry<ParsedCategory, List<ParsedCategory>>(catNew, subList);
-		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (u, v) -> {
+	        throw new IllegalStateException(String.format("Duplicate key %s", u));
+	    }, 
+	    LinkedHashMap::new));
 	}
 
 	public static record ParsedCategory(String name, String translatedName, Long id, String rss) {
@@ -196,7 +201,7 @@ public class ParserCategories {
 
 	@SneakyThrows
 	private Map<String, List<String>> aggregateByKeys(List<String> filePath) {
-		Map<String, List<String>> map = new HashMap<>();
+		Map<String, List<String>> map = new LinkedHashMap<>();
 		String category = "";
 		for (String line : filePath) {
 			if (!line.startsWith("\t")) {
