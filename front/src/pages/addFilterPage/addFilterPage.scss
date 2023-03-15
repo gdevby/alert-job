@@ -111,6 +111,12 @@
 	}
 }
 
+.searchPopup__body-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
 .searchPopup__body-list {
 	//padding: 1rem;
 	//overflow-y: auto;
@@ -121,6 +127,9 @@
 		background-color: #e8e8e8;
 		padding: 0.5rem;
 		border-radius: 4px;
+		cursor: pointer;
+		display: flex;
+		justify-content: space-between;
 	}
 
 	&__item:hover {

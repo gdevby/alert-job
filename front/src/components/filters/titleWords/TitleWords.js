@@ -176,10 +176,17 @@ const TitleWords = ({ filter_id, type }) => {
 				</div>
 			</DialogTitle>
 			<DialogContent className='scroll' ref={listRef}>
+				<div className='searchPopup__body-head'>
+					<div>Слово</div>
+					<div>Частота</div>
+				</div>
 				<div className='searchPopup__body-list'>
 					{result && result.map(item => <div className='searchPopup__body-list__item'
 						id={item.id} key={item.name}
-						onClick={handleSelect}>{item.name}</div>
+						onClick={handleSelect}>
+						<div>{item.name}</div>
+						<div>{item.counter}</div>
+					</div>
 					)}
 				</div>
 			</DialogContent>
