@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom';
 
-import Field from '../../components/field/Field'
-import Button from '../button/Button'
+import Field from '../../../components/field/Field'
+import Btn from '../../../components/button/Button'
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { filterService } from '../../services/parser/endponits/filterService'
-import { setCurrentFilter } from '../../store/slices/filterSlice';
-import { useNavigate } from 'react-router-dom';
+import { filterService } from '../../../services/parser/endponits/filterService'
+import { setCurrentFilter } from '../../../store/slices/filterSlice';
+
 
 const AddFilterForm = ({ setFilterId, module_id }) => {
 	const [filterName, setFilterName] = useState('')
@@ -89,7 +90,7 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 			type={'text'} defaultValue={filterName} cb={setFilterName} onBlur={() => updateFilter('name')}
 			placeholder={'Введите название'} label={<label>Сначала введите название фильтра</label>} />
 		<div className='addFilter__button'>
-			{isAdded ? <Button text={'Добавить фильтр'} onClick={addFilter} /> : ''}
+			{isAdded ? <Btn text={'Добавить фильтр'} onClick={addFilter} /> : ''}
 		</div>
 		{!isAdded && <div className='price_block'>
 			<Field

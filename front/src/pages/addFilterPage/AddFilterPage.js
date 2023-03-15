@@ -3,10 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
 
 import Title from '../../components/title/Title'
-import AddFilterForm from '../../components/addFilterForm/AddFilterForm'
-import TechnologyWords from '../../components/filters/technologyWords/TechnologyWords'
-import TitleWords from '../../components/filters/titleWords/TitleWords'
-import DescriptionWords from '../../components/filters/descriptionWords/DescriptionWords'
+import AddFilterForm from '../../layouts/addFilterPage/addFilterForm/AddFilterForm'
 import Btn from '../../components/button/Button'
 import Filters from '../../layouts/addFilterPage/filters/Filter';
 
