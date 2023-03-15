@@ -53,7 +53,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
 			Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
 			forEachOrders(users, event.data());
-		}, error -> log.warn("failed to get orders from parser {}", error.getMessage()));
+		}, error -> log.warn("failed to get orders from parser {}", error));
 	}
 
 	private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {

@@ -1,6 +1,7 @@
 package by.gdev.alert.job.core.service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -59,6 +60,8 @@ public class StatisticService {
 	}
 	
 	public void statisticTechnologyWord(List<String> technologies) {
+		if(Objects.isNull(technologies))
+			return;
 		technologies.forEach(e -> {
 			Optional<TechnologyWord> technoWord = technologyRepository.findByName(e);
 			if (technoWord.isPresent()) {

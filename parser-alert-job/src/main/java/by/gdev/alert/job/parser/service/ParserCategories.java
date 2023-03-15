@@ -54,7 +54,6 @@ public class ParserCategories {
 	}
 
 	private void saveData(SiteSourceJob site, ParsedCategory k, List<ParsedCategory> v) {
-		log.info("name " +k.name + " " + k.translatedName);
 		Optional<Category> op = site.getCategories().stream()
 				.filter(sc -> (Objects.nonNull(sc.getName()) && Objects.equals(sc.getName(), k.name()))
 						|| (Objects.nonNull(sc.getNativeLocName())
