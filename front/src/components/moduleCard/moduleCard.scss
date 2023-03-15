@@ -1,12 +1,20 @@
 .modules__item {
 	//width: 12%;
 	position: relative;
+	width: 100%;
 
 	//background-color: #afafaf;
 	//padding: 1rem;
 	//border-radius: 10px;
 	&__module-name {
 		//min-height: 80px;
+	}
+
+	&_button-group {
+		display: flex;
+		width: 100%;
+		justify-content: space-around;
+		margin-top: 1rem;
 	}
 
 	&-box {
