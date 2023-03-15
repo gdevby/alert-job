@@ -1,6 +1,5 @@
 package by.gdev.alert.job.parser.service;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +46,7 @@ public class HabrOrderParser {
 	private final SiteSourceJobRepository siteSourceJobRepository;
 	private final OrderRepository orderRepository;
 	private final ParserSourceRepository parserSourceRepository;
-	
+
 	private final ModelMapper mapper;
 
 	@Transactional
@@ -73,8 +72,8 @@ public class HabrOrderParser {
 							.forEach(subCategory -> {
 								log.trace("getting order by category {} and subcategory  {}",
 										category.getNativeLocName(), subCategory.getNativeLocName());
-								List<OrderDTO> list2 = hubrMapItems(subCategory.getLink(), siteSourceJob.getId(), category,
-										subCategory);
+								List<OrderDTO> list2 = hubrMapItems(subCategory.getLink(), siteSourceJob.getId(),
+										category, subCategory);
 								orders.addAll(list2);
 							});
 				});
@@ -82,7 +81,8 @@ public class HabrOrderParser {
 	}
 
 	@SneakyThrows
-	private List<OrderDTO> hubrMapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
+	private List<OrderDTO> hubrMapItems(String rssURI, Long siteSourceJobId, Category category,
+			Subcategory subCategory) {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
@@ -123,19 +123,20 @@ public class HabrOrderParser {
 		Document doc = null;
 		try {
 			doc = Jsoup.parse(new URL(order.getLink()), 30000);
-		} catch (IOException ex) {
+
+			Element el = doc.selectFirst("span.count");
+			Element elPaymentType = el.selectFirst(".suffix");
+			if (Objects.nonNull(elPaymentType) && elPaymentType.text().equals("за проект")) {
+				String s = el.childNode(0).toString();
+				order.setPrice(new Price(s, Integer.valueOf(s.replaceAll(" ", "").replaceAll("руб.", ""))));
+			}
+			Elements elements = doc.select(".tags__item_link");
+			order.setTechnologies(elements.eachText().stream().map(e -> e.toLowerCase()).collect(Collectors.toList()));
+		} catch (Exception ex) {
 			order.setValidOrder(false);
 			log.debug("invalid hubr link " + order.getLink());
 			return order;
 		}
-		Element el = doc.selectFirst("span.count");
-		Element elPaymentType = el.selectFirst(".suffix");
-		if (Objects.nonNull(elPaymentType) && elPaymentType.text().equals("за проект")) {
-			String s = el.childNode(0).toString();
-			order.setPrice(new Price(s, Integer.valueOf(s.replaceAll(" ", "").replaceAll("руб.", ""))));
-		}
-		Elements elements = doc.select(".tags__item_link");
-		order.setTechnologies(elements.eachText().stream().map(e -> e.toLowerCase()).collect(Collectors.toList()));
 		return order;
 	}
 }

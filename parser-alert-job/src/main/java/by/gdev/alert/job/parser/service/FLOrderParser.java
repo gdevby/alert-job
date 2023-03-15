@@ -55,6 +55,7 @@ public class FLOrderParser {
 	
 	@Transactional
 	public List<OrderDTO> flruParser() {
+		log.trace("parsed fl.ru");
 		List<OrderDTO> orders = new ArrayList<>();
 //		// find elements from database with Hubr.ru name
 		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName("FLRU");
@@ -63,7 +64,7 @@ public class FLOrderParser {
 				.filter(categoryFilter -> categoryFilter.isParse())
 				// iterate over each category from this collection
 				.forEach(category -> {
-					log.trace("getting order by category {}", category.getNativeLocName());
+					log.trace("getting order by category {} rss link {}", category.getNativeLocName(), category.getLink());
 					List<Subcategory> siteSubCategories = category.getSubCategories();
 					// checking if a subcategory exists for this category
 						// category does't have a subcategory
@@ -75,8 +76,8 @@ public class FLOrderParser {
 								.filter(subCategoryFilter -> subCategoryFilter.isParse())
 								// Iterate all sub category
 								.forEach(subCategory -> {
-									log.trace("getting order by category {} and subcategory  {}",
-											category.getNativeLocName(), subCategory.getNativeLocName());
+									log.trace("getting order by category {} and subcategory  {} {}",
+											category.getNativeLocName(), subCategory.getNativeLocName(), subCategory.getLink());
 									List<OrderDTO> list1 = flruMapItems(subCategory.getLink(), siteSourceJob.getId(),
 											category, subCategory);
 									orders.addAll(list1);

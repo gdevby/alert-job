@@ -64,6 +64,7 @@ public class ParserCategories {
 			siteCategory.setName(k.name());
 			siteCategory.setNativeLocName(k.translatedName);
 			siteCategory.setSiteSourceJob(site);
+			siteCategory.setLink(k.rss);
 			op = Optional.of(categoryRepository.save(siteCategory));
 			site.getCategories().add(op.get());
 			log.debug("added site category {},{}, {}", site.getName(), k.name(), k.translatedName());
@@ -82,6 +83,7 @@ public class ParserCategories {
 				ssc1.setName(sub.name());
 				ssc1.setNativeLocName(sub.translatedName);
 				ssc1.setCategory(sc);
+				ssc1.setLink(sub.rss);
 				sc.getSubCategories().add(subCategoryRepository.save(ssc1));
 				log.debug("added site subcategory {}, {},{}, ", site.getName(), ssc1.getName(),
 						ssc1.getNativeLocName());

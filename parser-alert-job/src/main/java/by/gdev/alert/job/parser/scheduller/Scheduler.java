@@ -52,8 +52,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 							"Used one rss link for every categories and subcategory of the habr orders for dev environment."
 									+ " For prod or dev needs you can changed parser.categories.file.path with proper rss for parser service."
 									+ " The example you can find here src/main/resources/hubr.txt");
-					parserCategories.updateHubrLink(Lists.newArrayList(IOUtils.toString(res.getInputStream()).split(System.lineSeparator())));
 				}
+				parserCategories.updateHubrLink(Lists.newArrayList(IOUtils.toString(res.getInputStream()).split(System.lineSeparator())));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
