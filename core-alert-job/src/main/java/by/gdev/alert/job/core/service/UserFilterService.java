@@ -139,13 +139,13 @@ public class UserFilterService {
 	}
 	
 	public Mono<ResponseEntity<Void>> removeUserFilter(String uuid, Long moduleId, Long filterId) {
-		return Mono.justOrEmpty(filterRepository.findByIdAndModuleIdAndUserUuid(filterId, moduleId, uuid))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found filter by module %s and filter %s", moduleId, filterId))))
-				.map(e -> {
-					filterRepository.delete(e);
-					return ResponseEntity.ok().build();
-				});
+		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerFilters(moduleId, uuid, filterId))
+		.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+				String.format("not found filter by module %s and filter %s", moduleId, filterId))))
+		.map(e -> {
+			e.getFilters().removeIf(f -> f.getId().equals(filterId));
+			return ResponseEntity.ok().build();
+		});
 	}
 	
 	public Mono<FilterDTO> replaceCurrentFilter(String uuid, Long moduleId, Long filterId){
