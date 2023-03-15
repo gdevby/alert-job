@@ -26,7 +26,7 @@ public class UserFilter extends BasicId {
 	private String name;
 	private Integer minValue;
 	private Integer maxValue;
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	private OrderModules module;
 	@ManyToMany(fetch = FetchType.EAGER)
 	@Size(max = 50, message = "the limit for added technology word")
