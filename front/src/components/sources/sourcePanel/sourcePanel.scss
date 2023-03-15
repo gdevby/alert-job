@@ -91,6 +91,7 @@
 	&__content {
 		display: flex;
 		//width: 67%;
+		flex-wrap: wrap;
 		justify-content: space-between;
 
 		&-actions {
