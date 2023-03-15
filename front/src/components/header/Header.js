@@ -42,6 +42,9 @@ const Header = () => {
 				{isAuth ? <>
 					<Btn text={'Модули'} onClick={() => navigate('/page/modules')} styles={{ color: '#fff' }} />
 					<Btn text={'Уведомления'} onClick={() => navigate('/page/notifications')}styles={{ color: '#fff' }} />
+					<Btn text={'Выйти'} 
+					onClick={() => window.open(`${window.location.origin}/logout`, '_parent')}
+					styles={{ color: '#fff' }} />
 				</> :
 					<Btn text={<span>Регистрация и <br /> Авторизация</span>} onClick={openLoginForm} styles={{ color: '#fff' }} />
 				}
