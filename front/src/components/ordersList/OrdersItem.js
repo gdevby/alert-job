@@ -6,22 +6,19 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const OrdersItem = ({ order }) => {
-
-
-
-
+	
 	return <Accordion>
 		<AccordionSummary
 			expandIcon={<ExpandMoreIcon />}
+			className='order__content'
 		>
-			<Typography sx={{ width: '90%', flexShrink: 0 }}>
+			<Typography sx={{ width: '45%', flexShrink: 0 }}>
 				{order.title}
 			</Typography>
 			<Typography>{order.technologies.join(',')}</Typography>
 		</AccordionSummary>
 		<AccordionDetails>
-			<Typography>
-				{order.message}
+			<Typography className='order__message' dangerouslySetInnerHTML={{__html: order.message}}>
 			</Typography>
 			<Typography>
 				Ссылка на заказ: <OrderLink link={order.link}/>

@@ -5,3 +5,16 @@
 		margin-top: 1rem;	
 	}
 }
+
+.order__content > div {
+	justify-content: space-between;
+}
+
+.order__message > a {
+	text-decoration: none;
+	color: #3d53f9;
+	padding-left: 0;
+}
+.order__message > ol {
+	padding-left: 1rem;
+} 
