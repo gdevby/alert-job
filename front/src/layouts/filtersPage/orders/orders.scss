@@ -1,9 +1,10 @@
 .orders {
 	margin-top: 1rem;
-	
+
 	&__actions {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 	}
 
 	&__list {
@@ -11,7 +12,17 @@
 		max-height: 500px;
 		overflow-y: auto;
 		padding-bottom: 1rem;
-		& > div {
+
+		&-head {
+			display: flex;
+			justify-content: space-between;
+			margin: 0 auto;
+			width: 77%;
+			margin-top: 1rem;
+			
+		}
+
+		&>div {
 			margin-top: .2rem;
 			margin-bottom: .2rem;
 		}

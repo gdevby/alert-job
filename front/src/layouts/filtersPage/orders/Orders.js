@@ -20,11 +20,12 @@ const Orders = () => {
 	const { id } = useParams()
 
 	const showOrders = () => {
-		if (!isShowingOrders) {
+		setIsFetching(true)
+		/*if (!isShowingOrders) {
 			setIsFetching(true)
 		} else {
 			setIsShowingOrders(false)
-		}
+		}*/
 	}
 
 	const getOrders = () => {
@@ -53,9 +54,11 @@ const Orders = () => {
 
 	return <div className='orders'>
 		<div className='orders__actions'>
-			<Btn onClick={showOrders} text={!isShowingOrders ? 'Показать заказы' : 'Скрыть заказы'} variant='contained' />
+			<Btn onClick={showOrders} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
+			<Btn onClick={showOrders} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
 			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 		</div>
+		{isShowingOrders && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
 		{
 			isShowingOrders && (isFetching ? <CircularProgress /> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
 		}

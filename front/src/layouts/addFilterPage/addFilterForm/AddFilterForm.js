@@ -95,7 +95,7 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 		{!isAdded && <div className='price_block'>
 			<Field
 				type={'number'} defaultValue={minPrice} cb={setMinPrice} onBlur={() => updateFilter('minPrice')}
-				placeholder={'Минимальная цена'} label={<label>Минимальная цена</label>} />
+				placeholder={'Минимальная цена'} label={<label>Минимальная цена, лучше выставить низкую цену, т.к. заказчики не знают цену и могут установить 1000руб за дорогой проект</label>} />
 			<Field
 				type={'number'} defaultValue={maxPrice} cb={setMaxPrice} onBlur={() => updateFilter('maxPrice')}
 				placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
