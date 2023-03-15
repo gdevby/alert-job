@@ -197,7 +197,7 @@ public class UserFilterService {
 					TitleWord w = tuple.getT2();
 					if (CollectionUtils.isEmpty(f.getTitles()))
 						f.setTitles(Sets.newHashSet());
-					f.getNegativeTitles().add(w);
+					f.getTitles().add(w);
 					filterRepository.save(f);
 					return mapper.map(f, FilterDTO.class);
 				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
