@@ -1,20 +1,55 @@
 .orders {
 	margin-top: 1rem;
-	
+
 	&__list {
-		margin-top: 1rem;	
+		margin-top: 1rem;
+		max-height: 500px;
+		overflow-y: auto;
+		padding-bottom: 1rem;
+		& > div {
+			margin-top: .2rem;
+			margin-bottom: .2rem;
+		}
+
+		&::-webkit-scrollbar {
+			width: 6px;
+			height: 3px;
+		}
+
+		&::-webkit-scrollbar-track {
+			background-color: #dadada;
+			border-radius: 100px;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			border-radius: 100px;
+			border: 3px solid #6f6f6f;
+			background-clip: content-box;
+			background-color: #6f6f6f;
+		}
+
+		&_empty {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+
+			&_icon {
+				cursor: pointer;
+			}
+		}
 	}
 }
 
-.order__content > div {
+.order__content>div {
 	justify-content: space-between;
 }
 
-.order__message > a {
+.order__message>a {
 	text-decoration: none;
 	color: #3d53f9;
 	padding-left: 0;
 }
-.order__message > ol {
+
+.order__message>ol {
 	padding-left: 1rem;
-} 
+}

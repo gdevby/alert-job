@@ -5,7 +5,7 @@ const OrdersList = ({ orders }) => {
 	
 	
 	return <div className='orders__list'>
-		{orders.map(item => <OrdersItem key={item.link} order={item}/>)}
+		{orders.map(item => <OrdersItem key={item.dateTime} order={item}/>)}
 	</div>
 }
 
