@@ -6,8 +6,8 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Btn from '../button/Button'
-import MobileMenu from '../mobile/mobileMenu/MobileMenu';
+import Btn from '../../components/button/Button'
+import MobileMenu from '../../components/mobile/mobileMenu/MobileMenu';
 
 import { coreService } from '../../services/parser/endponits/coreService'
 
