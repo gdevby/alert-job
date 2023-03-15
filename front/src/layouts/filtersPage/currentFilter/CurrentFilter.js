@@ -106,7 +106,7 @@ const CurrentFilter = () => {
 
 
 	return <div className='current_filter'>
-		<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет заказам из источника заказов</div>
+		<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет применен к заказам из источника заказов</div>
 		<div className='current_filter__content'>
 			<DropDownList className='current_filter__list' defaultValue={filter.id} label={'Выберите фильтр'} elems={currentFilters} onClick={handleCurrentFilter} defaultLabe={'Выберите фильтр'} />
 			{filter && <div className='current_filter__content-actions'>
