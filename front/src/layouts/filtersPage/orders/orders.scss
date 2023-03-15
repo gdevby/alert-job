@@ -1,5 +1,10 @@
 .orders {
 	margin-top: 1rem;
+	
+	&__actions {
+		display: flex;
+		align-items: center;
+	}
 
 	&__list {
 		margin-top: 1rem;
