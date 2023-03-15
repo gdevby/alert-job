@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
+
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Btn from '../button/Button'
+import MobileMenu from '../mobile/mobileMenu/MobileMenu';
 
 import { coreService } from '../../services/parser/endponits/coreService'
 
 import './header.scss'
-import MobileMenu from '../mobileMenu/MobileMenu';
+
 
 const Header = () => {
 	const [isAuth, setIsAuth] = useState(false)
@@ -17,6 +20,8 @@ const Header = () => {
 	const openLoginForm = () => {
 		window.open(`${window.location.origin}/oauth2/authorization/keycloak-spring-gateway-client`, '_parent')
 	}
+
+	const navigate = useNavigate()
 
 	useEffect(() => {
 		coreService.checkAuth1()
@@ -36,8 +41,11 @@ const Header = () => {
 			</Typography>
 			<Box sx={{ display: { xs: 'none', sm: 'block' } }}>
 				{isAuth ? <>
-					<Btn text={<Link to='/page/modules'>Модули</Link>} styles={{ color: '#fff' }} />
-					<Btn text={<Link to='/page/notifications'>Уведомления</Link>} styles={{ color: '#fff' }} />
+					<Btn text={'Модули'} onClick={() => navigate('/page/modules')} styles={{ color: '#fff' }} />
+					<Btn text={'Уведомления'} onClick={() => navigate('/page/notifications')}styles={{ color: '#fff' }} />
+					<Btn text={'Выйти'} 
+					onClick={() => window.open(`${window.location.origin}/logout`, '_parent')}
+					styles={{ color: '#fff' }} />
 				</> :
 					<Btn text={<span>Регистрация и <br /> Авторизация</span>} onClick={openLoginForm} styles={{ color: '#fff' }} />
 				}

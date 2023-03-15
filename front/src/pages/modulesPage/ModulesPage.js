@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { moduleService } from '../../services/parser/endponits/moduleService'
 import { useNavigate } from "react-router-dom";
 
-import TextField from '@mui/material/TextField';
+import { moduleService } from '../../services/parser/endponits/moduleService'
 
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
 import ModuleCard from '../../components/moduleCard/ModuleCard';
 import Btn from '../../components/button/Button';
 import List from '@mui/material/List';
-import { styled } from '@mui/material/styles';
-import Paper from '@mui/material/Paper';
+import Item from '../../components/item/Item'
 
 
 import './modulesPage.scss'
@@ -16,6 +16,7 @@ import './modulesPage.scss'
 const ModulesPage = () => {
 	const [moduleName, setModuleName] = useState('')
 	const [modules, setModules] = useState([])
+	const [isFetching, setIsFetching] = useState(true)
 
 	const navigate = useNavigate();
 
@@ -31,6 +32,7 @@ const ModulesPage = () => {
 		moduleService
 			.getModules()
 			.then(response => setModules(response.data))
+			.finally(() => setIsFetching(false))
 	}, [])
 
 	const deleteModule = (id) => {
@@ -48,22 +50,6 @@ const ModulesPage = () => {
 		setModuleName(e.target.value)
 	}
 
-	/*<Field 
-					label={'Введите название модуля'}
-					placeholder={'Название модуля'}
-					defaultValue={moduleName}
-					cb={setModuleName}
-					
-				/>*/
-
-	const Item = styled(Paper)(({ theme }) => ({
-		backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
-		...theme.typography.body2,
-		padding: theme.spacing(0.5),
-		textAlign: 'center',
-		color: theme.palette.text.secondary,
-	}));
-
 	return <div className='modules'>
 		<div className='container'>
 			<div className='modules__adding-form'>
@@ -75,12 +61,12 @@ const ModulesPage = () => {
 
 				</div>
 			</div>
-			<List className='modules__items'>
+			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
 					removeCard={deleteModule}
 					openModule={openModule}
 				/></Item>)}
-			</List>
+			</List>}
 		</div>
 
 	</div>
