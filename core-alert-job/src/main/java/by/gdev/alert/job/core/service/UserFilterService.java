@@ -176,6 +176,10 @@ public class UserFilterService {
 					dto.setTitlesDTO(currentFilter.getTitles().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					dto.setDescriptionsDTO(currentFilter.getDescriptions().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					dto.setTechnologiesDTO(currentFilter.getTechnologies().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+					dto.setActivatedNegativeFilters(currentFilter.isActivatedNegativeFilters());
+					dto.setNegativeTitlesDTO(currentFilter.getNegativeTitles().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+					dto.setNegativeDescriptionsDTO(currentFilter.getNegativeDescriptions().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+					dto.setNegativeTechnologiesDTO(currentFilter.getNegativeTechnologies().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					return dto;
 				});
 	}
