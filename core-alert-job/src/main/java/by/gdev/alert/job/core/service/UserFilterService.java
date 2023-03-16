@@ -97,7 +97,7 @@ public class UserFilterService {
 		return Mono.defer(() -> {
 			PageRequest p = PageRequest.of(page, 10);
 			Function<DescriptionWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
-			return StringUtils.isEmpty(name) ? Mono.just(descriptionRepository.findAll(p).map(func))
+			return StringUtils.isEmpty(name) ? Mono.just(descriptionRepository.findAllByOrderByCounterDesc(p).map(func))
 					: Mono.just(descriptionRepository.findByNameIsStartingWith(name, p).map(func));
 		});
 	}
