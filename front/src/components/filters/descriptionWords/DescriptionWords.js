@@ -144,7 +144,8 @@ const DescriptionWords = ({ filter_id, type }) => {
 		const coordinates = e.target.getBoundingClientRect()
 		const top = e.target.scrollTop
 		const fullHeight = e.target.scrollHeight
-		if (Math.floor(top + coordinates.height) + 1 == fullHeight) {
+		console.log('top, coordinates.height, fullHeight', top, coordinates.height, fullHeight)
+		if (top + coordinates.height == fullHeight) {
 			setIsFetching(true)
 		}
 	};
@@ -160,7 +161,7 @@ const DescriptionWords = ({ filter_id, type }) => {
 		}
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [])
+	}, [listRef])
 
 	return <>
 		<Dialog open={isOpen} onClose={closePopup}>

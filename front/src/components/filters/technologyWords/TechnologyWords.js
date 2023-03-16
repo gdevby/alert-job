@@ -152,7 +152,8 @@ const TechnologyWords = ({ filter_id, type }) => {
 		const coordinates = e.target.getBoundingClientRect()
 		const top = e.target.scrollTop
 		const fullHeight = e.target.scrollHeight
-		if (Math.floor(top + coordinates.height) + 1 == fullHeight) {
+		console.log('top, coordinates.height, fullHeight', top, coordinates.height, fullHeight)
+		if (top + coordinates.height == fullHeight) {
 			setIsFetching(true)
 		}
 
@@ -160,6 +161,7 @@ const TechnologyWords = ({ filter_id, type }) => {
 
 	useEffect(() => {
 		const list = listRef.current
+		console.log(list)
 		if (list) {
 			list.addEventListener('scroll', scrollHandler);
 
