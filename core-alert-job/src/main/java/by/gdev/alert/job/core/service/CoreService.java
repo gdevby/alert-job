@@ -1,8 +1,11 @@
 package by.gdev.alert.job.core.service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
@@ -37,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 
 @Service
@@ -293,6 +297,33 @@ public class CoreService {
 				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		 return source.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)));
 	}
+	
+	
+	public Mono<Map<Boolean, List<OrderDTO>>> partitioningOrders(String uuid, Long moduleId) {
+		Mono<OrderModules> modules = Mono
+				.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
+		Flux<OrderDTO> source = modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
+			return webClient.get().uri("http://parser:8017/api/orders", b -> {
+				b.queryParam("site_id", s.getSiteSource());
+				b.queryParam("category_id", s.getSiteCategory());
+				if (Objects.nonNull(s.getSiteSubCategory()))
+					b.queryParam("sub_id", s.getSiteSubCategory());
+				return b.build();
+			}).retrieve().bodyToFlux(OrderDTO.class);
+		});
+		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
+				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
+		Flux<Tuple2<OrderDTO, UserFilter>> zip = Flux.zip(source, currentFilter);
+		Mono<Map<Boolean, List<Tuple2<OrderDTO, UserFilter>>>> tuple = zip
+				.collect(Collectors.partitioningBy(f -> scheduler.isMatchUserFilter(f.getT1(), f.getT2())));
+		Mono<Map<Boolean, List<OrderDTO>>> mapap = tuple.map(map -> {
+			return map.entrySet().stream().collect(
+					Collectors.toMap(k -> k.getKey(), v -> v.getValue().stream().map(e -> e.getT1()).toList()));
+		});
+		return mapap;
+	}
+	
 	
 	private Mono<Void> changeParserSubcribe(Long category, Long subcategory, boolean cValue, boolean sValue) {
 		return webClient.patch().uri("http://parser:8017/api/subscribe/sources", b -> {

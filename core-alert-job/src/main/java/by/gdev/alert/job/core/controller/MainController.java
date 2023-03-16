@@ -1,5 +1,8 @@
 package by.gdev.alert.job.core.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import javax.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -123,4 +126,11 @@ public class MainController {
 			@PathVariable("id") Long moduleId){
 		return ResponseEntity.ok(coreService.showOrdersByModule(uuid, moduleId));
 	}
+	
+	@GetMapping("user/module/{id}/partitioning-orders")
+	public ResponseEntity<Mono<Map<Boolean, List<OrderDTO>>>> getPartitioningOrders(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@PathVariable("id") Long moduleId){
+		return ResponseEntity.ok(coreService.partitioningOrders(uuid, moduleId));
+	}
+	
 }
