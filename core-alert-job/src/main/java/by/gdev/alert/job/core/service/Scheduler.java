@@ -112,15 +112,25 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
 			containsTitle = userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
 			sb.append("title ").append(containsTitle).append(" ");
+			if (containsTitle)
+				containsTitle = userFilter.getNegativeTitles().stream()
+						.anyMatch(e -> !order.getTitle().contains(e.getName()));
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getTechnologies())) {
 			containsTech = userFilter.getTechnologies().stream()
 					.anyMatch(e -> order.getTechnologies().contains(e.getName()));
+			if (containsTech)
+				containsTech = userFilter.getNegativeTechnologies().stream()
+				.anyMatch(e -> !order.getTechnologies().contains(e.getName()));
 			sb.append("tech ").append(containsTech).append(" ");
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
 			containsDesc = userFilter.getDescriptions().stream()
 					.anyMatch(e -> order.getMessage().contains(e.getName()));
+			if (containsDesc)
+				containsDesc = userFilter.getNegativeDescriptions().stream()
+						.anyMatch(e -> !order.getMessage().contains(e.getName()));
+			
 			sb.append("desc ").append(containsDesc).append(" ");
 		}
 		sb.append(order.getLink()).append(" ").append(order.getTitle());
