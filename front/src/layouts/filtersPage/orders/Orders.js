@@ -32,9 +32,9 @@ const Orders = () => {
 
 	const getOrders = () => {
 		ordersService
-			.getOrders(id)
+			.getOrders(id, ordersType)
 			.then((response) => {
-				setOrders(response.data[ordersType])
+				setOrders(response.data)
 			})
 			.finally(() => {
 				setIsShowingOrders(true)

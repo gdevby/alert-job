@@ -39,6 +39,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 	useEffect(() => {
 		if (currentCat.id) {
+			setCurrentSubCat([])
 			parserService
 				.getSubcategories(currentCat.id)
 				.then(response => {
