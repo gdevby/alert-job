@@ -12,7 +12,7 @@ public interface TechnologyWordRepository extends CrudRepository<TechnologyWord,
 	
 	Optional<TechnologyWord> findByName(String name);
 	
-	Page<TechnologyWord> findAll(Pageable p);
+	Page<TechnologyWord> findAllByOrderByCounterDesc(Pageable p);
 	
 	Page<TechnologyWord> findByNameIsStartingWith(String name, Pageable p);
 	
