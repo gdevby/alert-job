@@ -50,8 +50,13 @@ const ModulesPage = () => {
 		setModuleName(e.target.value)
 	}
 
+	
+
 	return <div className='modules'>
 		<div className='container'>
+			<p>Теперь вам надо создать модуль, который позволит вам выбрать несколько источников заказов и установить активный фильтр для этого модуля,
+				который будет фильтровать ваши заказы.
+				К примеру: можно использовать разные фильтры для заказов из разных сайтов.</p>
 			<div className='modules__adding-form'>
 				<TextField id="standard-basic" label="Введите название модуля" variant="standard" placeholder='Название модуля' onChange={changeModuleName} />
 				<div className='modules__add-module-btn'>
@@ -59,9 +64,7 @@ const ModulesPage = () => {
 
 				</div>
 			</div>
-			<p>Теперь вам надо создать модуль, который позволит вам выбрать несколько источников заказов и установить активный фильтр для этого модуля,
-			 который будет фильтровать ваши заказы.
-			  К примеру: можно использовать разные фильтры для заказов из разных сайтов.</p>
+
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
 					removeCard={deleteModule}
