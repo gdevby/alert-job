@@ -110,8 +110,8 @@ const AddFilterPage = () => {
 
 			{filterId && <>
 				<Filters />
-				<Btn text={'Негативные фильтры неактивны'}
-					variant='contained' onClick={showNegativeFilters} className='filtersPage__show-negative' />
+				<Btn text={isShowNegativeFilters? 'Негативные фильтры активны' : 'Негативные фильтры неактивны'}
+					color={isShowNegativeFilters? 'success': 'error'} variant='contained' onClick={showNegativeFilters} className='filtersPage__show-negative' />
 				{isShowNegativeFilters && <Filters type={'negative-'} />}
 				<div className='filter__actions'>
 					<Btn text={'Сохранить'} onClick={addNewFilter} variant='contained' />
