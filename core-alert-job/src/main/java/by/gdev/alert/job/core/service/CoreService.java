@@ -231,7 +231,7 @@ public class CoreService {
 			}
 			Optional<SourceSite> existSource = module.getSources().stream()
 					.filter(s -> s.getSiteCategory().equals(source.getSiteCategory())
-							&& s.getSiteSubCategory().equals(source.getSiteSubCategory()))
+							&& Objects.equals(s.getSiteSubCategory(), source.getSiteSubCategory()))
 					.findAny();
 			if (existSource.isPresent())
 				return Mono.error(new ConflictExeption("source exists"));
