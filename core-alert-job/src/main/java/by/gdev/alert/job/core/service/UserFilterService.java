@@ -251,7 +251,7 @@ public class UserFilterService {
 				.map(tuple -> {
 					UserFilter filter = tuple.getT1();
 					TitleWord word = tuple.getT2();
-					if (filter.getNegativeTitles().removeIf(e -> e.equals(word))) {
+					if (filter.getNegativeTitles().removeIf(e -> e.getId().equals(word.getId()))) {
 						filterRepository.save(filter);
 						return ResponseEntity.ok().build();
 					} else
@@ -308,7 +308,7 @@ public class UserFilterService {
 		.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId))).map(tuple -> {
 			UserFilter filter = tuple.getT1();
 			TechnologyWord word = tuple.getT2();
-			if (filter.getNegativeTechnologies().removeIf(e -> e.equals(word))) {
+			if (filter.getNegativeTechnologies().removeIf(e -> e.getId().equals(word.getId()))) {
 				filterRepository.save(filter);
 				return ResponseEntity.ok().build();
 			}else
@@ -362,7 +362,7 @@ public class UserFilterService {
 		.zipWith(Mono.justOrEmpty(descriptionRepository.findById(wordId))).map(tuple -> {
 			UserFilter filter = tuple.getT1();
 			DescriptionWord word = tuple.getT2();
-			if (filter.getNegativeDescriptions().removeIf(e -> e.equals(word))) {
+			if (filter.getNegativeDescriptions().removeIf(e -> e.getId().equals(word.getId()))) {
 				filterRepository.save(filter);
 				return ResponseEntity.ok().build();
 			}else
