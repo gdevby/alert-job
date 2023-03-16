@@ -119,6 +119,7 @@ const AddFilterPage = () => {
 
 			{filterId && <>
 				<Filters />
+				<p>Фильтры ниже применяются, если фильтры выше не обнаружели совпадения.</p>
 				<Btn text={isShowNegativeFilters ? 'Негативные фильтры активны' : 'Негативные фильтры неактивны'}
 					color={isShowNegativeFilters ? 'success' : 'error'} variant='contained' onClick={showNegativeFilters} className='filtersPage__show-negative' />
 				{isShowNegativeFilters && <Filters type={'negative-'} />}
