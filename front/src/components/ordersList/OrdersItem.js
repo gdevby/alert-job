@@ -33,7 +33,7 @@ const OrdersItem = ({ order }) => {
 }
 
 const OrderLink = ({ link }) => {
-	return <Typography component='a' href={link} sx={{ 'paddingLeft': 0, 'color': '#3d53f9;' }}>
+	return <Typography component='a' target='_blank' href={link} sx={{ 'paddingLeft': 0, 'color': '#3d53f9;' }}>
 		{link}
 	</Typography>
 }
