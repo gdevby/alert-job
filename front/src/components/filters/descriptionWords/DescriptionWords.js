@@ -114,8 +114,8 @@ const DescriptionWords = ({ filter_id, type }) => {
 			})
 	}
 
-	const handleSelect = (event) => {
-		const word = { id: event.target.id, name: event.target.textContent.trim() }
+	const handleSelect = (item) => {
+		const word = { id: item.id, name: item.name }
 		addWord(word)
 	}
 
@@ -180,7 +180,7 @@ const DescriptionWords = ({ filter_id, type }) => {
 				<div className='searchPopup__body-list' >
 					{result && result.map(item => <div className='searchPopup__body-list__item'
 						id={item.id} key={item.name}
-						onClick={handleSelect}>
+						onClick={() => handleSelect(item)}>
 						<div>{item.name}</div>
 						<div>{item.counter}</div>
 					</div>

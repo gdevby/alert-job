@@ -104,9 +104,8 @@ const TitleWords = ({ filter_id, type }) => {
 			})
 	}
 
-	const handleSelect = (event) => {
-		console.log(event.target)
-		const word = { id: event.target.id, name: event.target.textContent.trim() }
+	const handleSelect = (item) => {
+		const word = { id: item.id, name: item.name }
 		addWord(word)
 	}
 
@@ -147,7 +146,6 @@ const TitleWords = ({ filter_id, type }) => {
 		const coordinates = e.target.getBoundingClientRect()
 		const top = e.target.scrollTop
 		const fullHeight = e.target.scrollHeight
-		console.log('top, coordinates.height, fullHeight', top, coordinates.height, fullHeight)
 		if (top + coordinates.height == fullHeight) {
 			setIsFetching(true)
 		}
@@ -184,7 +182,7 @@ const TitleWords = ({ filter_id, type }) => {
 				<div className='searchPopup__body-list'>
 					{result && result.map(item => <div className='searchPopup__body-list__item'
 						id={item.id} key={item.name}
-						onClick={handleSelect}>
+						onClick={() => handleSelect(item)}>
 						<div>{item.name}</div>
 						<div>{item.counter}</div>
 					</div>
