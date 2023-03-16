@@ -12,7 +12,7 @@ public interface DescriptionWordRepository extends CrudRepository<DescriptionWor
 	
 	Optional<DescriptionWord> findByName(String name);
 	
-	Page<DescriptionWord> findAll(Pageable p);
+	Page<DescriptionWord> findAllByOrderByCounterDesc(Pageable p);
 	
 	Page<DescriptionWord> findByNameIsStartingWith(String name, Pageable p);
 }

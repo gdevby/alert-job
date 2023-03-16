@@ -12,7 +12,7 @@ public interface TitleWordRepository extends CrudRepository<TitleWord, Long>{
 	
 	Optional<TitleWord> findByName(String name);
 	
-	Page<TitleWord> findAll(Pageable p);
+	Page<TitleWord> findAllByOrderByCounterDesc(Pageable p);
 	
 	Page<TitleWord> findByNameIsStartingWith(String name, Pageable p);
 }
