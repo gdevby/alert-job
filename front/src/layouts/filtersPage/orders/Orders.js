@@ -16,10 +16,12 @@ const Orders = () => {
 	const [orders, setOrders] = useState([])
 	const [isShowingOrders, setIsShowingOrders] = useState(false)
 	const [isFetching, setIsFetching] = useState()
+	const [ordersType, setOrdersType] = useState(true)
 
 	const { id } = useParams()
 
-	const showOrders = () => {
+	const showOrders = (type = ordersType) => {
+		setOrdersType(type)
 		setIsFetching(true)
 		/*if (!isShowingOrders) {
 			setIsFetching(true)
@@ -32,7 +34,7 @@ const Orders = () => {
 		ordersService
 			.getOrders(id)
 			.then((response) => {
-				setOrders(response.data)
+				setOrders(response.data[ordersType])
 			})
 			.finally(() => {
 				setIsShowingOrders(true)
@@ -54,11 +56,12 @@ const Orders = () => {
 
 	return <div className='orders'>
 		<div className='orders__actions'>
-			<Btn onClick={showOrders} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
-			<Btn onClick={showOrders} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
+			<Btn onClick={() => showOrders(true)} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
 			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
+			<Btn onClick={() => showOrders(false)} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
+			
 		</div>
-		{isShowingOrders && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
+		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
 		{
 			isShowingOrders && (isFetching ? <CircularProgress /> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
 		}
