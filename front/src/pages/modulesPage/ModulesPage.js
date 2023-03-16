@@ -9,7 +9,8 @@ import ModuleCard from '../../components/moduleCard/ModuleCard';
 import Btn from '../../components/button/Button';
 import List from '@mui/material/List';
 import Item from '../../components/item/Item'
-
+import Alert from '@mui/material/Alert';
+import Collapse from '@mui/material/Collapse';
 
 import './modulesPage.scss'
 
@@ -17,6 +18,7 @@ const ModulesPage = () => {
 	const [moduleName, setModuleName] = useState('')
 	const [modules, setModules] = useState([])
 	const [isFetching, setIsFetching] = useState(true)
+	const [isShowAlert, setIsShowAlert] = useState(false)
 
 	const navigate = useNavigate();
 
@@ -25,6 +27,12 @@ const ModulesPage = () => {
 			.addModule(moduleName)
 			.then(response => {
 				setModules(prev => [...prev, response.data])
+			})
+			.catch(e => {
+				if (e.response.data.message == `module with name ${moduleName} exists`) {
+					setIsShowAlert(true)
+					setTimeout(() => setIsShowAlert(false), 2000)
+				}
 			})
 	}
 
@@ -50,7 +58,7 @@ const ModulesPage = () => {
 		setModuleName(e.target.value)
 	}
 
-	
+
 
 	return <div className='modules'>
 		<div className='container'>
@@ -64,7 +72,9 @@ const ModulesPage = () => {
 
 				</div>
 			</div>
-
+			<Collapse in={isShowAlert} className='alert'>
+				<Alert severity="warning">Модуль с таким именем уже существует.</Alert>
+			</Collapse>
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
 					removeCard={deleteModule}
