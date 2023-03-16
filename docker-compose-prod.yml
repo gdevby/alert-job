@@ -14,8 +14,8 @@ services:
       - VALIDATION=http
       - EXTRA_DOMAINS=auth.gdev.by
     volumes:
-      - $swag_config:/config
-      - $front_directory:/front
+      - $swag_config_directory:/config
+      - $front_directory:/etc/alert-job-front
     depends_on:
       - gateway
       - keycloak
@@ -27,7 +27,7 @@ services:
   db:
     image: mariadb:10.9.4-jammy
     volumes:
-      - ~/prod/apps/mariadb:/var/lib/mysql
+      - $database_directory/mariadb:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=$database_user_password
       - MYSQL_PASSWORD=$database_user_password
@@ -36,7 +36,7 @@ services:
   dbcore:
     image: mariadb:10.9.4-jammy
     volumes:
-      - ~/prod/apps/mariadbcore:/var/lib/mysql
+      - $database_directory/mariadbcore:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=$database_user_password
       - MYSQL_PASSWORD=$database_user_password
@@ -45,7 +45,7 @@ services:
   dbparser:
     image: mariadb:10.9.4-jammy
     volumes:
-      - ~/prod/apps/mariadbparser:/var/lib/mysql
+      - $database_directory/mariadbparser:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=$database_user_password
       - MYSQL_PASSWORD=$database_user_password
@@ -80,10 +80,10 @@ services:
       - "8011:8011"
     environment:
       - "SPRING_PROFILES_ACTIVE=dev,native"
-      - "spring.cloud.config.server.native.search-locations=file://$configuration_override_parameters_directory_docker"
+      - "spring.cloud.config.server.native.search-locations=file:///alert-job-config-repo"
       - "spring.cloud.config.server.overrides.logging.level.by.gdev=$logger_level"
     volumes:
-      - "$local_config_directory:$configuration_override_parameters_directory_docker"
+      - "$local_config_directory:/alert-job-config-repo"
   eureka:
     image: alert-job/alert-job-eureka:0.0.1-SNAPSHOT
     ports:
@@ -102,7 +102,7 @@ services:
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - xpack.security.enabled=false
     volumes:
-       - ~/prod/elastic:/usr/share/elasticsearch/data
+       - $elasticsearch_directory:/usr/share/elasticsearch/data
     ports:
       - 9300:9300
       - 9200:9200
@@ -173,7 +173,7 @@ services:
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
     volumes:
-       - "$parser_config:/etc/parser/config"
+       - "$parser_config_directory:/etc/parser/config"
     depends_on:
       config:
         condition: service_healthy
