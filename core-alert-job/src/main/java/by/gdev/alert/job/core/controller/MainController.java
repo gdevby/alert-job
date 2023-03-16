@@ -121,16 +121,16 @@ public class MainController {
 		return coreService.removeSourceSite(uuid, id, sourceId);
 	}
 	
-	@GetMapping("user/module/{id}/orders")
-	public ResponseEntity<Flux<OrderDTO>> getOrdersByModule(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	@GetMapping("user/module/{id}/true-filter/orders")
+	public ResponseEntity<Flux<OrderDTO>> getPartitioningOnTrueOrders(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long moduleId){
-		return ResponseEntity.ok(coreService.showOrdersByModule(uuid, moduleId));
+		return ResponseEntity.ok(coreService.showTrueFilterOrders(uuid, moduleId));
 	}
 	
-	@GetMapping("user/module/{id}/partitioning-orders")
-	public ResponseEntity<Mono<Map<Boolean, List<OrderDTO>>>> getPartitioningOrders(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	@GetMapping("user/module/{id}/false-filter/orders")
+	public ResponseEntity<Flux<OrderDTO>> getPartitioningOrders(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long moduleId){
-		return ResponseEntity.ok(coreService.partitioningOrders(uuid, moduleId));
+		return ResponseEntity.ok(coreService.showFalseFilterOrders(uuid, moduleId));
 	}
 	
 }

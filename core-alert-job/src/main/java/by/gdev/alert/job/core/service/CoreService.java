@@ -280,7 +280,7 @@ public class CoreService {
 		});
 	}
 	
-	public Flux<OrderDTO> showOrdersByModule(String uuid, Long moduleId) {
+	public Flux<OrderDTO> showTrueFilterOrders(String uuid, Long moduleId) {
 		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
 		Flux<OrderDTO> source = 
@@ -299,29 +299,22 @@ public class CoreService {
 	}
 	
 	
-	public Mono<Map<Boolean, List<OrderDTO>>> partitioningOrders(String uuid, Long moduleId) {
-		Mono<OrderModules> modules = Mono
-				.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
+	public Flux<OrderDTO> showFalseFilterOrders(String uuid, Long moduleId) {
+		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
-		Flux<OrderDTO> source = modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
-			return webClient.get().uri("http://parser:8017/api/orders", b -> {
-				b.queryParam("site_id", s.getSiteSource());
-				b.queryParam("category_id", s.getSiteCategory());
-				if (Objects.nonNull(s.getSiteSubCategory()))
-					b.queryParam("sub_id", s.getSiteSubCategory());
-				return b.build();
-			}).retrieve().bodyToFlux(OrderDTO.class);
-		});
+		Flux<OrderDTO> source = 
+				modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
+					return webClient.get().uri("http://parser:8017/api/orders", b -> {
+						b.queryParam("site_id", s.getSiteSource());
+						b.queryParam("category_id", s.getSiteCategory());
+						if (Objects.nonNull(s.getSiteSubCategory())) 
+							b.queryParam("sub_id", s.getSiteSubCategory());
+						return b.build();
+					}).retrieve().bodyToFlux(OrderDTO.class);
+				});
 		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-		Flux<Tuple2<OrderDTO, UserFilter>> zip = Flux.zip(source, currentFilter);
-		Mono<Map<Boolean, List<Tuple2<OrderDTO, UserFilter>>>> tuple = zip
-				.collect(Collectors.partitioningBy(f -> scheduler.isMatchUserFilter(f.getT1(), f.getT2())));
-		Mono<Map<Boolean, List<OrderDTO>>> mapap = tuple.map(map -> {
-			return map.entrySet().stream().collect(
-					Collectors.toMap(k -> k.getKey(), v -> v.getValue().stream().map(e -> e.getT1()).toList()));
-		});
-		return mapap;
+		 return source.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)));
 	}
 	
 	
