@@ -5,6 +5,7 @@ const initialState = {
 	currentFilter: {
 		id: null,
 		name: '',
+		activatedNegativeFilters: false,
 		descriptionWords: [],
 		titleWords: [],
 		technologyWords: [],
@@ -33,7 +34,11 @@ const filterSlice = createSlice({
 			state.currentFilter.id = action.payload.id
 			state.currentFilter.maxPrice = action.payload.maxPrice
 			state.currentFilter.minPrice = action.payload.minPrice
+			state.currentFilter.activatedNegativeFilters = action.payload.activatedNegativeFilters
 			state.isChoose = true
+		},
+		setActivatedNegativeFilters(state, action) {
+			state.currentFilter.activatedNegativeFilters = action.payload.activatedNegativeFilters
 		},
 		removeCurrentFilter(state, action) {
 			state.currentFilter.descriptionWords = []
@@ -42,6 +47,7 @@ const filterSlice = createSlice({
 			state.currentFilter.negativeDescriptionWords = []
 			state.currentFilter.negativeTitleWords = []
 			state.currentFilter.negativeTechnologyWords = []
+			state.currentFilter.activatedNegativeFilters = false
 			state.currentFilter.name = ''
 			state.currentFilter.id = null
 			state.currentFilter.maxPrice = 0
@@ -79,6 +85,6 @@ const filterSlice = createSlice({
 	},
 });
 
-export const { setCurrentFilter, setFilters, removeFilter, setIsNew, removeCurrentFilter } = filterSlice.actions;
+export const { setCurrentFilter, setFilters, removeFilter, setIsNew, removeCurrentFilter, setActivatedNegativeFilters } = filterSlice.actions;
 
 export default filterSlice.reducer;

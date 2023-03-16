@@ -62,7 +62,8 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 			const data = {
 				name: type === 'name' ? filterName : null,
 				minValue: type === 'minPrice' ? minPrice : null,
-				maxValue: type === 'maxPrice' ? maxPrice : null
+				maxValue: type === 'maxPrice' ? maxPrice : null,
+				activatedNegativeFilters: currentFilter.activatedNegativeFilters
 			}
 			filterService
 				.updateFilter(module_id, currentFilter.id, data)

@@ -10,5 +10,6 @@ public class Filter {
 	private String name;
 	private Integer minValue;
 	private Integer maxValue;
+	private boolean activatedNegativeFilters;
 
 }
