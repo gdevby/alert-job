@@ -1,13 +1,19 @@
-import React, { useState } from 'react'
-import { AiOutlineClose } from "react-icons/ai";
+import React, { useState, useEffect } from 'react'
+import Alert from '@mui/material/Alert';
+import Collapse from '@mui/material/Collapse';
 
-const Alert = () => {
-	return <div className='alert'>
-		<div className='alert__content'>
-			<div className='alert__body'></div>
-			<div className='alert__action'><AiOutlineClose /></div>
-		</div>
-	</div>
+import './alert.scss'
+
+const CasAlert = ({open, type, content }) => {
+	const [isOpen, setIsOpen] = useState(false)
+	
+	useEffect(() => {
+		setIsOpen(open)
+	}, [open])
+	
+	return <Collapse in={isOpen} className='alert'>
+				<Alert severity={type}>{content}</Alert>
+			</Collapse>
 }
 
-export default Alert
+export default CasAlert

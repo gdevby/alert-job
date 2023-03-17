@@ -9,8 +9,7 @@ import ModuleCard from '../../components/moduleCard/ModuleCard';
 import Btn from '../../components/button/Button';
 import List from '@mui/material/List';
 import Item from '../../components/item/Item'
-import Alert from '@mui/material/Alert';
-import Collapse from '@mui/material/Collapse';
+import Alert from '../../components/common/alert/Alert'
 
 import './modulesPage.scss'
 
@@ -23,6 +22,11 @@ const ModulesPage = () => {
 	const navigate = useNavigate();
 
 	const addModule = () => {
+		const isExist = modules.find(item => item.name = moduleName)
+		if (isExist) {
+			showAlert()
+			return
+		}
 		moduleService
 			.addModule(moduleName)
 			.then(response => {
@@ -30,8 +34,7 @@ const ModulesPage = () => {
 			})
 			.catch(e => {
 				if (e.response.data.message == `module with name ${moduleName} exists`) {
-					setIsShowAlert(true)
-					setTimeout(() => setIsShowAlert(false), 2000)
+					showAlert()
 				}
 			})
 	}
@@ -57,6 +60,11 @@ const ModulesPage = () => {
 	const changeModuleName = (e) => {
 		setModuleName(e.target.value)
 	}
+	
+	const showAlert = () => {
+		setIsShowAlert(true)
+		setTimeout(() => setIsShowAlert(false), 2000)
+	}
 
 
 
@@ -72,9 +80,7 @@ const ModulesPage = () => {
 
 				</div>
 			</div>
-			<Collapse in={isShowAlert} className='alert'>
-				<Alert severity="warning">Модуль с таким именем уже существует.</Alert>
-			</Collapse>
+			<Alert open={isShowAlert} type={'warning'} content={'Модуль с таким именем уже существует.'}/>
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
 					removeCard={deleteModule}
