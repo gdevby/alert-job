@@ -173,6 +173,6 @@ public class UserFilterController {
 	@DeleteMapping("user/negative-filter/{filter_id}/description-word/{word_id}")
 	public Mono<ResponseEntity<Void>> deleteDescriptionWordFromNegativeFilter(@PathVariable("filter_id") Long filterId,
 			@PathVariable("word_id") Long wordId) {
-		return filterService.removeDescriptionWordFromFilter(filterId, wordId);
+		return filterService.removeDescriptionWordFromNegativeFilter(filterId, wordId);
 	}
 }

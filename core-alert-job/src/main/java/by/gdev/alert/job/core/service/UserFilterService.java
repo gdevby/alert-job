@@ -213,20 +213,6 @@ public class UserFilterService {
 						String.format("not found by filter id %s or word id %s", filterId, wordId))));
 	}
 
-	public Mono<FilterDTO> createTitleWordToNegativeFilter(Long filterId, Long wordId) {
-		return Mono.justOrEmpty(filterRepository.findById(filterId))
-				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId))).map(tuple -> {
-					UserFilter filter = tuple.getT1();
-					TitleWord word = tuple.getT2();
-					if (CollectionUtils.isEmpty(filter.getNegativeTitles()))
-						filter.setNegativeTitles(Sets.newHashSet());
-					filter.getNegativeTitles().add(word);
-					filterRepository.save(filter);
-					return mapper.map(filter, FilterDTO.class);
-				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))));
-	}
-	
 	public Mono<ResponseEntity<Void>> removeTitleWordFromFilter(Long filterId, Long wordId) {
 		return Mono.justOrEmpty(filterRepository.findById(filterId))
 				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId)))
@@ -237,22 +223,6 @@ public class UserFilterService {
 					TitleWord t = tuple.getT2();
 					if (f.getTitles().removeIf(e -> e.getId().equals(t.getId()))) {
 						filterRepository.save(f);
-						return ResponseEntity.ok().build();
-					} else
-						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-				});
-	}
-	
-	public Mono<ResponseEntity<Void>> removeTitleWordFromNegativeFilter(Long filterId, Long wordId) {
-		return Mono.justOrEmpty(filterRepository.findById(filterId))
-				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId)))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))))
-				.map(tuple -> {
-					UserFilter filter = tuple.getT1();
-					TitleWord word = tuple.getT2();
-					if (filter.getNegativeTitles().removeIf(e -> e.getId().equals(word.getId()))) {
-						filterRepository.save(filter);
 						return ResponseEntity.ok().build();
 					} else
 						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -273,20 +243,6 @@ public class UserFilterService {
 						String.format("not found by filter id %s or word id %s", filterId, wordId))));
 	}
 	
-	public Mono<FilterDTO> createTechnologyWordToNegativeFilter(Long filterId, Long wordId){
-		return Mono.justOrEmpty(filterRepository.findById(filterId))
-				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId))).map(tuple -> {
-					UserFilter filter = tuple.getT1();
-					TechnologyWord word = tuple.getT2();
-					if (CollectionUtils.isEmpty(filter.getNegativeTechnologies())) 
-						filter.setNegativeTechnologies(Sets.newHashSet());
-					filter.getNegativeTechnologies().add(word);
-					filterRepository.save(filter);
-					return mapper.map(filter, FilterDTO.class);
-				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))));
-	}
-	
 	public Mono<ResponseEntity<Void>> removeTechnologyWordFromFilter(Long filterId, Long wordId) {
 		return Mono.justOrEmpty(filterRepository.findById(filterId))
 				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId)))
@@ -303,19 +259,6 @@ public class UserFilterService {
 				});
 	}
 	
-	public Mono<ResponseEntity<Void>> removeTechnologyWordFromNegativeFilter(Long filterId, Long wordId) {
-		return Mono.justOrEmpty(filterRepository.findById(filterId))
-		.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId))).map(tuple -> {
-			UserFilter filter = tuple.getT1();
-			TechnologyWord word = tuple.getT2();
-			if (filter.getNegativeTechnologies().removeIf(e -> e.getId().equals(word.getId()))) {
-				filterRepository.save(filter);
-				return ResponseEntity.ok().build();
-			}else
-				return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-		});
-	}
-	
 	public Mono<FilterDTO> createDescriptionWordToFilter(Long filterId, Long wordId){
 		return Mono.justOrEmpty(filterRepository.findById(filterId))
 				.zipWith(Mono.justOrEmpty(descriptionRepository.findById(wordId))).map(tuple -> {
@@ -326,20 +269,6 @@ public class UserFilterService {
 					f.getDescriptions().add(w);
 					filterRepository.save(f);
 					return mapper.map(f, FilterDTO.class);
-				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))));
-	}
-	
-	public Mono<FilterDTO> createDescriptionWordToNegativeFilter(Long filterId, Long wordId){
-		return Mono.justOrEmpty(filterRepository.findById(filterId))
-				.zipWith(Mono.justOrEmpty(descriptionRepository.findById(wordId))).map(tuple -> {
-					UserFilter filter = tuple.getT1();
-					DescriptionWord word = tuple.getT2();
-					if (CollectionUtils.isEmpty(filter.getNegativeDescriptions())) 
-						filter.setNegativeDescriptions(Sets.newHashSet());
-					filter.getNegativeDescriptions().add(word);
-					filterRepository.save(filter);
-					return mapper.map(filter, FilterDTO.class);
 				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
 						String.format("not found by filter id %s or word id %s", filterId, wordId))));
 	}
@@ -357,12 +286,86 @@ public class UserFilterService {
 		});
 	}
 	
+	public Mono<FilterDTO> createTitleWordToNegativeFilter(Long filterId, Long wordId) {
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId))).map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TitleWord w = tuple.getT2();
+					if (CollectionUtils.isEmpty(f.getNegativeTitles()))
+						f.setNegativeTitles(Sets.newHashSet());
+					f.getNegativeTitles().add(w);
+					filterRepository.save(f);
+					return mapper.map(f, FilterDTO.class);
+				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))));
+	}
+
+	public Mono<ResponseEntity<Void>> removeTitleWordFromNegativeFilter(Long filterId, Long wordId) {
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(titleRepository.findById(wordId)))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))))
+				.map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TitleWord t = tuple.getT2();
+					if (f.getNegativeTitles().removeIf(e -> e.getId().equals(t.getId()))) {
+						filterRepository.save(f);
+						return ResponseEntity.ok().build();
+					} else
+						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+				});
+	}
+	
+	public Mono<FilterDTO> createTechnologyWordToNegativeFilter(Long filterId, Long wordId){
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId))).map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TechnologyWord w = tuple.getT2();
+					if (CollectionUtils.isEmpty(f.getNegativeTechnologies()))
+						f.setNegativeTechnologies(Sets.newHashSet());
+					f.getNegativeTechnologies().add(w);
+					filterRepository.save(f);
+					return mapper.map(f, FilterDTO.class);
+				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))));
+	}
+	
+	public Mono<ResponseEntity<Void>> removeTechnologyWordFromNegativeFilter(Long filterId, Long wordId) {
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId)))
+				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))))
+				.map(tuple -> {
+					UserFilter f = tuple.getT1();
+					TechnologyWord t = tuple.getT2();
+					if (f.getNegativeTechnologies().removeIf(e -> e.getId().equals(t.getId()))) {
+						filterRepository.save(f);
+						return ResponseEntity.ok().build();
+					} else
+						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+				});
+	}
+	
+	public Mono<FilterDTO> createDescriptionWordToNegativeFilter(Long filterId, Long wordId){
+		return Mono.justOrEmpty(filterRepository.findById(filterId))
+				.zipWith(Mono.justOrEmpty(descriptionRepository.findById(wordId))).map(tuple -> {
+					UserFilter f = tuple.getT1();
+					DescriptionWord w = tuple.getT2();
+					if (CollectionUtils.isEmpty(f.getNegativeDescriptions()))
+						f.setDescriptions(Sets.newHashSet());
+					f.getNegativeDescriptions().add(w);
+					filterRepository.save(f);
+					return mapper.map(f, FilterDTO.class);
+				}).switchIfEmpty(Mono.error(new ResourceNotFoundException(
+						String.format("not found by filter id %s or word id %s", filterId, wordId))));
+	}
+	
 	public Mono<ResponseEntity<Void>> removeDescriptionWordFromNegativeFilter(Long filterId, Long wordId) {
 		return Mono.justOrEmpty(filterRepository.findById(filterId))
 		.zipWith(Mono.justOrEmpty(descriptionRepository.findById(wordId))).map(tuple -> {
 			UserFilter filter = tuple.getT1();
 			DescriptionWord word = tuple.getT2();
-			if (filter.getNegativeDescriptions().removeIf(e -> e.getId().equals(word.getId()))) {
+			if (filter.getNegativeDescriptions().removeIf(e -> e.equals(word))) {
 				filterRepository.save(filter);
 				return ResponseEntity.ok().build();
 			}else

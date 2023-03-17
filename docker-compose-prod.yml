@@ -159,8 +159,8 @@ services:
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - "telegram.chat.token=$telegram_chat_token"
-       - mail.login=$mail_login
-       - mail.password=$mail_password
+       - "mail.login=$mail_login"
+       - "mail.password=$mail_password"
     depends_on:
       config:
         condition: service_healthy
@@ -171,8 +171,6 @@ services:
     ports:
       - "8017:8017"
     environment:
-       - "--spring.datasource.username=$database_user_login"
-       - "--spring.datasource.password=$database_user_password"
        - "SPRING_PROFILES_ACTIVE=prod"
     volumes:
        - "$parser_config_directory:/etc/parser/config"
@@ -190,8 +188,6 @@ services:
       - "8018:8018"
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
-       - "--spring.datasource.username=$database_user_login"
-       - "--spring.datasource.password=$database_user_password"
     depends_on:
       config:
         condition: service_healthy
