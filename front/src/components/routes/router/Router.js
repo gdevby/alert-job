@@ -2,11 +2,11 @@ import React from 'react'
 
 import { Routes, Route } from "react-router-dom";
 
-import HomePage from '../../pages/homePage/HomePage'
-import FiltersPage from '../../pages/filtersPage/FiltersPage'
-import NotificationsPage from '../../pages/notificationsPage/NotificationsPage'
-import AddFilterPage from '../../pages/addFilterPage/AddFilterPage'
-import ModulesPage from '../../pages/modulesPage/ModulesPage';
+import HomePage from '../../../pages/homePage/HomePage'
+import FiltersPage from '../../../pages/filtersPage/FiltersPage'
+import NotificationsPage from '../../../pages/notificationsPage/NotificationsPage'
+import AddFilterPage from '../../../pages/addFilterPage/AddFilterPage'
+import ModulesPage from '../../../pages/modulesPage/ModulesPage';
 
 
 
