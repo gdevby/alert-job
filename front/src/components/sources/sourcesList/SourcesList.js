@@ -17,8 +17,7 @@ import { sourceService } from '../../../services/parser/endponits/sourceService'
 
 const SourceList = ({ sources, setSources }) => {
 	const [items, setItems] = useState([])
-	const [isShowingSources, setIsShowingSources] = useState(window.localStorage.getItem('isShowingSources') == 'true')
-
+	const [isShowingSources, setIsShowingSources] = useState(window.localStorage.getItem('isShowingSources') == null? true : window.localStorage.getItem('isShowingSources') == 'true')
 	const { id } = useParams()
 
 	const deleteSource = source_id => {
@@ -32,6 +31,8 @@ const SourceList = ({ sources, setSources }) => {
 		console.log(isShowingSources)
 		setIsShowingSources(prev => !prev)
 	}
+	
+	
 
 	useEffect(() => {
 		window.localStorage.setItem('isShowingSources', isShowingSources)
