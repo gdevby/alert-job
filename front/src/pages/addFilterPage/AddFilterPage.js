@@ -105,6 +105,14 @@ const AddFilterPage = () => {
 			})
 	}
 
+	const updateFilter = (data) => {
+		filterService
+		.updateFilter(module_id, filter_id, {
+			...data,
+			activatedNegativeFilters: isShowNegativeFilters
+		})
+	}
+	
 	const addNewFilter = () => {
 		navigate(`/page/filters/${module_id}`)
 	}
@@ -115,7 +123,7 @@ const AddFilterPage = () => {
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
 
-			<AddFilterForm setFilterId={setFilterId} module_id={module_id} />
+			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter}/>
 
 			{filterId && <>
 				<Filters />

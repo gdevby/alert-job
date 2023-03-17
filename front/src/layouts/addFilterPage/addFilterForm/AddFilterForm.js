@@ -10,7 +10,7 @@ import { filterService } from '../../../services/parser/endponits/filterService'
 import { setCurrentFilter } from '../../../store/slices/filterSlice';
 
 
-const AddFilterForm = ({ setFilterId, module_id }) => {
+const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 	const [filterName, setFilterName] = useState('')
 	const [minPrice, setMinPrice] = useState('')
 	const [maxPrice, setMaxPrice] = useState('')
@@ -57,17 +57,14 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 			})
 	}
 
-	const updateFilter = (type) => {
+	const updateCurrentFilter = (type) => {
 		if (!isNew || isChoose || !isAdded) {
 			const data = {
-				name: type === 'name' ? filterName : null,
-				minValue: type === 'minPrice' ? minPrice : null,
-				maxValue: type === 'maxPrice' ? maxPrice : null,
-				activatedNegativeFilters: currentFilter.activatedNegativeFilters
+				name: filterName,
+				minValue: minPrice,
+				maxValue: maxPrice,
 			}
-			filterService
-				.updateFilter(module_id, currentFilter.id, data)
-				.then(console.log)
+			updateFilter(data)
 		}
 	}
 
@@ -88,17 +85,17 @@ const AddFilterForm = ({ setFilterId, module_id }) => {
 
 	return <div>
 		<Field
-			type={'text'} defaultValue={filterName} cb={setFilterName} onBlur={() => updateFilter('name')}
+			type={'text'} defaultValue={filterName} cb={setFilterName} onBlur={() => updateCurrentFilter('name')}
 			placeholder={'Введите название'} label={<label>Сначала введите название фильтра</label>} />
 		<div className='addFilter__button'>
 			{isAdded ? <Btn text={'Добавить фильтр'} onClick={addFilter} /> : ''}
 		</div>
 		{!isAdded && <div className='price_block'>
 			<Field
-				type={'number'} defaultValue={minPrice} cb={setMinPrice} onBlur={() => updateFilter('minPrice')}
+				type={'number'} defaultValue={minPrice} cb={setMinPrice} onBlur={() => updateCurrentFilter('minPrice')}
 				placeholder={'Минимальная цена'} label={<label>Минимальная цена, лучше выставить низкую цену, т.к. заказчики не знают цену и могут установить 1000руб за дорогой проект</label>} />
 			<Field
-				type={'number'} defaultValue={maxPrice} cb={setMaxPrice} onBlur={() => updateFilter('maxPrice')}
+				type={'number'} defaultValue={maxPrice} cb={setMaxPrice} onBlur={() => updateCurrentFilter('maxPrice')}
 				placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
 		</div>}
 
