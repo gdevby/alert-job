@@ -59,10 +59,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		users.forEach(user -> {
 			user.getOrderModules().stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
-				o.getSources().forEach(s -> {
+				o.getSources().forEach(s -> {	
 					List<String> list = orders.stream().peek(p -> {
 						statisticService.statisticTitleWord(p.getTitle());
-						statisticService.statisticDescriptionWord(p.getMessage());
 						statisticService.statisticTechnologyWord(p.getTechnologies());
 					}).filter(f -> compareSiteSources(f.getSourceSite(), s))
 							.filter(f -> isMatchUserFilter(f, o.getCurrentFilter()))
@@ -97,11 +96,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		boolean minValue = true, maxValue = true, containsTitle = true, containsTech = true, containsDesc = true;
 		StringBuilder sb = new StringBuilder("order comparing ");
 		if (Objects.nonNull(order.getPrice())) {
-			if (Objects.nonNull(userFilter.getMinValue())) {
 				minValue = userFilter.getMinValue() <= order.getPrice().getValue();
 				sb.append("min val ").append(minValue).append(" ");
-			}
-			if (Objects.nonNull(userFilter.getMaxValue())) {
+			if (userFilter.getMaxValue() != 0) {
 				maxValue = userFilter.getMaxValue() >= order.getPrice().getValue();
 				sb.append("max val ").append(minValue).append(" ");
 			}

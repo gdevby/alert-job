@@ -60,9 +60,10 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 	const updateCurrentFilter = (type) => {
 		if (!isNew || isChoose || !isAdded) {
 			const data = {
-				name: filterName,
-				minValue: minPrice,
-				maxValue: maxPrice,
+				//name: filterName,
+				name: type === 'name' ? filterName : null,
+				minValue: minPrice == '' ? 0 : minPrice,
+				maxValue: maxPrice == '' ? 0 : maxPrice,
 			}
 			updateFilter(data)
 		}
