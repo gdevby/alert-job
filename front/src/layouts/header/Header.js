@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth';
 
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -9,25 +10,18 @@ import Typography from '@mui/material/Typography';
 import Btn from '../../components/button/Button'
 import MobileMenu from '../../components/mobile/mobileMenu/MobileMenu';
 
-import { coreService } from '../../services/parser/endponits/coreService'
-
 import './header.scss'
 
 
+
 const Header = () => {
-	const [isAuth, setIsAuth] = useState(false)
+	const { isAuth } = useAuth()
 
 	const openLoginForm = () => {
 		window.open(`${window.location.origin}/oauth2/authorization/keycloak-spring-gateway-client`, '_parent')
 	}
 
 	const navigate = useNavigate()
-
-	useEffect(() => {
-		coreService.checkAuth1()
-			.then(r => setIsAuth(r.status == 200 || r.status == 201))
-			.catch(error => setIsAuth(false))
-	}, [])
 
 	return <AppBar component="nav" position='static'>
 		<Toolbar>
