@@ -58,35 +58,32 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
 	private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		users.forEach(user -> {
-				user.getOrderModules().stream()
-				.filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
-					o.getSources().forEach(s -> {
-						List<String> list = orders.stream().peek(p -> {
-							statisticService.statisticTitleWord(p.getTitle());
-							statisticService.statisticDescriptionWord(p.getMessage());
-							statisticService.statisticTechnologyWord(p.getTechnologies());
-						}).filter(f -> compareSiteSources(f.getSourceSite(), s))
-								.filter(f -> isMatchUserFilter(f, o.getCurrentFilter()))
-								.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
-								.collect(Collectors.toList());
-						String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
-								: "http://notification:8019/telegram";
-						if (!list.isEmpty()) {
-							UserNotification un = user.isDefaultSendType()
-									? new UserNotification(user.getEmail(), null)
-									: new UserNotification(String.valueOf(user.getTelegram()), null);
-							un.setMessage(list.stream().collect(Collectors.joining(", ")));
-							Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve()
-									.bodyToMono(Void.class);
-							mono.subscribe(
-									e -> log.debug("sent new order for user by mail: {}, to {}",
-											user.isDefaultSendType(), un.getToMail()),
-									e -> log.debug("failed to sent user's message by mail: {}, to {}",
-											user.isDefaultSendType(), un.getToMail()));
-						}
-					});
-
+			user.getOrderModules().stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
+				o.getSources().forEach(s -> {
+					List<String> list = orders.stream().peek(p -> {
+						statisticService.statisticTitleWord(p.getTitle());
+						statisticService.statisticDescriptionWord(p.getMessage());
+						statisticService.statisticTechnologyWord(p.getTechnologies());
+					}).filter(f -> compareSiteSources(f.getSourceSite(), s))
+							.filter(f -> isMatchUserFilter(f, o.getCurrentFilter()))
+							.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
+							.collect(Collectors.toList());
+					String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
+							: "http://notification:8019/telegram";
+					if (!list.isEmpty()) {
+						UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
+								: new UserNotification(String.valueOf(user.getTelegram()), null);
+						un.setMessage(list.stream().collect(Collectors.joining(", ")));
+						Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve()
+								.bodyToMono(Void.class);
+						mono.subscribe(
+								e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(),
+										un.getToMail()),
+								e -> log.debug("failed to sent user's message by mail: {}, to {}",
+										user.isDefaultSendType(), un.getToMail()));
+					}
 				});
+			});
 		});
 	}
 
@@ -112,26 +109,30 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
 			containsTitle = userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
 			sb.append("title ").append(containsTitle).append(" ");
-			if (containsTitle)
-				containsTitle = userFilter.getNegativeTitles().stream()
-						.anyMatch(e -> !order.getTitle().contains(e.getName()));
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getTechnologies())) {
 			containsTech = userFilter.getTechnologies().stream()
 					.anyMatch(e -> order.getTechnologies().contains(e.getName()));
-			if (containsTech)
-				containsTech = userFilter.getNegativeTechnologies().stream()
-				.anyMatch(e -> !order.getTechnologies().contains(e.getName()));
 			sb.append("tech ").append(containsTech).append(" ");
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
 			containsDesc = userFilter.getDescriptions().stream()
 					.anyMatch(e -> order.getMessage().contains(e.getName()));
-			if (containsDesc)
+			sb.append("desc ").append(containsDesc).append(" ");
+		}
+		
+		if (userFilter.isActivatedNegativeFilters()) {
+			if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions()) && containsDesc)
 				containsDesc = userFilter.getNegativeDescriptions().stream()
 						.anyMatch(e -> !order.getMessage().contains(e.getName()));
 			
-			sb.append("desc ").append(containsDesc).append(" ");
+			if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies()) && containsTech)
+				containsTech = userFilter.getNegativeTechnologies().stream()
+						.anyMatch(e -> !order.getTechnologies().contains(e.getName()));
+			
+			if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles()) && containsTitle) {
+				containsTitle = userFilter.getNegativeTitles().stream().anyMatch(e -> !order.getTitle().contains(e.getName()));
+			}
 		}
 		sb.append(order.getLink()).append(" ").append(order.getTitle());
 		log.debug(sb.toString());
