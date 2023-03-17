@@ -4,7 +4,6 @@ import DropDownList from '../../dropDownList/DropDowList'
 import Btn from '../../button/Button'
 
 import { parserService } from '../../../services/parser/endponits/parserService'
-import { sourceService } from '../../../services/parser/endponits/sourceService'
 
 import './sourcePanel.scss'
 
@@ -25,7 +24,6 @@ const SourcePanel = ({ addSource, module_id }) => {
 	}, [])
 
 	useEffect(() => {
-		console.log(currentSite)
 		if (currentSite.id) {
 			parserService
 				.getCategories(currentSite.id)
@@ -53,15 +51,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 	const addingSource = () => {
 		if (Number(currentSite.id) && Number(currentCat.id)) {
-			sourceService.addSource(module_id, {
-				siteSource: Number(currentSite.id),
-				siteCategory: Number(currentCat.id),
-				siteSubCategory: currentSubCat.id,
-				flRuForAll: false
-			}
-			).then(response => {
-				addSource({ currentSite, currentCat, currentSubCat, id: response.data.id })
-			})
+			addSource({ currentSite, currentCat, currentSubCat })
 		}
 	}
 
