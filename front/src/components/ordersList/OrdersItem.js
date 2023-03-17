@@ -1,4 +1,6 @@
 import React from 'react'
+
+import Moment from 'react-moment';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -6,14 +8,26 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const OrdersItem = ({ order }) => {
+	
+	const getDate = (date) => {
+		return  <Moment format="DD.MM.YYYY">
+			{date}
+		</Moment>
+	}
+	
 
 	return <Accordion>
 		<AccordionSummary
 			expandIcon={<ExpandMoreIcon />}
 			className='order__content'
 		>
-			<Typography sx={{ width: '33%', flexShrink: 0, wordBreak: 'break-word' }}>
-				{order.title}
+			<Typography sx={{ width: '33%', flexShrink: 0, wordBreak: 'break-word', display: 'flex', flexDirection: 'column' }} component='div'>
+				<Typography sx={{wordBreak: 'break-word' }} component='div'>
+					{order.title}
+				</Typography>
+				<Typography sx={{wordBreak: 'break-word' }} component='div'>
+					Дата: {getDate(order.dateTime)}
+				</Typography>
 			</Typography>
 			<Typography sx={{ width: '33%', flexShrink: 0, wordBreak: 'break-word' }}>
 				{order.technologies.join(',')}
