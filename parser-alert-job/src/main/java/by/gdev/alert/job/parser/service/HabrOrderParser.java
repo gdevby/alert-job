@@ -51,6 +51,7 @@ public class HabrOrderParser {
 
 	@Transactional
 	public List<OrderDTO> hubrParser() {
+		log.trace("parsed habr");
 		List<OrderDTO> orders = new ArrayList<>();
 //		// find elements from database with Hubr.ru name
 		SiteSourceJob siteSourceJob = siteSourceJobRepository.findByName("HABR");
