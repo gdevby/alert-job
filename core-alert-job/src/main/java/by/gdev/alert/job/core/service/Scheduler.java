@@ -47,8 +47,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		};
 		Flux<ServerSentEvent<List<OrderDTO>>> sseConection = webClient.get().uri("http://parser:8017/api/stream-sse")
 				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
-				.doOnSubscribe(s -> log.info("subscribed on orders"))
-				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(2)));
+				.doOnSubscribe(s -> log.info("trying subscribe"))
+				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(30)));
 		sseConection.subscribe(event -> {
 			log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
 			Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
