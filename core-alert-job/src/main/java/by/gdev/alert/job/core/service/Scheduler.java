@@ -122,18 +122,18 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			log.trace("some positive is true title {} desc {} tech {} {}",containsTitle , containsDesc , containsTech, order.getLink());
 			return true;
 		}else if (userFilter.isActivatedNegativeFilters()) {
-			if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions()) && containsDesc)
+			if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions()))
 				containsDesc1 = userFilter.getNegativeDescriptions().stream()
 						.anyMatch(e -> order.getMessage().contains(e.getName()));
 			
-			if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies()) && containsTech)
+			if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies()))
 				containsTech1 = userFilter.getNegativeTechnologies().stream()
 						.anyMatch(e -> order.getTechnologies().contains(e.getName()));
 			
-			if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles()) && containsTitle) {
+			if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles())) {
 				containsTitle1 = userFilter.getNegativeTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
 			}
-			log.trace("negative filter title {} desc {} tech {} {}",containsTitle , containsDesc , containsTech, order.getLink());
+			log.trace("negative filter title {} desc {} tech {} {}",containsTitle1, containsDesc1 , containsTech1, order.getLink());
 			return !(containsDesc1 || containsTech1 || containsTitle1); 
 		}else {
 			return false;
