@@ -93,46 +93,50 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
 
 	public boolean isMatchUserFilter(OrderDTO order, UserFilter userFilter) {
-		boolean minValue = true, maxValue = true, containsTitle = true, containsTech = true, containsDesc = true;
-		StringBuilder sb = new StringBuilder("order comparing ");
-		if (Objects.nonNull(order.getPrice())) {
+		boolean minValue = true, maxValue = true, containsTitle = false, containsTech = false, containsDesc = false,
+				containsTitle1 = false, containsTech1 = false, containsDesc1 = false;
+		if (Objects.nonNull(order.getPrice()) ) {
+			if(Objects.nonNull(userFilter.getMinValue()))
 				minValue = userFilter.getMinValue() <= order.getPrice().getValue();
-				sb.append("min val ").append(minValue).append(" ");
-			if (userFilter.getMaxValue() != 0) {
+			if (Objects.nonNull(userFilter.getMaxValue()) && userFilter.getMaxValue() != 0) {
 				maxValue = userFilter.getMaxValue() >= order.getPrice().getValue();
-				sb.append("max val ").append(minValue).append(" ");
+			}
+			if(!(minValue && maxValue)){
+				log.trace("ignore by min max {} {} {}",minValue,maxValue, order.getLink());
+				return false;
 			}
 		}
+		
 		if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
 			containsTitle = userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
-			sb.append("title ").append(containsTitle).append(" ");
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getTechnologies())) {
 			containsTech = userFilter.getTechnologies().stream()
 					.anyMatch(e -> order.getTechnologies().contains(e.getName()));
-			sb.append("tech ").append(containsTech).append(" ");
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
 			containsDesc = userFilter.getDescriptions().stream()
 					.anyMatch(e -> order.getMessage().contains(e.getName()));
-			sb.append("desc ").append(containsDesc).append(" ");
 		}
-		
-		if (userFilter.isActivatedNegativeFilters()) {
+		if(containsTitle || containsDesc || containsTech) {
+			log.trace("some positive is true title {} desc {} tech {} {}",containsTitle , containsDesc , containsTech, order.getLink());
+			return true;
+		}else if (userFilter.isActivatedNegativeFilters()) {
 			if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions()) && containsDesc)
-				containsDesc = userFilter.getNegativeDescriptions().stream()
-						.anyMatch(e -> !order.getMessage().contains(e.getName()));
+				containsDesc1 = userFilter.getNegativeDescriptions().stream()
+						.anyMatch(e -> order.getMessage().contains(e.getName()));
 			
 			if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies()) && containsTech)
-				containsTech = userFilter.getNegativeTechnologies().stream()
-						.anyMatch(e -> !order.getTechnologies().contains(e.getName()));
+				containsTech1 = userFilter.getNegativeTechnologies().stream()
+						.anyMatch(e -> order.getTechnologies().contains(e.getName()));
 			
 			if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles()) && containsTitle) {
-				containsTitle = userFilter.getNegativeTitles().stream().anyMatch(e -> !order.getTitle().contains(e.getName()));
+				containsTitle1 = userFilter.getNegativeTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
 			}
+			log.trace("negative filter title {} desc {} tech {} {}",containsTitle , containsDesc , containsTech, order.getLink());
+			return !(containsDesc1 || containsTech1 || containsTitle1); 
+		}else {
+			return false;
 		}
-		sb.append(order.getLink()).append(" ").append(order.getTitle());
-		log.debug(sb.toString());
-		return minValue && maxValue && containsTitle && containsDesc && containsTech;
 	}
 }
