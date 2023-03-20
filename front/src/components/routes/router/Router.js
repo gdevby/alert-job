@@ -12,7 +12,7 @@ const Router = () => {
 	const { isAuth } = useAuth()
 
 	return <Routes>
-		<Route path="/" element={<HomePage />} />
+		
 		{isAuth && <>
 			<Route path="/page/filters/:id" element={<FiltersPage />} />
 			<Route path="/page/modules" element={<ModulesPage />} />
@@ -20,7 +20,7 @@ const Router = () => {
 			<Route path="/page/adding-filter/:module_id" element={<AddFilterPage />} />
 			<Route path="/page/edit-filter/:module_id/:filter_id" element={<AddFilterPage />} />
 		</>}
-
+		<Route path="/" element={<HomePage />} />
 		<Route path="/index.html" element={<HomePage />} />
 		<Route path="*" element={<HomePage />} />
 	</Routes>
