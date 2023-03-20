@@ -14,9 +14,9 @@ public interface TechnologyWordRepository extends CrudRepository<TechnologyWord,
 	
 	Optional<TechnologyWord> findByName(String name);
 	
-	@Query("select t from TechnologyWord t where t.sourceSite IN :sourceSite or t.uuid =:uuid order by t.counter desc")
+	@Query("select t from TechnologyWord t where t.sourceSite.id IN :sourceSite or t.uuid =:uuid order by t.counter desc")
 	Page<TechnologyWord> findByNameAndSourceSiteInOrUuid(String uuid, Set<Long> sourceSite, Pageable p);
 	
-	@Query("select t from TechnologyWord t where (t.name = :name and t.sourceSite IN :sourceSite) or (t.name = :name and t.uuid =:uuid) order by t.counter desc")
+	@Query("select t from TechnologyWord t where (t.name = :name and t.sourceSite.id IN :sourceSite) or (t.name = :name and t.uuid =:uuid) order by t.counter desc")
 	Page<TechnologyWord> findByNameAndSourceSiteInOrNameAndUuid(String name, String uuid, Set<Long> sourceSite, Pageable p);
 }
