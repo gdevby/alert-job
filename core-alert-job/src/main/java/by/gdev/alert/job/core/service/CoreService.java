@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.service;
 
+import java.util.Comparator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -310,7 +311,8 @@ public class CoreService {
 				});
 		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-		 return source.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)));
+		return source.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)))
+				.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
 	}
 	
 	
