@@ -57,7 +57,7 @@ const TitleWords = ({ filter_id, type }) => {
 	const getWords = (text, currentPage = 0) => {
 		if (currentPage == 0 || totalCount != result.length) {
 			filterService
-				.getWords('title-word', text, currentPage, `?module_id=${module_id}`)
+				.getWords('title-word', text, currentPage, `&module_id=${module_id}`)
 				.then(response => {
 					setPage((prev) => prev + 1);
 					setTotalCount((prev) => response.data.totalElements);
