@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom'
 
-import Button from '../../button/Button'
+import Btn from '../../common/button/Button'
 import Words from '../word/Words'
-
+import ListItem from '../listItem/ListItem';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -183,22 +183,16 @@ const TitleWords = ({ filter_id, type }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list'>
-					{result && result.map(item => <div className='searchPopup__body-list__item'
-						id={item.id} key={item.name}
-						onClick={() => handleSelect(item)}>
-						<div>{item.name}</div>
-						<div>{item.counter}</div>
-					</div>
-					)}
+					{result && result.map(item => <ListItem key={item.name} onClick={handleSelect}/>)}
 				</div>
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={add} text={'Добавить'} variant='contained' />
+				<Btn onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
 		<div>
 			{type == '' ? <p>Уведомлять, если в названии содержится</p> : <p>Уведомлять, если в названии не содержится</p>}
-			<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+			<Btn text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />

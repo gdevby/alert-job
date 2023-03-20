@@ -2,9 +2,8 @@ import React from 'react'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
-import Btn from '../../button/Button'
-import Item from '../../item/Item'
-import SourceCard from '../../sourceCard/SourceCard'
+import Btn from '../../common/button/Button'
+import SourceCard from '../sourceCard/SourceCard'
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -17,7 +16,7 @@ import { sourceService } from '../../../services/parser/endponits/sourceService'
 
 const SourceList = ({ sources, setSources }) => {
 	const [items, setItems] = useState([])
-	const [isShowingSources, setIsShowingSources] = useState(window.localStorage.getItem('isShowingSources') == null? true : window.localStorage.getItem('isShowingSources') == 'true')
+	const [isShowingSources, setIsShowingSources] = useState(window.localStorage.getItem('isShowingSources') == null ? true : window.localStorage.getItem('isShowingSources') == 'true')
 	const { id } = useParams()
 
 	const deleteSource = source_id => {
@@ -31,8 +30,6 @@ const SourceList = ({ sources, setSources }) => {
 		console.log(isShowingSources)
 		setIsShowingSources(prev => !prev)
 	}
-	
-	
 
 	useEffect(() => {
 		window.localStorage.setItem('isShowingSources', isShowingSources)
@@ -42,40 +39,23 @@ const SourceList = ({ sources, setSources }) => {
 		setItems(sources)
 	}, [sources])
 
-	/*	return <>
-			<Btn onClick={handleshowingSources} text={isShowingSources ? 'Скрыть источники' : 'Показать источники'} variant='contained' />
-			<div className='sourceList'>
-			
-				{isShowingSources && <Items items={items} deleteSource={deleteSource} />}
-			</div>
-		</>*/
-
 	return <>
 		<Btn onClick={handleshowingSources} text={isShowingSources ? 'Скрыть источники' : 'Показать источники'} variant='contained' className='mt-1' />
-		{(isShowingSources && items.length > 0) && <TableContainer component={Paper} className='source-list'><Table sx={{ minWidth: 650 }} aria-label="simple table">
-			<TableHead>
-				<TableRow>
-					<TableCell>Сайт</TableCell>
-					<TableCell align="right">Категория</TableCell>
-					<TableCell align="right">Подкатегория</TableCell>
-				</TableRow>
-			</TableHead>
-			<TableBody>
-				{items.map((item, index) => <SourceCard key={index} removeCard={deleteSource} item={item} />)}
-			</TableBody>
-
-		</Table></TableContainer>}
+		{(isShowingSources && items.length > 0) &&
+			<TableContainer component={Paper} className='source-list'><Table sx={{ minWidth: 650 }} aria-label="simple table">
+				<TableHead>
+					<TableRow>
+						<TableCell>Сайт</TableCell>
+						<TableCell align="right">Категория</TableCell>
+						<TableCell align="right">Подкатегория</TableCell>
+					</TableRow>
+				</TableHead>
+				<TableBody>
+					{items.map((item, index) => <SourceCard key={index} removeCard={deleteSource} item={item} />)}
+				</TableBody>
+			</Table>
+			</TableContainer>}
 	</>
-}
-
-const Items = ({ items, deleteSource }) => {
-
-	return <>{
-		items.length > 0 && items.map((item, index) => {
-			return <Item key={index}><SourceCard removeCard={deleteSource} item={item} /></Item>
-		}
-		)
-	}</>
 }
 
 export default SourceList

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
 
-import DropDownList from '../../../components/dropDownList/DropDowList';
-import Btn from '../../../components/button/Button'
+import DropDownList from '../../../components/common/dropDownList/DropDowList';
+import Btn from '../../../components/common/button/Button'
 
 import { filterService } from '../../../services/parser/endponits/filterService'
 
@@ -17,7 +17,7 @@ const CurrentFilter = () => {
 
 	const dispatch = useDispatch()
 	const navigate = useNavigate()
-	
+
 	const { currentFilter, isChoose } = useSelector(state => state.filter)
 
 	useEffect(() => {
@@ -103,7 +103,6 @@ const CurrentFilter = () => {
 
 			})
 	}, [])
-
 
 	return <div className='current_filter'>
 		<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет фильтровать заказы.</div>

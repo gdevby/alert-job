@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux';
 
-import Button from '../../button/Button'
+import Btn from '../../common/button/Button'
 import Words from '../word/Words'
-
 import useDebounce from '../../../hooks/use-debounce'
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle'
+import ListItem from '../listItem/ListItem';
+
 import { filterService } from '../../../services/parser/endponits/filterService'
 
 const DescriptionWords = ({ filter_id, type }) => {
@@ -178,22 +178,16 @@ const DescriptionWords = ({ filter_id, type }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list' >
-					{result && result.map(item => <div className='searchPopup__body-list__item'
-						id={item.id} key={item.name}
-						onClick={() => handleSelect(item)}>
-						<div>{item.name}</div>
-						<div>{item.counter}</div>
-					</div>
-					)}
+					{result && result.map(item => <ListItem key={item.name} onClick={handleSelect}/>)}
 				</div>
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={add} text={'Добавить'} variant='contained' />
+				<Btn onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
 		<div>
 			{type == '' ? <p>Уведомлять, если описание содержит</p> : <p>Уведомлять, если описание не содержит</p>}
-			<Button text={'Добавить'} onClick={openSearch} variant='contained' />
+			<Btn text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>
 		<div className='addedWords'>
 			<Words items={words} remove={remove} />

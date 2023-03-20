@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
 
-import Title from '../../components/title/Title'
+import Title from '../../components/common/title/Title'
 import AddFilterForm from '../../layouts/addFilterPage/addFilterForm/AddFilterForm'
-import Btn from '../../components/button/Button'
+import Btn from '../../components/common/button/Button'
 import Filters from '../../layouts/addFilterPage/filters/Filter';
 
 import { filterService } from '../../services/parser/endponits/filterService';
@@ -12,7 +12,6 @@ import { filterService } from '../../services/parser/endponits/filterService';
 import { removeCurrentFilter, setIsNew, setCurrentFilter, setActivatedNegativeFilters } from '../../store/slices/filterSlice';
 
 import './addFilterPage.scss'
-
 
 const AddFilterPage = () => {
 	const [isOpenPopup, setIsOpenPopup] = useState(false)
@@ -97,22 +96,22 @@ const AddFilterPage = () => {
 
 	const showNegativeFilters = () => {
 		filterService
-			.updateFilter(module_id, filter_id, { activatedNegativeFilters: !isShowNegativeFilters})
+			.updateFilter(module_id, filter_id, { activatedNegativeFilters: !isShowNegativeFilters })
 			.then(console.log)
 			.finally(() => {
-				dispatch(setActivatedNegativeFilters({activatedNegativeFilters: !isShowNegativeFilters}))
+				dispatch(setActivatedNegativeFilters({ activatedNegativeFilters: !isShowNegativeFilters }))
 				setIsShowNegativeFilters(prev => !prev)
 			})
 	}
 
 	const updateFilter = (data) => {
 		filterService
-		.updateFilter(module_id, filter_id, {
-			...data,
-			activatedNegativeFilters: isShowNegativeFilters
-		})
+			.updateFilter(module_id, filter_id, {
+				...data,
+				activatedNegativeFilters: isShowNegativeFilters
+			})
 	}
-	
+
 	const addNewFilter = () => {
 		navigate(`/page/filters/${module_id}`)
 	}
@@ -123,7 +122,7 @@ const AddFilterPage = () => {
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
 
-			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter}/>
+			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter} />
 
 			{filterId && <>
 				<Filters />
@@ -135,11 +134,7 @@ const AddFilterPage = () => {
 					<Btn text={'Сохранить'} onClick={addNewFilter} variant='contained' />
 				</div>
 			</>
-
 			}
-
-
-
 		</div>
 	</div>
 }

@@ -1,7 +1,5 @@
 import React from 'react'
-import { AiOutlineClose } from "react-icons/ai";
 
-import Btn from '../button/Button';
 import ListItem from '@mui/material/ListItem';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import EditIcon from '@mui/icons-material/Edit';
@@ -12,20 +10,9 @@ import './moduleCard.scss'
 
 const ModuleCard = ({ item, removeCard, openModule }) => {
 
-
-
 	const deleteModule = () => {
 		removeCard(item.id)
 	}
-	/*<div className='modules__item_remove' onClick={() => deleteModule(item.id)}>
-				<AiOutlineClose />
-			</div>
-			<Btn className='modules__item_open-module' onClick={() => openModule(item.id)} text={'Открыть модуль'} />
-				<Btn className='modules__item_open-module' color={'error'} onClick={() => deleteModule(item.id)} text={'Удалить'} />
-			
-			*/
-
-
 
 	return <ListItem disablePadding className='modules__item-box'>
 		<div className='modules__item' key={item.id}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import useDebounce from '../../hooks/use-debounce'
+import useDebounce from '../../../hooks/use-debounce'
 
 import './searchPopup.scss'
 
@@ -40,14 +40,7 @@ const SearchPopup = ({isOpen = false, onChange, close, elements = [], adding}) =
 	
 	useEffect(() => {
 		if (debouncedSearchTerm) {
-        // Выставить состояние isSearching
-        // Сделать запрос к АПИ
-       // searchCharacters(debouncedSearchTerm).then(results => {
-          // Выставить состояние в false, так-как запрос завершен
-         // setIsSearching(false);
-          // Выставит состояние с результатом
-          //setResults(results);
-      //  });
+
       } else {
         setResult([]);
       }

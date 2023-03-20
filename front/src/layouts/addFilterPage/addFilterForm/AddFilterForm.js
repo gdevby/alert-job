@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 
-import Field from '../../../components/field/Field'
-import Btn from '../../../components/button/Button'
+import Field from '../../../components/common/field/Field'
+import Btn from '../../../components/common/button/Button'
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -50,7 +50,6 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 					.finally(() => {
 						navigate(`/page/edit-filter/${module_id}/${id}`)
 					})
-
 			})
 			.finally((response) => {
 				setIsAdded(false)
@@ -60,7 +59,6 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 	const updateCurrentFilter = (type) => {
 		if (!isNew || isChoose || !isAdded) {
 			const data = {
-				//name: filterName,
 				name: type === 'name' ? filterName : null,
 				minValue: minPrice == '' ? 0 : minPrice,
 				maxValue: maxPrice == '' ? 0 : maxPrice,
@@ -80,9 +78,6 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 	useEffect(() => {
 		setIsAdded(isNew)
 	}, [isNew])
-
-
-
 
 	return <div>
 		<Field

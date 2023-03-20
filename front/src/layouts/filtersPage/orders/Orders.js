@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 
-import OrdersList from '../../../components/ordersList/OrdersList'
-import Btn from '../../../components/button/Button'
+import OrdersList from '../../../components/orders/ordersList/OrdersList'
+import Btn from '../../../components/common/button/Button'
 import CircularProgress from '@mui/material/CircularProgress';
 import ReplayIcon from '@mui/icons-material/Replay';
 

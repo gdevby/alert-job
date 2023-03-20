@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 
-import seacrh_image from '../../images/instructionForTg/seacrh_image.jpg'
-import seacrhed from '../../images/instructionForTg/seacrhed.jpg'
-import start from '../../images/instructionForTg/start.jpg'
-import alertBot from '../../images/instructionForTg/alert-bot.jpg'
+import start from '../../../images/instructionForTg/start.jpg'
+import alertBot from '../../../images/instructionForTg/alert-bot.jpg'
 
 import './instructionForTg.scss'
 
@@ -28,8 +26,7 @@ const InstructionForTg = () => {
 				</li>
 			</ol>
 		</div>
-		
 	</div>
 }
 
-export default InstructionForTg
+export default InstructionForTg;

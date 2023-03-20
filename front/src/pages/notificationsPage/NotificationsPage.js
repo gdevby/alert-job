@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 
-import Title from '../../components/title/Title'
-import Field from '../../components/field/Field'
-import DropDownList from '../../components/dropDownList/DropDowList'
-import Button from '../../components/button/Button'
-import InstructionForTg from '../../components/instructionForTg/InstructionForTg'
+import Title from '../../components/common/title/Title'
+import Field from '../../components/common/field/Field'
+import DropDownList from '../../components/common/dropDownList/DropDowList'
+import Button from '../../components/common/button/Button'
+import InstructionForTg from '../../components/notification/instructionForTg/InstructionForTg'
 import Switch from '@mui/material/Switch';
 
 import { coreService } from '../../services/parser/endponits/coreService'
@@ -17,7 +17,6 @@ const NotificationsPage = () => {
 	const [alertStatus, setAlertStatus] = useState(false)
 	const [alertType, setAlertType] = useState('')
 	const [telegramId, setTelegramId] = useState('')
-
 
 	const sendTestNotification = () => {
 		coreService.sendTestMessage().then(console.log)
@@ -40,7 +39,6 @@ const NotificationsPage = () => {
 
 	}
 
-
 	useEffect(() => {
 		coreService.getStatue().then(response => setAlertStatus(response.data))
 		coreService.getAlertType().then(response => {
@@ -57,7 +55,6 @@ const NotificationsPage = () => {
 		setAlertType(text)
 		setTelegramId(text)
 	}
-
 
 	return <div className='notification_page'>
 		<div className='container'>

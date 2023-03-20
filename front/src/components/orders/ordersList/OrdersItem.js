@@ -8,13 +8,12 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const OrdersItem = ({ order }) => {
-	
+
 	const getDate = (date) => {
-		return  <Moment format="HH:MM DD.MM.YYYY">
+		return <Moment format="HH:MM DD.MM.YYYY">
 			{date}
 		</Moment>
 	}
-	
 
 	return <Accordion>
 		<AccordionSummary
@@ -22,10 +21,10 @@ const OrdersItem = ({ order }) => {
 			className='order__content'
 		>
 			<Typography sx={{ width: '33%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
-				<Typography sx={{wordBreak: 'break-word' }} component='div'>
+				<Typography sx={{ wordBreak: 'break-word' }} component='div'>
 					{order.title}
 				</Typography>
-				<Typography sx={{wordBreak: 'break-word', userSelect: 'text' }} component='div'>
+				<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 					Дата: {getDate(order.dateTime)}
 				</Typography>
 			</Typography>

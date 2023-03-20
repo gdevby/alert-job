@@ -7,14 +7,14 @@ import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
 
-const MobileMenu = ({isAuth, openLoginForm}) => {
+const MobileMenu = ({ isAuth, openLoginForm }) => {
 	const [anchorElNav, setAnchorElNav] = useState(null);
 	const [anchorElUser, setAnchorElUser] = useState(null);
 
 	const handleOpenNavMenu = (event) => {
 		setAnchorElNav(event.currentTarget);
 	};
-	
+
 	const handleOpenUserMenu = (event) => {
 		setAnchorElUser(event.currentTarget);
 	};
@@ -61,7 +61,7 @@ const MobileMenu = ({isAuth, openLoginForm}) => {
 			</MenuItem>
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/modules'>Модули</Link></MenuItem>}
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/notifications'>Уведомления</Link></MenuItem>}
-			{!isAuth && <MenuItem onClick={openLoginForm}><span>Регистрация и <br /> Авторизация</span></MenuItem>}  
+			{!isAuth && <MenuItem onClick={openLoginForm}><span>Регистрация и <br /> Авторизация</span></MenuItem>}
 		</Menu>
 	</Box>
 

@@ -1,20 +1,25 @@
 .instruction {
 	margin-top: 1rem;
 	font-size: 18px;
+
 	&__list {
 		padding-left: 1rem;
+
 		& li {
 			margin-top: .5rem;
 			font-size: 18px;
+
 			& img {
 				width: 40%;
 			}
 		}
+
 		& img {
 			margin-top: 1rem;
 			margin-bottom: 1rem;
 		}
 	}
+
 	&__list-block {
 		margin-top: 1rem;
 	}

@@ -1,7 +1,6 @@
 import React from 'react'
 
-
-import Title from '../../components/title/Title'
+import Title from '../../components/common/title/Title'
 
 const HomePage = () => {
 	return <div className='container'>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 
-
 import './field.scss'
 
 const Field = ({ defaultValue, type, placeholder, cb, onBlur = () => { }, label = undefined }) => {

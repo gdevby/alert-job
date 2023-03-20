@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
-import DropDownList from '../../dropDownList/DropDowList'
-import Btn from '../../button/Button'
+import DropDownList from '../../common/dropDownList/DropDowList'
+import Btn from '../../common/button/Button'
 
 import { parserService } from '../../../services/parser/endponits/parserService'
 

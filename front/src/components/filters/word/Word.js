@@ -6,11 +6,9 @@ const Word = ({ item, remove }) => {
 		remove(item.id)
 	}
 
-	//<Button text={'удалить'} onClick={removeItem}/> 
-
 	return <div className='word'>
 		<div className='word__name'>{item.name}</div>
-		<div className='word__remove' onClick={removeItem} ><AiOutlineClose/></div>
+		<div className='word__remove' onClick={removeItem} ><AiOutlineClose /></div>
 	</div>
 }
 

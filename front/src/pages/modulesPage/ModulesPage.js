@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from "react-router-dom";
 
-import { moduleService } from '../../services/parser/endponits/moduleService'
-
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
-import ModuleCard from '../../components/moduleCard/ModuleCard';
-import Btn from '../../components/button/Button';
+import ModuleCard from '../../components/modules/moduleCard/ModuleCard';
+import Btn from '../../components/common/button/Button';
 import List from '@mui/material/List';
-import Item from '../../components/item/Item'
+import Item from '../../components/common/item/Item'
 import Alert from '../../components/common/alert/Alert'
+
+import { moduleService } from '../../services/parser/endponits/moduleService'
 
 import './modulesPage.scss'
 
@@ -60,13 +60,11 @@ const ModulesPage = () => {
 	const changeModuleName = (e) => {
 		setModuleName(e.target.value)
 	}
-	
+
 	const showAlert = () => {
 		setIsShowAlert(true)
 		setTimeout(() => setIsShowAlert(false), 2000)
 	}
-
-
 
 	return <div className='modules'>
 		<div className='container'>
@@ -77,10 +75,9 @@ const ModulesPage = () => {
 				<TextField id="standard-basic" label="Введите название модуля" variant="standard" placeholder='Название модуля' onChange={changeModuleName} />
 				<div className='modules__add-module-btn'>
 					<Btn text={'Добавить модуль'} onClick={addModule} />
-
 				</div>
 			</div>
-			<Alert open={isShowAlert} type={'warning'} content={'Модуль с таким именем уже существует.'}/>
+			<Alert open={isShowAlert} type={'warning'} content={'Модуль с таким именем уже существует.'} />
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
 					removeCard={deleteModule}
@@ -88,7 +85,6 @@ const ModulesPage = () => {
 				/></Item>)}
 			</List>}
 		</div>
-
 	</div>
 }
 
