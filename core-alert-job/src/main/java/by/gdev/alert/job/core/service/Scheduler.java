@@ -61,8 +61,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			user.getOrderModules().stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
 				o.getSources().forEach(s -> {	
 					List<String> list = orders.stream().peek(p -> {
-						statisticService.statisticTitleWord(p.getTitle());
-						statisticService.statisticTechnologyWord(p.getTechnologies());
+						statisticService.statisticTitleWord(p.getTitle(), p.getSourceSite());
+						statisticService.statisticTechnologyWord(p.getTechnologies(), p.getSourceSite());
 					}).filter(f -> compareSiteSources(f.getSourceSite(), s))
 							.filter(f -> isMatchUserFilter(f, o.getCurrentFilter()))
 							.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
@@ -106,7 +106,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				return false;
 			}
 		}
-		
+		if (CollectionUtils.isEmpty(userFilter.getTitles()) && CollectionUtils.isEmpty(userFilter.getDescriptions())
+				&& CollectionUtils.isEmpty(userFilter.getTechnologies()))
+			return true;
 		if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
 			containsTitle = userFilter.getTitles().stream().anyMatch(e -> order.getTitle().contains(e.getName()));
 		}

@@ -7,50 +7,58 @@ import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 
+import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
 import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
+import by.gdev.alert.job.core.repository.SourceSiteRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
+import by.gdev.common.exeption.ResourceNotFoundException;
+import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class StatisticService {
-	
+
 	private static final String REGX = "[^A-Za-zА-Яа-я]+";
-	
+
 	private final TitleWordRepository titleRepository;
 	private final DescriptionWordRepository descriptionRepository;
 	private final TechnologyWordRepository technologyRepository;
-	
-	public void statisticTitleWord(String title) {
+
+	private final SourceSiteRepository sourceSiteRepository;
+
+	public void statisticTitleWord(String title, SourceSiteDTO sourceSite) {
+		SourceSite site = findSourceSite(sourceSite);
 		Stream.of(title.split(REGX)).map(String::toLowerCase).forEach(e -> {
-			Optional<TitleWord> titleWord = titleRepository.findByName(e);
+			Optional<TitleWord> titleWord = titleRepository.findByNameAndSourceSite(e, site);
 			if (titleWord.isPresent()) {
 				TitleWord tw = titleWord.get();
-				Long counter = tw.getCounter() +1L;
+				Long counter = tw.getCounter() + 1L;
 				tw.setCounter(counter);
 				titleRepository.save(tw);
-			}else {
+			} else {
 				TitleWord tw = new TitleWord();
 				tw.setCounter(1L);
 				tw.setName(e);
+				tw.setSourceSite(site);
 				titleRepository.save(tw);
 			}
 		});
 	}
-	
+
 	public void statisticDescriptionWord(String description) {
 		Stream.of(description.split(REGX)).map(String::toLowerCase).forEach(e -> {
 			Optional<DescriptionWord> descriptionWord = descriptionRepository.findByName(e);
 			if (descriptionWord.isPresent()) {
 				DescriptionWord dw = descriptionWord.get();
-				Long counter = dw.getCounter() +1L;
+				Long counter = dw.getCounter() + 1L;
 				dw.setCounter(counter);
 				descriptionRepository.save(dw);
-			}else {
+			} else {
 				DescriptionWord dw = new DescriptionWord();
 				dw.setCounter(1L);
 				dw.setName(e);
@@ -58,23 +66,32 @@ public class StatisticService {
 			}
 		});
 	}
-	
-	public void statisticTechnologyWord(List<String> technologies) {
-		if(Objects.isNull(technologies))
+
+	public void statisticTechnologyWord(List<String> technologies, SourceSiteDTO sourceSite) {
+		if (Objects.isNull(technologies))
 			return;
+		SourceSite site = findSourceSite(sourceSite);
 		technologies.forEach(e -> {
 			Optional<TechnologyWord> technoWord = technologyRepository.findByName(e);
 			if (technoWord.isPresent()) {
 				TechnologyWord tw = technoWord.get();
-				Long counter = tw.getCounter() +1L;
+				Long counter = tw.getCounter() + 1L;
 				tw.setCounter(counter);
 				technologyRepository.save(tw);
-			}else {
+			} else {
 				TechnologyWord tw = new TechnologyWord();
 				tw.setCounter(1L);
 				tw.setName(e);
+				tw.setSourceSite(site);
 				technologyRepository.save(tw);
 			}
 		});
+	}
+
+	private SourceSite findSourceSite(SourceSiteDTO sourceSite) {
+		return sourceSiteRepository
+				.findBySource(sourceSite.getSource(), sourceSite.getCategory(), sourceSite.getSubCategory())
+				.orElseThrow(() -> new ResourceNotFoundException(String.format("dont found source by  %s %s %s",
+						sourceSite.getSource(), sourceSite.getCategory(), sourceSite.getSubCategory())));
 	}
 }
