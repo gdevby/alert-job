@@ -6,7 +6,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const plugins = [
 	new MiniCssExtractPlugin({
 		filename: '[name].css'
-	}),
+	})
 ];
 
 module.exports = {
@@ -18,7 +18,14 @@ module.exports = {
 	},
 	module: {
 		rules: [
-			{ test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" },
+			{
+				test: /\.js$/, exclude: /node_modules/, use: {
+					loader: 'babel-loader',
+					options: {
+						cacheDirectory: true,
+					},
+				},
+			},
 			{
 				test: /\.(s[ac]|c)ss$/i,
 				use: [
@@ -29,15 +36,10 @@ module.exports = {
 				],
 			},
 			{
-                exclude: "/node_modules/",
-                test: /\.jpg$/,
-                use: ['file-loader'],
-            },
+				exclude: "/node_modules/",
+				test: /\.jpg$/,
+				use: ['file-loader'],
+			}
 		]
 	},
-	watch: true,
-	watchOptions: {
-		aggregateTimeout: 500,
-		poll: 1000
-	}
 }
