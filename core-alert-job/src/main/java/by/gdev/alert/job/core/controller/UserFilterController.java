@@ -36,25 +36,31 @@ public class UserFilterController {
 	
 	
 	@GetMapping("user/title-word")
-	public ResponseEntity<Mono<Page<WordDTO>>> getTitleWords(@RequestParam(name = "name", required = false) String name,
+	public ResponseEntity<Mono<Page<WordDTO>>> getTitleWords(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestParam("module_id") Long moduleId, @RequestParam(name = "name", required = false) String name,
 			@RequestParam("page") Integer page) {
-		return ResponseEntity.ok(filterService.showTitleWords(name, page));
+		return ResponseEntity.ok(filterService.showTitleWords(moduleId, uuid, name, page));
 	}
+	
 
 	@PostMapping("user/title-word")
-	public Mono<ResponseEntity<WordDTO>> createTitleWord(@RequestBody @Valid KeyWord keyWord) {
-		return filterService.addTitleWord(keyWord);
+	public Mono<ResponseEntity<WordDTO>> createTitleWord(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestBody @Valid KeyWord keyWord) {
+		return filterService.addTitleWord(keyWord, uuid);
 	}
 
 	@GetMapping("user/technology-word")
 	public ResponseEntity<Mono<Page<WordDTO>>> getTechnologyWords(
-			@RequestParam(name = "name", required = false) String name, @RequestParam("page") Integer page) {
-		return ResponseEntity.ok(filterService.showTechnologyWords(name, page));
+			@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestParam("module_id") Long moduleId, @RequestParam(name = "name", required = false) String name,
+			@RequestParam("page") Integer page) {
+		return ResponseEntity.ok(filterService.showTechnologyWords(moduleId, uuid, name, page));
 	}
 
 	@PostMapping("user/technology-word")
-	public Mono<ResponseEntity<WordDTO>> createTechnologyWord(@RequestBody @Valid KeyWord keyWord) {
-		return filterService.addTechnologyWord(keyWord);
+	public Mono<ResponseEntity<WordDTO>> createTechnologyWord(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+			@RequestBody @Valid KeyWord keyWord) {
+		return filterService.addTechnologyWord(keyWord, uuid);
 	}
 
 	@GetMapping("user/description-word")
@@ -69,37 +75,37 @@ public class UserFilterController {
 	}
 	
 	@GetMapping("user/module/{module_id}/filter")
-	public ResponseEntity<Flux<FilterDTO>> getUserFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
+	public ResponseEntity<Flux<FilterDTO>> getUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("module_id") Long moduleId) {
 		return ResponseEntity.ok(filterService.showUserFilters(uuid, moduleId));
 	}
 
 	@PostMapping("user/module/{module_id}/filter")
-	public ResponseEntity<Mono<FilterDTO>> addUserFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
+	public ResponseEntity<Mono<FilterDTO>> addUserFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("module_id") Long id, @RequestBody Filter filter) {
 		return ResponseEntity.ok(filterService.createUserFilter(uuid, id, filter));
 	}
 
 	@DeleteMapping("user/module/{id}/filter/{filter_id}")
-	public Mono<ResponseEntity<Void>> deleteFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
+	public Mono<ResponseEntity<Void>> deleteFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId) {
 		return filterService.removeUserFilter(uuid, moduleId, filterId);
 	}
 
 	@PostMapping("user/module/{id}/current-filter/{filter_id}")
-	public ResponseEntity<Mono<FilterDTO>> setCurrentFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
+	public ResponseEntity<Mono<FilterDTO>> setCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId) {
 		return ResponseEntity.ok(filterService.replaceCurrentFilter(uuid, moduleId, filterId));
 	}
 
 	@GetMapping("user/module/{id}/current-filter")
-	public ResponseEntity<Mono<FilterDTO>> getCurrentFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
+	public ResponseEntity<Mono<FilterDTO>> getCurrentFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long moduleId) {
 		return ResponseEntity.ok(filterService.showUserCurrentFilter(uuid, moduleId));
 	}
 
 	@PatchMapping("user/module/{id}/filter/{filter_id}")
-	public ResponseEntity<Mono<FilterDTO>> changeFilter(@RequestHeader(name = HeaderName.UUID_USER_HEADER, defaultValue = "eba609a4-4a9c-4f9d-a6bb-624a1c47df1c") String uuid,
+	public ResponseEntity<Mono<FilterDTO>> changeFilter(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 			@PathVariable("id") Long moduleId, @PathVariable("filter_id") Long filterId, @RequestBody Filter filter) {
 		return ResponseEntity.ok(filterService.updateFilter(uuid, moduleId, filterId, filter));
 	}

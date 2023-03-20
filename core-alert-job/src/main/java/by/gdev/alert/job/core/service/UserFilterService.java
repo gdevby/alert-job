@@ -2,7 +2,9 @@ package by.gdev.alert.job.core.service;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -47,16 +49,20 @@ public class UserFilterService {
 	
 	private final ModelMapper mapper;
 	
-	public Mono<Page<WordDTO>> showTitleWords(String name, Integer page) {
+	public Mono<Page<WordDTO>> showTitleWords(Long moduleId, String uuid, String name, Integer page) {
 		return Mono.defer(() -> {
+			OrderModules om = modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("not found module with id " + moduleId));
 			PageRequest p = PageRequest.of(page, 10);
-			Function<TitleWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
-			return StringUtils.isEmpty(name) ? Mono.just(titleRepository.findAllByOrderByCounterDesc(p).map(func))
-					: Mono.just(titleRepository.findByNameIsStartingWith(name, p).map(func));
+			Set<Long> sources = om.getSources().stream().map(e -> e.getId()).collect(Collectors.toSet());
+			return StringUtils.isEmpty(name)
+					? Mono.just(titleRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p).map(keyWordsToDTO()))
+					: Mono.just(titleRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p)
+							.map(keyWordsToDTO()));
 		});
 	}
 	
-	public Mono<ResponseEntity<WordDTO>> addTitleWord(KeyWord keyWord){
+	public Mono<ResponseEntity<WordDTO>> addTitleWord(KeyWord keyWord, String uuid){
 		return Mono.create(m -> {
 			Optional<TitleWord> t = titleRepository.findByName(keyWord.getName());
 			if (t.isPresent()) {
@@ -64,22 +70,27 @@ public class UserFilterService {
 			}else {
 				TitleWord titleWord = new TitleWord();
 				titleWord.setName(keyWord.getName());
+				titleWord.setUuid(uuid);
 				titleWord = titleRepository.save(titleWord);
 				m.success(ResponseEntity.ok(mapper.map(titleWord, WordDTO.class)));
 			}
 		});
 	}
 	
-	public Mono<Page<WordDTO>> showTechnologyWords(String name, Integer page) {
+	public Mono<Page<WordDTO>> showTechnologyWords(Long moduleId, String uuid, String name, Integer page) {
 		return Mono.defer(() -> {
+			OrderModules om = modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("not found module with id " + moduleId));
 			PageRequest p = PageRequest.of(page, 10);
-			Function<TechnologyWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
-			return StringUtils.isEmpty(name) ? Mono.just(technologyRepository.findAllByOrderByCounterDesc(p).map(func))
-					: Mono.just(technologyRepository.findByNameIsStartingWith(name, p).map(func));
+			Set<Long> sources = om.getSources().stream().map(e -> e.getId()).collect(Collectors.toSet());
+			return StringUtils.isEmpty(name)
+					? Mono.just(technologyRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p).map(keyWordsToDTO()))
+					: Mono.just(technologyRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p)
+							.map(keyWordsToDTO()));
 		});
 	}
 	
-	public Mono<ResponseEntity<WordDTO>> addTechnologyWord(KeyWord keyWord){
+	public Mono<ResponseEntity<WordDTO>> addTechnologyWord(KeyWord keyWord, String uuid){
 		return Mono.create(m -> {
 			Optional<TechnologyWord> t = technologyRepository.findByName(keyWord.getName());
 			if (t.isPresent()) {
@@ -87,6 +98,7 @@ public class UserFilterService {
 			}else {
 				TechnologyWord technologyWordWord = new TechnologyWord();
 				technologyWordWord.setName(keyWord.getName());
+				technologyWordWord.setUuid(uuid);
 				technologyWordWord = technologyRepository.save(technologyWordWord);
 				m.success(ResponseEntity.ok(mapper.map(technologyWordWord, WordDTO.class)));
 			}
@@ -372,4 +384,9 @@ public class UserFilterService {
 				return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 		});
 	}
+	
+	
+	private <T> Function<T, WordDTO> keyWordsToDTO(){
+		return word -> mapper.map(word, WordDTO.class);
+	};
 }
