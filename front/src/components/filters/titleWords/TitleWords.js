@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom'
 
 import Button from '../../button/Button'
 import Words from '../word/Words'
@@ -23,6 +24,8 @@ const TitleWords = ({ filter_id, type }) => {
 	const [isFetching, setIsFetching] = useState(true)
 	const [totalCount, setTotalCount] = useState(0)
 
+	const { module_id } = useParams()
+	
 	const listRef = React.createRef()
 
 	const debouncedSearchTerm = useDebounce(selectValue, 1000)
@@ -54,7 +57,7 @@ const TitleWords = ({ filter_id, type }) => {
 	const getWords = (text, currentPage = 0) => {
 		if (currentPage == 0 || totalCount != result.length) {
 			filterService
-				.getWords('title-word', text, currentPage)
+				.getWords('title-word', text, currentPage, `?module_id=${module_id}`)
 				.then(response => {
 					setPage((prev) => prev + 1);
 					setTotalCount((prev) => response.data.totalElements);

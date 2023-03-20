@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom'
 
 import Button from '../../button/Button'
 import Words from '../word/Words'
@@ -8,7 +9,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle'
-
 
 import useDebounce from '../../../hooks/use-debounce'
 
@@ -24,6 +24,8 @@ const TechnologyWords = ({ filter_id, type }) => {
 	const [searchedWords, setSearchedWords] = useState([])
 	const [isFetching, setIsFetching] = useState(true)
 	const [totalCount, setTotalCount] = useState(0)
+
+	const { module_id } = useParams()
 
 	const listRef = React.createRef()
 
@@ -57,7 +59,7 @@ const TechnologyWords = ({ filter_id, type }) => {
 	const getWords = (text, currentPage = 0) => {
 		if (currentPage == 0 || totalCount != result.length) {
 			filterService
-				.getWords('technology-word', text, currentPage)
+				.getWords('technology-word', text, currentPage, `?module_id=${module_id}`)
 				.then(response => {
 					setPage((prev) => prev + 1);
 					setTotalCount((prev) => response.data.totalElements);
