@@ -292,9 +292,9 @@ public class CoreService {
 				});
 		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-		 return source.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)));
+		 return source.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)))
+				 .sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
 	}
-	
 	
 	public Flux<OrderDTO> showFalseFilterOrders(String uuid, Long moduleId) {
 		Mono<OrderModules> modules = Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
@@ -312,9 +312,8 @@ public class CoreService {
 		Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 				NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		return source.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)))
-				.sort(Comparator.comparing(OrderDTO::getDateTime));
+				.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
 	}
-	
 	
 	private Mono<Void> changeParserSubcribe(Long category, Long subcategory, boolean cValue, boolean sValue) {
 		return webClient.patch().uri("http://parser:8017/api/subscribe/sources", b -> {
