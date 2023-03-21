@@ -11,15 +11,16 @@ import org.springframework.data.repository.CrudRepository;
 import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
 
-public interface TitleWordRepository extends CrudRepository<TitleWord, Long>{
-	
-	Optional<TitleWord> findByName(String name);
-	
-	Optional<TitleWord> findByNameAndSourceSite(String name, SourceSite sourceSite);
-	
-	@Query("select t from TitleWord t where t.sourceSite.id IN :sourceSite or t.uuid =:uuid order by t.counter desc")
-	Page<TitleWord> findByNameAndSourceSiteInOrUuid(String uuid, Set<Long> sourceSite, Pageable p);
-	
-	@Query("select t from TitleWord t where (t.name = :name and t.sourceSite.id IN :sourceSite) or (t.name = :name and t.uuid =:uuid) order by t.counter desc")
-	Page<TitleWord> findByNameAndSourceSiteInOrNameAndUuid(String name, String uuid, Set<Long> sourceSite, Pageable p);
+public interface TitleWordRepository extends CrudRepository<TitleWord, Long> {
+
+    Optional<TitleWord> findByName(String name);
+
+    Optional<TitleWord> findByNameAndSourceSite(String name, SourceSite sourceSite);
+
+    @Query("select t from TitleWord t where t.sourceSite.id IN :sourceSite or t.uuid =:uuid order by t.counter desc")
+    Page<TitleWord> findByNameAndSourceSiteInOrUuid(String uuid, Set<Long> sourceSite, Pageable p);
+
+    @Query("select t from TitleWord t where (t.name like %:name% and t.sourceSite.id IN :sourceSite) or (t.name like %:name% and t.uuid =:uuid) order by t.counter desc")
+    Page<TitleWord> findByNameAndSourceSiteInOrNameAndUuid(String name, String uuid, Set<Long> sourceSite, Pageable p);
+
 }
