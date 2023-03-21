@@ -13,6 +13,7 @@ services:
       - URL=aj.gdev.by
       - VALIDATION=http
       - EXTRA_DOMAINS=auth.gdev.by
+      - TZ=Europe/Moscow
     volumes:
       - $swag_config_directory:/config
       - $front_directory:/etc/alert-job-front
@@ -33,6 +34,7 @@ services:
       - MYSQL_PASSWORD=$database_user_password
       - MYSQL_USER=$database_user_login
       - MYSQL_DATABASE=keycloak
+      - TZ=Europe/Moscow
   dbcore:
     image: mariadb:10.9.4-jammy
     volumes:
@@ -42,6 +44,7 @@ services:
       - MYSQL_PASSWORD=$database_user_password
       - MYSQL_USER=$database_user_login
       - MYSQL_DATABASE=core_db
+      - TZ=Europe/Moscow
   dbparser:
     image: mariadb:10.9.4-jammy
     volumes:
@@ -51,6 +54,7 @@ services:
       - MYSQL_PASSWORD=$database_user_password
       - MYSQL_USER=$database_user_login
       - MYSQL_DATABASE=parser_db
+      - TZ=Europe/Moscow
   keycloak:
     image: quay.io/keycloak/keycloak:20.0.1
     command:
@@ -72,6 +76,7 @@ services:
       - "KEYCLOAK_ADMIN_PASSWORD=$keycloak_admin_password"
       - "KEYCLOAK_USER=$keycloak_admin"
       - "KEYCLOAK_PASSWORD=$keycloak_admin_password"
+      - TZ=Europe/Moscow
     depends_on:
       - db
   config:
@@ -82,6 +87,7 @@ services:
       - "SPRING_PROFILES_ACTIVE=dev,native"
       - "spring.cloud.config.server.native.search-locations=file:///alert-job-config-repo"
       - "spring.cloud.config.server.overrides.logging.level.by.gdev=$logger_level"
+      - TZ=Europe/Moscow
     volumes:
       - "$local_config_directory:/alert-job-config-repo"
   eureka:
@@ -90,6 +96,7 @@ services:
       - "8012:8012"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
+       - TZ=Europe/Moscow
     depends_on:
       config:
         condition: service_healthy
@@ -101,6 +108,7 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - xpack.security.enabled=false
+      - TZ=Europe/Moscow
     volumes:
        - $elasticsearch_directory:/usr/share/elasticsearch/data
     ports:
@@ -119,6 +127,7 @@ services:
     environment:
       ELASTICSEARCH_URL: "http://elasticsearch:9300"
       SERVER_BASEPATH: $kibana_secret_path
+      TZ: Europe/Moscow
     ports:
       - 5601:5601
     depends_on:
@@ -132,6 +141,8 @@ services:
       - $logstash_config_directory:/etc/logstash/conf.d
     ports:
       - "5000:5000"
+    environment:
+       - TZ=Europe/Moscow
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9600/?pretty"]
       interval: 10s
@@ -147,6 +158,7 @@ services:
       - "8015:8015"
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
+       - TZ=Europe/Moscow
     depends_on:
       config:
         condition: service_healthy
@@ -161,6 +173,7 @@ services:
        - "telegram.chat.token=$telegram_chat_token"
        - "mail.login=$mail_login"
        - "mail.password=$mail_password"
+       - TZ=Europe/Moscow
     depends_on:
       config:
         condition: service_healthy
@@ -172,6 +185,7 @@ services:
       - "8017:8017"
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
+       - TZ=Europe/Moscow
     volumes:
        - "$parser_config_directory:/etc/parser/config"
     depends_on:
@@ -188,6 +202,7 @@ services:
       - "8018:8018"
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
+       - TZ=Europe/Moscow
     depends_on:
       config:
         condition: service_healthy
