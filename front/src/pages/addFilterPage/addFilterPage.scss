@@ -7,13 +7,13 @@
 		margin-top: 2rem;
 		flex-wrap: wrap;
 		flex-direction: column;
-		
-		& > div {
+
+		&>div {
 			display: flex;
 			align-items: center;
-			
-			& > button {
-				margin-left: 1rem;	
+
+			&>button {
+				margin-left: 1rem;
 			}
 		}
 	}
@@ -50,6 +50,8 @@
 		background: #FFFFFF;
 		padding: .5rem;
 		border-radius: 5px;
+		align-items: center;
+		color: black;
 	}
 
 	margin-top: 1rem;
@@ -155,7 +157,7 @@
 }
 
 .filtersPage__show {
-	margin-top: .5rem !important; 
+	margin-top: .5rem !important;
 }
 
 .scroll {
