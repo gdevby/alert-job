@@ -1,6 +1,5 @@
 package by.gdev.alert.job.core.service;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -60,12 +59,12 @@ public class UserFilterService {
 		    .orElseThrow(() -> new ResourceNotFoundException("not found module with id " + moduleId));
 	    PageRequest p = PageRequest.of(page, 30);
 	    Set<Long> sources = om.getSources().stream().map(e -> e.getId()).collect(Collectors.toSet());
-	    List<WordDTO> list = StringUtils.isEmpty(name)
+	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? titleRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
-			    .filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList()
-		    : titleRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p)
-			    .filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList();
-	    return Mono.just(new PageImpl<>(list));
+		    : titleRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p);
+	    return Mono
+		    .just(new PageImpl<>(pageWord.filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList(),
+			    pageWord.getPageable(), pageWord.getTotalElements()));
 	});
     }
 
@@ -90,12 +89,12 @@ public class UserFilterService {
 		    .orElseThrow(() -> new ResourceNotFoundException("not found module with id " + moduleId));
 	    PageRequest p = PageRequest.of(page, 30);
 	    Set<Long> sources = om.getSources().stream().map(e -> e.getId()).collect(Collectors.toSet());
-	    List<WordDTO> list = StringUtils.isEmpty(name)
+	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? technologyRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
-			    .filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList()
-		    : technologyRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p)
-			    .filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList();
-	    return Mono.just(new PageImpl<>(list));
+		    : technologyRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p);
+	    return Mono
+		    .just(new PageImpl<>(pageWord.filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList(),
+			    pageWord.getPageable(), pageWord.getTotalElements()));
 	});
     }
 
