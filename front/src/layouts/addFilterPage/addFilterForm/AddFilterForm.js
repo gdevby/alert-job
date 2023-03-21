@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 
-import Field from '../../../components/common/field/Field'
 import Btn from '../../../components/common/button/Button'
+import TextField from '@mui/material/TextField';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -80,19 +80,44 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 	}, [isNew])
 
 	return <div>
-		<Field
-			type={'text'} defaultValue={filterName} cb={setFilterName} onBlur={() => updateCurrentFilter('name')}
-			placeholder={'Введите название'} label={<label>Сначала введите название фильтра</label>} />
+		<TextField
+			id="fitler-name"
+			label="Введите название"
+			variant="standard"
+			placeholder='Введите название'
+			type='text'
+			value={filterName}
+			onChange={(e) => setFilterName(e.target.value)}
+			onBlur={() => updateCurrentFilter('name')}
+			className='w100'
+		/>
 		<div className='addFilter__button'>
 			{isAdded ? <Btn text={'Добавить фильтр'} onClick={addFilter} /> : ''}
 		</div>
 		{!isAdded && <div className='price_block'>
-			<Field
-				type={'number'} defaultValue={minPrice} cb={setMinPrice} onBlur={() => updateCurrentFilter('minPrice')}
-				placeholder={'Минимальная цена'} label={<label>Минимальная цена, лучше выставить низкую цену, т.к. заказчики не знают цену и могут установить 1000руб за дорогой проект</label>} />
-			<Field
-				type={'number'} defaultValue={maxPrice} cb={setMaxPrice} onBlur={() => updateCurrentFilter('maxPrice')}
-				placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
+			<p>Минимальная цена, лучше выставить низкую цену, т.к. заказчики не знают цену и могут установить 1000руб за дорогой проект</p>
+			<TextField
+				id="min-price"
+				label="Минимальная цена"
+				variant="standard"
+				placeholder='Минимальная цена'
+				type='number'
+				value={minPrice}
+				onChange={(e) => setMinPrice(e.target.value)}
+				onBlur={() => updateCurrentFilter('minPrice')}
+			/>
+
+			<TextField
+				id="max-price"
+				label="Максимальная цена"
+				variant="standard"
+				placeholder='Максимальная цена'
+				type='number'
+				value={maxPrice}
+				className='mt-1'
+				onChange={(e) => setMaxPrice(e.target.value)}
+				onBlur={() => updateCurrentFilter('maxPrice')}
+			/>
 		</div>}
 	</div>
 }
