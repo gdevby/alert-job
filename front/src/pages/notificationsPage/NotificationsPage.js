@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
 import Title from '../../components/common/title/Title'
-import Field from '../../components/common/field/Field'
+import TextField from '@mui/material/TextField';
 import DropDownList from '../../components/common/dropDownList/DropDowList'
 import Button from '../../components/common/button/Button'
 import InstructionForTg from '../../components/notification/instructionForTg/InstructionForTg'
@@ -62,11 +62,13 @@ const NotificationsPage = () => {
 			<div className='notification_source'>
 				<DropDownList open={false} label={'Тип уведомлений'} defaultValue={currentPlatform.id} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений' />
 				{currentPlatform.name == 'telegram' ?
-					<div><Field
-						defaultValue={telegramId} type='text'
-						placeholder='Введите адрес' cb={handleValue}
-						label={<label className="label">Введите айди </label>} />
-
+					<div>
+					<TextField 
+						id="standard-basic"
+						label="Введите адрес"
+						value={telegramId}
+						variant="standard"
+						placeholder='Введите айди' onChange={(e) => handleValue(e.target.value)} />
 					</div>
 					: <p>Используется почта при регистрации аккаунта</p>}
 				<div className='notification_source__send-btn'>
