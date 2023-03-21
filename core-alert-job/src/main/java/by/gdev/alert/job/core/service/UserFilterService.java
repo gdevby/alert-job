@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.service;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import by.gdev.alert.job.core.model.Filter;
@@ -62,10 +64,16 @@ public class UserFilterService {
 	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? titleRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
 		    : titleRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p);
-	    return Mono
-		    .just(new PageImpl<>(pageWord.filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList(),
-			    pageWord.getPageable(), pageWord.getTotalElements()));
+	    Collection<WordDTO> сollection = pageWord.stream().map(keyWordsToDTO()).collect(
+		    Collectors.toMap(w -> w.getName(), Function.identity(), (w1, w2) -> mergeDuplicates(w1, w2)))
+		    .values();
+	    return Mono.just(new PageImpl<>(Lists.newArrayList(сollection), pageWord.getPageable(),
+		    pageWord.getTotalElements()));
 	});
+    }
+
+    static WordDTO mergeDuplicates(WordDTO a, WordDTO b) {
+	return new WordDTO(a.getId(), a.getName(), a.getCounter() + b.getCounter());
     }
 
     public Mono<ResponseEntity<WordDTO>> addTitleWord(KeyWord keyWord, String uuid) {
@@ -92,9 +100,11 @@ public class UserFilterService {
 	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? technologyRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
 		    : technologyRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p);
-	    return Mono
-		    .just(new PageImpl<>(pageWord.filter(distinctByName(Word::getName)).map(keyWordsToDTO()).toList(),
-			    pageWord.getPageable(), pageWord.getTotalElements()));
+	    Collection<WordDTO> сollection = pageWord.stream().map(keyWordsToDTO()).collect(
+		    Collectors.toMap(w -> w.getName(), Function.identity(), (w1, w2) -> mergeDuplicates(w1, w2)))
+		    .values();
+	    return Mono.just(new PageImpl<>(Lists.newArrayList(сollection), pageWord.getPageable(),
+		    pageWord.getTotalElements()));
 	});
     }
 
