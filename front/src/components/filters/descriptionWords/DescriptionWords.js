@@ -178,7 +178,7 @@ const DescriptionWords = ({ filter_id, type }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list' >
-					{result && result.map(item => <ListItem key={item.name} onClick={handleSelect}/>)}
+					{result && result.map(item => <ListItem key={item.name} onClick={handleSelect} item={item} />)}
 				</div>
 			</DialogContent>
 			<DialogActions>

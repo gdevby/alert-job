@@ -25,7 +25,7 @@ const TitleWords = ({ filter_id, type }) => {
 	const [totalCount, setTotalCount] = useState(0)
 
 	const { module_id } = useParams()
-	
+
 	const listRef = React.createRef()
 
 	const debouncedSearchTerm = useDebounce(selectValue, 1000)
@@ -183,7 +183,7 @@ const TitleWords = ({ filter_id, type }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list'>
-					{result && result.map(item => <ListItem key={item.name} onClick={handleSelect}/>)}
+					{result && result.map(item => <ListItem key={item.name} onClick={handleSelect} item={item} />)}
 				</div>
 			</DialogContent>
 			<DialogActions>
