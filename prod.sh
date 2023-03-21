@@ -10,9 +10,6 @@ export keycloak_admin=admin
 #local configuration files
 export local_config_directory=/home/app/service/aj/sources/alert-job-config-repo
 export keycloak_url=https://auth.gdev.by
-export telegram_chat_token=
-export mail_login=
-export mail_password=
 #path to locale DIRECTORY which contains this file https://github.com/gdevby/alert-job/blob/main/parser-alert-job/src/main/resources/hubr.txt 
 export parser_config_directory=/home/app/service/aj/parser
 #you can run swag and after changed files swag/nginx/site-confs/default.conf to configurated resolving services

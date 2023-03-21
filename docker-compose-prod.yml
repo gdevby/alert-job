@@ -170,9 +170,6 @@ services:
       - "8016:8016"
     environment:
        - SPRING_PROFILES_ACTIVE=prod
-       - "telegram.chat.token=$telegram_chat_token"
-       - "mail.login=$mail_login"
-       - "mail.password=$mail_password"
        - TZ=Europe/Moscow
     depends_on:
       config:
