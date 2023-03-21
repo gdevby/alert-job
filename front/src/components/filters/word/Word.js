@@ -1,5 +1,6 @@
 import React from 'react'
-import { AiOutlineClose } from "react-icons/ai";
+
+import ClearIcon from '@mui/icons-material/Clear';
 
 const Word = ({ item, remove }) => {
 	const removeItem = () => {
@@ -8,7 +9,7 @@ const Word = ({ item, remove }) => {
 
 	return <div className='word'>
 		<div className='word__name'>{item.name}</div>
-		<div className='word__remove' onClick={removeItem} ><AiOutlineClose /></div>
+		<div className='word__remove' onClick={removeItem} ><ClearIcon /></div>
 	</div>
 }
 
