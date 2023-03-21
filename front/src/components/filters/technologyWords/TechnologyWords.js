@@ -190,7 +190,7 @@ const TechnologyWords = ({ filter_id, type }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list' >
-					{result && result.map(item => <ListItem key={item.name} onClick={handleSelect} item={item} />)}
+					{result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
 				</div>
 			</DialogContent>
 			<DialogActions>
