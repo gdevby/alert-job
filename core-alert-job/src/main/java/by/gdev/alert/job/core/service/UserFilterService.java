@@ -164,7 +164,7 @@ public class UserFilterService {
 			String.format("not found filter by module %s and filter %s", moduleId, filterId))))
 		.map(e -> {
 		    OrderModules m = e.getModule();
-		    if (!m.getCurrentFilter().getId().equals(123L))
+		    if (!m.getCurrentFilter().getId().equals(filterId))
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		    m.setCurrentFilter(null);
 		    modulesRepository.save(m);
