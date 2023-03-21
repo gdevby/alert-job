@@ -19,7 +19,7 @@
 			margin: 0 auto;
 			width: 77%;
 			margin-top: 1rem;
-			
+
 		}
 
 		&>div {
@@ -49,6 +49,7 @@
 			justify-content: center;
 			align-items: center;
 			margin-top: 1rem;
+
 			&_icon {
 				cursor: pointer;
 			}
@@ -69,4 +70,25 @@
 
 .order__message>ol {
 	padding-left: 1rem;
+}
+
+@media (max-width: 670px) {
+	.orders {
+		margin-top: 0;
+
+		&__actions {
+			flex-wrap: wrap;
+			justify-content: center;
+
+			&>button {
+				width: 100%;
+				margin-top: 1rem;
+			}
+		}
+	}
+	
+	.orders__list_empty_icon {
+		margin-top: 1rem;
+	}
+
 }
