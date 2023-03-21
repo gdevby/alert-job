@@ -3,27 +3,29 @@
 	margin-bottom: 2rem;
 	justify-content: space-between;
 	align-items: center;
-    width: 75%;
-    
-    & > .MuiFormControl-root {
+
+	&>.MuiFormControl-root {
 		width: 20% !important;
 	}
-    
-    & > .list {
-	margin-right: 1rem;
+
+	&>.list {
+		margin-right: 1rem;
 	}
+
 	&__send-btn {
 		//width: 45%;
 		display: flex;
-		//justify-content: space-between;
-		& > button:first-child {
-		//	width: 30%;
+
+		//justify-content: space-betweenF;
+		&>button:first-child {
+			//	width: 30%;
 		}
-		& > button:last-child {
-	//		width: 60%;
+
+		&>button:last-child {
+			//		width: 60%;
 			margin-left: 1rem;
 		}
-		
+
 	}
 }
 
