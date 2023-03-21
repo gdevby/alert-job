@@ -94,7 +94,6 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 				type={'number'} defaultValue={maxPrice} cb={setMaxPrice} onBlur={() => updateCurrentFilter('maxPrice')}
 				placeholder={'Максимальная цена'} label={<label>Максимальная цена</label>} />
 		</div>}
-
 	</div>
 }
 
