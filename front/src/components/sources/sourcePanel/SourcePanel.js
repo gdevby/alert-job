@@ -85,7 +85,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 				<div className='subcat'>
 					<DropDownList defaultValue={0} label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'} />
 				</div>
-				<div>
+				<div className='add-source'>
 					<Btn onClick={addingSource} text={'Добавить источник'} variant='contained' />
 				</div>
 			</div>
