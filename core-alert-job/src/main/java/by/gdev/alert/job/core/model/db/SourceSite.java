@@ -8,9 +8,10 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SourceSite extends BasicId{
-	private Long siteSource;
-	private Long siteCategory;
-	private Long siteSubCategory;
-	private boolean flRuForAll;
+public class SourceSite extends BasicId {
+    private Long siteSource;
+    private Long siteCategory;
+    private Long siteSubCategory;
+    private boolean flRuForAll;
+    private boolean active = true;
 }

@@ -238,6 +238,8 @@ public class CoreService {
 	    Optional<SourceSite> s = sourceRepository.findBySource(source.getSiteSource(), source.getSiteCategory(),
 		    source.getSiteSubCategory());
 	    SourceSite sourceSite = s.isPresent() ? s.get() : mapper.map(source, SourceSite.class);
+	    if (!sourceSite.isActive())
+		sourceSite.setActive(true);
 	    sourceRepository.save(sourceSite);
 	    module.getSources().add(sourceSite);
 	    modulesRepository.save(module);
@@ -259,7 +261,8 @@ public class CoreService {
 	    if (module.getSources().removeIf(s -> s.equals(sourceSite))) {
 		modulesRepository.save(module);
 		if (!modulesRepository.existsBySources(sourceSite)) {
-		    sourceRepository.delete(sourceSite);
+		    sourceSite.setActive(false);
+		    sourceRepository.save(sourceSite);
 		    boolean cValue = sourceRepository.existsBySiteCategory(sourceSite.getSiteCategory());
 		    boolean sValue = sourceRepository.existsBySiteCategoryAndSiteSubCategory(
 			    sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory());
