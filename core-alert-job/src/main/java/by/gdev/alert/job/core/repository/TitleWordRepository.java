@@ -13,7 +13,7 @@ import by.gdev.alert.job.core.model.db.key.TitleWord;
 
 public interface TitleWordRepository extends CrudRepository<TitleWord, Long> {
 
-    Optional<TitleWord> findByName(String name);
+    Optional<TitleWord> findByNameAndUuid(String name, String uuid);
 
     Optional<TitleWord> findByNameAndSourceSite(String name, SourceSite sourceSite);
 

@@ -13,7 +13,7 @@ import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 
 public interface TechnologyWordRepository extends CrudRepository<TechnologyWord, Long> {
 
-    Optional<TechnologyWord> findByName(String name);
+    Optional<TechnologyWord> findByNameAndUuid(String name, String uuid);
 
     Optional<TechnologyWord> findByNameAndSourceSite(String name, SourceSite sourceSite);
 

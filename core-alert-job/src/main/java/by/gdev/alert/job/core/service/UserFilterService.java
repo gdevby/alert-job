@@ -78,7 +78,7 @@ public class UserFilterService {
 
     public Mono<ResponseEntity<WordDTO>> addTitleWord(KeyWord keyWord, String uuid) {
 	return Mono.create(m -> {
-	    Optional<TitleWord> t = titleRepository.findByName(keyWord.getName());
+	    Optional<TitleWord> t = titleRepository.findByNameAndUuid(keyWord.getName(), uuid);
 	    if (t.isPresent()) {
 		m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
 	    } else {
@@ -110,7 +110,7 @@ public class UserFilterService {
 
     public Mono<ResponseEntity<WordDTO>> addTechnologyWord(KeyWord keyWord, String uuid) {
 	return Mono.create(m -> {
-	    Optional<TechnologyWord> t = technologyRepository.findByName(keyWord.getName());
+	    Optional<TechnologyWord> t = technologyRepository.findByNameAndUuid(keyWord.getName(), uuid);
 	    if (t.isPresent()) {
 		m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
 	    } else {
