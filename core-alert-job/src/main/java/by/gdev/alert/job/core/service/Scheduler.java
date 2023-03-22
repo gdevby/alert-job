@@ -115,8 +115,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		    .anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
 	}
 	if (!CollectionUtils.isEmpty(userFilter.getTechnologies())) {
-	    containsTech = userFilter.getTechnologies().stream().anyMatch(
-		    e -> order.getTechnologies().stream().map(String::toLowerCase).toList().contains(e.getName()));
+	    containsTech = userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().stream()
+		    .map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
 	}
 	if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
 	    containsDesc = userFilter.getDescriptions().stream()
@@ -125,25 +125,25 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	if (containsTitle || containsDesc || containsTech) {
 	    log.trace("some positive is true title {} desc {} tech {} {}", containsTitle, containsDesc, containsTech,
 		    order.getLink());
-	    return true;
-	} else if (userFilter.isActivatedNegativeFilters()) {
-	    if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions()))
-		containsDesc1 = userFilter.getNegativeDescriptions().stream()
-			.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
+	    if (userFilter.isActivatedNegativeFilters()) {
+		if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions()))
+		    containsDesc1 = userFilter.getNegativeDescriptions().stream()
+			    .anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
 
-	    if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies()))
-		containsTech1 = userFilter.getNegativeTechnologies().stream().anyMatch(
-			e -> order.getTechnologies().stream().map(String::toLowerCase).toList().contains(e.getName()));
+		if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies()))
+		    containsTech1 = userFilter.getNegativeTechnologies().stream().anyMatch(e -> order.getTechnologies()
+			    .stream().map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
 
-	    if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles())) {
-		containsTitle1 = userFilter.getNegativeTitles().stream()
-			.anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
-	    }
-	    log.trace("negative filter title {} desc {} tech {} {}", containsTitle1, containsDesc1, containsTech1,
-		    order.getLink());
-	    return !(containsDesc1 || containsTech1 || containsTitle1);
-	} else {
-	    return false;
+		if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles())) {
+		    containsTitle1 = userFilter.getNegativeTitles().stream()
+			    .anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
+		}
+		log.trace("negative filter title {} desc {} tech {} {}", containsTitle1, containsDesc1, containsTech1,
+			order.getLink());
+		return !(containsDesc1 || containsTech1 || containsTitle1);
+	    } else
+		return true;
 	}
+	return false;
     }
 }
