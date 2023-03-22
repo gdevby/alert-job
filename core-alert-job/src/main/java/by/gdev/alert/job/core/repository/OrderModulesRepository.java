@@ -13,6 +13,8 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 	
 	boolean existsBySources(SourceSite sources);
 	
+	boolean existsBySourcesAndSourcesActive(SourceSite sources, boolean active);
+
 	boolean existsByNameAndUserUuid(String name, String uuid);
 	
 	Optional<OrderModules> findByIdAndUserUuid(Long id, String uuid);

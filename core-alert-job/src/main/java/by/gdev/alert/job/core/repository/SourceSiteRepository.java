@@ -9,12 +9,13 @@ import by.gdev.alert.job.core.model.db.SourceSite;
 
 public interface SourceSiteRepository extends CrudRepository<SourceSite, Long> {
 
-	boolean existsBySiteCategory(Long siteCategory);
+    boolean existsBySiteCategoryAndActive(Long siteCategory, boolean active);
 
-	boolean existsBySiteCategoryAndSiteSubCategory(Long siteCategory, Long siteSubCategory);
+    boolean existsBySiteCategoryAndSiteSubCategoryAndActive(Long siteCategory, Long siteSubCategory, boolean active);
 
-	@Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and s.siteSubCategory = :siteSubCategory")
-	Optional<SourceSite> findBySource(Long siteSource, Long siteCategory, Long siteSubCategory);
-	@Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and siteSubCategory is null")
-	Optional<SourceSite> findBySourceSubCategoryIsNull(Long siteSource, Long siteCategory);
+    @Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and s.siteSubCategory = :siteSubCategory")
+    Optional<SourceSite> findBySource(Long siteSource, Long siteCategory, Long siteSubCategory);
+
+    @Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and siteSubCategory is null")
+    Optional<SourceSite> findBySourceSubCategoryIsNull(Long siteSource, Long siteCategory);
 }
