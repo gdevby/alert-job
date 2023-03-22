@@ -13,6 +13,8 @@ public interface SourceSiteRepository extends CrudRepository<SourceSite, Long> {
 
 	boolean existsBySiteCategoryAndSiteSubCategory(Long siteCategory, Long siteSubCategory);
 
-	@Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and (:siteSubCategory is null or s.siteSubCategory = :siteSubCategory)")
+	@Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and s.siteSubCategory = :siteSubCategory")
 	Optional<SourceSite> findBySource(Long siteSource, Long siteCategory, Long siteSubCategory);
+	@Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and siteSubCategory is null")
+	Optional<SourceSite> findBySourceSubCategoryIsNull(Long siteSource, Long siteCategory);
 }

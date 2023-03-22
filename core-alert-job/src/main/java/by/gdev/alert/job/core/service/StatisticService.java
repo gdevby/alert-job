@@ -89,9 +89,14 @@ public class StatisticService {
 	}
 
 	private SourceSite findSourceSite(SourceSiteDTO sourceSite) {
-		return sourceSiteRepository
-				.findBySource(sourceSite.getSource(), sourceSite.getCategory(), sourceSite.getSubCategory())
-				.orElseThrow(() -> new ResourceNotFoundException(String.format("dont found source by  %s %s %s",
-						sourceSite.getSource(), sourceSite.getCategory(), sourceSite.getSubCategory())));
+		if (Objects.isNull(sourceSite.getSubCategory())) {
+			return sourceSiteRepository.findBySourceSubCategoryIsNull(sourceSite.getSource(), sourceSite.getCategory())
+					.orElseThrow(() -> new ResourceNotFoundException(String.format("don't found source by  %s %s",
+							sourceSite.getSource(), sourceSite.getCategory())));
+		} else
+			return sourceSiteRepository
+					.findBySource(sourceSite.getSource(), sourceSite.getCategory(), sourceSite.getSubCategory())
+					.orElseThrow(() -> new ResourceNotFoundException(String.format("don't found source by  %s %s %s",
+							sourceSite.getSource(), sourceSite.getCategory(), sourceSite.getSubCategory())));
 	}
 }
