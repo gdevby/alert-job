@@ -72,7 +72,7 @@ public class StatisticService {
 	    return;
 	SourceSite site = findSourceSite(sourceSite);
 	technologies.forEach(e -> {
-	    Optional<TechnologyWord> technoWord = technologyRepository.findByName(e);
+	    Optional<TechnologyWord> technoWord = technologyRepository.findByNameAndSourceSite(e, site);
 	    if (technoWord.isPresent()) {
 		TechnologyWord tw = technoWord.get();
 		Long counter = tw.getCounter() + 1L;
