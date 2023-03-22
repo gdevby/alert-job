@@ -50,11 +50,17 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
 		.doOnSubscribe(s -> log.info("trying subscribe"))
 		.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(30)));
-	sseConection.subscribe(event -> {
-	    log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
-	    Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
-	    forEachOrders(users, event.data());
-	}, error -> log.warn("failed to get orders from parser {}", error));
+
+	try {
+	    sseConection.subscribe(event -> {
+		log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
+		Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
+		forEachOrders(users, event.data());
+	    }, error -> log.warn("failed to get orders from parser {}", error));
+	} catch (Throwable ex) {
+	    log.error("problem with subscribe");
+	    ex.printStackTrace();
+	}
     }
 
     private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
