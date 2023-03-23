@@ -22,7 +22,7 @@ const ModulesPage = () => {
 	const navigate = useNavigate();
 
 	const addModule = () => {
-		const isExist = modules.find(item => item.name = moduleName)
+		const isExist = modules.find(item => item.name == moduleName)
 		if (isExist) {
 			showAlert()
 			return
