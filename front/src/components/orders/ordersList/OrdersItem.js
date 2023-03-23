@@ -21,7 +21,8 @@ const OrdersItem = ({ order }) => {
 			className='order__content'
 		>
 			<Typography sx={{ width: '33%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
-				<Typography sx={{ wordBreak: 'break-word' }} component='div' dangerouslySetInnerHTML={{ __html: order.title }}>
+				<Typography sx={{ wordBreak: 'break-word' }} component='div'>
+					{order.title}
 				</Typography>
 				<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 					Дата: {getDate(order.dateTime)}
@@ -31,7 +32,7 @@ const OrdersItem = ({ order }) => {
 				{order.technologies.join(',')}
 			</Typography>
 			<Typography sx={{ width: '12%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }}>
-				{order.price?.price || 'не указана'}
+				{order.price?.price || order.price?.value || 'не указана'}
 			</Typography>
 		</AccordionSummary>
 		<AccordionDetails>
