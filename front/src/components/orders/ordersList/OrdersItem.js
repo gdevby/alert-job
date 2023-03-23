@@ -21,8 +21,7 @@ const OrdersItem = ({ order }) => {
 			className='order__content'
 		>
 			<Typography sx={{ width: '33%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
-				<Typography sx={{ wordBreak: 'break-word' }} component='div'>
-					{order.title}
+				<Typography sx={{ wordBreak: 'break-word' }} component='div' dangerouslySetInnerHTML={{ __html: order.title }}>
 				</Typography>
 				<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 					Дата: {getDate(order.dateTime)}
