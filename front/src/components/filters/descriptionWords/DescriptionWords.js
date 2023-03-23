@@ -24,6 +24,7 @@ const DescriptionWords = ({ filter_id, type }) => {
 	const [totalCount, setTotalCount] = useState(0)
 
 	const listRef = React.createRef()
+	const inputRef = React.createRef()
 
 	const debouncedSearchTerm = useDebounce(selectValue, 500)
 
@@ -162,6 +163,13 @@ const DescriptionWords = ({ filter_id, type }) => {
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [listRef])
+	
+	useEffect(() => {
+		const input = inputRef.current
+		if (input) {
+			input.focus()
+		}
+	}, [inputRef])
 
 	return <>
 		<Dialog open={isOpen} onClose={closePopup}>
@@ -169,7 +177,7 @@ const DescriptionWords = ({ filter_id, type }) => {
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
 					Поиск по ключевым словам
-					<input type='text' onChange={changeWord} value={selectValue} />
+					<input type='text' onChange={changeWord} value={selectValue} ref={inputRef} />
 				</div>
 			</DialogTitle>
 			<DialogContent className='scroll' ref={listRef}>

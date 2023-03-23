@@ -28,6 +28,7 @@ const TechnologyWords = ({ filter_id, type }) => {
 	const { module_id } = useParams()
 
 	const listRef = React.createRef()
+	const inputRef = React.createRef()
 
 	const debouncedSearchTerm = useDebounce(selectValue, 1000)
 
@@ -145,6 +146,13 @@ const TechnologyWords = ({ filter_id, type }) => {
 	}, [debouncedSearchTerm])
 
 	useEffect(() => {
+		const input = inputRef.current
+		if (input) {
+			input.focus()
+		}
+	}, [inputRef])
+
+	useEffect(() => {
 		if (isFetching) {
 			getWords(selectValue, page)
 		}
@@ -181,7 +189,7 @@ const TechnologyWords = ({ filter_id, type }) => {
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
 					Поиск по ключевым словам
-					<input type='text' onChange={changeWord} value={selectValue} />
+					<input type='text' onChange={changeWord} value={selectValue} ref={inputRef}/>
 				</div>
 			</DialogTitle>
 			<DialogContent className='scroll' ref={listRef}>
