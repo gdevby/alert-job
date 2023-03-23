@@ -8,7 +8,7 @@
 		flex-wrap: wrap;
 		flex-direction: column;
 
-		&>div {
+		&>.wordsContains__title {
 			display: flex;
 			align-items: center;
 
@@ -43,8 +43,10 @@
 }
 
 .addedWords {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	grid-column-gap: 10px;
+	grid-row-gap: 1em;
 
 	&>div {
 		background: #FFFFFF;
@@ -52,6 +54,7 @@
 		border-radius: 5px;
 		align-items: center;
 		color: black;
+		justify-content: space-between;
 	}
 
 	margin-top: 1rem;

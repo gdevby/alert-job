@@ -190,7 +190,7 @@ const TitleWords = ({ filter_id, type }) => {
 				<Btn onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
-		<div>
+		<div className='wordsContains__title'>
 			{type == '' ? <p>Уведомлять, если в названии содержится</p> : <p>Уведомлять, если в названии не содержится</p>}
 			<Btn text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>

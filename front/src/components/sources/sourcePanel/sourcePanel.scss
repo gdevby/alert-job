@@ -1,4 +1,3 @@
-
 .source_panel {
 	//display: flex;
 	padding: 1rem;
@@ -89,11 +88,17 @@
 		margin-bottom: 1rem;
 	}
 
+
+
 	&__content {
 		display: flex;
 		//width: 67%;
 		flex-wrap: wrap;
 		justify-content: space-between;
+
+		&>.css-q8hpuo-MuiFormControl-root {
+			width: 20%;
+		}
 
 		&-actions {
 			display: flex;
@@ -153,17 +158,24 @@
 	.current_filter__content-actions {
 		margin-top: 1rem;
 	}
-} 
+
+	.current_filter__list {
+		width: 100% !important;
+	}
+}
+
 @media (max-width: 700px) {
 	.current_filter__content-actions {
 		width: 100%;
 	}
+
 	.source_panel-addingSource__content {
 		display: flex;
 		justify-content: space-between;
 		width: 100%;
 		flex-wrap: wrap;
 		flex-direction: column;
+
 		&>.site {
 			width: 100%;
 		}
@@ -185,15 +197,14 @@
 }
 
 @media (max-width: 670px) {
-	.current_filter__content-actions{
+	.current_filter__content-actions {
 		flex-direction: column;
 		margin-top: 0;
 		width: 100%;
-		& > button {
+
+		&>button {
 			margin-right: 0;
 			margin-top: 1rem;
 		}
 	}
-} 
-
-
+}

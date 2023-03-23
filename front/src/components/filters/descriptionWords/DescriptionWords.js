@@ -185,7 +185,7 @@ const DescriptionWords = ({ filter_id, type }) => {
 				<Btn onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
-		<div>
+		<div className='wordsContains__title'>
 			{type == '' ? <p>Уведомлять, если описание содержит</p> : <p>Уведомлять, если описание не содержит</p>}
 			<Btn text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>

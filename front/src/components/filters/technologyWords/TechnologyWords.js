@@ -197,7 +197,7 @@ const TechnologyWords = ({ filter_id, type }) => {
 				<Btn onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>
-		<div>
+		<div className='wordsContains__title'>
 			{type == '' ? <p>Уведомлять, если технологии содержат</p> : <p>Уведомлять, если технологии не содержат</p>}
 			<Btn text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>
