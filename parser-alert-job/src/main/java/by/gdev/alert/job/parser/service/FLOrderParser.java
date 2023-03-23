@@ -102,6 +102,8 @@ public class FLOrderParser {
 		    order.setMessage(m.getDescription());
 		    order.setLink(m.getLink());
 		    order = parsePrice(order);
+		    String title = order.getTitle().replaceAll("(\\(Бюджет: .*[0-9\\;\\)])", "");
+		    order.setTitle(title);
 		    ParserSource parserSource = new ParserSource();
 		    parserSource.setSource(siteSourceJobId);
 		    parserSource.setCategory(category.getId());
