@@ -10,7 +10,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 const OrdersItem = ({ order }) => {
 
 	const getDate = (date) => {
-		return <Moment format="HH:MM DD.MM.YYYY">
+		return <Moment format="hh:mm DD.MM.YYYY">
 			{date}
 		</Moment>
 	}
