@@ -1,19 +1,23 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
-import Moment from 'react-moment';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MobileOrderItemHead from '../../mobile/mobileOrderItem/MobileOrderItemHead';
+import OrdersItemHead from '../ordersItem/OrdersItemHead';
+import { useResize } from '../../../hooks/useResize';
+
 
 const OrdersItem = ({ order }) => {
+//625
+	
+	const { width } = useResize()
 
-	const getDate = (date) => {
-		return <Moment format="hh:mm DD.MM.YYYY">
-			{date}
-		</Moment>
-	}
+	useEffect(() => {
+		console.log(width)
+	}, [width])
 
 	const OrderLink = ({ link }) => {
 		return <Typography component='a' target='_blank' href={link} sx={{ 'paddingLeft': 0, 'color': '#3d53f9;' }}>
@@ -21,25 +25,14 @@ const OrdersItem = ({ order }) => {
 		</Typography>
 	}
 
+	//<MobileOrderItemHead />
+
 	return <Accordion>
 		<AccordionSummary
 			expandIcon={<ExpandMoreIcon />}
 			className='order__content'
 		>
-			<Typography sx={{ width: '33%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
-				<Typography sx={{ wordBreak: 'break-word' }} component='div'>
-					{order.title}
-				</Typography>
-				<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
-					Дата: {getDate(order.dateTime)}
-				</Typography>
-			</Typography>
-			<Typography sx={{ width: '33%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }}>
-				{order.technologies.join(',')}
-			</Typography>
-			<Typography sx={{ width: '12%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }}>
-				{order.price?.price || order.price?.value || 'не указана'}
-			</Typography>
+			{width <= 625? <MobileOrderItemHead {...order}/> : <OrdersItemHead {...order}/>}
 		</AccordionSummary>
 		<AccordionDetails>
 			<Typography className='order__message' dangerouslySetInnerHTML={{ __html: order.message }}>

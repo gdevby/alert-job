@@ -72,6 +72,13 @@
 	padding-left: 1rem;
 }
 
+@media (max-width: 625px) { 
+	.orders__list-head {
+		display: none;
+	}
+}
+
+
 @media (max-width: 670px) {
 	.orders {
 		margin-top: 0;
