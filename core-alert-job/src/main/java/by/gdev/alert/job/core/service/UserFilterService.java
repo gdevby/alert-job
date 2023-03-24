@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +38,7 @@ import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
+import by.gdev.common.exeption.CollectionLimitExeption;
 import by.gdev.common.exeption.ConflictExeption;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,11 @@ public class UserFilterService {
 
     private final ModelMapper mapper;
 
+    @Value("${limit.filters}")
+    private Long limitFilters;
+    @Value("${limit.key-words}")
+    private Long limitKeyWords;
+
     public Mono<Page<WordDTO>> showTitleWords(Long moduleId, String uuid, String name, Integer page) {
 	return Mono.defer(() -> {
 	    OrderModules om = modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid)
@@ -64,11 +71,12 @@ public class UserFilterService {
 	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? titleRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
 		    : titleRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p);
-	    List<WordDTO> сollection = pageWord.stream().map(keyWordsToDTO()).collect(
-		    Collectors.toMap(w -> w.getName(), Function.identity(), (w1, w2) -> mergeDuplicates(w1, w2)))
-		    .values().stream().sorted(Comparator.comparing(WordDTO::getCounter).reversed()).collect(Collectors.toList());
-	    return Mono.just(new PageImpl<>(сollection, pageWord.getPageable(),
-		    pageWord.getTotalElements()));
+	    List<WordDTO> сollection = pageWord.stream().map(keyWordsToDTO())
+		    .collect(Collectors.toMap(w -> w.getName(), Function.identity(),
+			    (w1, w2) -> mergeDuplicates(w1, w2)))
+		    .values().stream().sorted(Comparator.comparing(WordDTO::getCounter).reversed())
+		    .collect(Collectors.toList());
+	    return Mono.just(new PageImpl<>(сollection, pageWord.getPageable(), pageWord.getTotalElements()));
 	});
     }
 
@@ -100,11 +108,12 @@ public class UserFilterService {
 	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? technologyRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
 		    : technologyRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p);
-	    List<WordDTO> сollection = pageWord.stream().map(keyWordsToDTO()).collect(
-		    Collectors.toMap(w -> w.getName(), Function.identity(), (w1, w2) -> mergeDuplicates(w1, w2)))
-		    .values().stream().sorted(Comparator.comparing(WordDTO::getCounter).reversed()).collect(Collectors.toList());
-	    return Mono.just(new PageImpl<>(сollection, pageWord.getPageable(),
-		    pageWord.getTotalElements()));
+	    List<WordDTO> сollection = pageWord.stream().map(keyWordsToDTO())
+		    .collect(Collectors.toMap(w -> w.getName(), Function.identity(),
+			    (w1, w2) -> mergeDuplicates(w1, w2)))
+		    .values().stream().sorted(Comparator.comparing(WordDTO::getCounter).reversed())
+		    .collect(Collectors.toList());
+	    return Mono.just(new PageImpl<>(сollection, pageWord.getPageable(), pageWord.getTotalElements()));
 	});
     }
 
@@ -152,9 +161,11 @@ public class UserFilterService {
     }
 
     public Mono<FilterDTO> createUserFilter(String uuid, Long moduleId, Filter filter) {
-	return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuid(moduleId, uuid))
+	return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerFilters(moduleId, uuid))
 		.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found module with id " + moduleId)))
 		.map(e -> {
+		    if (e.getFilters().size() >= limitFilters)
+			throw new CollectionLimitExeption("the limit for added filters");
 		    if (filterRepository.existsByNameAndModule(filter.getName(), e))
 			throw new ConflictExeption(String.format("filter with name %s exists", filter.getName()));
 		    UserFilter userFilter = new UserFilter();
@@ -245,6 +256,8 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TitleWord w = tuple.getT2();
+		    if (f.getTitles().size() >= limitKeyWords)
+			throw new CollectionLimitExeption("the limit for added titles");
 		    if (CollectionUtils.isEmpty(f.getTitles()))
 			f.setTitles(Sets.newHashSet());
 		    if (f.getTitles().contains(w))
@@ -279,6 +292,8 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TechnologyWord w = tuple.getT2();
+		    if (f.getTechnologies().size() >= limitKeyWords)
+			throw new CollectionLimitExeption("the limit for added technologes");
 		    if (CollectionUtils.isEmpty(f.getTechnologies()))
 			f.setTechnologies(Sets.newHashSet());
 		    if (f.getTechnologies().contains(w))
@@ -313,6 +328,8 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    DescriptionWord w = tuple.getT2();
+		    if (f.getDescriptions().size() >= limitKeyWords)
+			throw new CollectionLimitExeption("the limit for added descriptions");
 		    if (CollectionUtils.isEmpty(f.getDescriptions()))
 			f.setDescriptions(Sets.newHashSet());
 		    if (f.getDescriptions().contains(w))
@@ -344,6 +361,8 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TitleWord w = tuple.getT2();
+		    if (f.getNegativeTitles().size() >= limitKeyWords)
+			throw new CollectionLimitExeption("the limit for added negative titles");
 		    if (CollectionUtils.isEmpty(f.getNegativeTitles()))
 			f.setNegativeTitles(Sets.newHashSet());
 		    if (f.getNegativeTitles().contains(w))
@@ -378,6 +397,8 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TechnologyWord w = tuple.getT2();
+		    if (f.getNegativeTechnologies().size() >= limitKeyWords)
+			throw new CollectionLimitExeption("the limit for added negative technologes");
 		    if (CollectionUtils.isEmpty(f.getNegativeTechnologies()))
 			f.setNegativeTechnologies(Sets.newHashSet());
 		    if (f.getNegativeTechnologies().contains(w))
@@ -412,6 +433,8 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    DescriptionWord w = tuple.getT2();
+		    if (f.getNegativeDescriptions().size() >= limitKeyWords)
+			throw new CollectionLimitExeption("the limit for added negative descriptions");
 		    if (CollectionUtils.isEmpty(f.getNegativeDescriptions()))
 			f.setDescriptions(Sets.newHashSet());
 		    if (f.getNegativeDescriptions().contains(w))
