@@ -1,11 +1,11 @@
 .source_panel {
 	//display: flex;
-	padding: 1rem;
-	padding-left: 0;
+	//padding: 1rem;
+	//padding-left: 0;
 	//justify-content: space-between;
 	// align-items: center;
 	// box-shadow: 5px 2px 9px grey;
-	border-radius: 10px;
+	//border-radius: 10px;
 	//flex-wrap: wrap;
 
 	&>div {
@@ -206,5 +206,12 @@
 			margin-right: 0;
 			margin-top: 1rem;
 		}
+	}
+	.source_panel-addingSource__content >.add-source > button {
+		width: 100%;
+	}
+	
+	.show-sources > button {
+		width: 100%;
 	}
 }
