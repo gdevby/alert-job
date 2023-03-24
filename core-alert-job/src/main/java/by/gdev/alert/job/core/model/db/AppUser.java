@@ -14,13 +14,13 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true, exclude = "orderModules")
 @ToString(callSuper = true, exclude = "orderModules")
 
-public class AppUser extends BasicId{
+public class AppUser extends BasicId {
 
-	private String uuid;
-	@OneToMany(mappedBy = "user")
-	private Set<OrderModules> orderModules;
-	private String email;
-	private Long telegram;
-	private boolean switchOffAlerts = true;
-	private boolean defaultSendType = true;
+    private String uuid;
+    @OneToMany(mappedBy = "user")
+    private Set<OrderModules> orderModules;
+    private String email;
+    private Long telegram;
+    private boolean switchOffAlerts = true;
+    private boolean defaultSendType = true;
 }

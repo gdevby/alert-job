@@ -10,7 +10,8 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Table(uniqueConstraints = { @UniqueConstraint(name = "site_source_q_key", columnNames = { "siteSource","siteCategory","siteSubCategory" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(name = "site_source_q_key", columnNames = { "siteSource", "siteCategory",
+	"siteSubCategory" }) })
 public class SourceSite extends BasicId {
     private Long siteSource;
     private Long siteCategory;

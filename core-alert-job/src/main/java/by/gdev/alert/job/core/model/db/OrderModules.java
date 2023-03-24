@@ -7,7 +7,6 @@ import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.validation.constraints.Size;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,7 +25,6 @@ public class OrderModules extends BasicId {
 	@ManyToMany
 	private Set<SourceSite> sources;
 	@OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
-	@Size(max = 5, message = "the limit for added filters")
 	private Set<UserFilter> filters;
 	@ManyToOne
 	private UserFilter currentFilter;

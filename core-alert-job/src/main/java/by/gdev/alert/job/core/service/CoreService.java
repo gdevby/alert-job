@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.SourceSiteRepository;
+import by.gdev.common.exeption.CollectionLimitExeption;
 import by.gdev.common.exeption.ConflictExeption;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.CategoryDTO;
@@ -52,6 +54,11 @@ public class CoreService {
 
     private final Scheduler scheduler;
     private final ModelMapper mapper;
+
+    @Value("${limit.sources}")
+    private Long limitSources;
+    @Value("${limit.orders}")
+    private Long limitOrders;
 
     public Mono<ResponseEntity<String>> authentication(String uuid, String mail) {
 	return Mono.create(m -> {
@@ -145,8 +152,10 @@ public class CoreService {
     }
 
     public Mono<OrderModulesDTO> createOrderModules(String uuid, Modules modules) {
-	return Mono.justOrEmpty(userRepository.findByUuid(uuid))
+	return Mono.justOrEmpty(userRepository.findByUuidOneEagerModules(uuid))
 		.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found"))).map(u -> {
+		    if (u.getOrderModules().size() >= limitOrders)
+			throw new CollectionLimitExeption("the limit for added modules");
 		    if (modulesRepository.existsByNameAndUserUuid(modules.getName(), uuid))
 			throw new ConflictExeption(String.format("module with name %s exists", modules.getName()));
 		    OrderModules module = mapper.map(modules, OrderModules.class);
@@ -226,6 +235,8 @@ public class CoreService {
 	return Mono.defer(() -> {
 	    OrderModules module = modulesRepository.findByIdAndUserUuidOneEagerSources(id, uuid)
 		    .orElseThrow(() -> new ResourceNotFoundException("not found module with id " + id));
+	    if (module.getSources().size() >= limitSources)
+		throw new CollectionLimitExeption("the limit for added sources");
 	    if (CollectionUtils.isEmpty(module.getSources())) {
 		module.setSources(Sets.newHashSet());
 	    }
