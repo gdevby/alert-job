@@ -8,6 +8,7 @@ import InstructionForTg from '../../components/notification/instructionForTg/Ins
 import Switch from '@mui/material/Switch';
 
 import { coreService } from '../../services/parser/endponits/coreService'
+import { changeAuthStatus } from '../../hooks/changeAuthStatus';
 
 import './notificationsPage.scss'
 
@@ -17,6 +18,8 @@ const NotificationsPage = () => {
 	const [alertStatus, setAlertStatus] = useState(false)
 	const [alertType, setAlertType] = useState('')
 	const [telegramId, setTelegramId] = useState('')
+
+	const { handleStatus } = changeAuthStatus()
 
 	const sendTestNotification = () => {
 		coreService.sendTestMessage().then(console.log)
@@ -40,7 +43,20 @@ const NotificationsPage = () => {
 	}
 
 	useEffect(() => {
-		coreService.getStatue().then(response => setAlertStatus(response.data))
+		coreService.getStatus()
+			.then(response => {
+				setAlertStatus(response.data)
+				getCurrentType()
+			})
+			.catch(e => {
+				if (e.code == 302) {
+					handleStatus(false)
+				}
+			})
+
+	}, [])
+
+	const getCurrentType = () => {
 		coreService.getAlertType().then(response => {
 			if (response.data.type) {
 				setCurrentPlatform({ name: 'email', id: 1 })
@@ -49,7 +65,7 @@ const NotificationsPage = () => {
 				setTelegramId(response.data.value == 'null' ? '' : response.data.value)
 			}
 		})
-	}, [])
+	}
 
 	const handleValue = (text) => {
 		setAlertType(text)
@@ -63,12 +79,12 @@ const NotificationsPage = () => {
 				<DropDownList open={false} label={'Тип уведомлений'} defaultValue={currentPlatform.id} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений' />
 				{currentPlatform.name == 'telegram' ?
 					<div>
-					<TextField 
-						id="standard-basic"
-						label="Введите адрес"
-						value={telegramId}
-						variant="standard"
-						placeholder='Введите айди' onChange={(e) => handleValue(e.target.value)} />
+						<TextField
+							id="standard-basic"
+							label="Введите адрес"
+							value={telegramId}
+							variant="standard"
+							placeholder='Введите айди' onChange={(e) => handleValue(e.target.value)} />
 					</div>
 					: <p>Используется почта при регистрации аккаунта</p>}
 				<div className='notification_source__send-btn'>

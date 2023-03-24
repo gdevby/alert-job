@@ -10,8 +10,11 @@ import Item from '../../components/common/item/Item'
 import Alert from '../../components/common/alert/Alert'
 
 import { moduleService } from '../../services/parser/endponits/moduleService'
+import { changeAuthStatus } from '../../hooks/changeAuthStatus';
 
 import './modulesPage.scss'
+
+
 
 const ModulesPage = () => {
 	const [moduleName, setModuleName] = useState('')
@@ -20,6 +23,8 @@ const ModulesPage = () => {
 	const [isShowAlert, setIsShowAlert] = useState(false)
 
 	const navigate = useNavigate();
+	
+	const { handleStatus } = changeAuthStatus()
 
 	const addModule = () => {
 		const isExist = modules.find(item => item.name == moduleName)
@@ -30,10 +35,11 @@ const ModulesPage = () => {
 		moduleService
 			.addModule(moduleName)
 			.then(response => {
+				console.log(response)
 				setModules(prev => [...prev, response.data])
 			})
 			.catch(e => {
-				if (e.response.data.message == `module with name ${moduleName} exists`) {
+				if (e.response?.data?.message == `module with name ${moduleName} exists`) {
 					showAlert()
 				}
 			})
@@ -42,8 +48,18 @@ const ModulesPage = () => {
 	useEffect(() => {
 		moduleService
 			.getModules()
-			.then(response => setModules(response.data))
-			.finally(() => setIsFetching(false))
+			.then(response => {
+				console.log(response)
+				setModules(response.data)
+			})
+			.catch(e => {
+				if (e.code == 302) {
+					handleStatus(false)
+				}
+			})
+			.finally(() => {
+				setIsFetching(false)
+			})
 	}, [])
 
 	const deleteModule = (id) => {

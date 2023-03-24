@@ -15,6 +15,12 @@ const OrdersItem = ({ order }) => {
 		</Moment>
 	}
 
+	const OrderLink = ({ link }) => {
+		return <Typography component='a' target='_blank' href={link} sx={{ 'paddingLeft': 0, 'color': '#3d53f9;' }}>
+			{link}
+		</Typography>
+	}
+
 	return <Accordion>
 		<AccordionSummary
 			expandIcon={<ExpandMoreIcon />}
@@ -45,10 +51,6 @@ const OrdersItem = ({ order }) => {
 	</Accordion>
 }
 
-const OrderLink = ({ link }) => {
-	return <Typography component='a' target='_blank' href={link} sx={{ 'paddingLeft': 0, 'color': '#3d53f9;' }}>
-		{link}
-	</Typography>
-}
+
 
 export default OrdersItem
