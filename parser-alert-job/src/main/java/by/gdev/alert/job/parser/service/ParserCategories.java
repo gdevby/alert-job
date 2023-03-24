@@ -42,6 +42,7 @@ public class ParserCategories {
 	private final SubCategoryRepository subCategoryRepository;
 	private final FlCategoryRepository flCategoryRepository;
 	private String flRss = "https://www.fl.ru/rss/all.xml?category=%s";
+	private String flRssWithSubcategory = "https://www.fl.ru/rss/all.xml?subcategory=%s&category=%s";
 
 	@Transactional
 	public void parse() throws IOException {
@@ -118,7 +119,8 @@ public class ParserCategories {
 			java.util.regex.Matcher m = p.matcher(pairs);
 			List<ParsedCategory> list = m.results().map(v -> {
 				Long id = Long.valueOf(v.group(1));
-				return new ParsedCategory(null, v.group(2), id, String.format(flRss, id.toString()));
+				return new ParsedCategory(null, v.group(2), id,
+						String.format(flRssWithSubcategory, id.toString(), flCategory.getId()));
 			}).collect(Collectors.toList());
 			log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
 			list.forEach(sc -> {
@@ -134,7 +136,7 @@ public class ParserCategories {
 		Document doc = Jsoup.connect(site.getParsedURI()).get();
 		Elements res = doc.getElementsByClass("category-group__folder");
 		return res.stream().map(ee -> {
-			
+
 			String categoryString = ee.getElementsByClass("link_dotted js-toggle").text();
 			String engNameCategory = ee.getElementsByClass("checkbox_flat").attr("for");
 			ParsedCategory catNew = new ParsedCategory(engNameCategory, categoryString, null, null);
@@ -149,9 +151,8 @@ public class ParserCategories {
 			log.debug("			subcategory size {}", subList.size());
 			return new SimpleEntry<ParsedCategory, List<ParsedCategory>>(catNew, subList);
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (u, v) -> {
-	        throw new IllegalStateException(String.format("Duplicate key %s", u));
-	    }, 
-	    LinkedHashMap::new));
+			throw new IllegalStateException(String.format("Duplicate key %s", u));
+		}, LinkedHashMap::new));
 	}
 
 	public static record ParsedCategory(String name, String translatedName, Long id, String rss) {
