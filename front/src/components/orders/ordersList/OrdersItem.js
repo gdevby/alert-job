@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { useResize } from '../../../hooks/useResize';
 
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -7,12 +8,8 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MobileOrderItemHead from '../../mobile/mobileOrderItem/MobileOrderItemHead';
 import OrdersItemHead from '../ordersItem/OrdersItemHead';
-import { useResize } from '../../../hooks/useResize';
-
 
 const OrdersItem = ({ order }) => {
-//625
-	
 	const { width } = useResize()
 
 	useEffect(() => {
@@ -24,8 +21,6 @@ const OrdersItem = ({ order }) => {
 			{link}
 		</Typography>
 	}
-
-	//<MobileOrderItemHead />
 
 	return <Accordion>
 		<AccordionSummary
