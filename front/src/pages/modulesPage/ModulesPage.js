@@ -8,6 +8,7 @@ import Btn from '../../components/common/button/Button';
 import List from '@mui/material/List';
 import Item from '../../components/common/item/Item'
 import Alert from '../../components/common/alert/Alert'
+import Popup from '../../components/common/popup/Popup';
 
 import { moduleService } from '../../services/parser/endponits/moduleService'
 import { changeAuthStatus } from '../../hooks/changeAuthStatus';
@@ -16,14 +17,16 @@ import './modulesPage.scss'
 
 
 
+
 const ModulesPage = () => {
 	const [moduleName, setModuleName] = useState('')
 	const [modules, setModules] = useState([])
 	const [isFetching, setIsFetching] = useState(true)
 	const [isShowAlert, setIsShowAlert] = useState(false)
+	const [isOpenPopup, setIsOpenPopup] = useState(false)
 
 	const navigate = useNavigate();
-	
+
 	const { handleStatus } = changeAuthStatus()
 
 	const addModule = () => {
@@ -41,6 +44,9 @@ const ModulesPage = () => {
 			.catch(e => {
 				if (e.response?.data?.message == `module with name ${moduleName} exists`) {
 					showAlert()
+				}
+				if (e.response?.data?.message == 'the limit for added modules') {
+					setIsOpenPopup(true)
 				}
 			})
 	}
@@ -82,7 +88,15 @@ const ModulesPage = () => {
 		setTimeout(() => setIsShowAlert(false), 2000)
 	}
 
+	const handleClosePopup = () => {
+		setIsOpenPopup(false)
+	}
+
 	return <div className='modules'>
+		<Popup
+			handleClose={handleClosePopup}
+			open={isOpenPopup} title={'Вы превысили лимит'}
+			content={'Вы превысили максимальное количество модулей. Удалите, чтобы добавить новый.'} />
 		<div className='container'>
 			<p>Теперь вам надо создать модуль, который позволит вам выбрать несколько источников заказов и установить активный фильтр для этого модуля,
 				который будет фильтровать ваши заказы.
