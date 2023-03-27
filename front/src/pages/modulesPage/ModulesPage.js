@@ -28,7 +28,7 @@ const ModulesPage = () => {
 	const [isOpenPopup, setIsOpenPopup] = useState(false)
 	const [isLimit, setIsLimit] = useState(false)
 	const [popup, setPopup] = useState({})
-
+	
 	const navigate = useNavigate();
 
 	const { handleStatus } = changeAuthStatus()
@@ -113,6 +113,7 @@ const ModulesPage = () => {
 	const handleClosePopup = () => {
 		setIsOpenPopup(false)
 	}
+
 
 	return <div className='modules'>
 		<Popup
