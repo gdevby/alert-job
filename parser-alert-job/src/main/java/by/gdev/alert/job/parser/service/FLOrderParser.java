@@ -50,6 +50,8 @@ public class FLOrderParser {
     private final ParserSourceRepository parserSourceRepository;
 
     private Pattern paymentPatter = Pattern.compile(".*[Бб]юджет: ([0-9]+).*");
+    private Pattern currencyPatter = Pattern.compile("[0-9].*&#8381;");
+
     private final ModelMapper mapper;
 
     @Transactional
@@ -131,9 +133,16 @@ public class FLOrderParser {
     @SneakyThrows
     private Order parsePrice(Order order) {
 	Matcher m = paymentPatter.matcher(order.getTitle());
+	Price price = new Price();
 	if (m.find()) {
-	    order.setPrice(new Price("", Integer.valueOf(m.group(1))));
+	    price.setValue(Integer.valueOf(m.group(1)));
 	}
+	Matcher m1 = currencyPatter.matcher(order.getTitle());
+	if (m1.find()) {
+	    price.setPrice(m1.group(0).replaceAll("&#8381;", "руб."));
+	}
+	
+	order.setPrice(price);
 	Document doc = null;
 	try {
 	    doc = Jsoup.parse(new URL(order.getLink()), 30000);
