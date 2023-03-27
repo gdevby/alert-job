@@ -26,35 +26,41 @@ import reactor.netty.http.client.HttpClient;
 @EnableScheduling
 public class CoreConfig {
 
-	@Bean
-	@LoadBalanced
-	public WebClient createWebClient() {
-		HttpClient httpClient = HttpClient.create().followRedirect(true)
-				.doOnConnected(con -> con.addHandlerFirst(new ReadTimeoutHandler(240, TimeUnit.SECONDS)))
-				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 60000).option(ChannelOption.SO_KEEPALIVE, true)
-				.option(EpollChannelOption.TCP_KEEPIDLE, 300).option(EpollChannelOption.TCP_KEEPINTVL, 60)
-				.option(EpollChannelOption.TCP_KEEPCNT, 8);
+    @Bean
+    @LoadBalanced
+    public WebClient createWebClient() {
+	HttpClient httpClient = HttpClient.create().followRedirect(true)
+		.doOnConnected(con -> con.addHandlerFirst(new ReadTimeoutHandler(240, TimeUnit.SECONDS)))
+		.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 60000).option(ChannelOption.SO_KEEPALIVE, true)
+		.option(EpollChannelOption.TCP_KEEPIDLE, 300).option(EpollChannelOption.TCP_KEEPINTVL, 60)
+		.option(EpollChannelOption.TCP_KEEPCNT, 8);
 
-		ReactorClientHttpConnector conn = new ReactorClientHttpConnector(httpClient);
-		DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(); // Here comes your base url
-		factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
-		return WebClient.builder().uriBuilderFactory(factory)
-				.exchangeStrategies(ExchangeStrategies.builder().codecs(codecs -> {
-					codecs.defaultCodecs().maxInMemorySize(10 * 1024 * 1024 * 1024);
-					codecs.defaultCodecs().jaxb2Encoder(new Jaxb2XmlEncoder());
-					codecs.defaultCodecs().jaxb2Decoder(new Jaxb2XmlDecoder());
-				}).build()).clientConnector(conn).build();
-	}
+	ReactorClientHttpConnector conn = new ReactorClientHttpConnector(httpClient);
+	DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(); // Here comes your base url
+	factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
+	return WebClient.builder().uriBuilderFactory(factory)
+		.exchangeStrategies(ExchangeStrategies.builder().codecs(codecs -> {
+		    codecs.defaultCodecs().maxInMemorySize(10 * 1024 * 1024 * 1024);
+		    codecs.defaultCodecs().jaxb2Encoder(new Jaxb2XmlEncoder());
+		    codecs.defaultCodecs().jaxb2Decoder(new Jaxb2XmlDecoder());
+		}).build()).clientConnector(conn).build();
+    }
 
-	@Bean
-	public ModelMapper createModelMapper() {
-		ModelMapper mapper = new ModelMapper();
-		mapper.getConfiguration().setSkipNullEnabled(true).setPropertyCondition(new Condition<Object, Object>() {
-			public boolean applies(MappingContext<Object, Object> context) {
-				return (!(context.getSource() instanceof PersistentCollection)
-						|| ((PersistentCollection) context.getSource()).wasInitialized());
-			}
-		});
-		return mapper;
-	}
+    @Bean
+    public ModelMapper createModelMapper() {
+	ModelMapper mapper = new ModelMapper();
+	mapper.getConfiguration().setSkipNullEnabled(true).setPropertyCondition(new Condition<Object, Object>() {
+	    @Override
+	    public boolean applies(MappingContext<Object, Object> context) {
+		return (!(context.getSource() instanceof PersistentCollection)
+			|| ((PersistentCollection) context.getSource()).wasInitialized());
+	    }
+	});
+	return mapper;
+    }
+
+    @Bean
+    public ApplicationProperty getApplicationProperty() {
+	return new ApplicationProperty();
+    }
 }
