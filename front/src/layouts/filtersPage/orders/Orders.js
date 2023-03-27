@@ -50,7 +50,8 @@ const Orders = () => {
 	
 	const Empty = () => {
 		return <div className='orders__list_empty'>
-			Заказов нет <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />
+			<span>Заказы возможно еще не обновились, если вы только что добавили новый источник, подождите 10 минут.</span>
+			<ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />
 		</div>
 	}
 
