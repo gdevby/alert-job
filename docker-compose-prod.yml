@@ -127,6 +127,7 @@ services:
     environment:
       ELASTICSEARCH_URL: "http://elasticsearch:9300"
       SERVER_BASEPATH: $kibana_secret_path
+      SERVER_REWRITEBASEPATH: true
       TZ: Europe/Moscow
     ports:
       - 5601:5601
