@@ -103,7 +103,6 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 			{isAdded ? <Btn text={'Добавить фильтр'} onClick={addFilter} /> : ''}
 		</div>
 		{!isAdded && <div className='price_block'>
-			<p>Минимальная цена, лучше выставить низкую цену, т.к. заказчики не знают цену и могут установить 1000руб за дорогой проект</p>
 			<TextField
 				id="min-price"
 				label="Минимальная цена"
