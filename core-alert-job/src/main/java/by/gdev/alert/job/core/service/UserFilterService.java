@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +20,7 @@ import org.springframework.util.CollectionUtils;
 
 import com.google.common.collect.Sets;
 
+import by.gdev.alert.job.core.configuration.ApplicationProperty;
 import by.gdev.alert.job.core.model.Filter;
 import by.gdev.alert.job.core.model.FilterDTO;
 import by.gdev.alert.job.core.model.KeyWord;
@@ -57,19 +57,13 @@ public class UserFilterService {
     private final DescriptionWordPriceRepository descriptionWordPriceRepository;
 
     private final ModelMapper mapper;
-
-    @Value("${limit.filters}")
-    private Long limitFilters;
-    @Value("${limit.key.words}")
-    private Long limitKeyWords;
-    @Value("${limit.key.words.price}")
-    private Long limitKeyWordsPrice;
+    private final ApplicationProperty appProperty;
 
     public Mono<Page<WordDTO>> showTitleWords(Long moduleId, String uuid, String name, Integer page) {
 	return Mono.defer(() -> {
 	    OrderModules om = modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid)
 		    .orElseThrow(() -> new ResourceNotFoundException("not found module with id " + moduleId));
-	    PageRequest p = PageRequest.of(page, 30);
+	    PageRequest p = PageRequest.of(page, appProperty.getWordsPerPage());
 	    Set<Long> sources = om.getSources().stream().map(e -> e.getId()).collect(Collectors.toSet());
 	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? titleRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
@@ -102,7 +96,7 @@ public class UserFilterService {
 	return Mono.defer(() -> {
 	    OrderModules om = modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid)
 		    .orElseThrow(() -> new ResourceNotFoundException("not found module with id " + moduleId));
-	    PageRequest p = PageRequest.of(page, 30);
+	    PageRequest p = PageRequest.of(page, appProperty.getWordsPerPage());
 	    Set<Long> sources = om.getSources().stream().map(e -> e.getId()).collect(Collectors.toSet());
 	    Page<? extends Word> pageWord = StringUtils.isEmpty(name)
 		    ? technologyRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
@@ -133,7 +127,7 @@ public class UserFilterService {
 
     public Mono<Page<WordDTO>> showDescriptionWords(String name, Integer page) {
 	return Mono.defer(() -> {
-	    PageRequest p = PageRequest.of(page, 30);
+	    PageRequest p = PageRequest.of(page, appProperty.getWordsPerPage());
 	    Page<DescriptionWord> word = StringUtils.isEmpty(name)
 		    ? descriptionRepository.findAllByOrderByCounterDesc(p)
 		    : descriptionRepository.findByNameIsStartingWith(name, p);
@@ -190,7 +184,7 @@ public class UserFilterService {
 	return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerFilters(moduleId, uuid))
 		.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found module with id " + moduleId)))
 		.map(e -> {
-		    if (e.getFilters().size() >= limitFilters)
+		    if (e.getFilters().size() >= appProperty.getLimitFilters())
 			throw new CollectionLimitExeption("the limit for added filters");
 		    if (filterRepository.existsByNameAndModule(filter.getName(), e))
 			throw new ConflictExeption(String.format("filter with name %s exists", filter.getName()));
@@ -284,7 +278,7 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TitleWord w = tuple.getT2();
-		    if (f.getTitles().size() >= limitKeyWords)
+		    if (f.getTitles().size() >= appProperty.getLimitKeyWords())
 			throw new CollectionLimitExeption("the limit for added titles");
 		    if (CollectionUtils.isEmpty(f.getTitles()))
 			f.setTitles(Sets.newHashSet());
@@ -320,7 +314,7 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TechnologyWord w = tuple.getT2();
-		    if (f.getTechnologies().size() >= limitKeyWords)
+		    if (f.getTechnologies().size() >= appProperty.getLimitKeyWords())
 			throw new CollectionLimitExeption("the limit for added technologes");
 		    if (CollectionUtils.isEmpty(f.getTechnologies()))
 			f.setTechnologies(Sets.newHashSet());
@@ -356,7 +350,7 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    DescriptionWord w = tuple.getT2();
-		    if (f.getDescriptions().size() >= limitKeyWords)
+		    if (f.getDescriptions().size() >= appProperty.getLimitKeyWords())
 			throw new CollectionLimitExeption("the limit for added descriptions");
 		    if (CollectionUtils.isEmpty(f.getDescriptions()))
 			f.setDescriptions(Sets.newHashSet());
@@ -389,7 +383,7 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TitleWord w = tuple.getT2();
-		    if (f.getNegativeTitles().size() >= limitKeyWords)
+		    if (f.getNegativeTitles().size() >= appProperty.getLimitKeyWords())
 			throw new CollectionLimitExeption("the limit for added negative titles");
 		    if (CollectionUtils.isEmpty(f.getNegativeTitles()))
 			f.setNegativeTitles(Sets.newHashSet());
@@ -425,7 +419,7 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    TechnologyWord w = tuple.getT2();
-		    if (f.getNegativeTechnologies().size() >= limitKeyWords)
+		    if (f.getNegativeTechnologies().size() >= appProperty.getLimitKeyWords())
 			throw new CollectionLimitExeption("the limit for added negative technologes");
 		    if (CollectionUtils.isEmpty(f.getNegativeTechnologies()))
 			f.setNegativeTechnologies(Sets.newHashSet());
@@ -461,7 +455,7 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    DescriptionWord w = tuple.getT2();
-		    if (f.getNegativeDescriptions().size() >= limitKeyWords)
+		    if (f.getNegativeDescriptions().size() >= appProperty.getLimitKeyWords())
 			throw new CollectionLimitExeption("the limit for added negative descriptions");
 		    if (CollectionUtils.isEmpty(f.getNegativeDescriptions()))
 			f.setDescriptions(Sets.newHashSet());
@@ -494,7 +488,7 @@ public class UserFilterService {
 		.map(tuple -> {
 		    UserFilter f = tuple.getT1();
 		    DescriptionWordPrice w = tuple.getT2();
-		    if (f.getDescriptionWordPrice().size() >= limitKeyWordsPrice)
+		    if (f.getDescriptionWordPrice().size() >= appProperty.getLimitKeyWordsPrice())
 			throw new CollectionLimitExeption("the limit for added description words price");
 		    if (CollectionUtils.isEmpty(f.getDescriptionWordPrice()))
 			f.setDescriptionWordPrice(Sets.newHashSet());
