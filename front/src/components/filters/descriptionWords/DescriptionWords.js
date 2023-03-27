@@ -22,7 +22,7 @@ const DescriptionWords = ({ filter_id, type, setIsLimit }) => {
 	const [searchedWords, setSearchedWords] = useState([])
 	const [isFetching, setIsFetching] = useState(true)
 	const [totalCount, setTotalCount] = useState(0)
-
+	console.log('a')
 	const listRef = React.createRef()
 	const inputRef = React.createRef()
 
