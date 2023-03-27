@@ -13,7 +13,8 @@ const initialState = {
 		minPrice: 0,
 		negativeDescriptionWords: [],
 		negativeTitleWords: [],
-		negativeTechnologyWords: []
+		negativeTechnologyWords: [],
+		descriptionWordPrice: []
 	},
 	isChoose: false,
 	isNew: true
@@ -24,6 +25,7 @@ const filterSlice = createSlice({
 	initialState,
 	reducers: {
 		setCurrentFilter(state, action) {
+			state.currentFilter.descriptionWordPrice = action.payload.descriptionWordPrice
 			state.currentFilter.descriptionWords = action.payload.description
 			state.currentFilter.titleWords = action.payload.title
 			state.currentFilter.technologyWords = action.payload.technologies
@@ -41,6 +43,7 @@ const filterSlice = createSlice({
 			state.currentFilter.activatedNegativeFilters = action.payload.activatedNegativeFilters
 		},
 		removeCurrentFilter(state, action) {
+			state.currentFilter.descriptionWordPrice = []
 			state.currentFilter.descriptionWords = []
 			state.currentFilter.titleWords = []
 			state.currentFilter.technologyWords = []

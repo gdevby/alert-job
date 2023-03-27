@@ -76,6 +76,7 @@ const AddFilterPage = () => {
 							negativeDescription: response.data.negativeDescriptionsDTO,
 							negativeTitle: response.data.negativeTitlesDTO,
 							negativeTechnologies: response.data.negativeTechnologiesDTO,
+							descriptionWordPrice: response.data.descriptionWordPrice,
 							maxPrice: response.data.maxValue,
 							minPrice: response.data.minValue,
 							id: response.data.id,

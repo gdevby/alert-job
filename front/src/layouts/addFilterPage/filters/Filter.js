@@ -15,7 +15,7 @@ const Filters = ({ type = '' }) => {
 	return <>
 		<LimitPopup open={isLimit} handleClose={() => setIsLimit(false)} />
 		<div className='wordsContains_block'>
-			{type = '' && <div>
+			{type == '' && <div>
 				<DescriptionPriceWords filter_id={filter_id} type={type} setIsLimit={setIsLimit} />
 			</div>}
 			<div>

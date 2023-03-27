@@ -28,9 +28,8 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 
 	const debouncedSearchTerm = useDebounce(selectValue, 500)
 
-	const descriptionPriceWords =
-		type == '' ? useSelector(state => state.filter.currentFilter.descriptionPriceWords)
-			: useSelector(state => state.filter.currentFilter.negativeDescriptionWords)
+	const descriptionPriceWords = useSelector(state => state.filter.currentFilter.descriptionWordPrice)
+
 
 	const { isNew } = useSelector(state => state.filter)
 
