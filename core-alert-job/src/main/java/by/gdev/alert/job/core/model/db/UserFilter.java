@@ -8,6 +8,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
+import by.gdev.alert.job.core.model.db.key.DescriptionWordPrice;
 import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
 import lombok.Data;
@@ -25,6 +26,10 @@ public class UserFilter extends BasicId {
     private String name;
     private Integer minValue;
     private Integer maxValue;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Set<DescriptionWordPrice> descriptionWordPrice;
+
     @ManyToOne
     private OrderModules module;
     @ManyToMany(fetch = FetchType.EAGER)

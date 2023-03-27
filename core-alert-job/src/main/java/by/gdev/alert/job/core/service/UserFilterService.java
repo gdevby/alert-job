@@ -5,9 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -30,9 +28,11 @@ import by.gdev.alert.job.core.model.WordDTO;
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
+import by.gdev.alert.job.core.model.db.key.DescriptionWordPrice;
 import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
 import by.gdev.alert.job.core.model.db.key.Word;
+import by.gdev.alert.job.core.repository.DescriptionWordPriceRepository;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.TechnologyWordRepository;
@@ -54,13 +54,16 @@ public class UserFilterService {
     private final TitleWordRepository titleRepository;
     private final DescriptionWordRepository descriptionRepository;
     private final TechnologyWordRepository technologyRepository;
+    private final DescriptionWordPriceRepository descriptionWordPriceRepository;
 
     private final ModelMapper mapper;
 
     @Value("${limit.filters}")
     private Long limitFilters;
-    @Value("${limit.key-words}")
+    @Value("${limit.key.words}")
     private Long limitKeyWords;
+    @Value("${limit.key.words.price}")
+    private Long limitKeyWordsPrice;
 
     public Mono<Page<WordDTO>> showTitleWords(Long moduleId, String uuid, String name, Integer page) {
 	return Mono.defer(() -> {
@@ -78,10 +81,6 @@ public class UserFilterService {
 		    .collect(Collectors.toList());
 	    return Mono.just(new PageImpl<>(сollection, pageWord.getPageable(), pageWord.getTotalElements()));
 	});
-    }
-
-    static WordDTO mergeDuplicates(WordDTO a, WordDTO b) {
-	return new WordDTO(a.getId(), a.getName(), a.getCounter() + b.getCounter());
     }
 
     public Mono<ResponseEntity<WordDTO>> addTitleWord(KeyWord keyWord, String uuid) {
@@ -135,9 +134,10 @@ public class UserFilterService {
     public Mono<Page<WordDTO>> showDescriptionWords(String name, Integer page) {
 	return Mono.defer(() -> {
 	    PageRequest p = PageRequest.of(page, 30);
-	    Function<DescriptionWord, WordDTO> func = word -> mapper.map(word, WordDTO.class);
-	    return StringUtils.isEmpty(name) ? Mono.just(descriptionRepository.findAllByOrderByCounterDesc(p).map(func))
-		    : Mono.just(descriptionRepository.findByNameIsStartingWith(name, p).map(func));
+	    Page<DescriptionWord> word = StringUtils.isEmpty(name)
+		    ? descriptionRepository.findAllByOrderByCounterDesc(p)
+		    : descriptionRepository.findByNameIsStartingWith(name, p);
+	    return Mono.just(word.map(keyWordsToDTO()));
 	});
     }
 
@@ -152,6 +152,32 @@ public class UserFilterService {
 		descriptionWord = descriptionRepository.save(descriptionWord);
 		m.success(ResponseEntity.ok(mapper.map(descriptionWord, WordDTO.class)));
 	    }
+	});
+    }
+
+    public Mono<ResponseEntity<WordDTO>> addDescriptionWordPrice(KeyWord keyWord, String uuid) {
+	return Mono.create(m -> {
+	    Optional<DescriptionWordPrice> t = descriptionWordPriceRepository.findByNameAndUuid(keyWord.getName(),
+		    uuid);
+	    if (t.isPresent()) {
+		m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
+	    } else {
+		DescriptionWordPrice dwp = new DescriptionWordPrice();
+		dwp.setName(keyWord.getName());
+		dwp.setUuid(uuid);
+		dwp = descriptionWordPriceRepository.save(dwp);
+		m.success(ResponseEntity.ok(mapper.map(dwp, WordDTO.class)));
+	    }
+	});
+    }
+
+    public Mono<Page<WordDTO>> showDescriptionWordPrice(String name, Integer page) {
+	return Mono.defer(() -> {
+	    PageRequest p = PageRequest.of(page, 30);
+	    Page<DescriptionWordPrice> word = StringUtils.isEmpty(name)
+		    ? descriptionWordPriceRepository.findAllByOrderByCounterDesc(p)
+		    : descriptionWordPriceRepository.findByNameIsStartingWith(name, p);
+	    return Mono.just(word.map(keyWordsToDTO()));
 	});
     }
 
@@ -228,6 +254,8 @@ public class UserFilterService {
 		    dto.setNegativeDescriptionsDTO(currentFilter.getNegativeDescriptions().stream()
 			    .map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 		    dto.setNegativeTechnologiesDTO(currentFilter.getNegativeTechnologies().stream()
+			    .map(e1 -> mapper.map(e1, WordDTO.class)).toList());
+		    dto.setDescriptionWordPrice(currentFilter.getDescriptionWordPrice().stream()
 			    .map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 		    return dto;
 		});
@@ -458,12 +486,47 @@ public class UserFilterService {
 		});
     }
 
+    public Mono<FilterDTO> createDescriptionWordPriceToFilter(Long filterId, Long wordId) {
+	return Mono.justOrEmpty(filterRepository.findById(filterId))
+		.zipWith(Mono.justOrEmpty(descriptionWordPriceRepository.findById(wordId)))
+		.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+			String.format("not found by filter id %s or word id %s", filterId, wordId))))
+		.map(tuple -> {
+		    UserFilter f = tuple.getT1();
+		    DescriptionWordPrice w = tuple.getT2();
+		    if (f.getDescriptionWordPrice().size() >= limitKeyWordsPrice)
+			throw new CollectionLimitExeption("the limit for added description words price");
+		    if (CollectionUtils.isEmpty(f.getDescriptionWordPrice()))
+			f.setDescriptionWordPrice(Sets.newHashSet());
+		    if (f.getDescriptionWordPrice().contains(w))
+			throw new ConflictExeption("exists description word price with name " + w.getName());
+		    f.getDescriptionWordPrice().add(w);
+		    filterRepository.save(f);
+		    return mapper.map(f, FilterDTO.class);
+		});
+    }
+
+    public Mono<ResponseEntity<Void>> removeDescriptionWordPriceFromFilter(Long filterId, Long wordId) {
+	return Mono.justOrEmpty(filterRepository.findById(filterId))
+		.zipWith(Mono.justOrEmpty(descriptionWordPriceRepository.findById(wordId)))
+		.switchIfEmpty(Mono.error(new ResourceNotFoundException(
+			String.format("not found by filter id %s or word id %s", filterId, wordId))))
+		.map(tuple -> {
+		    UserFilter f = tuple.getT1();
+		    DescriptionWordPrice t = tuple.getT2();
+		    if (f.getDescriptionWordPrice().removeIf(e -> e.getId().equals(t.getId()))) {
+			filterRepository.save(f);
+			return ResponseEntity.ok().build();
+		    } else
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		});
+    }
+
     private <T> Function<T, WordDTO> keyWordsToDTO() {
 	return word -> mapper.map(word, WordDTO.class);
     };
 
-    public static Predicate<Word> distinctByName(Function<Word, String> keyExtractor) {
-	Set<String> seen = ConcurrentHashMap.newKeySet();
-	return t -> seen.add(keyExtractor.apply(t));
+    private WordDTO mergeDuplicates(WordDTO a, WordDTO b) {
+	return new WordDTO(a.getId(), a.getName(), a.getCounter() + b.getCounter());
     }
 }
