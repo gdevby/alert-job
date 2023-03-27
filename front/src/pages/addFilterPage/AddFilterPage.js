@@ -121,7 +121,7 @@ const AddFilterPage = () => {
 	return <div className='filtersPage'>
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
-
+			<Btn text={'Вернуться к модулю'} onClick={addNewFilter} variant='contained' />
 			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter} />
 
 			{filterId && <>
@@ -131,7 +131,7 @@ const AddFilterPage = () => {
 					color={isShowNegativeFilters ? 'success' : 'error'} variant='contained' onClick={showNegativeFilters} className='filtersPage__show' />
 				{isShowNegativeFilters && <Filters type={'negative-'} />}
 				<div className='filter__actions'>
-					<Btn text={'Сохранить'} onClick={addNewFilter} variant='contained' />
+					
 				</div>
 			</>
 			}

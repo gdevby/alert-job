@@ -7,7 +7,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '../button/Button'
 
-const Popup = ({ open, handleClose, title, content }) => {
+const Popup = ({ open, handleClose, title, content, actions }) => {
 	return <Dialog
 		open={open}
 		onClose={handleClose}
@@ -23,7 +23,8 @@ const Popup = ({ open, handleClose, title, content }) => {
 			</DialogContentText>
 		</DialogContent>
 		<DialogActions>
-			<Button onClick={handleClose} text={'Закрыть'} />
+		{actions}
+			
 		</DialogActions>
 	</Dialog>
 }

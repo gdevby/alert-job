@@ -12,6 +12,11 @@ core_api.interceptors.response.use(res => {
 	if (error.code == "ERR_NETWORK") {
 		return Promise.reject({...error, code: 302})	
 	}
+	console.log(error.response?.data?.message)
+	console.log(error.response?.data?.message.includes('the limit'))
+	if (error.response?.data?.message.includes('the limit')) {
+		return Promise.reject({...error, message: 'limit'})	
+	}
 	return Promise.reject(error)
 	;
 });

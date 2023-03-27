@@ -11,14 +11,14 @@ import './moduleCard.scss'
 const ModuleCard = ({ item, removeCard, openModule }) => {
 
 	const deleteModule = () => {
-		removeCard(item.id)
+		removeCard(item)
 	}
 
 	return <ListItem disablePadding className='modules__item-box'>
 		<div className='modules__item' key={item.id}>
 			<div className='modules__item__module-name'>{item.name}</div>
 			<ButtonGroup variant="outlined" aria-label="outlined button group" className='modules__item_button-group'>
-				<Fab color="primary" aria-label="edit" size="small" onClick={() => openModule(item.id)}>
+				<Fab color="primary" aria-label="edit" size="small" onClick={() => openModule(item)}>
 					<EditIcon />
 				</Fab>
 				<Fab color="error" aria-label="remove" size="small" onClick={() => deleteModule(item.id)}>

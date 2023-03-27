@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import Btn from '../../../components/common/button/Button'
 import TextField from '@mui/material/TextField';
-import Popup from '../../../components/common/popup/Popup';
+import LimitPopup from '../../../components/common/popup/LimitPopup';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -17,7 +17,7 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 	const [maxPrice, setMaxPrice] = useState('')
 	const [isAdded, setIsAdded] = useState(true)
 	const [filterId, setId] = useState('')
-	const [isOpenPopup, setIsOpenPopup] = useState(false)
+	const [isLimit, setIsLimit] = useState(false)
 
 	const { isChoose, isNew, currentFilter } = useSelector(state => state.filter)
 	const dispatch = useDispatch()
@@ -55,8 +55,8 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 				setIsAdded(false)
 			})
 			.catch(e => {
-				if (e.response?.data?.message === 'the limit for added filters') {
-					setIsOpenPopup(true)
+				if (e.message === 'limit') {
+					setIsLimit(true)
 				}
 			})
 	}
@@ -84,15 +84,10 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 		setIsAdded(isNew)
 	}, [isNew])
 
-	const handleClosePopup = () => {
-		setIsOpenPopup(false)
-	}
 
-	return <div>
-		<Popup
-			handleClose={handleClosePopup}
-			open={isOpenPopup} title={'Вы превысили лимит'}
-			content={'Вы превысили максимальное количество фильтров. Удалите, чтобы добавить новый.'} />
+	return <div className='mt-1'>
+		<LimitPopup handleClose={() => setIsLimit(false)}
+			open={isLimit} />
 		<TextField
 			id="fitler-name"
 			label="Введите название"

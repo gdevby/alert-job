@@ -14,7 +14,7 @@ import useDebounce from '../../../hooks/use-debounce'
 
 import { filterService } from '../../../services/parser/endponits/filterService'
 
-const TechnologyWords = ({ filter_id, type }) => {
+const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [words, setWords] = useState([])
 	const [selectValue, setSelectValue] = useState('')
@@ -53,6 +53,11 @@ const TechnologyWords = ({ filter_id, type }) => {
 				//setResult((prev) => [...prev, word]);
 				setIsOpen(false)
 				setSelectValue('')
+			}).catch(e => {
+				if (e.message === 'limit') {
+					setIsOpen(false)
+					setIsLimit(true)
+				}
 			})
 	}
 

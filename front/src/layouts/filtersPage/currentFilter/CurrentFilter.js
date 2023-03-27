@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom';
 
 import DropDownList from '../../../components/common/dropDownList/DropDowList';
-import Btn from '../../../components/common/button/Button'
+import Btn from '../../../components/common/button/Button';
+import Popup from '../../../components/common/popup/Popup';
 
-import { filterService } from '../../../services/parser/endponits/filterService'
+import { filterService } from '../../../services/parser/endponits/filterService';
 
-import { setCurrentFilter, setIsNew, removeCurrentFilter } from '../../../store/slices/filterSlice'
+import { setCurrentFilter, setIsNew, removeCurrentFilter } from '../../../store/slices/filterSlice';
 
 const CurrentFilter = () => {
 	const [currentFilters, setCurrentFilters] = useState([])
 	const [filter, setFilter] = useState('')
+	const [isOpenPopup, setIsOpenPopup] = useState(false)
+	const [popup, setPopup] = useState({})
 
 	const { id } = useParams()
 
@@ -55,6 +58,9 @@ const CurrentFilter = () => {
 				dispatch(removeCurrentFilter())
 				setFilter('')
 			})
+			.finally(() => {
+				setIsOpenPopup(false)
+			})
 	}
 
 	const handleCurrentFilter = data => {
@@ -74,6 +80,18 @@ const CurrentFilter = () => {
 					})
 				)
 			})
+	}
+
+	const confirmRemovesFilter = () => {
+		setPopup({
+			title: 'Подвердите удаление',
+			content: `Вы действительно хотите удалить фильтр с именем ${filter.name}?`,
+			actions: <>
+				<Btn onClick={handleClosePopup} text={'Закрыть'} />
+				<Btn onClick={removeFilter} text={'Удалить'} />
+			</>
+		})
+		setIsOpenPopup(true)
 	}
 
 	useEffect(() => {
@@ -103,14 +121,25 @@ const CurrentFilter = () => {
 
 			})
 	}, [])
+	
+	const handleClosePopup = () => {
+		setIsOpenPopup(false)
+	}
 
 	return <div className='current_filter'>
+		<Popup
+			handleClose={handleClosePopup}
+			open={isOpenPopup}
+			title={popup.title}
+			content={popup.content}
+			actions={popup.actions}
+		/>
 		<div className='current_filter__title'>Теперь создайте фильтр с помощью кнопки "Добавить новый фильтр", который будет фильтровать заказы.</div>
 		<div className='current_filter__content'>
 			<DropDownList className='current_filter__list' defaultValue={filter.id} label={'Выберите фильтр'} elems={currentFilters} onClick={handleCurrentFilter} defaultLabe={'Выберите фильтр'} />
 			<div className='current_filter__content-actions'>
 				{filter && <><Btn onClick={editFilter} text={'Редактировать фильтр'} variant='contained' />
-					<Btn onClick={removeFilter} text={'Удалить фильтр'} variant='contained' /></>}
+					<Btn onClick={confirmRemovesFilter} text={'Удалить фильтр'} variant='contained' /></>}
 				<Btn onClick={addNewFilter} text={'Добавить новый фильтр'} variant='contained' />
 			</div>
 		</div>

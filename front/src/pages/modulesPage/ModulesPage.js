@@ -9,11 +9,13 @@ import List from '@mui/material/List';
 import Item from '../../components/common/item/Item'
 import Alert from '../../components/common/alert/Alert'
 import Popup from '../../components/common/popup/Popup';
+import LimitPopup from '../../components/common/popup/LimitPopup';
 
 import { moduleService } from '../../services/parser/endponits/moduleService'
 import { changeAuthStatus } from '../../hooks/changeAuthStatus';
 
 import './modulesPage.scss'
+
 
 
 
@@ -24,6 +26,8 @@ const ModulesPage = () => {
 	const [isFetching, setIsFetching] = useState(true)
 	const [isShowAlert, setIsShowAlert] = useState(false)
 	const [isOpenPopup, setIsOpenPopup] = useState(false)
+	const [isLimit, setIsLimit] = useState(false)
+	const [popup, setPopup] = useState({})
 
 	const navigate = useNavigate();
 
@@ -38,15 +42,21 @@ const ModulesPage = () => {
 		moduleService
 			.addModule(moduleName)
 			.then(response => {
-				console.log(response)
 				setModules(prev => [...prev, response.data])
 			})
 			.catch(e => {
 				if (e.response?.data?.message == `module with name ${moduleName} exists`) {
 					showAlert()
 				}
-				if (e.response?.data?.message == 'the limit for added modules') {
-					setIsOpenPopup(true)
+				console.log(e.message)
+				if (e.message == 'limit') {
+					setIsLimit(true)
+					/*setIsOpenPopup(true)
+					setPopup({
+						title: 'Вы превысили лимит',
+						content: 'Вы превысили максимальное количество. Удалите, чтобы добавить новый.',
+						actions: <Btn onClick={handleClosePopup} text={'Закрыть'} />
+					})*/
 				}
 			})
 	}
@@ -55,7 +65,6 @@ const ModulesPage = () => {
 		moduleService
 			.getModules()
 			.then(response => {
-				console.log(response)
 				setModules(response.data)
 			})
 			.catch(e => {
@@ -74,13 +83,26 @@ const ModulesPage = () => {
 			.then(() => {
 				setModules(prev => prev.filter(item => item.id != id))
 			})
+			.finally(() => setIsOpenPopup(false))
 	}
-	const openModule = (id) => {
-		navigate(`/page/filters/${id}`)
+	const openModule = (item) => {
+		navigate(`/page/filters/${item.id}`)
 	}
 
 	const changeModuleName = (e) => {
 		setModuleName(e.target.value)
+	}
+
+	const confirmRemovsModule = (item) => {
+		setPopup({
+			title: 'Подвердите удаление',
+			content: `Вы действительно хотите удалить модуль с именем ${item.name}?`,
+			actions: <>
+				<Btn onClick={handleClosePopup} text={'Закрыть'} />
+				<Btn onClick={() => deleteModule(item.id)} text={'Удалить'} />
+			</>
+		})
+		setIsOpenPopup(true)
 	}
 
 	const showAlert = () => {
@@ -95,8 +117,13 @@ const ModulesPage = () => {
 	return <div className='modules'>
 		<Popup
 			handleClose={handleClosePopup}
-			open={isOpenPopup} title={'Вы превысили лимит'}
-			content={'Вы превысили максимальное количество модулей. Удалите, чтобы добавить новый.'} />
+			open={isOpenPopup}
+			title={popup.title}
+			content={popup.content}
+			actions={popup.actions}
+		/>
+		<LimitPopup handleClose={() => setIsLimit(false)}
+			open={isLimit} />
 		<div className='container'>
 			<p>Теперь вам надо создать модуль, который позволит вам выбрать несколько источников заказов и установить активный фильтр для этого модуля,
 				который будет фильтровать ваши заказы.
@@ -110,7 +137,7 @@ const ModulesPage = () => {
 			<Alert open={isShowAlert} type={'warning'} content={'Модуль с таким именем уже существует.'} />
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
-					removeCard={deleteModule}
+					removeCard={confirmRemovsModule}
 					openModule={openModule}
 				/></Item>)}
 			</List>}
