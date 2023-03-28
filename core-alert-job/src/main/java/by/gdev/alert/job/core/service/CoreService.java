@@ -15,22 +15,26 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.google.common.collect.Sets;
 
 import by.gdev.alert.job.core.configuration.ApplicationProperty;
+import by.gdev.alert.job.core.model.AlertTime;
+import by.gdev.alert.job.core.model.AppUserDTO;
 import by.gdev.alert.job.core.model.Modules;
 import by.gdev.alert.job.core.model.OrderModulesDTO;
 import by.gdev.alert.job.core.model.Source;
 import by.gdev.alert.job.core.model.SourceDTO;
+import by.gdev.alert.job.core.model.UserAlertTimeDTO;
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.SourceSite;
+import by.gdev.alert.job.core.model.db.UserAlertTime;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.SourceSiteRepository;
+import by.gdev.alert.job.core.repository.UserAlertTimeRepository;
 import by.gdev.common.exeption.CollectionLimitExeption;
 import by.gdev.common.exeption.ConflictExeption;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.CategoryDTO;
-import by.gdev.common.model.NotificationAlertType;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteSourceDTO;
 import by.gdev.common.model.SourceSiteDTO;
@@ -51,6 +55,7 @@ public class CoreService {
     private final AppUserRepository userRepository;
     private final SourceSiteRepository sourceRepository;
     private final OrderModulesRepository modulesRepository;
+    private final UserAlertTimeRepository alertTimeRepository;
 
     private final Scheduler scheduler;
     private final ModelMapper mapper;
@@ -108,14 +113,6 @@ public class CoreService {
 	});
     }
 
-    public Mono<Boolean> showAlertStatus(String uuid) {
-	return Mono.create(m -> {
-	    AppUser user = userRepository.findByUuid(uuid)
-		    .orElseThrow(() -> new ResourceNotFoundException("user not found"));
-	    m.success(user.isSwitchOffAlerts());
-	});
-    }
-
     public Mono<Boolean> changeDefaultSendType(String uuid, boolean defaultSend) {
 	return Mono.create(m -> {
 	    AppUser user = userRepository.findByUuid(uuid)
@@ -123,17 +120,6 @@ public class CoreService {
 	    user.setDefaultSendType(defaultSend);
 	    user = userRepository.save(user);
 	    m.success(user.isDefaultSendType());
-	});
-    }
-
-    public Mono<NotificationAlertType> notificationUserAlertType(String uuid) {
-	return Mono.create(m -> {
-	    AppUser user = userRepository.findByUuid(uuid)
-		    .orElseThrow(() -> new ResourceNotFoundException("user not found"));
-	    NotificationAlertType alerType = new NotificationAlertType();
-	    alerType.setType(user.isDefaultSendType());
-	    alerType.setValue(user.isDefaultSendType() ? user.getEmail() : String.valueOf(user.getTelegram()));
-	    m.success(alerType);
 	});
     }
 
@@ -145,6 +131,28 @@ public class CoreService {
 	    userRepository.save(user);
 	    m.success();
 	});
+    }
+
+    public Mono<UserAlertTimeDTO> addAlertTime(String uuid, AlertTime alerTime) {
+	return Mono.create(m -> {
+	    AppUser user = userRepository.findByUuid(uuid)
+		    .orElseThrow(() -> new ResourceNotFoundException("user not found"));
+	    UserAlertTime uat = mapper.map(alerTime, UserAlertTime.class);
+	    uat.setUser(user);
+	    uat = alertTimeRepository.save(uat);
+	    m.success(mapper.map(uat, UserAlertTimeDTO.class));
+	});
+    }
+
+    public Mono<AppUserDTO> showUserAlertInfo(String uuid) {
+	return Mono.justOrEmpty(userRepository.findByUuid(uuid))
+		.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found"))).map(u -> {
+		    AppUserDTO dto = mapper.map(u, AppUserDTO.class);
+		    dto.setAlertTimeDTO(
+			    u.getUserAlertTimes().stream().map(e -> mapper.map(e, UserAlertTimeDTO.class)).toList());
+		    return dto;
+		});
+
     }
 
     public Mono<OrderModulesDTO> createOrderModules(String uuid, Modules modules) {
