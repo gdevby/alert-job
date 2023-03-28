@@ -145,7 +145,7 @@ public class CoreService {
     }
 
     public Mono<AppUserDTO> showUserAlertInfo(String uuid) {
-	return Mono.justOrEmpty(userRepository.findByUuid(uuid))
+	return Mono.justOrEmpty(userRepository.findByUuidOneEagerUserAlertTimes(uuid))
 		.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found"))).map(u -> {
 		    AppUserDTO dto = mapper.map(u, AppUserDTO.class);
 		    dto.setAlertTimeDTO(
