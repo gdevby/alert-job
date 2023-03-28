@@ -19,6 +19,8 @@ public class AppUser extends BasicId {
     private String uuid;
     @OneToMany(mappedBy = "user")
     private Set<OrderModules> orderModules;
+    @OneToMany(mappedBy = "user")
+    private Set<UserAlertTime> userAlertTimes;
     private String email;
     private Long telegram;
     private boolean switchOffAlerts = true;
