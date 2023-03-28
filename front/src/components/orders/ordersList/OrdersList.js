@@ -8,4 +8,4 @@ const OrdersList = ({ orders }) => {
 	</div>
 }
 
-export default OrdersList
+export default OrdersList;

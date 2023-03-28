@@ -23,11 +23,6 @@ const Orders = () => {
 	const showOrders = (type = ordersType) => {
 		setOrdersType(type)
 		setIsFetching(true)
-		/*if (!isShowingOrders) {
-			setIsFetching(true)
-		} else {
-			setIsShowingOrders(false)
-		}*/
 	}
 
 	const getOrders = () => {
@@ -47,7 +42,7 @@ const Orders = () => {
 			getOrders()
 		}
 	}, [isFetching])
-	
+
 	const Empty = () => {
 		return <div className='orders__list_empty'>
 			<span>Заказы возможно еще не обновились, если вы только что добавили новый источник, подождите 10 минут.</span>
@@ -60,7 +55,7 @@ const Orders = () => {
 			<Btn onClick={() => showOrders(true)} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
 			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 			<Btn onClick={() => showOrders(false)} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
-			
+
 		</div>
 		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
 		{

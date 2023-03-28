@@ -4,16 +4,16 @@ import Typography from '@mui/material/Typography';
 import OrderDate from './OrderDate';
 
 const OrdersItemHead = (props) => {
-	
+
 	const { title, dateTime, technologies, price } = props.order
-	
+
 	return <>
 		<Typography sx={{ width: '33%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
 			<Typography sx={{ wordBreak: 'break-word' }} component='div'>
 				{title}
 			</Typography>
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
-				Дата: <OrderDate date={dateTime}/>
+				Дата: <OrderDate date={dateTime} />
 			</Typography>
 		</Typography>
 		<Typography sx={{ width: '33%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
