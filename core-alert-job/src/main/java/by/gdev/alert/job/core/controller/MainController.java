@@ -74,6 +74,12 @@ public class MainController {
 	return ResponseEntity.ok(coreService.addAlertTime(uuid, alertTime));
     }
 
+    @DeleteMapping("user/alert-time/{id}")
+    public Mono<ResponseEntity<Void>> deleteAlertTime(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	    @PathVariable("id") Long id) {
+	return coreService.removeAlertTime(uuid, id);
+    }
+
     @GetMapping("user/alert-info")
     public ResponseEntity<Mono<AppUserDTO>> getUserAlertInfo(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
 	return ResponseEntity.ok(coreService.showUserAlertInfo(uuid));

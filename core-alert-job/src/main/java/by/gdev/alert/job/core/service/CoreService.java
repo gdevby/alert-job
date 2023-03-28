@@ -144,6 +144,15 @@ public class CoreService {
 	});
     }
 
+    public Mono<ResponseEntity<Void>> removeAlertTime(String uuid, Long alertId) {
+	return Mono.justOrEmpty(alertTimeRepository.findByIdAndUserUuid(alertId, uuid))
+		.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found alert with id " + alertId)))
+		.map(e -> {
+		    alertTimeRepository.delete(e);
+		    return ResponseEntity.ok().build();
+		});
+    }
+
     public Mono<AppUserDTO> showUserAlertInfo(String uuid) {
 	return Mono.justOrEmpty(userRepository.findByUuidOneEagerUserAlertTimes(uuid))
 		.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found"))).map(u -> {
