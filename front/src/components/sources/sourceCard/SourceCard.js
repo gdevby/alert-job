@@ -20,8 +20,8 @@ const SourceCard = ({ item, removeCard }) => {
 			</TableCell>
 			<TableCell align="right">{item.cat?.nativeLocName || ''}</TableCell>
 			<TableCell align="right">{item.sub_cat.id ? item.sub_cat?.nativeLocName : 'Все подкатегории'}</TableCell>
-			<TableCell align="right" id={item.id} onClick={remove} className='source-card__remove'>
-				<DeleteIcon /></TableCell>
+			<TableCell align="right" id={item.id}>
+				<DeleteIcon onClick={remove}  className='source-card__remove' /></TableCell>
 		</TableRow>
 	</>
 }
