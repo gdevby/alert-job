@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useResize } from '../../../hooks/useResize';
 
 import Accordion from '@mui/material/Accordion';
@@ -10,10 +10,12 @@ import MobileOrderItemHead from '../../mobile/mobileOrderItem/MobileOrderItemHea
 import OrdersItemHead from '../ordersItem/OrdersItemHead';
 
 const OrdersItem = ({ order }) => {
-	const { width } = useResize()
-
+	const { width } = useResize();
+	
+	const [currentWidth, setCurrentWidth] = useState(width);
+	
 	useEffect(() => {
-		console.log(width)
+		setCurrentWidth(width)
 	}, [width])
 
 	const OrderLink = ({ link }) => {
@@ -27,7 +29,7 @@ const OrdersItem = ({ order }) => {
 			expandIcon={<ExpandMoreIcon />}
 			className='order__content'
 		>
-			{width <= 625? <MobileOrderItemHead {...order}/> : <OrdersItemHead {...order}/>}
+			{currentWidth <= 625? <MobileOrderItemHead order={order}/> : <OrdersItemHead order={order}/>}
 		</AccordionSummary>
 		<AccordionDetails>
 			<Typography className='order__message' dangerouslySetInnerHTML={{ __html: order.message }}>

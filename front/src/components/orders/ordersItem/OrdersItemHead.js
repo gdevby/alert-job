@@ -3,7 +3,9 @@ import React from 'react'
 import Typography from '@mui/material/Typography';
 import OrderDate from './OrderDate';
 
-const OrdersItemHead = ({title, date, technologies, price}) => {
+const OrdersItemHead = (props) => {
+	
+	const { title, dateTime, technologies, price } = props.order
 	
 	return <>
 		<Typography sx={{ width: '33%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
@@ -11,7 +13,7 @@ const OrdersItemHead = ({title, date, technologies, price}) => {
 				{title}
 			</Typography>
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
-				Дата: <OrderDate date={date}/>
+				Дата: <OrderDate date={dateTime}/>
 			</Typography>
 		</Typography>
 		<Typography sx={{ width: '33%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>

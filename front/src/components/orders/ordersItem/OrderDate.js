@@ -3,7 +3,7 @@ import React from 'react'
 import Moment from 'react-moment';
 
 const OrderDate = ({date}) => {
-	return <Moment format="hh:mm DD.MM.YYYY">
+	return <Moment local format="hh:mm DD.MM.YYYY" interval={0}> 
 			{date}
 		</Moment>
 }
