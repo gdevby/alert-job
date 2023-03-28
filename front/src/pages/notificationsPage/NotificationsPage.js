@@ -43,10 +43,16 @@ const NotificationsPage = () => {
 	}
 
 	useEffect(() => {
-		coreService.getStatus()
+		coreService.getAlertInfo()
 			.then(response => {
-				setAlertStatus(response.data)
-				getCurrentType()
+				console.log(response)
+				setAlertStatus(response.data.switchOffAlerts)
+				if (response.data.defaultSendType) {
+					setCurrentPlatform({ name: 'email', id: 1 })
+				} else {
+					setCurrentPlatform({ name: 'telegram', id: 2 })
+					setTelegramId(response.data.telegram == 'null' ? '' : response.data.telegram)
+				}
 			})
 			.catch(e => {
 				if (e.code == 302) {
@@ -55,17 +61,6 @@ const NotificationsPage = () => {
 			})
 
 	}, [])
-
-	const getCurrentType = () => {
-		coreService.getAlertType().then(response => {
-			if (response.data.type) {
-				setCurrentPlatform({ name: 'email', id: 1 })
-			} else {
-				setCurrentPlatform({ name: 'telegram', id: 2 })
-				setTelegramId(response.data.value == 'null' ? '' : response.data.value)
-			}
-		})
-	}
 
 	const handleValue = (text) => {
 		setAlertType(text)
