@@ -6,7 +6,7 @@ import alertBot from '../../../images/instructionForTg/alert-bot.jpg'
 import './instructionForTg.scss'
 
 const InstructionForTg = () => {
-	return <div className='instruction'>
+	return <div className='instruction mt-1'>
 		<h2>Чтобы получать уведомления в телеграм, вам надо</h2>
 		<div className='instruction__list-block'>
 			<ol className='instruction__list'>

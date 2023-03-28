@@ -11,8 +11,8 @@ import lombok.ToString;
 
 @Entity
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = "orderModules")
-@ToString(callSuper = true, exclude = "orderModules")
+@EqualsAndHashCode(callSuper = true, exclude = {"orderModules", "userAlertTimes"})
+@ToString(callSuper = true, exclude = {"orderModules", "userAlertTimes"})
 
 public class AppUser extends BasicId {
 
