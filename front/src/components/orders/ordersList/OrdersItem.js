@@ -12,12 +12,6 @@ import OrdersItemHead from '../ordersItem/OrdersItemHead';
 const OrdersItem = ({ order }) => {
 	const { width } = useResize();
 	
-	const [currentWidth, setCurrentWidth] = useState(width);
-	
-	useEffect(() => {
-		setCurrentWidth(width)
-	}, [width])
-
 	const OrderLink = ({ link }) => {
 		return <Typography component='a' target='_blank' href={link} sx={{ 'paddingLeft': 0, 'color': '#3d53f9;' }}>
 			{link}
@@ -29,7 +23,7 @@ const OrdersItem = ({ order }) => {
 			expandIcon={<ExpandMoreIcon />}
 			className='order__content'
 		>
-			{currentWidth <= 625? <MobileOrderItemHead order={order}/> : <OrdersItemHead order={order}/>}
+			{width <= 625? <MobileOrderItemHead order={order}/> : <OrdersItemHead order={order}/>}
 		</AccordionSummary>
 		<AccordionDetails>
 			<Typography className='order__message' dangerouslySetInnerHTML={{ __html: order.message }}>
