@@ -1,6 +1,7 @@
 package by.gdev.alert.job.core.service;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -12,14 +13,17 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.model.db.DelayOrderNotification;
 import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
+import by.gdev.alert.job.core.repository.DelayOrderNotificationRepository;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
@@ -37,6 +41,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
     private final WebClient webClient;
     private final StatisticService statisticService;
     private final AppUserRepository userRepository;
+    private final DelayOrderNotificationRepository delayOrderRepository;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -67,30 +72,58 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	users.forEach(user -> {
 	    user.getOrderModules().stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
 		o.getSources().forEach(s -> {
-		    List<String> list = orders.stream().peek(p -> {
+		    List<OrderDTO> list = orders.stream().peek(p -> {
 			statisticService.statisticTitleWord(p.getTitle(), p.getSourceSite());
 			statisticService.statisticTechnologyWord(p.getTechnologies(), p.getSourceSite());
 		    }).filter(f -> compareSiteSources(f.getSourceSite(), s))
-			    .filter(f -> isMatchUserFilter(f, o.getCurrentFilter()))
-			    .map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink()))
-			    .collect(Collectors.toList());
-		    String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
-			    : "http://notification:8019/telegram";
+			    .filter(f -> isMatchUserFilter(f, o.getCurrentFilter())).collect(Collectors.toList());
 		    if (!list.isEmpty()) {
-			UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
-				: new UserNotification(String.valueOf(user.getTelegram()), null);
-			un.setMessage(list.stream().collect(Collectors.joining(", ")));
-			Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve()
-				.bodyToMono(Void.class);
-			mono.subscribe(
-				e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(),
-					un.getToMail()),
-				e -> log.debug("failed to sent user's message by mail: {}, to {}",
-					user.isDefaultSendType(), un.getToMail()));
+			sendOrderToUser(user, list);
+
 		    }
 		});
 	    });
 	});
+    }
+
+    private void sendOrderToUser(AppUser user, List<OrderDTO> list) {
+	if (CollectionUtils.isEmpty(user.getUserAlertTimes())) {
+	    List<String> orders = list.stream()
+		    .map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
+	    sendMessageToUser(user, orders);
+	    return;
+	}
+	LocalDateTime time = LocalDateTime.now();
+	Integer day = time.getDayOfWeek().getValue();
+	Integer hour = time.getHour();
+	boolean value = user.getUserAlertTimes().stream()
+		.anyMatch(pr -> pr.getAlertDate() == day && pr.getStartAlert() <= hour && hour <= pr.getEndAlert());
+	if (value) {
+	    List<String> orders = list.stream()
+		    .map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
+	    sendMessageToUser(user, orders);
+	} else {
+	    list.forEach(l -> {
+		DelayOrderNotification don = new DelayOrderNotification();
+		don.setUser(user);
+		don.setLink(l.getLink());
+		don.setTitle(l.getTitle());
+		delayOrderRepository.save(don);
+	    });
+	}
+    }
+
+    private void sendMessageToUser(AppUser user, List<String> list) {
+	String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
+		: "http://notification:8019/telegram";
+	UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
+		: new UserNotification(String.valueOf(user.getTelegram()), null);
+	un.setMessage(list.stream().collect(Collectors.joining(", ")));
+	Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
+	mono.subscribe(
+		e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(), un.getToMail()),
+		e -> log.debug("failed to sent user's message by mail: {}, to {}", user.isDefaultSendType(),
+			un.getToMail()));
     }
 
     private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
@@ -159,5 +192,21 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		return true;
 	}
 	return false;
+    }
+
+    @Scheduled(cron = "0 0 1 * * *")
+    public void removeOrders() {
+	LocalDateTime time = LocalDateTime.now();
+	Integer day = time.getDayOfWeek().getValue();
+	Integer hour = time.getHour();
+	userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
+	    boolean value = user.getUserAlertTimes().stream()
+		    .anyMatch(pr -> pr.getAlertDate() == day && pr.getStartAlert() <= hour && hour <= pr.getEndAlert());
+	    if (value) {
+		List<String> orders = user.getDelayOrderNotifications().stream()
+			.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
+		sendMessageToUser(user, orders);
+	    }
+	});
     }
 }

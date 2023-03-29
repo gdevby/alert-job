@@ -11,8 +11,8 @@ import lombok.ToString;
 
 @Entity
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {"orderModules", "userAlertTimes"})
-@ToString(callSuper = true, exclude = {"orderModules", "userAlertTimes"})
+@EqualsAndHashCode(callSuper = true, exclude = { "orderModules", "userAlertTimes", "delayOrderNotifications" })
+@ToString(callSuper = true, exclude = { "orderModules", "userAlertTimes", "delayOrderNotifications" })
 
 public class AppUser extends BasicId {
 
@@ -25,4 +25,6 @@ public class AppUser extends BasicId {
     private Long telegram;
     private boolean switchOffAlerts = true;
     private boolean defaultSendType = true;
+    @OneToMany(mappedBy = "user")
+    private Set<DelayOrderNotification> delayOrderNotifications;
 }
