@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -196,12 +197,14 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
     @Scheduled(cron = "0 0 1 * * *")
     public void removeOrders() {
-	LocalDateTime time = LocalDateTime.now();
-	Integer day = time.getDayOfWeek().getValue();
-	Integer hour = time.getHour();
 	userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
 	    boolean value = user.getUserAlertTimes().stream()
-		    .anyMatch(pr -> pr.getAlertDate() == day && pr.getStartAlert() <= hour && hour <= pr.getEndAlert());
+		    .anyMatch(pr -> {
+		    	LocalDateTime time = LocalDateTime.now(ZoneId.of(pr.getTimeZone()));
+				Integer day = time.getDayOfWeek().getValue();
+				Integer hour = time.getHour();
+		    	return pr.getAlertDate() == day && pr.getStartAlert() <= hour && hour <= pr.getEndAlert();
+		    });
 	    if (value) {
 		List<String> orders = user.getDelayOrderNotifications().stream()
 			.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
