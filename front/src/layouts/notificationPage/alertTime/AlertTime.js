@@ -8,7 +8,7 @@ import Field from '../../../components/common/field/Field';
 import { coreService } from '../../../services/parser/endponits/coreService';
 
 const AlertTime = (props) => {
-
+	
 	const { shedule } = props;
 
 	const weekList =
@@ -41,7 +41,8 @@ const AlertTime = (props) => {
 		const data = {
 			alertDate: newDay.id,
 			startAlert,
-			endAlert
+			endAlert,
+			timeZone: (new Date().getTimezoneOffset() / 60).toString()
 		}
 		try {
 			await coreService.addAlertTime(data)

@@ -9,4 +9,5 @@ public class UserAlertTimeDTO {
     private Long alertDate;
     private Long startAlert;
     private Long endAlert;
+    private String timeZone;
 }

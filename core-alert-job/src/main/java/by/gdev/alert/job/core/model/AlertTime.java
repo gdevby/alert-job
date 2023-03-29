@@ -5,7 +5,8 @@ import lombok.Data;
 @Data
 public class AlertTime {
 
-    Long alertDate;
-    Long startAlert;
-    Long endAlert;
+	private Long alertDate;
+    private Long startAlert;
+    private Long endAlert;
+    private String timeZone;
 }

@@ -18,6 +18,8 @@ public class UserAlertTime extends BasicId {
     private Integer startAlert;
     @Column(nullable = false)
     private Integer endAlert;
+    @Column(nullable = false)
+    private String timeZone;
     @ManyToOne
     private AppUser user;
 }
