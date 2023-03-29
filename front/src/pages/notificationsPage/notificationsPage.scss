@@ -42,6 +42,11 @@
 .alert-time_inputs {
 	display: flex;
 	margin-left: 1rem;
+	align-items: center;
+	
+	& > span {
+		padding-right:.5rem;
+	}
 }
 
 .alert-time_added {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from "react-router-dom";
 
 import TextField from '@mui/material/TextField';
@@ -16,10 +16,6 @@ import { changeAuthStatus } from '../../hooks/changeAuthStatus';
 
 import './modulesPage.scss'
 
-
-
-
-
 const ModulesPage = () => {
 	const [moduleName, setModuleName] = useState('')
 	const [modules, setModules] = useState([])
@@ -28,7 +24,7 @@ const ModulesPage = () => {
 	const [isOpenPopup, setIsOpenPopup] = useState(false)
 	const [isLimit, setIsLimit] = useState(false)
 	const [popup, setPopup] = useState({})
-	
+
 	const navigate = useNavigate();
 
 	const { handleStatus } = changeAuthStatus()
@@ -114,6 +110,13 @@ const ModulesPage = () => {
 		setIsOpenPopup(false)
 	}
 
+	const showModules = useMemo(
+		() => modules.map(item => <Item key={item.id}><ModuleCard item={item}
+			removeCard={confirmRemovsModule}
+			openModule={openModule}
+		/></Item>), [modules]
+	)
+
 
 	return <div className='modules'>
 		<Popup
@@ -137,10 +140,7 @@ const ModulesPage = () => {
 			</div>
 			<Alert open={isShowAlert} type={'warning'} content={'Модуль с таким именем уже существует.'} />
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
-				{modules.length > 0 && modules.map(item => <Item key={item.id}><ModuleCard item={item}
-					removeCard={confirmRemovsModule}
-					openModule={openModule}
-				/></Item>)}
+				{modules.length > 0 && showModules}
 			</List>}
 		</div>
 	</div>

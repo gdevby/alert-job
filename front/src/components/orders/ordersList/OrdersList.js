@@ -3,6 +3,7 @@ import OrdersItem from './OrdersItem'
 
 const OrdersList = ({ orders }) => {
 
+
 	return <div className={'orders__list'}>
 		{orders.map(item => <OrdersItem key={item.dateTime} order={item} />)}
 	</div>

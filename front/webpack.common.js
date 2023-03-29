@@ -16,6 +16,9 @@ module.exports = {
 		path: path.resolve(__dirname, 'dist'),
 		clean: true,
 	},
+	optimization: {
+		usedExports: true,
+	},
 	module: {
 		rules: [
 			{
@@ -41,5 +44,5 @@ module.exports = {
 				use: ['file-loader'],
 			}
 		]
-	},
+	}
 }

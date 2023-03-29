@@ -132,7 +132,7 @@ const AddFilterPage = () => {
 					color={isShowNegativeFilters ? 'success' : 'error'} variant='contained' onClick={showNegativeFilters} className='filtersPage__show' />
 				{isShowNegativeFilters && <Filters type={'negative-'} />}
 				<div className='filter__actions'>
-					
+
 				</div>
 			</>
 			}
