@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Btn from '../../components/common/button/Button'
-import MobileMenu from '../../components/mobile/mobileMenu/MobileMenu';
+import MobileMenu from '../../components/mobile/menu/MobileMenu';
 
 import './header.scss'
 

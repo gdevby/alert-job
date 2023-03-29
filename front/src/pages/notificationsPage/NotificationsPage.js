@@ -5,6 +5,7 @@ import InstructionForTg from '../../components/notification/instructionForTg/Ins
 import NotificationSource from '../../layouts/notificationPage/norificationSource/NotificationSource';
 import AlertStatus from '../../layouts/notificationPage/alertStatus/AlertStatus';
 import AlertTime from '../../layouts/notificationPage/alertTime/AlertTime';
+import Btn from '../../components/common/button/Button';
 
 import { coreService } from '../../services/parser/endponits/coreService'
 import { changeAuthStatus } from '../../hooks/changeAuthStatus';
@@ -17,6 +18,7 @@ const NotificationsPage = () => {
 	const [alertStatus, setAlertStatus] = useState(false)
 	const [telegramId, setTelegramId] = useState('')
 	const [shedule, setShedule] = useState([])
+	const [isOpenTime, setIsOpenTime] = useState(false)
 
 	const { handleStatus } = changeAuthStatus()
 
@@ -51,6 +53,10 @@ const NotificationsPage = () => {
 		coreService.changeAlertsStatus(!alertStatus).then(() => setAlertStatus(!alertStatus))
 	}
 
+	const handleShowsAlertTime = () => {
+		setIsOpenTime(prev => !prev)
+	}
+
 	return <div className='notification_page'>
 		<div className='container'>
 			<Title text='Настройка уведомлений' />
@@ -60,7 +66,8 @@ const NotificationsPage = () => {
 				tgId={telegramId}
 			/>
 			<AlertStatus alertStatus={alertStatus} handleAlertsStatus={handleAlertsStatus} />
-			<AlertTime shedule={shedule}/>
+			<Btn className='mt-1' text={isOpenTime? 'Скрыть найстройку уведомлений' : 'Показать настройку уведомлений'} onClick={handleShowsAlertTime}/>
+			{isOpenTime && <AlertTime shedule={shedule}/>}
 			{currentPlatform.name == 'telegram' && <InstructionForTg />}
 		</div>
 	</div>

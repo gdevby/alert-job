@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { useResize } from '../../../hooks/useResize';
 
 import Accordion from '@mui/material/Accordion';
@@ -6,7 +6,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import MobileOrderItemHead from '../../mobile/mobileOrderItem/MobileOrderItemHead';
+import MobileOrderItemHead from '../../mobile/orderItem/MobileOrderItemHead';
 import OrdersItemHead from '../ordersItem/OrdersItemHead';
 
 const OrdersItem = ({ order }) => {

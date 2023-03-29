@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 
-import './field.scss'
+import TextField from '@mui/material/TextField';
 
-const Field = ({ defaultValue, type, placeholder, cb, onBlur = () => { }, label = undefined }) => {
+import './field.scss';
+
+const Field = (props) => {
+	const { defaultValue, type, placeholder, cb, onBlur = () => { }, label = undefined } = props
+	
 	const [current_value, setValue] = useState('')
 
 	useEffect(() => {
@@ -16,11 +20,16 @@ const Field = ({ defaultValue, type, placeholder, cb, onBlur = () => { }, label 
 	}
 
 	return <div className='field-container'>
-	{label && <label htmlFor='input'>{label}</label>}
-	<input className='input' id='input' 
-			type={type} placeholder={placeholder} 
-			onChange={handleValue} value={current_value} 
-			onBlur={onBlur} />
+		<TextField
+			id="standard-basic"
+			label={label}
+			variant="standard"
+			placeholder={placeholder}
+			onChange={handleValue}
+			onBlur={onBlur}
+			value={current_value}
+			type={type}
+		/>
 	</div>
 }
 

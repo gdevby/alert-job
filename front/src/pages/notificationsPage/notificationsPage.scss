@@ -34,6 +34,26 @@
 	margin-top: 1rem;
 }
 
+.alert-time_prop {
+	display: flex;
+	width: 50%;
+}
+
+.alert-time_inputs {
+	display: flex;
+	margin-left: 1rem;
+}
+
+.alert-time_added {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	grid-column-gap: 10px;
+	grid-row-gap: 1em;
+	& > div {
+		color: black;
+	}
+}
+
 
 @media (max-width: 865px) {
 	.notification_source {
@@ -58,7 +78,7 @@
 }
 
 @media (max-width: 450px) {
-	.instruction__list > img {
+	.instruction__list>img {
 		width: 100%;
 	}
 }

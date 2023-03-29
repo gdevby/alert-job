@@ -1,31 +1,32 @@
 import React, { useEffect, useState } from 'react';
 
 import DropDownList from '../../../components/common/dropDownList/DropDowList';
-import { SingleInputTimeRangeField } from '@mui/x-date-pickers-pro/SingleInputTimeRangeField';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
-import Btn from '../../../components/common/button/Button'
-import Item from '../../../components/common/item/Item'
+import Btn from '../../../components/common/button/Button';
+import Item from '../../../components/common/item/Item';
+import Field from '../../../components/common/field/Field';
 
 import { coreService } from '../../../services/parser/endponits/coreService';
 
 const AlertTime = (props) => {
-	
+
 	const { shedule } = props;
-	
+
 	const weekList =
 		[
 			{ id: 1, name: 'Понедельник' },
 			{ id: 2, name: 'Вторник' },
 			{ id: 3, name: 'Среда' },
 			{ id: 4, name: 'Четверг' },
-			{ id: 5, name: 'Понедельник' },
+			{ id: 5, name: 'Пятница' },
 			{ id: 6, name: 'Суббот' },
 			{ id: 7, name: 'Воскресенье' }
 		]
+
 	const [value, setValue] = useState()
 	const [addedAlertDays, setAddedAlertDays] = useState([])
 	const [newDay, setNewDay] = useState({})
+	const [startAlert, setStartAlert] = useState(0)
+	const [endAlert, setEndAlert] = useState(24)
 
 	const handleValue = (time) => {
 		console.log(new Date(time))
@@ -36,43 +37,74 @@ const AlertTime = (props) => {
 		setNewDay(value)
 	}
 
-	const addAlertTime = () => {
+	const addAlertTime = async () => {
 		const data = {
 			alertDate: newDay.id,
-			startAlert: new Date(value[0]).getHours(),
-			endAlert: new Date(value[1]).getHours()
+			startAlert,
+			endAlert
 		}
-		coreService.addAlertTime(data)
+		try {
+			await coreService.addAlertTime(data)
+			setAddedAlertDays(prev => [...prev, data])
+		} catch (e) {
+			console.log(e)
+		}
 	}
-	
+
+	const getDayById = (id) => {
+		const day = weekList.find(item => item.id == id)
+		return day.name
+	}
+
 	useEffect(() => {
-		shedule && setAddedAlertDays(shedule)
+		if (shedule) {
+			setAddedAlertDays(shedule)
+		}
 	}, [shedule])
+
+	const removeTime = async (e) => {
+		const id = e.target.id
+		try {
+			await coreService.removeAlertTime(id)
+			setAddedAlertDays(prev => prev.filter(item => item.id != id))
+		} catch (e) {
+			console.log(e)
+		}
+	}
+
+	const handlerStartAlertValue = (value) => {
+		if (startAlert >= 24) setStartAlert(23)
+		if (startAlert < 0) setStartAlert(0)
+		if (startAlert > endAlert) setStartAlert(endAlert)
+	}
+
+	const handlerEndAlertValue = (value) => {
+		if (endAlert >= 24) setEndAlert(23)
+		if (endAlert < 0) setEndAlert(0)
+		if (endAlert < startAlert) setEndAlert(startAlert)
+	}
 
 	return <div className='mt-1'>
 		<p>Выберите дни и время, в которое буду приходить уведомления</p>
-		<div className='mt-1'>
+		<div className='mt-1 alert-time_prop'>
 			<DropDownList label={'Дни недели'} defaultLabe={'Дни недели'} elems={weekList} onClick={handleDay} />
+			<div className='alert-time_inputs'>
+				от <Field type="number" cb={(numb) => setStartAlert(Number(numb))} defaultValue={startAlert} onBlur={handlerStartAlertValue} />
+				до <Field type="number" cb={(numb) => setEndAlert(Number(numb))} defaultValue={endAlert} onBlur={handlerEndAlertValue} />
+			</div>
 		</div>
 		<div className='mt-1'>
-			<LocalizationProvider dateAdapter={AdapterMoment}>
-				<SingleInputTimeRangeField
-					label="Период времени"
-					value={value}
-					onChange={handleValue}
-					format="HH"
-					size='small'
-				/>
-			</LocalizationProvider>
-		</div>
-		<div>
 			<Btn text={'Добавить'} onClick={addAlertTime} />
 		</div>
-		<div>
-			{addedAlertDays.map(item => <Item>
-				<div>{item.alertDate}</div>
-				<div>{item.startAlert} - {item.endAlert}</div>
-			</Item>)}
+		<div className='mt-1'>
+			<p>Установленные периоды:</p>
+			<div className='alert-time_added mt-1'>
+				{addedAlertDays.length > 0 ? addedAlertDays.map(item => <Item>
+					<div>{getDayById(item.alertDate)}</div>
+					<div>{item.startAlert} - {item.endAlert}</div>
+					<Btn text={'Удалить'} id={item.id} onClick={removeTime} />
+				</Item>) : <p>Пока ничего не добавлено.</p>}
+			</div>
 		</div>
 	</div>
 }
