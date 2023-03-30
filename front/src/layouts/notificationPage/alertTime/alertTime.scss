@@ -1,0 +1,13 @@
+@media (max-width: 690px) {
+	.alert-time_prop {
+		flex-wrap: wrap;
+	}
+	
+	.alert-time_inputs {
+		margin-left: 0;
+	}
+	
+	.alert-time_added {
+		grid-template-columns: repeat(3, 1fr);
+	}
+}

@@ -166,8 +166,6 @@ const DescriptionWords = ({ filter_id, type, setIsLimit }) => {
 				list.removeEventListener('scroll', scrollHandler);
 			};
 		}
-
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [listRef])
 	
 	useEffect(() => {

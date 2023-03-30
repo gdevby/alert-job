@@ -78,8 +78,32 @@
 
 		&__send-btn {
 			margin-top: 1rem;
+			
+			& > button {
+				margin-left: 0;
+			}
 		}
 	}
+}
+
+@media (max-width: 476px) {
+	.notification_source__send-btn {
+		flex-wrap: wrap;
+	}
+	
+	.notification_source__send-btn > button {
+		width: 100%;
+		
+		&:first-child {
+			margin-bottom: 1rem;
+		}
+		
+		&:last-child {
+			margin-left: 0;
+		}
+	}
+	
+	
 }
 
 @media (max-width: 450px) {

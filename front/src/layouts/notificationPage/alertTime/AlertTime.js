@@ -7,8 +7,10 @@ import Field from '../../../components/common/field/Field';
 
 import { coreService } from '../../../services/parser/endponits/coreService';
 
+import './alertTime.scss'
+
 const AlertTime = (props) => {
-	
+
 	const { shedule } = props;
 
 	const weekList =
@@ -18,7 +20,7 @@ const AlertTime = (props) => {
 			{ id: 3, name: 'Среда' },
 			{ id: 4, name: 'Четверг' },
 			{ id: 5, name: 'Пятница' },
-			{ id: 6, name: 'Суббот' },
+			{ id: 6, name: 'Суббота' },
 			{ id: 7, name: 'Воскресенье' }
 		]
 
@@ -45,8 +47,8 @@ const AlertTime = (props) => {
 			timeZone: (new Date().getTimezoneOffset() / 60).toString()
 		}
 		try {
-			await coreService.addAlertTime(data)
-			setAddedAlertDays(prev => [...prev, data])
+			const newAlert = await coreService.addAlertTime(data)
+			setAddedAlertDays(prev => [...prev, newAlert.data])
 		} catch (e) {
 			console.log(e)
 		}
@@ -58,6 +60,7 @@ const AlertTime = (props) => {
 	}
 
 	useEffect(() => {
+		console.log(shedule)
 		if (shedule) {
 			setAddedAlertDays(shedule)
 		}
@@ -99,13 +102,14 @@ const AlertTime = (props) => {
 		</div>
 		<div className='mt-1'>
 			<p>Установленные периоды:</p>
-			<div className='alert-time_added mt-1'>
-				{addedAlertDays.length > 0 ? addedAlertDays.map(item => <Item>
-					<div>{getDayById(item.alertDate)}</div>
-					<div>{item.startAlert} - {item.endAlert}</div>
-					<Btn text={'Удалить'} id={item.id} onClick={removeTime} />
-				</Item>) : <p>Пока ничего не добавлено.</p>}
-			</div>
+			{addedAlertDays.length > 0 ?
+				<div className='alert-time_added mt-1'>
+					{addedAlertDays.map(item => <Item>
+						<div>{getDayById(item.alertDate)}</div>
+						<div>{item.startAlert} - {item.endAlert}</div>
+						<Btn text={'Удалить'} id={item.id} onClick={removeTime} />
+					</Item>)}
+				</div> : <p>Пока ничего не добавлено.</p>}
 		</div>
 	</div>
 }
