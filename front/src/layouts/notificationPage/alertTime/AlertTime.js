@@ -28,7 +28,7 @@ const AlertTime = (props) => {
 	const [addedAlertDays, setAddedAlertDays] = useState([])
 	const [newDay, setNewDay] = useState({})
 	const [startAlert, setStartAlert] = useState(0)
-	const [endAlert, setEndAlert] = useState(24)
+	const [endAlert, setEndAlert] = useState(23)
 
 	const handleValue = (time) => {
 		console.log(new Date(time))
@@ -104,7 +104,7 @@ const AlertTime = (props) => {
 			<p>Установленные периоды:</p>
 			{addedAlertDays.length > 0 ?
 				<div className='alert-time_added mt-1'>
-					{addedAlertDays.map(item => <Item>
+					{addedAlertDays.map(item => <Item key={item.endAlert}>
 						<div>{getDayById(item.alertDate)}</div>
 						<div>{item.startAlert} - {item.endAlert}</div>
 						<Btn text={'Удалить'} id={item.id} onClick={removeTime} />

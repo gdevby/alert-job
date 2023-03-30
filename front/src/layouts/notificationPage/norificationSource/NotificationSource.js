@@ -8,13 +8,15 @@ import { coreService } from '../../../services/parser/endponits/coreService';
 
 const NotificationSource = (props) => {
 	const { handleCurrentPlatform, currentPlatform, tgId } = props;
-	
+
 	const [telegramId, setTelegramId] = useState('')
 
 	const platforms = [{ name: 'email', id: 1 }, { name: 'telegram', id: 2 }];
 
 	useEffect(() => {
-		setTelegramId(tgId)
+		if (tgId) {
+			setTelegramId(tgId)
+		}
 	}, [tgId])
 
 	const saveTgId = () => {

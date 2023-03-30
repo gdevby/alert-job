@@ -24,7 +24,6 @@ const NotificationsPage = () => {
 
 
 	const handleCurrentPlatform = (data) => {
-		console.log(data)
 		setCurrentPlatform(data)
 		coreService.changeAlertsType(data.name == 'email')
 	}
@@ -38,7 +37,6 @@ const NotificationsPage = () => {
 					setCurrentPlatform({ name: 'email', id: 1 })
 				} else {
 					setCurrentPlatform({ name: 'telegram', id: 2 })
-					console.log(response.data.telegrams)
 					setTelegramId(response.data.telegram == 'null' ? '' : response.data.telegram)
 				}
 			})
