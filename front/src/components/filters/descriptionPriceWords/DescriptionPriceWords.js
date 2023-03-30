@@ -191,7 +191,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 					{result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
 				</div>
 			</DialogContent>
-			<DialogActions>
+			<DialogActions className='searchPopup__actions'>
 				<Btn onClick={add} text={'Добавить'} variant='contained' />
 			</DialogActions>
 		</Dialog>

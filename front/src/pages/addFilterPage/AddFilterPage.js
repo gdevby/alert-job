@@ -117,17 +117,14 @@ const AddFilterPage = () => {
 		navigate(`/page/filters/${module_id}`)
 	}
 
-
-
 	return <div className='filtersPage'>
 		<div className='container'>
 			<Title text={'Добавление фильтров'} />
 			<Btn text={'Вернуться к модулю'} onClick={addNewFilter} variant='contained' />
-			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter} />
-
+			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter} filter_id={filter_id}/>
 			{filterId && <>
 				<Filters />
-				<p>Негативные фильтры фильтруют заказы, которые проходят по фильтрам выше, то есть дополнительное фильтрование.</p>
+				<p className='mt-1'>Негативные фильтры фильтруют заказы, которые проходят по фильтрам выше, то есть дополнительное фильтрование.</p>
 				<Btn text={isShowNegativeFilters ? 'Негативные фильтры активны' : 'Негативные фильтры неактивны'}
 					color={isShowNegativeFilters ? 'success' : 'error'} variant='contained' onClick={showNegativeFilters} className='filtersPage__show' />
 				{isShowNegativeFilters && <Filters type={'negative-'} />}

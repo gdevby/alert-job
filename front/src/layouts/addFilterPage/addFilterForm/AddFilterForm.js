@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Btn from '../../../components/common/button/Button'
 import TextField from '@mui/material/TextField';
 import LimitPopup from '../../../components/common/popup/LimitPopup';
+import DescriptionPriceWords from '../../../components/filters/descriptionPriceWords/DescriptionPriceWords';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -11,7 +12,7 @@ import { filterService } from '../../../services/parser/endponits/filterService'
 import { setCurrentFilter } from '../../../store/slices/filterSlice';
 
 
-const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
+const AddFilterForm = ({ setFilterId, module_id, updateFilter, filter_id }) => {
 	const [filterName, setFilterName] = useState('')
 	const [minPrice, setMinPrice] = useState('')
 	const [maxPrice, setMaxPrice] = useState('')
@@ -24,6 +25,7 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 	const navigate = useNavigate()
 
 	const addFilter = event => {
+		if (filterName == '') return
 		filterService
 			.addFilter(module_id, { name: filterName, minValue: null, maxValue: null })
 			.then(response => {
@@ -84,7 +86,6 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 		setIsAdded(isNew)
 	}, [isNew])
 
-
 	return <div className='mt-1'>
 		<LimitPopup handleClose={() => setIsLimit(false)}
 			open={isLimit} />
@@ -108,23 +109,24 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter }) => {
 				label="Минимальная цена"
 				variant="standard"
 				placeholder='Минимальная цена'
+				className='price_block_input'
 				type='number'
 				value={minPrice}
 				onChange={(e) => setMinPrice(e.target.value)}
 				onBlur={() => updateCurrentFilter('minPrice')}
 			/>
-
 			<TextField
 				id="max-price"
 				label="Максимальная цена"
 				variant="standard"
 				placeholder='Максимальная цена'
+				className='price_block_input'
 				type='number'
 				value={maxPrice}
-				className='mt-1'
 				onChange={(e) => setMaxPrice(e.target.value)}
 				onBlur={() => updateCurrentFilter('maxPrice')}
 			/>
+			<DescriptionPriceWords filter_id={filter_id} type={''} setIsLimit={setIsLimit} />
 		</div>}
 	</div>
 }
