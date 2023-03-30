@@ -40,16 +40,22 @@
 	flex-wrap: wrap;
 
 	&_input {
-		width: 24%;
-	}
-
-	&>.wordsContains__title {
-		width: 50%;
+		width: 18%;
 	}
 
 	&>div {
 		display: flex;
 		flex-direction: column;
+	}
+	
+	&>.wordsContains__title {
+		width: 60%;
+		flex-direction: inherit;
+		align-items: center;
+		
+		& > button {
+			margin-left: 1rem;
+		}
 	}
 
 	&>.addedWords {
@@ -222,6 +228,10 @@
 
 	.searchPopup__actions>button {
 		width: 100%;
+	}
+	
+	.price_block > .wordsContains__title > button {
+		margin-left: 0;
 	}
 
 	.addedWords {
