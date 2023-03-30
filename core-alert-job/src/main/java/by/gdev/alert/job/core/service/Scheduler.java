@@ -88,18 +88,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
     }
 
     private void sendOrderToUser(AppUser user, List<OrderDTO> list) {
-	if (CollectionUtils.isEmpty(user.getUserAlertTimes())) {
-	    List<String> orders = list.stream()
-		    .map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
-	    sendMessageToUser(user, orders);
-	    return;
-	}
-	LocalDateTime time = LocalDateTime.now();
-	Integer day = time.getDayOfWeek().getValue();
-	Integer hour = time.getHour();
-	boolean value = user.getUserAlertTimes().stream()
-		.anyMatch(pr -> pr.getAlertDate() == day && pr.getStartAlert() <= hour && hour <= pr.getEndAlert());
-	if (value) {
+	if (CollectionUtils.isEmpty(user.getUserAlertTimes()) || isMatchUserAlertTimes(user)) {
 	    List<String> orders = list.stream()
 		    .map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
 	    sendMessageToUser(user, orders);
@@ -195,21 +184,26 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	return false;
     }
 
-    @Scheduled(cron = "0 0 1 * * *")
-    public void removeOrders() {
+    @Scheduled(cron = "0 0/10 * * * *")
+    public void sendDelayOrders() {
+	log.info("start Scheduller");
 	userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
-	    boolean value = user.getUserAlertTimes().stream()
-		    .anyMatch(pr -> {
-		    	LocalDateTime time = LocalDateTime.now(ZoneId.of(pr.getTimeZone()));
-				Integer day = time.getDayOfWeek().getValue();
-				Integer hour = time.getHour();
-		    	return pr.getAlertDate() == day && pr.getStartAlert() <= hour && hour <= pr.getEndAlert();
-		    });
-	    if (value) {
+	    if (isMatchUserAlertTimes(user)) {
 		List<String> orders = user.getDelayOrderNotifications().stream()
 			.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
 		sendMessageToUser(user, orders);
+		log.info("delete orders size {}", orders.size());
+		delayOrderRepository.deleteAllByUser(user);
 	    }
+	});
+    }
+
+    private boolean isMatchUserAlertTimes(AppUser user) {
+	return user.getUserAlertTimes().stream().anyMatch(pr -> {
+	    LocalDateTime time = LocalDateTime.now(ZoneId.of(pr.getTimeZone()));
+	    Integer day = time.getDayOfWeek().getValue();
+	    Integer hour = time.getHour();
+	    return pr.getAlertDate().equals(day) && pr.getStartAlert() < hour && hour < pr.getEndAlert();
 	});
     }
 }
