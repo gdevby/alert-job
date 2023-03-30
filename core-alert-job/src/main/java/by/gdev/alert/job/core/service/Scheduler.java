@@ -191,7 +191,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		List<String> orders = user.getDelayOrderNotifications().stream()
 			.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
 		sendMessageToUser(user, orders);
-		delayOrderRepository.deleteAllByUser(user);
+		delayOrderRepository.deleteAll(user.getDelayOrderNotifications());
 	    }
 	});
     }
