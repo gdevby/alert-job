@@ -34,6 +34,8 @@ const AlertTime = (props) => {
 		setStartAlert(0)
 		setEndAlert(23)
 	}
+	console.log(Math.sign(new Date().getTimezoneOffset()))
+	console.log(new Date())
 
 	const addAlertTime = async () => {
 		if (!newDay.id) return;
@@ -41,13 +43,22 @@ const AlertTime = (props) => {
 			alertDate: newDay.id,
 			startAlert,
 			endAlert,
-			timeZone: (new Date().getTimezoneOffset() / 60).toString()
+			timeZone: getTimeZone(new Date().getTimezoneOffset() / 60)
 		}
 		try {
 			const newAlert = await coreService.addAlertTime(data)
 			setAddedAlertDays(prev => [...prev, newAlert.data])
 		} catch (e) {
 			console.log(e)
+		}
+	}
+	
+	const getTimeZone = (zone) => {
+		if (Math.sign(zone) == 1) {
+			return `-${zone}`
+		}
+		if (Math.sign(zone) == -1) {
+			return `+${-zone}`
 		}
 	}
 
