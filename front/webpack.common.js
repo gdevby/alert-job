@@ -1,11 +1,15 @@
 const path = require('path')
 
+const { InjectManifest } = require('workbox-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 
 const plugins = [
 	new MiniCssExtractPlugin({
 		filename: '[name].css'
+	}),
+	new InjectManifest({
+		swSrc: './src/service-worker.js',
 	})
 ];
 
