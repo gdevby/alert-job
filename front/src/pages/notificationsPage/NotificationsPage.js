@@ -64,7 +64,7 @@ const NotificationsPage = () => {
 				tgId={telegramId}
 			/>
 			<AlertStatus alertStatus={alertStatus} handleAlertsStatus={handleAlertsStatus} />
-			<Btn className='mt-1' text={isOpenTime? 'Скрыть найстройку уведомлений' : 'Показать настройку уведомлений'} onClick={handleShowsAlertTime}/>
+			<Btn className='mt-1' text={isOpenTime? 'Скрыть настройку время оповещения' : 'Показать настройки время оповещения'} onClick={handleShowsAlertTime}/>
 			{isOpenTime && <AlertTime shedule={shedule}/>}
 			{currentPlatform.name == 'telegram' && <InstructionForTg />}
 		</div>

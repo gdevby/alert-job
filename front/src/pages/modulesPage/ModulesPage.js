@@ -131,7 +131,7 @@ const ModulesPage = () => {
 		<div className='container'>
 			<p>Теперь вам надо создать модуль, который позволит вам выбрать несколько источников заказов и установить активный фильтр для этого модуля,
 				который будет фильтровать ваши заказы.
-				К примеру: можно использовать разные фильтры для заказов из разных сайтов.</p>
+				К примеру: можно создать модули для разных сайтов, откуда берутся заказы.</p>
 			<div className='modules__adding-form'>
 				<TextField id="standard-basic" label="Введите название модуля" variant="standard" placeholder='Название модуля' onChange={changeModuleName} />
 				<div className='modules__add-module-btn'>

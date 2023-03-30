@@ -90,7 +90,7 @@ const AlertTime = (props) => {
 		<div className='mt-1 alert-time_prop'>
 			<DropDownList label={'Дни недели'} defaultLabe={'Дни недели'} elems={weekList} onClick={handleDay} />
 			<div className='alert-time_inputs'>
-				<span>от </span><Field type="number" cb={(numb) => setStartAlert(Number(numb))} defaultValue={startAlert} onBlur={handlerStartAlertValue} />
+				<span>с </span><Field type="number" cb={(numb) => setStartAlert(Number(numb))} defaultValue={startAlert} onBlur={handlerStartAlertValue} />
 				<span>до </span><Field type="number" cb={(numb) => setEndAlert(Number(numb))} defaultValue={endAlert} onBlur={handlerEndAlertValue} />
 			</div>
 		</div>
