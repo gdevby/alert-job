@@ -186,13 +186,11 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
     @Scheduled(cron = "0 0/10 * * * *")
     public void sendDelayOrders() {
-	log.info("start Scheduller");
 	userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
 	    if (isMatchUserAlertTimes(user)) {
 		List<String> orders = user.getDelayOrderNotifications().stream()
 			.map(e -> String.format("Новый заказ - %s \n %s", e.getTitle(), e.getLink())).toList();
 		sendMessageToUser(user, orders);
-		log.info("delete orders size {}", orders.size());
 		delayOrderRepository.deleteAllByUser(user);
 	    }
 	});
