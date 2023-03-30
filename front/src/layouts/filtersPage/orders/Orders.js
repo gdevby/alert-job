@@ -22,6 +22,7 @@ const Orders = () => {
 
 	const showOrders = (type = ordersType) => {
 		setOrdersType(type)
+		setIsShowingOrders(true)
 		setIsFetching(true)
 	}
 
@@ -32,7 +33,6 @@ const Orders = () => {
 				setOrders(response.data)
 			})
 			.finally(() => {
-				setIsShowingOrders(true)
 				setIsFetching(false)
 			})
 	}
@@ -59,7 +59,7 @@ const Orders = () => {
 		</div>
 		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
 		{
-			isShowingOrders && (isFetching ? <CircularProgress /> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
+			isShowingOrders && (isFetching ? <div style={{textAlign: 'center', marginTop: '.5rem'}}><CircularProgress /></div> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
 		}
 
 	</div>
