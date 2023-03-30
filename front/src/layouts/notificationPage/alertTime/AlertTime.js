@@ -24,22 +24,19 @@ const AlertTime = (props) => {
 			{ id: 7, name: 'Воскресенье' }
 		]
 
-	const [value, setValue] = useState()
 	const [addedAlertDays, setAddedAlertDays] = useState([])
 	const [newDay, setNewDay] = useState({})
 	const [startAlert, setStartAlert] = useState(0)
 	const [endAlert, setEndAlert] = useState(23)
 
-	const handleValue = (time) => {
-		console.log(new Date(time))
-		setValue(time)
-	}
-
 	const handleDay = (value) => {
 		setNewDay(value)
+		setStartAlert(0)
+		setEndAlert(23)
 	}
 
 	const addAlertTime = async () => {
+		if (!newDay.id) return;
 		const data = {
 			alertDate: newDay.id,
 			startAlert,
