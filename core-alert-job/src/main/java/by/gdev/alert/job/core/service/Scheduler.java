@@ -62,8 +62,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
 				forEachOrders(users, event.data());
 			} catch (Throwable ex) {
-				log.error("problem with subscribe");
-				ex.printStackTrace();
+				log.error("problem with subscribe", ex.getMessage());
 			}
 		}, error -> log.warn("failed to get orders from parser {}", error));
 
