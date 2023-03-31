@@ -7,9 +7,10 @@ import DropDownList from '../../../components/common/dropDownList/DropDowList';
 import { coreService } from '../../../services/parser/endponits/coreService';
 
 const NotificationSource = (props) => {
-	const { handleCurrentPlatform, currentPlatform, tgId } = props;
+	const { handleCurrentPlatform, currentPlatform, tgId, alertType } = props;
 
 	const [telegramId, setTelegramId] = useState('')
+	const [type, setType] = useState()
 
 	const platforms = [{ name: 'email', id: 1 }, { name: 'telegram', id: 2 }];
 
@@ -20,10 +21,15 @@ const NotificationSource = (props) => {
 	}, [tgId])
 
 	const saveTgId = () => {
-		if (alertType != '') {
+		if (!type) {
 			coreService.changeTgId(telegramId).then(console.log)
 		}
 	}
+	
+	useEffect(() => {
+		console.log(alertType)
+		setType(alertType)
+	}, [alertType])
 
 	const sendTestNotification = () => {
 		coreService.sendTestMessage().then(console.log)

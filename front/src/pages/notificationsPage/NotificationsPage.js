@@ -19,6 +19,7 @@ const NotificationsPage = () => {
 	const [telegramId, setTelegramId] = useState('')
 	const [shedule, setShedule] = useState([])
 	const [isOpenTime, setIsOpenTime] = useState(false)
+	const [alertType, setAlertType] = useState()
 
 	const { handleStatus } = changeAuthStatus()
 
@@ -33,6 +34,7 @@ const NotificationsPage = () => {
 			.then(response => {
 				setAlertStatus(response.data.switchOffAlerts)
 				setShedule(response.data.alertTimeDTO)
+				setAlertType(response.data.defaultSendType)
 				if (response.data.defaultSendType) {
 					setCurrentPlatform({ name: 'email', id: 1 })
 				} else {
@@ -62,6 +64,7 @@ const NotificationsPage = () => {
 				handleCurrentPlatform={handleCurrentPlatform}
 				currentPlatform={currentPlatform}
 				tgId={telegramId}
+				alertType={alertType}
 			/>
 			<AlertStatus alertStatus={alertStatus} handleAlertsStatus={handleAlertsStatus} />
 			<Btn className='mt-1' text={isOpenTime? 'Скрыть настройку время оповещения' : 'Показать настройки время оповещения'} onClick={handleShowsAlertTime}/>
