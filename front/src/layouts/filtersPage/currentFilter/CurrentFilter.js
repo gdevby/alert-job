@@ -21,16 +21,6 @@ const CurrentFilter = () => {
 	const dispatch = useDispatch()
 	const navigate = useNavigate()
 
-	const { currentFilter, isChoose } = useSelector(state => state.filter)
-
-	useEffect(() => {
-		console.log(isChoose)
-		if (isChoose) {
-			setFilter(currentFilter)
-		}
-	}, [isChoose])
-
-
 	const addNewFilter = () => {
 		dispatch(
 			setIsNew({
@@ -105,6 +95,7 @@ const CurrentFilter = () => {
 			.getCurrentFilter(id)
 			.then((response) => {
 				if (response.data !== '') {
+					console.log(response.data)
 					setFilter(response.data)
 					dispatch(
 						setCurrentFilter({
@@ -120,7 +111,7 @@ const CurrentFilter = () => {
 				}
 
 			})
-	}, [])
+	}, [id])
 	
 	const handleClosePopup = () => {
 		setIsOpenPopup(false)
