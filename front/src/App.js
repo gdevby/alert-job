@@ -12,7 +12,6 @@ import './index.scss'
 
 
 const App = () => {
-	
 	const [isFetching, setIsFetching] = useState(true)
 
 	const { handleStatus } = changeAuthStatus()
