@@ -11,8 +11,10 @@
 		display: flex;
 		align-items: center;
 		margin-bottom: 1rem;
-		width: 70%;
-		justify-content: space-between;	
+		flex-wrap: wrap;
+		> div {
+			margin-left: 1rem;
+		}
 	}
 
 	&__list {
@@ -85,6 +87,16 @@
 		display: none;
 	}
 }
+
+@media (max-width: 826px) { 
+	.orders__period {
+		> div {
+			margin-left: 0;
+			width: 100%;
+		}
+	}
+}
+
 
 
 @media (max-width: 670px) {

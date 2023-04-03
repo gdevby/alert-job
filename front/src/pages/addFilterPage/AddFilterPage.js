@@ -124,7 +124,7 @@ const AddFilterPage = () => {
 			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter} filter_id={filter_id}/>
 			{filterId && <>
 				<Filters />
-				<p className='mt-1'>Негативные фильтры фильтруют заказы, которые проходят по фильтрам выше, то есть дополнительное фильтрование.</p>
+				<p className='mt-1'>Негативные фильтры(слова минусы) фильтруют заказы, которые проходят по фильтрам выше, то есть дополнительное фильтрование.</p>
 				<Btn text={isShowNegativeFilters ? 'Негативные фильтры активны' : 'Негативные фильтры неактивны'}
 					color={isShowNegativeFilters ? 'success' : 'error'} variant='contained' onClick={showNegativeFilters} className='filtersPage__show' />
 				{isShowNegativeFilters && <Filters type={'negative-'} />}
