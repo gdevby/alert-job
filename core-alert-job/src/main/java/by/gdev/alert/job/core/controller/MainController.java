@@ -130,14 +130,15 @@ public class MainController {
 
     @GetMapping("user/module/{id}/true-filter/orders")
     public ResponseEntity<Flux<OrderDTO>> getPartitioningOnTrueOrders(
-	    @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable("id") Long moduleId) {
-	return ResponseEntity.ok(coreService.showTrueFilterOrders(uuid, moduleId));
+	    @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable("id") Long moduleId,
+	    @RequestParam("period") Long period) {
+	return ResponseEntity.ok(coreService.showTrueFilterOrders(uuid, moduleId, period));
     }
 
     @GetMapping("user/module/{id}/false-filter/orders")
     public ResponseEntity<Flux<OrderDTO>> getPartitioningOrders(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-	    @PathVariable("id") Long moduleId) {
-	return ResponseEntity.ok(coreService.showFalseFilterOrders(uuid, moduleId));
+	    @PathVariable("id") Long moduleId, @RequestParam("period") Long period) {
+	return ResponseEntity.ok(coreService.showFalseFilterOrders(uuid, moduleId, period));
     }
 
 }

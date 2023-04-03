@@ -1,11 +1,15 @@
 package by.gdev.alert.job.core.service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
+import org.reactivestreams.Publisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -298,26 +302,7 @@ public class CoreService {
 	});
     }
 
-    public Flux<OrderDTO> showTrueFilterOrders(String uuid, Long moduleId) {
-	Mono<OrderModules> modules = Mono
-		.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
-		.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
-	Flux<OrderDTO> source = modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
-	    return webClient.get().uri("http://parser:8017/api/orders", b -> {
-		b.queryParam("site_id", s.getSiteSource());
-		b.queryParam("category_id", s.getSiteCategory());
-		if (Objects.nonNull(s.getSiteSubCategory()))
-		    b.queryParam("sub_id", s.getSiteSubCategory());
-		return b.build();
-	    }).retrieve().bodyToFlux(OrderDTO.class);
-	});
-	Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
-		NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-	return source.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)))
-		.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
-    }
-
-    public Flux<OrderDTO> showFalseFilterOrders(String uuid, Long moduleId) {
+    public Flux<OrderDTO> showTrueFilterOrders(String uuid, Long moduleId, Long period) {
 	Mono<OrderModules> modules = Mono
 		.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
 		.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
@@ -333,6 +318,28 @@ public class CoreService {
 	Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 		NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 	return source.distinct(OrderDTO::getLink)
+		.filterWhen(e -> beforeOrderDate(e.getDateTime(), period))
+		.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)))
+		.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
+    }
+
+    public Flux<OrderDTO> showFalseFilterOrders(String uuid, Long moduleId, Long period) {
+	Mono<OrderModules> modules = Mono
+		.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid))
+		.switchIfEmpty(Mono.error(new ResourceNotFoundException("user not found")));
+	Flux<OrderDTO> source = modules.flatMapIterable(e -> e.getSources()).flatMap(s -> {
+	    return webClient.get().uri("http://parser:8017/api/orders", b -> {
+		b.queryParam("site_id", s.getSiteSource());
+		b.queryParam("category_id", s.getSiteCategory());
+		if (Objects.nonNull(s.getSiteSubCategory()))
+		    b.queryParam("sub_id", s.getSiteSubCategory());
+		return b.build();
+	    }).retrieve().bodyToFlux(OrderDTO.class);
+	});
+	Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
+		NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
+	return source.distinct(OrderDTO::getLink)
+		.filterWhen(e -> beforeOrderDate(e.getDateTime(), period))
 		.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)))
 		.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
     }
@@ -348,4 +355,13 @@ public class CoreService {
 	    return b.build();
 	}).retrieve().bodyToMono(Void.class).onErrorResume(ex -> Mono.error(ex));
     }
+
+    private Publisher<Boolean> beforeOrderDate(Date orderTime, Long period) {
+	return Mono.defer(() -> {
+	    LocalDateTime ldt = LocalDateTime.now().minusDays(period);
+	    Date out = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+	    return Mono.just(out.before(orderTime));
+	});
+    }
+
 }

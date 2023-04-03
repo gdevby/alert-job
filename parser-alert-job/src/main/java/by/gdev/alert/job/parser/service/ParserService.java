@@ -99,7 +99,12 @@ public class ParserService {
     }
 
     public Flux<OrderDTO> getOrdersBySource(Long source, Long category, Long subcategory) {
-	return Flux.fromIterable(orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory))
+	return Flux
+		.fromIterable(Objects.isNull(subcategory)
+			? orderRepository.findAllBySourceSubCategoryIsNullOneEagerTechnologies(source, category)
+			: orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory))
 		.map(e -> mapper.map(e, OrderDTO.class));
+//	return Flux.fromIterable(orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory))
+//		.map(e -> mapper.map(e, OrderDTO.class));
     }
 }
