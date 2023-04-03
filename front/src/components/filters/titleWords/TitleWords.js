@@ -102,6 +102,7 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 	}
 
 	const closePopup = () => {
+		setSelectValue('')
 		setIsOpen(false)
 	}
 
@@ -136,6 +137,9 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 
 	useEffect(() => {
 		if (!isFetching) {
+			if (debouncedSearchTerm.length == 0) {
+				setPage(0)
+			}
 			getWords(debouncedSearchTerm, 0)
 		}
 	}, [debouncedSearchTerm])

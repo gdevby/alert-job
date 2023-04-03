@@ -109,6 +109,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 	}, [filter_id])*/
 
 	const closePopup = () => {
+		setSelectValue('')
 		setIsOpen(false)
 	}
 
@@ -130,8 +131,12 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 			setWords((prev) => [...prev, ...descriptionPriceWords])
 		}
 	}, [])
+	
 	useEffect(() => {
 		if (!isFetching) {
+			if (debouncedSearchTerm.length == 0) {
+				setPage(0)
+			}
 			getWords(debouncedSearchTerm, 0)
 		}
 	}, [debouncedSearchTerm])
