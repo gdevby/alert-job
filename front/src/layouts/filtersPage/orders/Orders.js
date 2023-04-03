@@ -5,6 +5,7 @@ import OrdersList from '../../../components/orders/ordersList/OrdersList'
 import Btn from '../../../components/common/button/Button'
 import CircularProgress from '@mui/material/CircularProgress';
 import ReplayIcon from '@mui/icons-material/Replay';
+import Field from '../../../components/common/field/Field';
 
 import { ordersService } from '../../../services/parser/endponits/orderService'
 
@@ -17,6 +18,7 @@ const Orders = () => {
 	const [isShowingOrders, setIsShowingOrders] = useState(false)
 	const [isFetching, setIsFetching] = useState()
 	const [ordersType, setOrdersType] = useState(true)
+	const [period, setPeriod] = useState(30)
 
 	const { id } = useParams()
 
@@ -28,7 +30,7 @@ const Orders = () => {
 
 	const getOrders = () => {
 		ordersService
-			.getOrders(id, ordersType)
+			.getOrders(id, ordersType, period)
 			.then((response) => {
 				setOrders(response.data)
 			})
@@ -43,6 +45,18 @@ const Orders = () => {
 		}
 	}, [isFetching])
 
+	const handlerPeriod = (period) => {
+		setPeriod(period)
+		setTimeout(() => {
+			validatePeriod(period)
+		}, 1000)
+	}
+
+	const validatePeriod = period => {
+		if (period < 1) return setPeriod(1)
+		if (period > 30) return setPeriod(30)
+	}
+
 	const Empty = () => {
 		return <div className='orders__list_empty'>
 			<span>Заказы возможно еще не обновились, если вы только что добавили новый источник, подождите 10 минут.</span>
@@ -51,15 +65,18 @@ const Orders = () => {
 	}
 
 	return <div className='orders'>
+		<div className='orders__period'>
+			<p>Выберите период, за который вам будут приходить заказы. От 1 дня до 30.</p>
+			<Field type={'number'} defaultValue={period} cb={handlerPeriod} onBlur={(e) => validatePeriod(+e.target.value)}/>
+		</div>
 		<div className='orders__actions'>
 			<Btn onClick={() => showOrders(true)} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
 			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 			<Btn onClick={() => showOrders(false)} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
-
 		</div>
 		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
 		{
-			isShowingOrders && (isFetching ? <div style={{textAlign: 'center', marginTop: '.5rem'}}><CircularProgress /></div> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
+			isShowingOrders && (isFetching ? <div style={{ textAlign: 'center', marginTop: '.5rem' }}><CircularProgress /></div> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
 		}
 
 	</div>

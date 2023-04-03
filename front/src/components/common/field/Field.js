@@ -5,7 +5,7 @@ import TextField from '@mui/material/TextField';
 import './field.scss';
 
 const Field = (props) => {
-	const { defaultValue, type, placeholder, cb, onBlur = () => { }, label = undefined } = props
+	const { defaultValue, type, placeholder = '', cb, onBlur = () => { }, label = undefined } = props
 	
 	const [current_value, setValue] = useState('')
 

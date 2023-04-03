@@ -6,6 +6,14 @@
 		align-items: center;
 		justify-content: space-between;
 	}
+	
+	&__period {
+		display: flex;
+		align-items: center;
+		margin-bottom: 1rem;
+		width: 70%;
+		justify-content: space-between;	
+	}
 
 	&__list {
 		margin-top: 1rem;
