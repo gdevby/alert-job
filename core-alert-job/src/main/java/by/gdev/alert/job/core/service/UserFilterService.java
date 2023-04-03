@@ -129,8 +129,8 @@ public class UserFilterService {
 	return Mono.defer(() -> {
 	    PageRequest p = PageRequest.of(page, appProperty.getWordsPerPage());
 	    Page<DescriptionWord> word = StringUtils.isEmpty(name)
-		    ? descriptionRepository.findAllByOrderByCounterDesc(p)
-		    : descriptionRepository.findByNameIsStartingWith(name, p);
+		    ? descriptionRepository.findAllHiddenIsFalseByOrderByCounterDesc(p)
+		    : descriptionRepository.findByHiddenIsFalseAndNameIsStartingWith(name, p);
 	    return Mono.just(word.map(keyWordsToDTO()));
 	});
     }
@@ -357,6 +357,8 @@ public class UserFilterService {
 		    if (f.getDescriptions().contains(w))
 			throw new ConflictExeption("exists description word with name " + w.getName());
 		    f.getDescriptions().add(w);
+		    w.setCounter(w.getCounter() + 1L);
+		    descriptionRepository.save(w);
 		    filterRepository.save(f);
 		    return mapper.map(f, FilterDTO.class);
 		});
@@ -368,6 +370,8 @@ public class UserFilterService {
 		    UserFilter filter = tuple.getT1();
 		    DescriptionWord word = tuple.getT2();
 		    if (filter.getDescriptions().removeIf(e -> e.equals(word))) {
+			word.setCounter(word.getCounter() - 1L);
+			descriptionRepository.save(word);
 			filterRepository.save(filter);
 			return ResponseEntity.ok().build();
 		    } else
@@ -462,6 +466,8 @@ public class UserFilterService {
 		    if (f.getNegativeDescriptions().contains(w))
 			throw new ConflictExeption("exists description word with name " + w.getName());
 		    f.getNegativeDescriptions().add(w);
+		    w.setCounter(w.getCounter() + 1L);
+		    descriptionRepository.save(w);
 		    filterRepository.save(f);
 		    return mapper.map(f, FilterDTO.class);
 		});
@@ -474,6 +480,8 @@ public class UserFilterService {
 		    DescriptionWord word = tuple.getT2();
 		    if (filter.getNegativeDescriptions().removeIf(e -> e.equals(word))) {
 			filterRepository.save(filter);
+			word.setCounter(word.getCounter() - 1L);
+			descriptionRepository.save(word);
 			return ResponseEntity.ok().build();
 		    } else
 			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

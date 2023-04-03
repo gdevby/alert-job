@@ -332,7 +332,8 @@ public class CoreService {
 	});
 	Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 		NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-	return source.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)))
+	return source.distinct(OrderDTO::getLink)
+		.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)))
 		.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
     }
 
