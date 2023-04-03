@@ -47,9 +47,6 @@ const Orders = () => {
 
 	const handlerPeriod = (period) => {
 		setPeriod(period)
-		setTimeout(() => {
-			validatePeriod(period)
-		}, 1000)
 	}
 
 	const validatePeriod = period => {
