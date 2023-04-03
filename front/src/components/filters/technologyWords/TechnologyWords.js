@@ -142,11 +142,7 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 
 	useEffect(() => {
 		if (!isFetching) {
-			if (debouncedSearchTerm) {
-				getWords(debouncedSearchTerm, 0)
-			} else {
-				setResult([]);
-			}
+			getWords(debouncedSearchTerm, 0)
 		}
 	}, [debouncedSearchTerm])
 
@@ -194,7 +190,7 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
 					Поиск по ключевым словам
-					<input type='text' onChange={changeWord} value={selectValue} ref={inputRef}/>
+					<input type='text' onChange={changeWord} value={selectValue} ref={inputRef} />
 				</div>
 			</DialogTitle>
 			<DialogContent className='scroll' ref={listRef}>
@@ -211,7 +207,7 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 			</DialogActions>
 		</Dialog>
 		<div className='wordsContains__title'>
-			{type == '' ? <p>Уведомлять, если технологии содержат</p> : <p>Уведомлять, если технологии не содержат</p>}
+			{type == '' ? <p>Уведомлять, если технологии содержат (Только хабр)</p> : <p>Уведомлять, если технологии не содержат (Только хабр)</p>}
 			<Btn text={'Добавить'} onClick={openSearch} variant='contained' />
 		</div>
 		<div className='addedWords'>

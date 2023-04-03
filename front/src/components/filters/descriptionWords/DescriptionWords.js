@@ -133,11 +133,7 @@ const DescriptionWords = ({ filter_id, type, setIsLimit }) => {
 	}, [])
 	useEffect(() => {
 		if (!isFetching) {
-			if (debouncedSearchTerm) {
-				getWords(debouncedSearchTerm, 0)
-			} else {
-				setResult([]);
-			}
+			getWords(debouncedSearchTerm, 0)
 		}
 	}, [debouncedSearchTerm])
 

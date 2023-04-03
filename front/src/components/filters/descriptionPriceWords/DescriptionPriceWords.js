@@ -132,11 +132,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 	}, [])
 	useEffect(() => {
 		if (!isFetching) {
-			if (debouncedSearchTerm) {
-				getWords(debouncedSearchTerm, 0)
-			} else {
-				setResult([]);
-			}
+			getWords(debouncedSearchTerm, 0)
 		}
 	}, [debouncedSearchTerm])
 
@@ -165,7 +161,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 			};
 		}
 	}, [listRef])
-	
+
 	useEffect(() => {
 		const input = inputRef.current
 		if (input) {
