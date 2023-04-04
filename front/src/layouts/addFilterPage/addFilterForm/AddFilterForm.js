@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import Btn from '../../../components/common/button/Button';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -14,14 +14,15 @@ import { filterService } from '../../../services/parser/endponits/filterService'
 import { setCurrentFilter } from '../../../store/slices/filterSlice';
 
 
-const AddFilterForm = ({ setFilterId, module_id, updateFilter, filter_id }) => {
+const AddFilterForm = ({ updateFilter }) => {
 	const [filterName, setFilterName] = useState('')
 	const [minPrice, setMinPrice] = useState('')
 	const [maxPrice, setMaxPrice] = useState('')
 	const [isAdded, setIsAdded] = useState(true)
-	const [filterId, setId] = useState('')
 	const [isLimit, setIsLimit] = useState(false)
 	const [isOpenForAll, setOpenForAll] = useState(false)
+
+	const { module_id, filter_id } = useParams()
 
 	const { isChoose, isNew, currentFilter } = useSelector(state => state.filter)
 	const dispatch = useDispatch()
@@ -33,8 +34,6 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter, filter_id }) => {
 			.addFilter(module_id, { name: filterName, minValue: null, maxValue: null })
 			.then(response => {
 				const id = response.data.id
-				setFilterId(id)
-				setId(id)
 				dispatch(
 					setCurrentFilter({
 						description: [],

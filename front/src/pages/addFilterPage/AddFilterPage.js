@@ -9,14 +9,11 @@ import Filters from '../../layouts/addFilterPage/filters/Filter';
 
 import { filterService } from '../../services/parser/endponits/filterService';
 
-import { removeCurrentFilter, setIsNew, setCurrentFilter, setActivatedNegativeFilters } from '../../store/slices/filterSlice';
+import { setIsNew, setCurrentFilter, setActivatedNegativeFilters } from '../../store/slices/filterSlice';
 
 import './addFilterPage.scss'
 
 const AddFilterPage = () => {
-	const [isOpenPopup, setIsOpenPopup] = useState(false)
-	const [wordsType, setWordstype] = useState('')
-	const [words, setWords] = useState('')
 	const [filterId, setFilterId] = useState()
 	const [isShowNegativeFilters, setIsShowNegativeFilters] = useState(false)
 
