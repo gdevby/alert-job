@@ -116,7 +116,7 @@ const AddFilterForm = ({ updateFilter }) => {
 			className='w100'
 		/>
 		{!isAdded && <div className='mt-1'>
-			<FormControlLabel control={<Checkbox checked={isOpenForAll} size={'small'} onChange={handlerForAll} />} label={'заказы для всех, не требует премиума'} />
+			<FormControlLabel control={<Checkbox checked={isOpenForAll} size={'small'} onChange={handlerForAll} />} label={'Заказы для всех, не требует премиума (только для fl.ru)'} />
 		</div>}
 		<div className='addFilter__button'>
 			{isAdded ? <Btn text={'Добавить фильтр'} onClick={addFilter} /> : ''}
