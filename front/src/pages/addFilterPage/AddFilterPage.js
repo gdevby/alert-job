@@ -48,7 +48,8 @@ const AddFilterPage = () => {
 							maxPrice: response.data.maxValue,
 							minPrice: response.data.minValue,
 							id: response.data.id,
-							name: response.data.name
+							name: response.data.name,
+							openForAll: response.data.openForAll
 						})
 					)
 					dispatch(
@@ -87,7 +88,7 @@ const AddFilterPage = () => {
 		<div className='container'>
 			<Title text={filterId? 'Редактирование фильтра' : 'Добавление фильтров'} />
 			<Btn text={'Вернуться к модулю'} onClick={addNewFilter} variant='contained' />
-			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter} filter_id={filter_id}/>
+			<AddFilterForm updateFilter={updateFilter} />
 			{filterId && <>
 				<Filters />
 				<p className='mt-1'>Негативные фильтры(слова минусы) фильтруют заказы, которые проходят по фильтрам выше, то есть дополнительное фильтрование.</p>

@@ -81,6 +81,7 @@ const AddFilterForm = ({ updateFilter }) => {
 			setFilterName(currentFilter.name)
 			setMinPrice(currentFilter.minPrice || '')
 			setMaxPrice(currentFilter.maxPrice || '')
+			setOpenForAll(currentFilter.openForAll)
 		}
 	}, [isChoose, isNew])
 
@@ -115,7 +116,7 @@ const AddFilterForm = ({ updateFilter }) => {
 			className='w100'
 		/>
 		{!isAdded && <div className='mt-1'>
-			<FormControlLabel control={<Checkbox checked={isOpenForAll} sx='small' onChange={handlerForAll} />} label={'заказы для всех, не требует премиума'} />
+			<FormControlLabel control={<Checkbox checked={isOpenForAll} size={'small'} onChange={handlerForAll} />} label={'заказы для всех, не требует премиума'} />
 		</div>}
 		<div className='addFilter__button'>
 			{isAdded ? <Btn text={'Добавить фильтр'} onClick={addFilter} /> : ''}

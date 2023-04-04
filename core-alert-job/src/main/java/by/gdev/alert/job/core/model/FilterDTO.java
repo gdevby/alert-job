@@ -11,6 +11,8 @@ public class FilterDTO {
 	private String name;
 	private Integer minValue;
 	private Integer maxValue;
+	private boolean openForAll;
+	
 	private List<WordDTO> descriptionWordPrice;
 	private List<WordDTO> technologiesDTO;
 	private List<WordDTO> titlesDTO;

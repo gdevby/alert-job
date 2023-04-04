@@ -14,7 +14,8 @@ const initialState = {
 		negativeDescriptionWords: [],
 		negativeTitleWords: [],
 		negativeTechnologyWords: [],
-		descriptionWordPrice: []
+		descriptionWordPrice: [],
+		openForAll: false
 	},
 	isChoose: false,
 	isNew: true
@@ -37,6 +38,7 @@ const filterSlice = createSlice({
 			state.currentFilter.maxPrice = action.payload.maxPrice
 			state.currentFilter.minPrice = action.payload.minPrice
 			state.currentFilter.activatedNegativeFilters = action.payload.activatedNegativeFilters
+			state.currentFilter.openForAll = action.payload.openForAll
 			state.isChoose = true
 		},
 		setActivatedNegativeFilters(state, action) {
@@ -52,6 +54,7 @@ const filterSlice = createSlice({
 			state.currentFilter.negativeTechnologyWords = []
 			state.currentFilter.activatedNegativeFilters = false
 			state.currentFilter.name = ''
+			state.currentFilter.openForAll = false
 			state.currentFilter.id = null
 			state.currentFilter.maxPrice = 0
 			state.currentFilter.minPrice = 0
