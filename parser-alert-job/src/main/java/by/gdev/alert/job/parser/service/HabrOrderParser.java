@@ -100,7 +100,7 @@ public class HabrOrderParser {
 		    parserSource.setSource(siteSourceJobId);
 		    parserSource.setCategory(category.getId());
 		    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-		    parserSource.setFlRuForAll(order.isFlRuForAll());
+		    parserSource.setOpenForAll(order.isOpenForAll());
 		    order.setSourceSite(parserSource);
 		    return order;
 		}).filter(e -> e.isValidOrder()).map(m -> {

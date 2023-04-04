@@ -110,7 +110,7 @@ public class FLOrderParser {
 		    parserSource.setSource(siteSourceJobId);
 		    parserSource.setCategory(category.getId());
 		    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-		    parserSource.setFlRuForAll(order.isFlRuForAll());
+		    parserSource.setOpenForAll(order.isOpenForAll());
 		    order.setSourceSite(parserSource);
 		    return order;
 		}).filter(e -> e.isValidOrder()).map(m -> {
@@ -153,7 +153,7 @@ public class FLOrderParser {
 	}
 	Element el = doc.selectFirst(".b-layout__txt_lineheight_1");
 	if (Objects.nonNull(el) && (el.text().contains("Срочный заказ") || el.text().contains("Для всех"))) {
-	    order.setFlRuForAll(true);
+	    order.setOpenForAll(true);
 	}
 	return order;
     }

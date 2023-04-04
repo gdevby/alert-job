@@ -1,5 +1,7 @@
 package by.gdev.alert.job.core.configuration;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 
 import lombok.Data;
@@ -27,4 +29,7 @@ public class ApplicationProperty {
 
     @Value("${words.elements.per.page}")
     private Integer wordsPerPage;
+
+    @Value("${sites.open_for_all}")
+    List<Long> sitesOpenForAll;
 }

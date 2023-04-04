@@ -26,6 +26,7 @@ public class UserFilter extends BasicId {
     private String name;
     private Integer minValue;
     private Integer maxValue;
+    private boolean openForAll = false;
 
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<DescriptionWordPrice> descriptionWordPrice;

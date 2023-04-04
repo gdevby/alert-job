@@ -16,6 +16,6 @@ public class SourceSite extends BasicId {
     private Long siteSource;
     private Long siteCategory;
     private Long siteSubCategory;
-    private boolean flRuForAll;
+    private boolean openForAll;
     private boolean active = true;
 }

@@ -8,6 +8,6 @@ public class SourceSiteDTO {
 	private Long source;
 	private Long category;
 	private Long subCategory;
-	private boolean flRuForAll;
+	private boolean openForAll;
 
 }

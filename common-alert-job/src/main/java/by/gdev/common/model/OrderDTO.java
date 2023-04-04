@@ -18,6 +18,6 @@ public class OrderDTO {
 	private PriceDTO price;
 	private List<String> technologies;
 	private SourceSiteDTO sourceSite;
-	private boolean flRuForAll;
+	private boolean openForAll;
 	private boolean validOrder;
 }

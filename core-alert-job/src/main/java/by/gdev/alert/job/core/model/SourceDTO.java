@@ -12,5 +12,5 @@ public class SourceDTO {
 	private SiteSourceDTO siteSourceDTO;
 	private CategoryDTO siteCategoryDTO;
 	private SubCategoryDTO siteSubCategoryDTO;
-	private boolean flRuForAll;
+	private boolean openForAll;
 }

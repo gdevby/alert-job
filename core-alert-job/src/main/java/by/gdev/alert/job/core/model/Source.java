@@ -11,5 +11,5 @@ public class Source {
 	@NotNull(message = "category cant't be empty")
 	private Long siteCategory;
 	private Long siteSubCategory;
-	private boolean flRuForAll;
+	private boolean openForAll;
 }
