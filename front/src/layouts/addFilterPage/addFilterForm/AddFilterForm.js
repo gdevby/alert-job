@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 
-import Btn from '../../../components/common/button/Button'
+import Btn from '../../../components/common/button/Button';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
 import TextField from '@mui/material/TextField';
 import LimitPopup from '../../../components/common/popup/LimitPopup';
 import DescriptionPriceWords from '../../../components/filters/descriptionPriceWords/DescriptionPriceWords';
@@ -19,6 +21,7 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter, filter_id }) => {
 	const [isAdded, setIsAdded] = useState(true)
 	const [filterId, setId] = useState('')
 	const [isLimit, setIsLimit] = useState(false)
+	const [isOpenForAll, setOpenForAll] = useState(false)
 
 	const { isChoose, isNew, currentFilter } = useSelector(state => state.filter)
 	const dispatch = useDispatch()
@@ -86,6 +89,18 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter, filter_id }) => {
 		setIsAdded(isNew)
 	}, [isNew])
 
+	const handlerForAll = (e) => {
+		setOpenForAll(e.target.checked)
+		const data = {
+			name: null,
+			minValue: minPrice == '' ? 0 : minPrice,
+			maxValue: maxPrice == '' ? 0 : maxPrice,
+			openForAll: e.target.checked
+		}
+		updateFilter(data)
+
+	}
+
 	return <div className='mt-1'>
 		<LimitPopup handleClose={() => setIsLimit(false)}
 			open={isLimit} />
@@ -100,6 +115,9 @@ const AddFilterForm = ({ setFilterId, module_id, updateFilter, filter_id }) => {
 			onBlur={() => updateCurrentFilter('name')}
 			className='w100'
 		/>
+		{!isAdded && <div className='mt-1'>
+			<FormControlLabel control={<Checkbox checked={isOpenForAll} sx='small' onChange={handlerForAll} />} label={'заказы для всех, не требует премиума'} />
+		</div>}
 		<div className='addFilter__button'>
 			{isAdded ? <Btn text={'Добавить фильтр'} onClick={addFilter} /> : ''}
 		</div>
