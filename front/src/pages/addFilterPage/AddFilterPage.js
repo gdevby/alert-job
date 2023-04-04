@@ -26,35 +26,6 @@ const AddFilterPage = () => {
 	const { currentFilter, isNew } = useSelector(state => state.filter)
 	const dispatch = useDispatch()
 
-
-	const handleCurrentFilterType = (data) => {
-		console.log(data)
-	}
-
-
-	const remove = () => {
-		filterService
-			.deleteFilter(filterId)
-			.then(() => {
-				setFilterId('')
-			})
-			.then(() => {
-				dispatch(removeCurrentFilter())
-			})
-			.finally(() => {
-				navigate(`/page/filters/${module_id}`)
-			})
-
-	}
-
-	const handlePopup = (wordType) => {
-		console.log(wordType)
-		setWordstype(wordType)
-		searchWords(wordType)
-		setIsOpenPopup(true)
-		console.log(isOpenPopup)
-	}
-
 	useEffect(() => {
 		if (!isNew) {
 			setFilterId(currentFilter.id)
@@ -93,8 +64,6 @@ const AddFilterPage = () => {
 		}
 	}, [filter_id])
 
-
-
 	const showNegativeFilters = () => {
 		filterService
 			.updateFilter(module_id, filter_id, { activatedNegativeFilters: !isShowNegativeFilters })
@@ -119,7 +88,7 @@ const AddFilterPage = () => {
 
 	return <div className='filtersPage'>
 		<div className='container'>
-			<Title text={'Добавление фильтров'} />
+			<Title text={filterId? 'Редактирование фильтра' : 'Добавление фильтров'} />
 			<Btn text={'Вернуться к модулю'} onClick={addNewFilter} variant='contained' />
 			<AddFilterForm setFilterId={setFilterId} module_id={module_id} updateFilter={updateFilter} filter_id={filter_id}/>
 			{filterId && <>
