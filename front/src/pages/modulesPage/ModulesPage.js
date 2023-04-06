@@ -79,6 +79,7 @@ const ModulesPage = () => {
 			.deleteModule(id)
 			.then(() => {
 				setModules(prev => prev.filter(item => item.id != id))
+				window.localStorage.removeItem(`period_${id}`)
 			})
 			.finally(() => setIsOpenPopup(false))
 	}
