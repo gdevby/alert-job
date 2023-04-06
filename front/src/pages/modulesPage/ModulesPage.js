@@ -35,6 +35,7 @@ const ModulesPage = () => {
 			showAlert()
 			return
 		}
+		if (!moduleName.trim()) return
 		moduleService
 			.addModule(moduleName)
 			.then(response => {
@@ -116,7 +117,6 @@ const ModulesPage = () => {
 			openModule={openModule}
 		/></Item>), [modules]
 	)
-
 
 	return <div className='modules'>
 		<Popup

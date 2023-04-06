@@ -29,7 +29,7 @@ const AddFilterForm = ({ updateFilter }) => {
 	const navigate = useNavigate()
 
 	const addFilter = event => {
-		if (filterName == '') return
+		if (!filterName.trim()) return
 		filterService
 			.addFilter(module_id, { name: filterName, minValue: null, maxValue: null })
 			.then(response => {
