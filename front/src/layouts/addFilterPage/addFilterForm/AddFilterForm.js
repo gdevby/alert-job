@@ -47,7 +47,8 @@ const AddFilterForm = ({ updateFilter }) => {
 						maxPrice: '',
 						minPrice: '',
 						id: id,
-						name: filterName
+						name: filterName,
+						openForAll: false
 					})
 				)
 				return id
