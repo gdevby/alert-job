@@ -43,14 +43,19 @@ public class ParserCategories {
 	private final FlCategoryRepository flCategoryRepository;
 	private String flRss = "https://www.fl.ru/rss/all.xml?category=%s";
 	private String flRssWithSubcategory = "https://www.fl.ru/rss/all.xml?subcategory=%s&category=%s";
+	private String freelanceRuRss = "https://freelance.ru/rss/index";
+	private String freelanceRuRssFeed = "https://freelance.ru/rss/feed/list/s.%s";
+	private String freelanceRuRssFeedSubcategories = "https://freelance.ru/rss/feed/list/s.%s.f.%s";
 
 	@Transactional
 	public void parse() throws IOException {
 		log.info("parsed sites and categories");
 		SiteSourceJob fl = siteSourceJobRepository.findById(1L).get();
 		SiteSourceJob site = siteSourceJobRepository.findById(2L).get();
+		SiteSourceJob freelanceRuJob = siteSourceJobRepository.findById(3L).get();
 		getSiteCategoriesFL(fl).forEach((k, v) -> saveData(fl, k, v));
 		getSiteCategoriesHabr(site).forEach((k, v) -> saveData(site, k, v));
+		getSiteCategoriesFreelanceRu(freelanceRuJob).forEach((k, v) -> saveData(freelanceRuJob, k, v));
 
 	}
 
@@ -129,6 +134,29 @@ public class ParserCategories {
 			result.put(c, list);
 			log.debug("			subcategory size {}", list.size());
 		}
+		return result;
+	}
+
+	private Map<ParsedCategory, List<ParsedCategory>> getSiteCategoriesFreelanceRu(SiteSourceJob site)
+			throws IOException {
+		Document doc = Jsoup.connect(freelanceRuRss).get();
+		Elements res = doc.getElementById("spec-selector-id").children();
+		Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+		res.stream().map(fs -> {
+			ParsedCategory c = new ParsedCategory(null, fs.text(), Long.valueOf(fs.attr("value")),
+					String.format(freelanceRuRssFeed, fs.attr("value")));
+			log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
+			return c;
+		}).filter(f -> !f.id.equals(0L)).forEach(f -> {
+
+			result.put(f, doc.getElementById("spec-" + f.id).select("label").stream().map(sc -> {
+				Long id = Long.valueOf(sc.child(0).attr("value"));
+				return new ParsedCategory(null, sc.text(), id,
+						String.format(freelanceRuRssFeedSubcategories, f.id, id));
+			}).filter(fc -> !fc.id.equals(f.id)).peek(fc -> {
+				log.debug("		found subcategory {} {} {} ", fc.id(), fc.translatedName, fc.rss());
+			}).collect(Collectors.toList()));
+		});
 		return result;
 	}
 

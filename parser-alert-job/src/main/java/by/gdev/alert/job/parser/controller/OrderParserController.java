@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import by.gdev.alert.job.parser.service.FLOrderParser;
+import by.gdev.alert.job.parser.service.FreelanceRuOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.common.model.CategoryDTO;
@@ -33,6 +34,7 @@ public class OrderParserController {
 
 	public final HabrOrderParser hubr;
 	public final FLOrderParser fl;
+	public final FreelanceRuOrderParser freelanceRuOrderParser;
 	public final ParserService service;
 
 	@Value("${parser.interval}")
@@ -47,7 +49,10 @@ public class OrderParserController {
 		Flux<ServerSentEvent<List<OrderDTO>>> hubrFlux = Flux.interval(Duration.ofSeconds(parserInterval))
 				.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
 						.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build());
-		return Flux.merge(flruFlux, hubrFlux);
+		Flux<ServerSentEvent<List<OrderDTO>>> freelanceRuFlux = Flux.interval(Duration.ofSeconds(parserInterval))
+				.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
+						.event("periodic-freelanceru-parse-event").data(freelanceRuOrderParser.getOrders()).build());
+		return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux);
 	}
 
 	@GetMapping("sites")
@@ -87,9 +92,10 @@ public class OrderParserController {
 			@RequestParam(name = "subcategory_value", required = false) boolean sValue) {
 		return service.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
 	}
-	
+
 	@GetMapping("orders")
-	public Flux<OrderDTO> showOrdersBySource(@RequestParam("site_id") Long site, @RequestParam("category_id") Long category, @RequestParam(name = "sub_id", required = false) Long subId){
+	public Flux<OrderDTO> showOrdersBySource(@RequestParam("site_id") Long site,
+			@RequestParam("category_id") Long category, @RequestParam(name = "sub_id", required = false) Long subId) {
 		return service.getOrdersBySource(site, category, subId);
 	}
 }

@@ -2,7 +2,9 @@ package by.gdev.alert.job.parser.service;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -13,10 +15,11 @@ import javax.transaction.Transactional;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -41,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FLOrderParser extends AbsctractSiteParser {
+public class FreelanceRuOrderParser extends AbsctractSiteParser {
 
 	private final WebClient webClient;
 	private final ParserService service;
@@ -53,10 +56,20 @@ public class FLOrderParser extends AbsctractSiteParser {
 	private Pattern currencyPatter = Pattern.compile("[0-9].*&#8381;");
 
 	private final ModelMapper mapper;
+	private volatile Map<String, String> cookies;
+	private volatile LocalDateTime lastLogin;
+	@Value("${relogin.freelance.every.minutes}")
+	private Long reloginEveryMinutes;
+	@Value("${freelance.ru.account.login}")
+	private String login;
+	@Value("${freelance.ru.account.password}")
+	private String password;
+	@Value("${timeout.connect_read.order}")
+	private int timeout;
 
 	@Transactional
-	public List<OrderDTO> flruParser() {
-		return super.getOrders(1L);
+	public List<OrderDTO> getOrders() {
+		return super.getOrders(3L);
 	}
 
 	@SneakyThrows
@@ -70,11 +83,8 @@ public class FLOrderParser extends AbsctractSiteParser {
 					Order order = new Order();
 					order.setTitle(m.getTitle());
 					order.setDateTime(m.getPubDate());
-					order.setMessage(m.getDescription());
 					order.setLink(m.getLink());
-					order = parsePrice(order);
-					String title = order.getTitle().replaceAll("(\\(Бюджет: .*[0-9\\;\\)])", "");
-					order.setTitle(title);
+					order = parseExtraFields(order, m.getDescription());
 					ParserSource parserSource = new ParserSource();
 					parserSource.setSource(siteSourceJobId);
 					parserSource.setCategory(category.getId());
@@ -100,29 +110,40 @@ public class FLOrderParser extends AbsctractSiteParser {
 	}
 
 	@SneakyThrows
-	private Order parsePrice(Order order) {
-		Matcher m = paymentPatter.matcher(order.getTitle());
+	private Order parseExtraFields(Order order, String priceRaw) {
+		Matcher m = paymentPatter.matcher(priceRaw);
 		Price price = new Price();
 		if (m.find()) {
 			price.setValue(Integer.valueOf(m.group(1)));
 			order.setPrice(price);
 		}
-		Matcher m1 = currencyPatter.matcher(order.getTitle());
+		Matcher m1 = currencyPatter.matcher(priceRaw);
 		if (m1.find()) {
 			price.setPrice(m1.group(0).replaceAll("&#8381;", "руб."));
 			order.setPrice(price);
 		}
+
+		if (Objects.isNull(lastLogin) || lastLogin.isBefore(LocalDateTime.now())) {
+			if (login.isBlank() || password.isBlank()) {
+				log.info("empty in properties login password for FreelanceRu to get description of the order");
+			}
+			Connection.Response loginForm = Jsoup.connect("https://freelance.ru/login/?return_url=%2F")
+					.method(Connection.Method.GET).timeout(timeout).execute();
+			Map<String, String> map = loginForm.cookies();
+			Connection.Response loginCookie = Jsoup.connect("https://freelance.ru/login/").timeout(timeout)
+					.data("passwd", password).data("login", login).data("check_ip", "on").data("return_url", "/")
+					.data("auth", "auth").cookies(map).execute();
+			cookies = loginCookie.cookies();
+			lastLogin = LocalDateTime.now().plusMinutes(reloginEveryMinutes);
+		}
 		Document doc = null;
 		try {
-			doc = Jsoup.parse(new URL(order.getLink()), 30000);
+			doc = Jsoup.connect(order.getLink()).timeout(timeout).cookies(cookies).get();
+			order.setMessage(doc.select(".txt.set-href-auto").html());
 		} catch (IOException ex) {
 			order.setValidOrder(false);
 			log.debug("invalid flru link " + order.getLink());
 			return order;
-		}
-		Element el = doc.selectFirst(".b-layout__txt_lineheight_1");
-		if (Objects.nonNull(el) && (el.text().contains("Срочный заказ") || el.text().contains("Для всех"))) {
-			order.setOpenForAll(true);
 		}
 		return order;
 	}
