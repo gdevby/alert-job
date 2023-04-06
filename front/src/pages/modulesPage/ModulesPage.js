@@ -110,11 +110,16 @@ const ModulesPage = () => {
 	const handleClosePopup = () => {
 		setIsOpenPopup(false)
 	}
+	
+	const updateModule = (status, id) => {
+		moduleService.updateModule(null, status, id)
+	}
 
 	const showModules = useMemo(
 		() => modules.map(item => <Item key={item.id}><ModuleCard item={item}
 			removeCard={confirmRemovsModule}
 			openModule={openModule}
+			updateModule={updateModule}
 		/></Item>), [modules]
 	)
 
