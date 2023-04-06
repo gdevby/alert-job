@@ -9,7 +9,6 @@ import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import './examples.scss'
 
@@ -17,19 +16,19 @@ const Examples = () => {
 	const steps = [
 		{
 			img: sources,
-			description: 'Пример возможных добавленных источников.'
+			description: 'Функционал добавления источника заказов'
 		},
 		{
 			img: filters,
-			description: 'Пример конфигурации фильтров.'
+			description: 'Конфигурации фильтра для заказов'
 		},
 		{
 			img: negativeFilters,
-			description: 'Пример конфигурации негативных фильтров.'
+			description: 'Конфигурации негативных фильтров для заказов'
 		},
 		{
 			img: orders,
-			description: 'Пример возможных отфильтрованных заказов.'
+			description: 'Возможные отфильтрованные заказы'
 		},
 	]
 
@@ -40,9 +39,8 @@ const Examples = () => {
 			<h4>Примеры:</h4>
 			<div className='examples_items'>
 				{steps.map(item => {
-					return <Accordion className='examples_item' key={item.description}>
+					return <Accordion expanded={true} className='examples_item' key={item.description}>
 				        <AccordionSummary
-				          expandIcon={<ExpandMoreIcon />}
 				          aria-controls="panel1a-content"
 				          id="panel1a-header"
 				        >
