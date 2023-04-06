@@ -185,13 +185,15 @@ public class CoreService {
 	public Mono<OrderModulesDTO> updateOrderModules(String uuid, Long moduleId, Modules modules) {
 		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuid(moduleId, uuid))
 				.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found module with id " + moduleId)))
-				.map(e -> {
-					if (modulesRepository.existsByNameAndUserUuid(modules.getName(), uuid))
-						throw new ConflictExeption(String.format("module with name %s exists", modules.getName()));
-					mapper.map(modules, e);
-					e = modulesRepository.save(e);
-					return mapper.map(e, OrderModulesDTO.class);
-				});
+			.map(e -> {
+			    if (Objects.nonNull(modules.getName())
+				    && modulesRepository.existsByNameAndUserUuid(modules.getName(), uuid))
+				throw new ConflictExeption(
+					String.format("module with name %s exists", modules.getName()));
+			    mapper.map(modules, e);
+			    e = modulesRepository.save(e);
+			    return mapper.map(e, OrderModulesDTO.class);
+			});
 	}
 
 	public Flux<OrderModulesDTO> showOrderModules(String uuid) {
