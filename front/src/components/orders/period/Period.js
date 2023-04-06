@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import Field from '../../common/field/Field';
 
 const Period = ({updatePeriod}) => {
-	const [currentPeriod, setPeriod] = useState(1)
+	const [currentPeriod, setPeriod] = useState(30)
 	
 	const { id } = useParams()
 
