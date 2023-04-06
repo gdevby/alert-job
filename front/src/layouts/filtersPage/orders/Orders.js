@@ -18,7 +18,7 @@ const Orders = () => {
 	const [isShowingOrders, setIsShowingOrders] = useState(false)
 	const [isFetching, setIsFetching] = useState()
 	const [ordersType, setOrdersType] = useState(true)
-	const [period, setPeriod] = useState(30)
+	const [period, setPeriod] = useState(7)
 
 	const { id } = useParams()
 
@@ -63,7 +63,7 @@ const Orders = () => {
 			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 			<Btn onClick={() => showOrders(false)} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
 		</div>
-		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
+		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Категории</div><div>Цена</div></div>}
 		{
 			isShowingOrders && (isFetching ? <div style={{ textAlign: 'center', marginTop: '.5rem' }}><CircularProgress /></div> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
 		}
