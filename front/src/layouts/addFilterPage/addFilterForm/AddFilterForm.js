@@ -7,6 +7,7 @@ import Checkbox from '@mui/material/Checkbox';
 import TextField from '@mui/material/TextField';
 import LimitPopup from '../../../components/common/popup/LimitPopup';
 import DescriptionPriceWords from '../../../components/filters/descriptionPriceWords/DescriptionPriceWords';
+import Alert from '../../../components/common/alert/Alert';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -21,6 +22,7 @@ const AddFilterForm = ({ updateFilter }) => {
 	const [isAdded, setIsAdded] = useState(true)
 	const [isLimit, setIsLimit] = useState(false)
 	const [isOpenForAll, setOpenForAll] = useState(false)
+	const [alert, setAlert] = useState(false)
 
 	const { module_id, filter_id } = useParams()
 
@@ -29,7 +31,7 @@ const AddFilterForm = ({ updateFilter }) => {
 	const navigate = useNavigate()
 
 	const addFilter = event => {
-		if (filterName == '') return
+		if (!filterName.trim()) return
 		filterService
 			.addFilter(module_id, { name: filterName, minValue: null, maxValue: null })
 			.then(response => {
@@ -62,7 +64,17 @@ const AddFilterForm = ({ updateFilter }) => {
 				if (e.message === 'limit') {
 					setIsLimit(true)
 				}
+				if (e.response?.data?.message.endsWith('exists')) {
+					showAlert()
+				}
 			})
+	}
+	
+	const showAlert = () => {
+		setAlert(true)
+		setTimeout(() => {
+			setAlert(false)
+		}, 2000)
 	}
 
 	const updateCurrentFilter = (type) => {
@@ -115,6 +127,7 @@ const AddFilterForm = ({ updateFilter }) => {
 			onBlur={() => updateCurrentFilter('name')}
 			className='w100'
 		/>
+		<Alert open={alert} content={'Такой фильтр уже существует'} type={'warning'} />
 		{!isAdded && <div className='mt-1'>
 			<FormControlLabel control={<Checkbox checked={isOpenForAll} size={'small'} onChange={handlerForAll} />} label={'Заказы для всех, не требует премиума (только для fl.ru)'} />
 		</div>}

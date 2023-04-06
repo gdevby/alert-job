@@ -5,7 +5,7 @@ import OrdersList from '../../../components/orders/ordersList/OrdersList'
 import Btn from '../../../components/common/button/Button'
 import CircularProgress from '@mui/material/CircularProgress';
 import ReplayIcon from '@mui/icons-material/Replay';
-import Field from '../../../components/common/field/Field';
+import Period from '../../../components/orders/period/Period';
 
 import { ordersService } from '../../../services/parser/endponits/orderService'
 
@@ -18,7 +18,7 @@ const Orders = () => {
 	const [isShowingOrders, setIsShowingOrders] = useState(false)
 	const [isFetching, setIsFetching] = useState()
 	const [ordersType, setOrdersType] = useState(true)
-	const [period, setPeriod] = useState(30)
+	const [period, setPeriod] = useState(7)
 
 	const { id } = useParams()
 
@@ -45,13 +45,8 @@ const Orders = () => {
 		}
 	}, [isFetching])
 
-	const handlerPeriod = (period) => {
+	const updatePeriod = (period) => {
 		setPeriod(period)
-	}
-
-	const validatePeriod = period => {
-		if (period < 1) return setPeriod(1)
-		if (period > 30) return setPeriod(30)
 	}
 
 	const Empty = () => {
@@ -62,16 +57,13 @@ const Orders = () => {
 	}
 
 	return <div className='orders'>
-		<div className='orders__period'>
-			<p>Выберите период, за который вам будут приходить заказы. От 1 дня до 30.</p>
-			<Field type={'number'} defaultValue={period} cb={handlerPeriod} onBlur={(e) => validatePeriod(+e.target.value)}/>
-		</div>
+		<Period updatePeriod={updatePeriod}/>
 		<div className='orders__actions'>
 			<Btn onClick={() => showOrders(true)} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
 			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 			<Btn onClick={() => showOrders(false)} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
 		</div>
-		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Цена</div></div>}
+		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Категории</div><div>Цена</div></div>}
 		{
 			isShowingOrders && (isFetching ? <div style={{ textAlign: 'center', marginTop: '.5rem' }}><CircularProgress /></div> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
 		}

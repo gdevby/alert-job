@@ -26,13 +26,13 @@ const Sources = () => {
 				siteSource: Number(currentSite.id),
 				siteCategory: Number(currentCat.id),
 				siteSubCategory: currentSubCat.id,
-				flRuForAll: false
+				openForAll: false
 			}
 			).then(response => {
 				updateSources(data, response.data.id)
 			})
 			.catch(e => {
-				if (e.response.data.message == 'source exists') {
+				if (e.response?.data?.message == 'source exists') {
 					showAlert()
 				}
 				if (e.message == 'limit') {

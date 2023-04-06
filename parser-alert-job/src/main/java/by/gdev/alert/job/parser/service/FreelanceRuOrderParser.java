@@ -79,7 +79,7 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return Objects.isNull(rss.getChannel()) ? Lists.newArrayList()
+		return Objects.isNull(rss.getChannel().getItem()) ? Lists.newArrayList()
 				: rss.getChannel().getItem().stream()
 						.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
 							service.saveOrderLinks(category, subCategory, m.getLink());

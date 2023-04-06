@@ -35,6 +35,7 @@ const ModulesPage = () => {
 			showAlert()
 			return
 		}
+		if (!moduleName.trim()) return
 		moduleService
 			.addModule(moduleName)
 			.then(response => {
@@ -78,6 +79,7 @@ const ModulesPage = () => {
 			.deleteModule(id)
 			.then(() => {
 				setModules(prev => prev.filter(item => item.id != id))
+				window.localStorage.removeItem(`period_${id}`)
 			})
 			.finally(() => setIsOpenPopup(false))
 	}
@@ -109,14 +111,18 @@ const ModulesPage = () => {
 	const handleClosePopup = () => {
 		setIsOpenPopup(false)
 	}
+	
+	const updateModule = (status, id) => {
+		moduleService.updateModule(null, status, id)
+	}
 
 	const showModules = useMemo(
 		() => modules.map(item => <Item key={item.id}><ModuleCard item={item}
 			removeCard={confirmRemovsModule}
 			openModule={openModule}
+			updateModule={updateModule}
 		/></Item>), [modules]
 	)
-
 
 	return <div className='modules'>
 		<Popup
