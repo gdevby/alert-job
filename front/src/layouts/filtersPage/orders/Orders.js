@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { useSelector } from 'react-redux';
 
 import OrdersList from '../../../components/orders/ordersList/OrdersList'
 import Btn from '../../../components/common/button/Button'
 import CircularProgress from '@mui/material/CircularProgress';
 import ReplayIcon from '@mui/icons-material/Replay';
 import Period from '../../../components/orders/period/Period';
+import Popup from '../../../components/common/popup/Popup';
 
 import { ordersService } from '../../../services/parser/endponits/orderService'
 
@@ -19,13 +21,31 @@ const Orders = () => {
 	const [isFetching, setIsFetching] = useState()
 	const [ordersType, setOrdersType] = useState(true)
 	const [period, setPeriod] = useState(7)
+	const [popup, setPopup] = useState({})
+	const [isOpenPopup, setIsOpenPopup] = useState(false)
 
 	const { id } = useParams()
+	const { isChoose } = useSelector(state => state.filter)
 
 	const showOrders = (type = ordersType) => {
+		if (!isChoose) {
+			setPopup({
+				title: 'У вас не установлен фильтр',
+				content: `Чтобы получать заказы, вам надо добавить текущий фильтр`,
+				actions: <>
+					<Btn onClick={handleClosePopup} text={'Закрыть'} />
+				</>
+			})
+			setIsOpenPopup(true)
+			return
+		}
 		setOrdersType(type)
 		setIsShowingOrders(true)
 		setIsFetching(true)
+	}
+
+	const handleClosePopup = () => {
+		setIsOpenPopup(false)
 	}
 
 	const getOrders = () => {
@@ -57,7 +77,14 @@ const Orders = () => {
 	}
 
 	return <div className='orders'>
-		<Period updatePeriod={updatePeriod}/>
+		<Popup
+			handleClose={handleClosePopup}
+			open={isOpenPopup}
+			title={popup.title}
+			content={popup.content}
+			actions={popup.actions}
+		/>
+		<Period updatePeriod={updatePeriod} />
 		<div className='orders__actions'>
 			<Btn onClick={() => showOrders(true)} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
 			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}

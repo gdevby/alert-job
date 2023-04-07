@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from 'react-redux';
 
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -13,6 +14,7 @@ import LimitPopup from '../../components/common/popup/LimitPopup';
 
 import { moduleService } from '../../services/parser/endponits/moduleService'
 import { changeAuthStatus } from '../../hooks/changeAuthStatus';
+import { removeCurrentFilter } from '../../store/slices/filterSlice';
 
 import './modulesPage.scss'
 
@@ -26,6 +28,8 @@ const ModulesPage = () => {
 	const [popup, setPopup] = useState({})
 
 	const navigate = useNavigate();
+	
+	const dispatch = useDispatch()
 
 	const { handleStatus } = changeAuthStatus()
 
@@ -84,6 +88,9 @@ const ModulesPage = () => {
 			.finally(() => setIsOpenPopup(false))
 	}
 	const openModule = (item) => {
+		dispatch(
+			removeCurrentFilter()
+		)
 		navigate(`/page/filters/${item.id}`)
 	}
 
