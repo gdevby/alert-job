@@ -20,6 +20,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.google.common.collect.Lists;
+
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
@@ -64,39 +66,40 @@ public class FLOrderParser extends AbsctractSiteParser {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return rss.getChannel().getItem().stream()
-				.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
-					service.saveOrderLinks(category, subCategory, m.getLink());
-					Order order = new Order();
-					order.setTitle(m.getTitle());
-					order.setDateTime(m.getPubDate());
-					order.setMessage(m.getDescription());
-					order.setLink(m.getLink());
-					order = parsePrice(order);
-					String title = order.getTitle().replaceAll("(\\(Бюджет: .*[0-9\\;\\)])", "");
-					order.setTitle(title);
-					ParserSource parserSource = new ParserSource();
-					parserSource.setSource(siteSourceJobId);
-					parserSource.setCategory(category.getId());
-					parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-					parserSource.setOpenForAll(order.isOpenForAll());
-					order.setSourceSite(parserSource);
-					return order;
-				}).filter(e -> e.isValidOrder()).map(m -> {
-					ParserSource parserSource = m.getSourceSite();
-					Optional<ParserSource> optionalSource = parserSourceRepository
-							.findBySourceAndCategoryAndSubCategory(parserSource.getSource(), parserSource.getCategory(),
-									parserSource.getSubCategory());
-					if (optionalSource.isPresent()) {
-						parserSource = optionalSource.get();
-					} else {
-						parserSource = parserSourceRepository.save(parserSource);
-					}
-					m.setSourceSite(parserSource);
-					m = orderRepository.save(m);
-					return mapper.map(m, OrderDTO.class);
-				}).peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink()))
-				.collect(Collectors.toList());
+		return Objects.isNull(rss.getChannel().getItem()) ? Lists.newArrayList()
+				: rss.getChannel().getItem().stream()
+						.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
+							service.saveOrderLinks(category, subCategory, m.getLink());
+							Order order = new Order();
+							order.setTitle(m.getTitle());
+							order.setDateTime(m.getPubDate());
+							order.setMessage(m.getDescription());
+							order.setLink(m.getLink());
+							order = parsePrice(order);
+							String title = order.getTitle().replaceAll("(\\(Бюджет: .*[0-9\\;\\)])", "");
+							order.setTitle(title);
+							ParserSource parserSource = new ParserSource();
+							parserSource.setSource(siteSourceJobId);
+							parserSource.setCategory(category.getId());
+							parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
+							parserSource.setOpenForAll(order.isOpenForAll());
+							order.setSourceSite(parserSource);
+							return order;
+						}).filter(e -> e.isValidOrder()).map(m -> {
+							ParserSource parserSource = m.getSourceSite();
+							Optional<ParserSource> optionalSource = parserSourceRepository
+									.findBySourceAndCategoryAndSubCategory(parserSource.getSource(),
+											parserSource.getCategory(), parserSource.getSubCategory());
+							if (optionalSource.isPresent()) {
+								parserSource = optionalSource.get();
+							} else {
+								parserSource = parserSourceRepository.save(parserSource);
+							}
+							m.setSourceSite(parserSource);
+							m = orderRepository.save(m);
+							return mapper.map(m, OrderDTO.class);
+						}).peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink()))
+						.collect(Collectors.toList());
 	}
 
 	@SneakyThrows

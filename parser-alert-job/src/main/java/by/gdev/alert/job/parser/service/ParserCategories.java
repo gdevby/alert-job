@@ -188,7 +188,7 @@ public class ParserCategories {
 
 	@SneakyThrows
 	public void updateHubrLink(List<String> lineFies) {
-		SiteSourceJob sites = siteSourceJobRepository.findByName("HABR");
+		SiteSourceJob sites = siteSourceJobRepository.findById(2L).get();
 		List<Category> categories = sites.getCategories();
 		Map<String, List<String>> map = aggregateByKeys(lineFies);
 		map.forEach((k, v) -> {
