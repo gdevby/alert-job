@@ -26,6 +26,11 @@ const HomePage = () => {
 					{list.map(item => <li key={item}>{item}</li>)}
 				</ul>
 			</div>
+			<p className='mt-1'>На данный момент на сайте доступны следующие биржи:
+				<a href='https://freelance.ru/' >freelance</a>,
+				<a href='https://freelance.habr.com/' >habr</a>,
+				<a href='https://www.fl.ru/' >fl</a>.
+			</p>
 			<p className='mt-1'>Чтобы начать, создайте аккаунт и авторизуйтесь на этом сайте, в правом верхнем углу можете сконфигурировать фильтры.</p>
 			<Examples />
 			<p className='mt-1' style={{ fontWeight: 'bold' }}>
