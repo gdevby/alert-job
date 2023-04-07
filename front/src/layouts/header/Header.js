@@ -23,7 +23,7 @@ const Header = () => {
 
 	const navigate = useNavigate()
 
-	return <AppBar component="nav" position='static'>
+	return <AppBar component="nav" position='static' className='header_menu'>
 		<Toolbar>
 			<MobileMenu isAuth={isAuth} openLoginForm={openLoginForm} />
 			<Typography

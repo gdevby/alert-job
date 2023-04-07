@@ -55,6 +55,7 @@ const MobileMenu = ({ isAuth, openLoginForm }) => {
 			sx={{
 				display: { xs: 'block', md: 'none' },
 			}}
+			className='header_menu'
 		>
 			<MenuItem onClick={handleCloseNavMenu}>
 				<Link to='/'>Главная</Link>

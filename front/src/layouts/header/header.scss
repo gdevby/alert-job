@@ -2,6 +2,10 @@
 	background-color: #afafaf;
 	padding: 1rem;
 
+	&_menu a {
+		color: inherit;
+	}
+
 	&-content {
 		display: flex;
 
