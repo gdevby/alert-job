@@ -24,7 +24,7 @@ const ModuleCard = ({ item, removeCard, openModule, updateModule }) => {
 	return <ListItem disablePadding className='modules__item-box'>
 		<div className='modules__item' key={item.id}>
 			<div className='modules__item__module-name'>{item.name}</div>
-			<div className='alert_status'>
+			<div className='modules__item_status'>
 				<Switch
 					checked={status}
 					onChange={handleStatus}
