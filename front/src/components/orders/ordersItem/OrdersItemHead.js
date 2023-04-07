@@ -20,7 +20,7 @@ const OrdersItemHead = (props) => {
 			{technologies.join(',')}
 		</Typography>
 		<Typography sx={{ width: '23%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
-			{ sourceSite.categoryName } { sourceSite.subCategoryName?  ', ' + sourceSite.subCategoryName :  '' }
+			{ sourceSite.categoryName } <br/> {sourceSite.subCategoryName || ''}
 		</Typography>
 		<Typography sx={{ width: '12%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 			{price?.price || price?.value || 'не указана'}
