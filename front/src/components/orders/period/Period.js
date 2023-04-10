@@ -42,7 +42,7 @@ const Period = ({updatePeriod}) => {
 
 	return (
 		<div className='orders__period'>
-			<p>Выберите период, за который вам будут приходить заказы. От 1 дня до 30.</p>
+			<p>Выберите период, за который вам будут показовать заказы ниже. От 1 дня до 30.</p>
 			<Field type={'number'} defaultValue={currentPeriod} cb={handlerPeriod} onBlur={(e) => validatePeriod(+e.target.value)} />
 		</div>
 	)

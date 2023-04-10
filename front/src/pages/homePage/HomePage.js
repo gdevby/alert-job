@@ -15,7 +15,7 @@ const HomePage = () => {
 
 	return <div className='container'>
 		<div className='homePage_content'>
-			<Title text={'Система уведомлений о заказах'} />
+			<Title text={'Агрегатор заказов с фриланс бирж'} />
 			<h3>Основная цель: удобный, быстрый, избирательный способ получения уведомлений о нужных заказах по вашим настроенным фильтрам.
 				Имеется два типа фильтров позитивные и негативные.
 				Сначала применяются фильтры для выбора заказов, потом негативные отсеивают заказы, которые вам не подходят.
@@ -27,9 +27,9 @@ const HomePage = () => {
 				</ul>
 			</div>
 			<p className='mt-1'>На данный момент на сайте доступны следующие биржи:
-				<a href='https://freelance.ru/' >freelance</a>,
-				<a href='https://freelance.habr.com/' >habr</a>,
-				<a href='https://www.fl.ru/' >fl</a>.
+				<a href='https://freelance.ru/' >https://freelance.ru</a>,
+				<a href='https://freelance.habr.com/' >https://freelance.habr.com</a>,
+				<a href='https://www.fl.ru/' >https://www.fl.ru</a>.
 			</p>
 			<p className='mt-1'>Чтобы начать, создайте аккаунт и авторизуйтесь на этом сайте, в правом верхнем углу можете сконфигурировать фильтры.</p>
 			<Examples />
