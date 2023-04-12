@@ -79,6 +79,7 @@ services:
     depends_on:
       - elasticsearch
     mem_limit: 512m
+    restart: always
   logstash:
     image: logstash:8.6.0
     container_name: logstash
