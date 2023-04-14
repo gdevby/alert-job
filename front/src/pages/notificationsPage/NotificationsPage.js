@@ -36,11 +36,10 @@ const NotificationsPage = () => {
 				setShedule(response.data.alertTimeDTO)
 				setAlertType(response.data.defaultSendType)
 				if (response.data.defaultSendType) {
-					setCurrentPlatform({ name: 'email', id: 1 })
-				} else {
-					setCurrentPlatform({ name: 'telegram', id: 2 })
-					setTelegramId(response.data.telegram == 'null' ? '' : response.data.telegram)
+					return setCurrentPlatform({ name: 'email', id: 1 })
 				}
+				setCurrentPlatform({ name: 'telegram', id: 2 })
+				setTelegramId(response.data.telegram === null ? '' : response.data.telegram)
 			})
 			.catch(e => {
 				if (e.code == 302) {
@@ -67,8 +66,8 @@ const NotificationsPage = () => {
 				alertType={alertType}
 			/>
 			<AlertStatus alertStatus={alertStatus} handleAlertsStatus={handleAlertsStatus} />
-			<Btn className='mt-1' text={isOpenTime? 'Скрыть настройку время оповещения' : 'Показать настройки время оповещения'} onClick={handleShowsAlertTime}/>
-			{isOpenTime && <AlertTime shedule={shedule}/>}
+			<Btn className='mt-1' text={isOpenTime ? 'Скрыть настройку время оповещения' : 'Показать настройки время оповещения'} onClick={handleShowsAlertTime} />
+			{isOpenTime && <AlertTime shedule={shedule} />}
 			{currentPlatform.name == 'telegram' && <InstructionForTg />}
 		</div>
 	</div>

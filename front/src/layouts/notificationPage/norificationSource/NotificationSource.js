@@ -11,6 +11,8 @@ const NotificationSource = (props) => {
 
 	const [telegramId, setTelegramId] = useState('')
 	const [type, setType] = useState()
+	const [disabled, setDisabled] = useState(false)
+
 
 	const platforms = [{ name: 'email', id: 1 }, { name: 'telegram', id: 2 }];
 
@@ -18,7 +20,11 @@ const NotificationSource = (props) => {
 		if (tgId) {
 			setTelegramId(tgId)
 		}
-	}, [tgId])
+		console.log(!tgId)
+		if (currentPlatform.name == 'telegram' && !tgId) {
+			setDisabled(true)
+		}
+	}, [tgId, currentPlatform])
 
 	const saveTgId = () => {
 		if (!type) {
@@ -26,8 +32,8 @@ const NotificationSource = (props) => {
 		}
 	}
 	
+
 	useEffect(() => {
-		console.log(alertType)
 		setType(alertType)
 	}, [alertType])
 
@@ -48,8 +54,8 @@ const NotificationSource = (props) => {
 			</div>
 			: <p>Используется почта при регистрации аккаунта</p>}
 		<div className='notification_source__send-btn'>
-			{currentPlatform.name == 'telegram' && <Btn text={'Сохранить'} onClick={saveTgId} variant='contained' />}
-			<Btn text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained' />
+			{currentPlatform.name == 'telegram' && <Btn text={'Сохранить'} onClick={saveTgId} variant='contained' disabled={currentPlatform.name == 'telegram' && disabled}/>}
+			<Btn text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained' disabled={currentPlatform.name == 'telegram' && disabled}/>
 		</div>
 	</div>
 }
