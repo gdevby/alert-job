@@ -21,7 +21,6 @@ public class ParserSource extends BasicId{
 	private Long source;
 	private Long category;
 	private Long subCategory;
-	private boolean openForAll;
 	@OneToMany(mappedBy = "sourceSite")
 	private Set<Order> orders;
 }

@@ -92,7 +92,6 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 							parserSource.setSource(siteSourceJobId);
 							parserSource.setCategory(category.getId());
 							parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-							parserSource.setOpenForAll(order.isOpenForAll());
 							order.setSourceSite(parserSource);
 							return order;
 						}).filter(e -> e.isValidOrder()).map(m -> {
