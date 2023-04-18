@@ -11,10 +11,6 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-
-import org.hibernate.annotations.CreationTimestamp;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,8 +31,6 @@ public class Order extends BasicId {
     private String message;
     private String link;
 
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
     private Date dateTime;
     @AttributeOverrides({ @AttributeOverride(name = "price", column = @Column(name = "order_price", nullable = true)),
 	    @AttributeOverride(name = "value", column = @Column(name = "order_value", nullable = true)) })
