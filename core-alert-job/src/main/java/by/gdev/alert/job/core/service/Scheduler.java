@@ -159,7 +159,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			containsTitle = userFilter.getTitles().stream()
 					.anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
 		}
-		if (!CollectionUtils.isEmpty(userFilter.getTechnologies())) {
+		if (!CollectionUtils.isEmpty(userFilter.getTechnologies()) && Objects.nonNull(order.getTechnologies())) {
 			containsTech = userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().stream()
 					.map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
 		}
