@@ -11,6 +11,4 @@ public class SourceSiteDTO {
     private String categoryName;
     private Long subCategory;
     private String subCategoryName;
-    private boolean openForAll;
-
 }
