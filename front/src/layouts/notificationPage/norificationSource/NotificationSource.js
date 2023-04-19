@@ -7,12 +7,12 @@ import DropDownList from '../../../components/common/dropDownList/DropDowList';
 import { coreService } from '../../../services/parser/endponits/coreService';
 
 const NotificationSource = (props) => {
-	const { handleCurrentPlatform, currentPlatform, tgId, alertType } = props;
+	const { handleCurrentPlatform, currentPlatform, tgId, alertType, email } = props;
 
 	const [telegramId, setTelegramId] = useState('')
 	const [type, setType] = useState()
 	const [disabled, setDisabled] = useState(false)
-
+	const [currentEmail, setEmail] = useState('')
 
 	const platforms = [{ name: 'email', id: 1 }, { name: 'telegram', id: 2 }];
 
@@ -31,6 +31,10 @@ const NotificationSource = (props) => {
 			coreService.changeTgId(telegramId).then(console.log)
 		}
 	}
+	
+	useEffect(() => {
+		setEmail(email)
+	}, [email])
 	
 
 	useEffect(() => {
@@ -52,7 +56,7 @@ const NotificationSource = (props) => {
 					variant="standard"
 					placeholder='Введите айди' onChange={(e) => setTelegramId(e.target.value)} />
 			</div>
-			: <p>Используется почта при регистрации аккаунта</p>}
+			: <p>{currentEmail}</p>}
 		<div className='notification_source__send-btn'>
 			{currentPlatform.name == 'telegram' && <Btn text={'Сохранить'} onClick={saveTgId} variant='contained' disabled={currentPlatform.name == 'telegram' && disabled}/>}
 			<Btn text={'Отправить тестовое уведомление'} onClick={sendTestNotification} variant='contained' disabled={currentPlatform.name == 'telegram' && disabled}/>
