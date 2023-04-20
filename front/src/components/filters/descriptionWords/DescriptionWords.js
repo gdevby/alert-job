@@ -46,12 +46,12 @@ const DescriptionWords = ({ filter_id, type, setIsLimit }) => {
 			.then(() => {
 				setWords((prev) => [...prev, word])
 				setResult((prev) => [...prev, word]);
-				setIsOpen(false)
+				//setIsOpen(false)
 				setSelectValue('')
 			})
 			.catch(e => {
 				if (e.message === 'limit') {
-					setIsOpen(false)
+				//	setIsOpen(false)
 					setIsLimit(true)
 				}
 			})

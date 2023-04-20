@@ -51,11 +51,11 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 				setWords((prev) => [...prev, word])
 				console.log(words)
 				//setResult((prev) => [...prev, word]);
-				setIsOpen(false)
+				//setIsOpen(false)
 				setSelectValue('')
 			}).catch(e => {
 				if (e.message === 'limit') {
-					setIsOpen(false)
+					//setIsOpen(false)
 					setIsLimit(true)
 				}
 			})
