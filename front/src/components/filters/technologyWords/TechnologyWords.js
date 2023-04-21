@@ -25,6 +25,7 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 	const [searchedWords, setSearchedWords] = useState([])
 	const [isFetching, setIsFetching] = useState(true)
 	const [totalCount, setTotalCount] = useState(0)
+	const [preloader, setPreloader] = useState(false)
 
 	const { module_id } = useParams()
 
