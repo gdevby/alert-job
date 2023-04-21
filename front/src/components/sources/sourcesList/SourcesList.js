@@ -26,7 +26,6 @@ const SourceList = ({ sources, setSources }) => {
 	}
 
 	const handleshowingSources = () => {
-		console.log(isShowingSources)
 		setIsShowingSources(prev => !prev)
 	}
 

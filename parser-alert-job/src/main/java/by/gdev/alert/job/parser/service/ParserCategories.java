@@ -53,9 +53,12 @@ public class ParserCategories {
 		SiteSourceJob fl = siteSourceJobRepository.findById(1L).get();
 		SiteSourceJob site = siteSourceJobRepository.findById(2L).get();
 		SiteSourceJob freelanceRuJob = siteSourceJobRepository.findById(3L).get();
+		SiteSourceJob weblancer = siteSourceJobRepository.findById(4L).get();
+
 		getSiteCategoriesFL(fl).forEach((k, v) -> saveData(fl, k, v));
 		getSiteCategoriesHabr(site).forEach((k, v) -> saveData(site, k, v));
 		getSiteCategoriesFreelanceRu(freelanceRuJob).forEach((k, v) -> saveData(freelanceRuJob, k, v));
+		getSiteCategoriesWeblancer(weblancer).forEach((k, v) -> saveData(weblancer, k, v));
 
 	}
 
@@ -180,6 +183,28 @@ public class ParserCategories {
 			return new SimpleEntry<ParsedCategory, List<ParsedCategory>>(catNew, subList);
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (u, v) -> {
 			throw new IllegalStateException(String.format("Duplicate key %s", u));
+		}, LinkedHashMap::new));
+	}
+
+	private Map<ParsedCategory, List<ParsedCategory>> getSiteCategoriesWeblancer(SiteSourceJob weblancer)
+			throws IOException {
+		Document doc = Jsoup.connect(weblancer.getParsedURI()).get();
+		Element allCategories = doc.getElementsByClass("list-unstyled list-wide category_tree toggle_parents").get(0);
+
+		return allCategories.children().stream().filter(f -> !f.children().get(0).tagName().equals("b")).map(e -> {
+			Elements elements = e.children();
+			Element element = elements.get(0);
+			ParsedCategory category = new ParsedCategory(null, element.text(), null, null);
+			Element subElements = elements.get(2).getElementsByClass("collapse").get(0);
+			Elements subElement = subElements.children();
+			List<ParsedCategory> subCategory = subElement.stream().map(sub -> {
+				Element n = sub.children().get(0);
+				String link = weblancer.getParsedURI() + n.attr("href").replaceAll("/jobs", "");
+				return new ParsedCategory(null, n.text(), null, link);
+			}).toList();
+			return new SimpleEntry<ParsedCategory, List<ParsedCategory>>(category, subCategory);
+		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
+			throw new IllegalStateException(String.format("Duplicate key %s", k));
 		}, LinkedHashMap::new));
 	}
 

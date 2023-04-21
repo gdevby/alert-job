@@ -275,7 +275,11 @@ public class CoreService {
 	    sourceSite = sourceRepository.save(sourceSite);
 	    module.getSources().add(sourceSite);
 	    modulesRepository.save(module);
-	    changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), true, true).subscribe();
+
+	    boolean categoryValue = Objects.nonNull(sourceSite.getSiteCategory())
+		    && Objects.nonNull(sourceSite.getSiteSubCategory()) ? false : true;
+	    changeParserSubcribe(sourceSite.getSiteCategory(), sourceSite.getSiteSubCategory(), categoryValue, true)
+		    .subscribe();
 	    return Mono.just(ResponseEntity.ok(mapper.map(sourceSite, SourceSiteDTO.class)));
 	});
     }

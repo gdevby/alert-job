@@ -19,26 +19,26 @@ const Sources = () => {
 
 	const { id } = useParams()
 
-	const addSource = data => {
+	const addSource = async data => {
 		const { currentSite, currentCat, currentSubCat } = data
-		sourceService
-			.addSource(id, {
-				siteSource: Number(currentSite.id),
-				siteCategory: Number(currentCat.id),
-				siteSubCategory: currentSubCat.id,
-				openForAll: false
+		try {
+			const response = await sourceService
+				.addSource(id, {
+					siteSource: Number(currentSite.id),
+					siteCategory: Number(currentCat.id),
+					siteSubCategory: currentSubCat.id,
+					openForAll: false
+				})
+			updateSources(data, response.data.id)
+			
+		} catch (e) {
+			if (e.response?.data?.message == 'source exists') {
+				showAlert()
 			}
-			).then(response => {
-				updateSources(data, response.data.id)
-			})
-			.catch(e => {
-				if (e.response?.data?.message == 'source exists') {
-					showAlert()
-				}
-				if (e.message == 'limit') {
-					setIsLimit(true)
-				}
-			})
+			if (e.message == 'limit') {
+				setIsLimit(true)
+			}
+		}
 
 	}
 
@@ -49,7 +49,7 @@ const Sources = () => {
 		}, 2000)
 	}
 
-	const updateSources = (data, id) => {
+	const updateSources = async (data, id) => {
 		const newSource = {
 			cat: {
 				...data.currentCat,
@@ -64,7 +64,7 @@ const Sources = () => {
 			},
 			id: id
 		}
-		setSources([...sourse, newSource])
+		setSources((prev) => [...prev, newSource])
 	}
 
 	useEffect(() => {

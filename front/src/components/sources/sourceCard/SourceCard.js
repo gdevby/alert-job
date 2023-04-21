@@ -9,7 +9,6 @@ const SourceCard = ({ item, removeCard }) => {
 	const remove = () => {
 		removeCard(item.id)
 	}
-
 	return <>
 		<TableRow
 			key={item.id}

@@ -23,7 +23,6 @@ public abstract class AbsctractSiteParser {
 		log.trace("parsed {}", siteSourceJob.getName());
 		siteSourceJob.getCategories().stream()
 				// parse only categories that can parse=true
-				.filter(categoryFilter -> categoryFilter.isParse())
 				// iterate over each category from this collection
 				.forEach(category -> {
 					log.trace("getting order by category {} rss link {}", category.getNativeLocName(),
@@ -31,8 +30,8 @@ public abstract class AbsctractSiteParser {
 					List<Subcategory> siteSubCategories = category.getSubCategories();
 					// checking if a subcategory exists for this category
 					// category does't have a subcategory
-					List<OrderDTO> list = mapItems(category.getLink(), siteSourceJob.getId(), category, null);
-					orders.addAll(list);
+					if (category.isParse())
+						orders.addAll(mapItems(category.getLink(), siteSourceJob.getId(), category, null));
 					// category have a subcategory
 					siteSubCategories.stream()
 							// parse only sub categories that can parse=true
