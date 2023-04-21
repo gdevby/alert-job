@@ -9,6 +9,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle'
 import ListItem from '../listItem/ListItem';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import useDebounce from '../../../hooks/use-debounce'
 
@@ -81,6 +82,7 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 				})
 				.finally(() => {
 					setIsFetching(false)
+					setPreloader(false)
 				})
 		} else {
 			setIsFetching(false)
@@ -146,6 +148,7 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 			if (debouncedSearchTerm.length == 0) {
 				setPage(0)
 			}
+			setPreloader(true)
 			getWords(debouncedSearchTerm, 0)
 		}
 	}, [debouncedSearchTerm])
@@ -203,7 +206,8 @@ const TechnologyWords = ({ filter_id, type, setIsLimit }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list' >
-					{result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
+					{preloader ? <div className='text-center'><CircularProgress /></div> :
+						result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
 				</div>
 			</DialogContent>
 			<DialogActions className='searchPopup__actions'>

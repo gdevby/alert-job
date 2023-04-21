@@ -9,6 +9,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle'
 import ListItem from '../listItem/ListItem';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { filterService } from '../../../services/parser/endponits/filterService'
 
@@ -26,7 +27,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 	const listRef = React.createRef()
 	const inputRef = React.createRef()
 
-	const debouncedSearchTerm = useDebounce(selectValue, 500)
+	const debouncedSearchTerm = useDebounce(selectValue, 1000)
 
 	const descriptionPriceWords = useSelector(state => state.filter.currentFilter.descriptionWordPrice)
 
@@ -50,7 +51,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 			})
 			.catch(e => {
 				if (e.message === 'limit') {
-				//	setIsOpen(false)
+					//	setIsOpen(false)
 					setIsLimit(true)
 				}
 			})
@@ -75,6 +76,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 				})
 				.finally(() => {
 					setIsFetching(false)
+					setPreloader(false)
 				})
 		} else {
 			setIsFetching(false)
@@ -131,7 +133,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 			setWords((prev) => [...prev, ...descriptionPriceWords])
 		}
 	}, [])
-	
+
 	useEffect(() => {
 		if (!isFetching) {
 			if (debouncedSearchTerm.length == 0) {
@@ -139,6 +141,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 			}
 			getWords(debouncedSearchTerm, 0)
 		}
+		setPreloader(true)
 	}, [debouncedSearchTerm])
 
 	useEffect(() => {
@@ -189,7 +192,8 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list' >
-					{result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
+					{preloader ? <div className='text-center'><CircularProgress /></div> :
+						result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
 				</div>
 			</DialogContent>
 			<DialogActions className='searchPopup__actions'>

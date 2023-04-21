@@ -10,6 +10,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle'
 import useDebounce from '../../../hooks/use-debounce'
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { filterService } from '../../../services/parser/endponits/filterService'
 
@@ -23,6 +24,7 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 	const [searchedWords, setSearchedWords] = useState([])
 	const [isFetching, setIsFetching] = useState(true)
 	const [totalCount, setTotalCount] = useState(0)
+	const [preloader, setPreloader] = useState(false)
 
 	const { module_id } = useParams()
 
@@ -78,6 +80,7 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 				})
 				.finally(() => {
 					setIsFetching(false)
+					setPreloader(false)
 				})
 		} else {
 			setIsFetching(false)
@@ -140,6 +143,7 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 			if (debouncedSearchTerm.length == 0) {
 				setPage(0)
 			}
+			setPreloader(true)
 			getWords(debouncedSearchTerm, 0)
 		}
 	}, [debouncedSearchTerm])
@@ -172,7 +176,7 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [listRef])
-	
+
 	useEffect(() => {
 		const input = inputRef.current
 		if (input) {
@@ -186,7 +190,7 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 				<div className='searchPopup__header'>
 					<div className='searchPopup__header-close' onClick={closePopup}>Закрыть</div>
 					Поиск по ключевым словам
-					<input type='text' onChange={changeWord} value={selectValue} ref={inputRef}/>
+					<input type='text' onChange={changeWord} value={selectValue} ref={inputRef} />
 				</div>
 			</DialogTitle>
 			<DialogContent className='scroll' ref={listRef}>
@@ -195,7 +199,8 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 					<div>Частота</div>
 				</div>
 				<div className='searchPopup__body-list'>
-					{result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
+					{preloader ? <div className='text-center'><CircularProgress /></div> :
+						result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
 				</div>
 			</DialogContent>
 			<DialogActions className='searchPopup__actions'>
