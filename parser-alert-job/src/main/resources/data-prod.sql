@@ -23,3 +23,4 @@ INSERT IGNORE INTO fl_category(ID,NATIVE_LOC_NAME) VALUES(24, 'Сети и ин�
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(1, 'FLRU', 'https://www.fl.ru/projects/', TRUE); 
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(3, 'FREELANCE.RU', 'https://freelance.ru/project/search/pro', TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(4, 'WEBLANCER.NET', 'https://www.weblancer.net/jobs', TRUE);
