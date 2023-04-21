@@ -50,7 +50,9 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 			.addWordToFilter('title-word', filter_id, word.id, type)
 			.then(() => {
 				setWords((prev) => [...prev, word])
-				setResult((prev) => [...prev, word]);
+				if (!searchedWords.includes(word.name)) {
+					setResult((prev) => [...prev, word]);	
+				}
 				//setIsOpen(false)
 				setSelectValue('')
 			}).catch(e => {
@@ -183,6 +185,17 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 			input.focus()
 		}
 	}, [inputRef])
+	
+	const checkForExist = (name) => {
+		let isExist = false
+		for (let i = 0; i < words.length; i++) {
+			if (words[i].name === name) {
+				isExist = true
+				break;
+			}
+		}	
+		return isExist
+	}
 
 	return <>
 		<Dialog open={isOpen} onClose={closePopup}>
@@ -200,7 +213,8 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 				</div>
 				<div className='searchPopup__body-list'>
 					{preloader ? <div className='text-center'><CircularProgress /></div> :
-						result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} />)}
+						result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} 
+														item={item} isAdded={checkForExist(item.name)}/>)}
 				</div>
 			</DialogContent>
 			<DialogActions className='searchPopup__actions'>

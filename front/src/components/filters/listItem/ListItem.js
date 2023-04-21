@@ -1,12 +1,16 @@
 import React from 'react'
 
-const ListItem = ({ item, onClick }) => {
+const ListItem = ({ item, onClick, isAdded }) => {
 
 	const handleSelect = () => {
-		onClick(item)
+		if (!isAdded) {
+			onClick(item)	
+		}
 	}
-
-	return <div className='searchPopup__body-list__item'
+	
+	console.log(item)
+	
+	return <div className={isAdded? 'searchPopup__body-list__item added': 'searchPopup__body-list__item'}
 		id={item.id}
 		onClick={handleSelect}>
 		<div>{item.name}</div>
@@ -14,4 +18,4 @@ const ListItem = ({ item, onClick }) => {
 	</div>
 }
 
-export default ListItem;
+export default React.memo(ListItem);

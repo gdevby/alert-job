@@ -47,13 +47,13 @@
 		display: flex;
 		flex-direction: column;
 	}
-	
+
 	&>.wordsContains__title {
 		width: 60%;
 		flex-direction: inherit;
 		align-items: center;
-		
-		& > button {
+
+		&>button {
 			margin-left: 1rem;
 		}
 	}
@@ -156,10 +156,20 @@
 		cursor: pointer;
 		display: flex;
 		justify-content: space-between;
-	}
 
-	&__item:hover {
-		background-color: #bfbfbf;
+		:hover {
+			background-color: #bfbfbf;
+		}
+
+		&.added {
+			background-color: #4caf50;
+			color: white;
+			cursor: default;
+
+			&:hover {
+				background-color: #4caf50;
+			}
+		}
 	}
 
 	/*&::-webkit-scrollbar {
@@ -229,8 +239,8 @@
 	.searchPopup__actions>button {
 		width: 100%;
 	}
-	
-	.price_block > .wordsContains__title > button {
+
+	.price_block>.wordsContains__title>button {
 		margin-left: 0;
 	}
 
