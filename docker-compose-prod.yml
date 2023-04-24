@@ -110,7 +110,7 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - ES_JAVA_OPTS=-Xms256m -Xmx512m
       - xpack.security.enabled=false
       - TZ=Europe/Moscow
     volumes:
@@ -133,11 +133,12 @@ services:
       SERVER_BASEPATH: $kibana_secret_path
       SERVER_REWRITEBASEPATH: true
       TZ: Europe/Moscow
+      LS_JAVA_OPTS: "-Xms256m -Xmx712m"
     ports:
       - 5601:5601
     depends_on:
       - elasticsearch
-    mem_limit: 512m
+    mem_limit: 712m
   logstash:
     image: logstash:8.6.0
     container_name: logstash
