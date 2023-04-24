@@ -175,7 +175,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 					containsDesc1 = userFilter.getNegativeDescriptions().stream()
 							.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
 
-				if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies()))
+				if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies())
+						&& Objects.nonNull(order.getTechnologies()))
 					containsTech1 = userFilter.getNegativeTechnologies().stream().anyMatch(e -> order.getTechnologies()
 							.stream().map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
 
