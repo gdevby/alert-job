@@ -25,6 +25,7 @@ services:
         aliases:
           - aj.gdev.by
           - auth.gdev.by
+    mem_limit: 128m
   db:
     image: mariadb:10.9.4-jammy
     volumes:
@@ -79,6 +80,7 @@ services:
       - TZ=Europe/Moscow
     depends_on:
       - db
+    mem_limit: 612m
   config:
     image: alert-job/alert-job-config:0.0.1-SNAPSHOT
     ports:
@@ -90,6 +92,7 @@ services:
       - TZ=Europe/Moscow
     volumes:
       - "$local_config_directory:/alert-job-config-repo"
+    mem_limit: 512m
   eureka:
     image: alert-job/alert-job-eureka:0.0.1-SNAPSHOT
     ports:
@@ -101,6 +104,7 @@ services:
       config:
         condition: service_healthy
         #set directory rules sudo chmod 777 ~/prod/elastic
+    mem_limit: 512m
   elasticsearch:
     image: elasticsearch:8.6.0
     container_name: elasticsearch
@@ -120,7 +124,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    mem_limit: 1g
+    mem_limit: 512m
   kibana:
     image: kibana:8.6.0
     container_name: kibana
@@ -152,7 +156,7 @@ services:
       start_period: 60s
     depends_on:
       - elasticsearch
-    mem_limit: 512m
+    mem_limit: 712m
   gateway:
     image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
     ports:
@@ -165,6 +169,7 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+    mem_limit: 512m
   notification:
     image: alert-job/notification-alert-job:0.0.1-SNAPSHOT
     ports:
@@ -177,6 +182,7 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+    mem_limit: 512m
   parser:
     image: alert-job/parser-alert-job:0.0.1-SNAPSHOT
     ports:
@@ -193,7 +199,7 @@ services:
         condition: service_healthy
       dbparser:
         condition: service_started
-        
+    mem_limit: 1g    
   core:
     image: alert-job/core-alert-job:0.0.1-SNAPSHOT
     ports:
@@ -208,6 +214,7 @@ services:
         condition: service_healthy
       dbcore:
         condition: service_started
+    mem_limit: 512m  
   
         
       
