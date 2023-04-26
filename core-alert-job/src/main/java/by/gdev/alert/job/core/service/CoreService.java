@@ -246,7 +246,8 @@ public class CoreService {
 			dto.setSiteSubCategoryDTO(t.getT3());
 			return s;
 		    });
-		}).onErrorResume(NoSuchElementException.class,
+		}).sort(Comparator.comparing(SourceDTO::getSiteSourceDTO, (s1, s2) -> s1.getId().compareTo(s2.getId())))
+		.onErrorResume(NoSuchElementException.class,
 			e -> Mono.error(new ResourceNotFoundException("not found module with id " + id)));
     }
 
