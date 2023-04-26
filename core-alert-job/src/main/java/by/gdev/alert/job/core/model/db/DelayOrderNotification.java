@@ -15,5 +15,5 @@ public class DelayOrderNotification extends BasicId {
     private AppUser user;
     private String title;
     private String link;
-
+    private String orderName;
 }
