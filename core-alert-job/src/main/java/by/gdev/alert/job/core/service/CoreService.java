@@ -1,15 +1,11 @@
 package by.gdev.alert.job.core.service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
-import org.reactivestreams.Publisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -311,12 +307,13 @@ public class CoreService {
 		b.queryParam("category_id", s.getSiteCategory());
 		if (Objects.nonNull(s.getSiteSubCategory()))
 		    b.queryParam("sub_id", s.getSiteSubCategory());
+		b.queryParam("period", period);
 		return b.build();
 	    }).retrieve().bodyToFlux(OrderDTO.class);
 	});
 	Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 		NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-	return source.distinct(OrderDTO::getLink).filterWhen(e -> beforeOrderDate(e.getDateTime(), period))
+	return source.distinct(OrderDTO::getLink)
 		.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)))
 		.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
     }
@@ -331,12 +328,13 @@ public class CoreService {
 		b.queryParam("category_id", s.getSiteCategory());
 		if (Objects.nonNull(s.getSiteSubCategory()))
 		    b.queryParam("sub_id", s.getSiteSubCategory());
+		b.queryParam("period", period);
 		return b.build();
 	    }).retrieve().bodyToFlux(OrderDTO.class);
 	});
 	Mono<UserFilter> currentFilter = modules.map(e -> e.getCurrentFilter()).onErrorResume(
 		NullPointerException.class, ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-	return source.distinct(OrderDTO::getLink).filterWhen(e -> beforeOrderDate(e.getDateTime(), period))
+	return source.distinct(OrderDTO::getLink)
 		.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)))
 		.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
     }
@@ -364,13 +362,4 @@ public class CoreService {
 	    return b.build();
 	}).retrieve().bodyToMono(Void.class).onErrorResume(ex -> Mono.error(ex));
     }
-
-    private Publisher<Boolean> beforeOrderDate(Date orderTime, Long period) {
-	return Mono.defer(() -> {
-	    LocalDateTime ldt = LocalDateTime.now().minusDays(period);
-	    Date out = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-	    return Mono.just(out.before(orderTime));
-	});
-    }
-
 }

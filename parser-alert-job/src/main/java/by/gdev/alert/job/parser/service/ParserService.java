@@ -1,5 +1,8 @@
 package by.gdev.alert.job.parser.service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.Objects;
 
 import org.modelmapper.ModelMapper;
@@ -99,32 +102,38 @@ public class ParserService {
 	});
     }
 
-    public Flux<OrderDTO> getOrdersBySource(Long source, Long category, Long subcategory) {
-	return Flux.fromIterable(Objects.isNull(subcategory)
-		? orderRepository.findAllBySourceSubCategoryIsNullOneEagerTechnologies(source, category)
-		: orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory)).map(e -> {
-		    OrderDTO dto = mapper.map(e, OrderDTO.class);
-		    SourceSiteDTO s = dto.getSourceSite();
+    public Flux<OrderDTO> getOrdersBySource(Long source, Long category, Long subcategory, Long period) {
+	return Flux.defer(() -> {
+	    LocalDateTime ldt = LocalDateTime.now().minusDays(period);
+	    Date date = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+	    return Flux
+		    .fromIterable(Objects.isNull(subcategory)
+			    ? orderRepository.findAllBySourceSubCategoryIsNullOneEagerTechnologies(source, category,
+				    date)
+			    : orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory, date))
+		    .map(e -> {
+			OrderDTO dto = mapper.map(e, OrderDTO.class);
+			SourceSiteDTO s = dto.getSourceSite();
 
-		    String sourceName = siteSourceJobRepository.findById(s.getSource())
-			    .orElseThrow(
-				    () -> new ResourceNotFoundException("don't found by source id " + s.getSource()))
-			    .getName();
-		    s.setSourceName(sourceName);
-		    String categoryName = categoryRepository.findById(s.getCategory()).orElseThrow(
-			    () -> new ResourceNotFoundException("don't found by category id " + s.getCategory()))
-			    .getNativeLocName();
-		    s.setCategoryName(categoryName);
-
-		    if (Objects.nonNull(s.getSubCategory())) {
-			String subCategoryName = subCategoryRepository.findById(s.getSubCategory())
-				.orElseThrow(() -> new ResourceNotFoundException(
-					"don't found by subcategory id " + s.getSubCategory()))
+			String sourceName = siteSourceJobRepository.findById(s.getSource()).orElseThrow(
+				() -> new ResourceNotFoundException("don't found by source id " + s.getSource()))
+				.getName();
+			s.setSourceName(sourceName);
+			String categoryName = categoryRepository.findById(s.getCategory()).orElseThrow(
+				() -> new ResourceNotFoundException("don't found by category id " + s.getCategory()))
 				.getNativeLocName();
-			s.setSubCategoryName(subCategoryName);
-		    }
-		    dto.setSourceSite(s);
-		    return dto;
-		});
+			s.setCategoryName(categoryName);
+
+			if (Objects.nonNull(s.getSubCategory())) {
+			    String subCategoryName = subCategoryRepository.findById(s.getSubCategory())
+				    .orElseThrow(() -> new ResourceNotFoundException(
+					    "don't found by subcategory id " + s.getSubCategory()))
+				    .getNativeLocName();
+			    s.setSubCategoryName(subCategoryName);
+			}
+			dto.setSourceSite(s);
+			return dto;
+		    });
+	});
     }
 }
