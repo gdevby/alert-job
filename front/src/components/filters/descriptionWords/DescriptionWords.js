@@ -51,7 +51,7 @@ const DescriptionWords = ({ filter_id, type, setIsLimit }) => {
 					setResult((prev) => [...prev, word]);	
 				}
 				//setIsOpen(false)
-				setSelectValue('')
+				//setSelectValue('')
 			})
 			.catch(e => {
 				if (e.message === 'limit') {

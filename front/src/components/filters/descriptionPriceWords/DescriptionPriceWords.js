@@ -51,7 +51,7 @@ const DescriptionPriceWords = ({ filter_id, type, setIsLimit }) => {
 				}
 				
 				//setIsOpen(false)
-				setSelectValue('')
+				//setSelectValue('')
 			})
 			.catch(e => {
 				if (e.message === 'limit') {
