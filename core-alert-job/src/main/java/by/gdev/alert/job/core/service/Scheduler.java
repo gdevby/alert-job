@@ -92,7 +92,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
     private void sendOrderToUser(AppUser user, List<OrderDTO> list, String orderName) {
 	if (CollectionUtils.isEmpty(user.getUserAlertTimes()) || isMatchUserAlertTimes(user)) {
 	    List<String> orders = list.stream()
-		    .map(e -> String.format("Новый заказ, модуль %s - %s \n %s", orderName, e.getTitle(), e.getLink()))
+		    .map(e -> String.format("%s, новый заказ - %s \n %s", orderName, e.getTitle(), e.getLink()))
 		    .toList();
 	    sendMessageToUser(user, orders);
 	} else {
@@ -199,8 +199,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
     public void sendDelayOrders() {
 	userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
 	    if (isMatchUserAlertTimes(user)) {
-		List<String> orders = user.getDelayOrderNotifications().stream().map(e -> String
-			.format("Новый заказ, модуль %s - %s \n %s", e.getOrderName(), e.getTitle(), e.getLink()))
+		List<String> orders = user.getDelayOrderNotifications().stream().map(
+			e -> String.format("%s, новый заказ - %s \n %s", e.getOrderName(), e.getTitle(), e.getLink()))
 			.toList();
 		if (!orders.isEmpty()) {
 		    sendMessageToUser(user, orders);
