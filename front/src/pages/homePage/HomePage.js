@@ -13,6 +13,8 @@ const HomePage = () => {
 		'Можно добавить критерий срочных дедлайнов, к примеру, не уведомлять, если дедлайн через один день',
 		'Можно настраивать фильтры для некоторых источников(Максимальная гибкость.)']
 
+	const sites = ['https://freelance.ru', 'https://freelance.habr.com', 'https://www.fl.ru', 'https://www.weblancer.net']
+
 	return <div className='container'>
 		<div className='homePage_content'>
 			<Title text={'Агрегатор заказов с фриланс бирж'} />
@@ -27,9 +29,11 @@ const HomePage = () => {
 				</ul>
 			</div>
 			<p className='mt-1'>На данный момент на сайте доступны следующие биржи:
-				<a href='https://freelance.ru/' >https://freelance.ru</a>,
-				<a href='https://freelance.habr.com/' >https://freelance.habr.com</a>,
-				<a href='https://www.fl.ru/' >https://www.fl.ru</a>.
+				{sites.map((item, index) => {
+					return <span  key={item}><a href={item}>{item}</a>
+						{index === sites.length-1? '' : ','}
+					</span>
+				})}
 			</p>
 			<p className='mt-1'>Чтобы начать, создайте аккаунт и авторизуйтесь на этом сайте, в правом верхнем углу можете сконфигурировать фильтры.</p>
 			<Examples />
