@@ -15,6 +15,9 @@ const MobileOrderItemHead = (props) => {
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 				Дата: <OrderDate date={dateTime} />
 			</Typography>
+			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
+				Источник: {sourceSite.sourceName}
+			</Typography>
 			<Typography sx={{ width: '100%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 				Технологии: {technologies.join(',')}
 			</Typography>

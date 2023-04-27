@@ -15,6 +15,9 @@ const OrdersItemHead = (props) => {
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 				Дата: <OrderDate date={dateTime} />
 			</Typography>
+			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
+				Источник: {sourceSite.sourceName}
+			</Typography>
 		</Typography>
 		<Typography sx={{ width: '20%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 			{technologies.join(',')}
