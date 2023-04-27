@@ -36,12 +36,12 @@ const NotificationsPage = () => {
 				setAlertStatus(response.data.switchOffAlerts)
 				setShedule(response.data.alertTimeDTO)
 				setAlertType(response.data.defaultSendType)
+				setTelegramId(response.data.telegram === null ? '' : response.data.telegram)
+				setEmail(response.data.email)
 				if (response.data.defaultSendType) {
-					setEmail(response.data.email)
 					return setCurrentPlatform({ name: 'email', id: 1 })
 				}
 				setCurrentPlatform({ name: 'telegram', id: 2 })
-				setTelegramId(response.data.telegram === null ? '' : response.data.telegram)
 			})
 			.catch(e => {
 				if (e.code == 302) {
@@ -57,6 +57,10 @@ const NotificationsPage = () => {
 	const handleShowsAlertTime = () => {
 		setIsOpenTime(prev => !prev)
 	}
+	
+	const updateTelegramId = (newId) => {
+		setTelegramId(newId)
+	}
 
 	return <div className='notification_page'>
 		<div className='container'>
@@ -67,6 +71,7 @@ const NotificationsPage = () => {
 				tgId={telegramId}
 				alertType={alertType}
 				email={email}
+				updateTelegramId={updateTelegramId}
 			/>
 			<AlertStatus alertStatus={alertStatus} handleAlertsStatus={handleAlertsStatus} />
 			<Btn className='mt-1' text={isOpenTime ? 'Скрыть настройку время оповещения' : 'Показать настройки время оповещения'} onClick={handleShowsAlertTime} />

@@ -7,7 +7,7 @@ import DropDownList from '../../../components/common/dropDownList/DropDowList';
 import { coreService } from '../../../services/parser/endponits/coreService';
 
 const NotificationSource = (props) => {
-	const { handleCurrentPlatform, currentPlatform, tgId, alertType, email } = props;
+	const { handleCurrentPlatform, currentPlatform, tgId, alertType, email, updateTelegramId } = props;
 
 	const [telegramId, setTelegramId] = useState('')
 	const [type, setType] = useState()
@@ -19,8 +19,8 @@ const NotificationSource = (props) => {
 	useEffect(() => {
 		if (tgId) {
 			setTelegramId(tgId)
+			setDisabled(false)
 		}
-		console.log(!tgId)
 		if (currentPlatform.name == 'telegram' && !tgId) {
 			setDisabled(true)
 		}
@@ -29,11 +29,14 @@ const NotificationSource = (props) => {
 	const saveTgId = () => {
 		if (!type) {
 			coreService.changeTgId(telegramId).then(console.log)
+			updateTelegramId(telegramId)
 		}
 	}
 	
 	useEffect(() => {
-		setEmail(email)
+		if (email) {
+			setEmail(email)	
+		}
 	}, [email])
 	
 
@@ -44,6 +47,10 @@ const NotificationSource = (props) => {
 	const sendTestNotification = () => {
 		coreService.sendTestMessage().then(console.log)
 	}
+	
+	const handleDisable = (e) => {
+		setDisabled(!e.target.value.length)
+	}
 
 	return <div className='notification_source'>
 		<DropDownList open={false} label={'Тип уведомлений'} defaultValue={currentPlatform.id} elems={platforms} onClick={handleCurrentPlatform} defaultLabe='Тип уведомлений' />
@@ -53,6 +60,7 @@ const NotificationSource = (props) => {
 					id="standard-basic"
 					label="Введите адрес"
 					value={telegramId}
+					onBlur={handleDisable}
 					variant="standard"
 					placeholder='Введите айди' onChange={(e) => setTelegramId(e.target.value)} />
 			</div>
