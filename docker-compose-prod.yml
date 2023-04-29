@@ -106,7 +106,7 @@ services:
         #set directory rules sudo chmod 777 ~/prod/elastic
     mem_limit: 512m
   elasticsearch:
-    image: elasticsearch:8.6.0
+    image: elasticsearch:8.7.0
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -140,7 +140,7 @@ services:
       - elasticsearch
     mem_limit: 712m
   logstash:
-    image: logstash:8.6.0
+    image: logstash:8.7.0
     container_name: logstash
     command: logstash -f /etc/logstash/conf.d/logstash.conf
     volumes:
