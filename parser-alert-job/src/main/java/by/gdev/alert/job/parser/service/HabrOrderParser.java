@@ -88,8 +88,14 @@ public class HabrOrderParser extends AbsctractSiteParser {
 								parserSource = parserSourceRepository.save(parserSource);
 							}
 							m.setSourceSite(parserSource);
-							log.debug("found new order {} {}", m.getTitle(), m.getLink());
-							m = orderRepository.save(m);
+							try {
+								log.debug("found new order {} {}", m.getTitle(), m.getLink());
+
+								m = orderRepository.save(m);
+							} catch (Exception e) {
+								log.warn("found probem with order " + m.getLink());
+								throw e;
+							}
 							return mapper.map(m, OrderDTO.class);
 						}).collect(Collectors.toList());
 	}
