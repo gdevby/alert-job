@@ -2,7 +2,7 @@ import React from 'react';
 
 import sources from '../../../images/home/sources.jpg';
 import filters from '../../../images/home/filters.jpg';
-import negativeFilters from '../../../images/home/negative-filters.jpg';
+import source from '../../../images/home/source.jpg';
 import orders from '../../../images/home/orders.jpg';
 
 import Accordion from '@mui/material/Accordion';
@@ -16,15 +16,15 @@ const Examples = () => {
 	const steps = [
 		{
 			img: sources,
-			description: 'Функционал добавления источника заказов'
+			description: 'Функционал добавления источников заказов для вида деятельности'
+		},
+		{
+			img: source,
+			description: 'Конфигурация источников, откуда мы получаем заказы'
 		},
 		{
 			img: filters,
-			description: 'Конфигурации фильтра для заказов'
-		},
-		{
-			img: negativeFilters,
-			description: 'Конфигурации негативных фильтров для заказов'
+			description: 'Конфигурация фильтров, по которым мы будем получать заказы'
 		},
 		{
 			img: orders,
