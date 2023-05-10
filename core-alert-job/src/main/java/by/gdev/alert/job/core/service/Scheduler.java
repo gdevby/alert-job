@@ -3,7 +3,9 @@ package by.gdev.alert.job.core.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,6 +49,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
     private final ApplicationProperty property;
 
+    private Map<String, LocalDateTime> eventDates = new HashMap<>();
+
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
 	sseConnection();
@@ -63,6 +67,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	    try {
 		log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
 		Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
+		checkEventDates(event.event(), event.data().size());
 		forEachOrders(users, event.data());
 	    } catch (Throwable ex) {
 		log.error("problem with subscribe", ex);
@@ -218,4 +223,35 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	    return pr.getAlertDate().equals(day) && pr.getStartAlert() <= hour && hour < pr.getEndAlert();
 	});
     }
+
+    private void checkEventDates(String event, Integer data) {
+	boolean isConstainsKey = eventDates.containsKey(event);
+	if (!isConstainsKey)
+	    eventDates.put(event, LocalDateTime.now());
+
+	if (data == 0) {
+	    LocalDateTime value = eventDates.get(event);
+	    LocalDateTime valuePlusHour = value.plusHours(6);
+	    LocalDateTime now = LocalDateTime.now();
+	    boolean isAfter = now.isAfter(valuePlusHour);
+	    if (isAfter) {
+		AppUser user = userRepository.findByUuid(property.getErrorUuid()).get();
+		String message = "orders from the parser are not received";
+		UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), message)
+			: new UserNotification(String.valueOf(user.getTelegram()), message);
+		String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
+			: "http://notification:8019/telegram";
+		Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
+		mono.subscribe(
+			e -> log.debug("sent error message for user by mail: {}, to {}", user.isDefaultSendType(),
+				un.getToMail()),
+			e -> log.debug("failed to sent error message by mail: {}, to {} {}", user.isDefaultSendType(),
+				un.getToMail(), user.getUuid()));
+	    }
+
+	} else {
+	    eventDates.put(event, LocalDateTime.now());
+	}
+    }
+
 }

@@ -32,4 +32,7 @@ public class ApplicationProperty {
 
     @Value("${sites.open_for_all}")
     List<Long> sitesOpenForAll;
+
+    @Value("${error.uuid}")
+    private String errorUuid;
 }
