@@ -77,8 +77,7 @@ public class HabrOrderParser extends AbsctractSiteParser {
 							parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
 							order.setSourceSite(parserSource);
 							return order;
-						}).filter(e -> e.isValidOrder())
-						.peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink())).map(m -> {
+						}).filter(e -> e.isValidOrder()).map(m -> {
 							ParserSource parserSource = m.getSourceSite();
 							Optional<ParserSource> optionalSource = parserSourceRepository
 									.findBySourceAndCategoryAndSubCategory(parserSource.getSource(),
@@ -89,6 +88,7 @@ public class HabrOrderParser extends AbsctractSiteParser {
 								parserSource = parserSourceRepository.save(parserSource);
 							}
 							m.setSourceSite(parserSource);
+							log.debug("found new order {} {}", m.getTitle(), m.getLink());
 							m = orderRepository.save(m);
 							return mapper.map(m, OrderDTO.class);
 						}).collect(Collectors.toList());
