@@ -88,16 +88,10 @@ public class HabrOrderParser extends AbsctractSiteParser {
 								parserSource = parserSourceRepository.save(parserSource);
 							}
 							m.setSourceSite(parserSource);
-							try {
-								log.debug("found new order {} {}", m.getTitle(), m.getLink());
-
-								m = orderRepository.save(m);
-							} catch (Exception e) {
-								log.warn("found probem with order " + m.getLink());
-								throw e;
-							}
+							m = orderRepository.save(m);
 							return mapper.map(m, OrderDTO.class);
-						}).collect(Collectors.toList());
+						}).peek(m -> log.debug("found new order {} {}", m.getTitle(), m.getLink()))
+						.collect(Collectors.toList());
 	}
 
 	private Order parsePrice(Order order) {
@@ -111,7 +105,8 @@ public class HabrOrderParser extends AbsctractSiteParser {
 				order.setPrice(new Price(s, Integer.valueOf(s.replaceAll(" ", "").replaceAll("руб.", ""))));
 			}
 			Elements elements = doc.select(".tags__item_link");
-			order.setTechnologies(elements.eachText().stream().collect(Collectors.toList()));
+			order.setTechnologies(
+					elements.eachText().stream().filter(e -> e.length() < 200).collect(Collectors.toList()));
 		} catch (Exception ex) {
 			order.setValidOrder(false);
 			log.debug("invalid hubr link " + order.getLink());
