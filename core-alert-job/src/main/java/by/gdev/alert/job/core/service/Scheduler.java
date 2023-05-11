@@ -231,12 +231,12 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
 	if (data == 0) {
 	    LocalDateTime value = eventDates.get(event);
-	    LocalDateTime valuePlusHour = value.plusHours(6);
+	    LocalDateTime valuePlusHour = value.plusHours(16);
 	    LocalDateTime now = LocalDateTime.now();
 	    boolean isAfter = now.isAfter(valuePlusHour);
 	    if (isAfter) {
 		AppUser user = userRepository.findByUuid(property.getErrorUuid()).get();
-		String message = "orders from the parser are not received";
+		String message = String.format("orders from the %s parser are not received", event);
 		UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), message)
 			: new UserNotification(String.valueOf(user.getTelegram()), message);
 		String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
