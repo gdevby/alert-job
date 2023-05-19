@@ -131,6 +131,7 @@ services:
     environment:
       ELASTICSEARCH_URL: "http://elasticsearch:9300"
       SERVER_BASEPATH: $kibana_secret_path
+      SERVER_PUBLICBASEURL: $kibana_public_base_url
       SERVER_REWRITEBASEPATH: true
       TZ: Europe/Moscow
       LS_JAVA_OPTS: "-Xms256m -Xmx712m"

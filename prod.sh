@@ -18,4 +18,5 @@ export front_directory=/home/app/service/aj/sources/alert-job/front
 export logstash_config_directory=/home/app/service/aj/sources/alert-job/logstash/config
 export logger_level=INFO
 export kibana_secret_path=
+export kibana_public_base_url=
 docker compose -f path_to_docker_compose_prod_yml $1 $2
