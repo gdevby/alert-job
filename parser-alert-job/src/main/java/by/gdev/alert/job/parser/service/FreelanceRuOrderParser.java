@@ -69,7 +69,7 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 	@Value("${timeout.connect_read.order}")
 	private int timeout;
 
-	@Transactional(timeout = 600)
+	@Transactional(timeout = 2000)
 	public List<OrderDTO> getOrders() {
 		return super.getOrders(3L);
 	}

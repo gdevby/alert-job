@@ -51,7 +51,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 
 	private SimpleDateFormat convertor = new SimpleDateFormat(DATE_FORMAT);
 
-	@Transactional(timeout = 600)
+	@Transactional(timeout = 2000)
 	public List<OrderDTO> weblancerParser() {
 		return super.getOrders(4L);
 	}

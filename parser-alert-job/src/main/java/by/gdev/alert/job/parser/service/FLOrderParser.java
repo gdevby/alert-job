@@ -56,7 +56,7 @@ public class FLOrderParser extends AbsctractSiteParser {
 
 	private final ModelMapper mapper;
 
-	@Transactional(timeout = 600)
+	@Transactional(timeout = 2000)
 	public List<OrderDTO> flruParser() {
 		return super.getOrders(1L);
 	}
