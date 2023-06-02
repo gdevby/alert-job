@@ -51,7 +51,7 @@ public class HabrOrderParser extends AbsctractSiteParser {
 
 	private final ModelMapper mapper;
 
-	@Transactional(timeout = 200)
+	@Transactional(timeout = 600)
 	public List<OrderDTO> hubrParser() {
 		return super.getOrders(2L);
 	}
