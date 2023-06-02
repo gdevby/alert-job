@@ -64,6 +64,7 @@ public class HabrOrderParser extends AbsctractSiteParser {
 		return Objects.isNull(rss.getChannel().getItem()) ? Lists.newArrayList()
 				: rss.getChannel().getItem().stream()
 						.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
+							log.debug("found new order {} {}", m.getTitle(), m.getLink());
 							service.saveOrderLinks(category, subCategory, m.getLink());
 							Order order = new Order();
 							order.setTitle(m.getTitle());
@@ -78,6 +79,7 @@ public class HabrOrderParser extends AbsctractSiteParser {
 							order.setSourceSite(parserSource);
 							return order;
 						}).filter(e -> e.isValidOrder()).map(m -> {
+
 							ParserSource parserSource = m.getSourceSite();
 							Optional<ParserSource> optionalSource = parserSourceRepository
 									.findBySourceAndCategoryAndSubCategory(parserSource.getSource(),
@@ -90,8 +92,7 @@ public class HabrOrderParser extends AbsctractSiteParser {
 							m.setSourceSite(parserSource);
 							m = orderRepository.save(m);
 							return mapper.map(m, OrderDTO.class);
-						}).peek(m -> log.debug("found new order {} {}", m.getTitle(), m.getLink()))
-						.collect(Collectors.toList());
+						}).collect(Collectors.toList());
 	}
 
 	private Order parsePrice(Order order) {

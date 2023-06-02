@@ -96,6 +96,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 			order.setSourceSite(parserSource);
 			return order;
 		}).filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(e -> {
+			log.debug("found new order {} {}", e.getTitle(), e.getLink());
 			service.saveOrderLinks(category, subCategory, e.getLink());
 			ParserSource parserSource = e.getSourceSite();
 			Optional<ParserSource> optionalSource = parserSourceRepository.findBySourceAndCategoryAndSubCategory(
