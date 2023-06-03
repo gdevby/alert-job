@@ -18,34 +18,39 @@ public abstract class AbsctractSiteParser {
 	private SiteSourceJobRepository siteSourceJobRepository;
 
 	public List<OrderDTO> getOrders(Long siteId) {
+
 		List<OrderDTO> orders = new ArrayList<>();
-		SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
-		log.trace("parsed {}", siteSourceJob.getName());
-		siteSourceJob.getCategories().stream()
-				// parse only categories that can parse=true
-				// iterate over each category from this collection
-				.forEach(category -> {
-					log.trace("getting order by category {} rss link {}", category.getNativeLocName(),
-							category.getLink());
-					List<Subcategory> siteSubCategories = category.getSubCategories();
-					// checking if a subcategory exists for this category
-					// category does't have a subcategory
-					if (category.isParse())
-						orders.addAll(mapItems(category.getLink(), siteSourceJob.getId(), category, null));
-					// category have a subcategory
-					siteSubCategories.stream()
-							// parse only sub categories that can parse=true
-							.filter(subCategoryFilter -> subCategoryFilter.isParse())
-							// Iterate all sub category
-							.forEach(subCategory -> {
-								log.trace("getting order by category {} and subcategory  {} {}",
-										category.getNativeLocName(), subCategory.getNativeLocName(),
-										subCategory.getLink());
-								List<OrderDTO> list1 = mapItems(subCategory.getLink(), siteSourceJob.getId(), category,
-										subCategory);
-								orders.addAll(list1);
-							});
-				});
+		try {
+			SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
+			log.trace("parsed {}", siteSourceJob.getName());
+			siteSourceJob.getCategories().stream()
+					// parse only categories that can parse=true
+					// iterate over each category from this collection
+					.forEach(category -> {
+						log.trace("getting order by category {} rss link {}", category.getNativeLocName(),
+								category.getLink());
+						List<Subcategory> siteSubCategories = category.getSubCategories();
+						// checking if a subcategory exists for this category
+						// category does't have a subcategory
+						if (category.isParse())
+							orders.addAll(mapItems(category.getLink(), siteSourceJob.getId(), category, null));
+						// category have a subcategory
+						siteSubCategories.stream()
+								// parse only sub categories that can parse=true
+								.filter(subCategoryFilter -> subCategoryFilter.isParse())
+								// Iterate all sub category
+								.forEach(subCategory -> {
+									log.trace("getting order by category {} and subcategory  {} {}",
+											category.getNativeLocName(), subCategory.getNativeLocName(),
+											subCategory.getLink());
+									List<OrderDTO> list1 = mapItems(subCategory.getLink(), siteSourceJob.getId(),
+											category, subCategory);
+									orders.addAll(list1);
+								});
+					});
+		} catch (Exception e) {
+			log.error("error", e);
+		}
 		return orders;
 	}
 
