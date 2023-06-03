@@ -80,8 +80,12 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 			Element descriptionElement = e.selectFirst("div.text_field.text-inline");
 			String descriptionText = descriptionElement.text();
 			order.setMessage(descriptionText);
-			String dateOrder = e.selectFirst("span.text-muted").children().attr("title");
-			order.setDateTime(dateConvertor(dateOrder));
+			Element dateOrder = e.selectFirst("span.text-muted");
+			if (Objects.nonNull(dateOrder)) {
+				order.setDateTime(dateConvertor(dateOrder.children().attr("title")));
+			} else {
+				order.setValidOrder(false);
+			}
 			String priceElement = e.selectFirst("div.float-right.float-sm-none.title.amount.indent-xs-b0").children()
 					.attr("title");
 			if (!StringUtils.isEmpty(priceElement)) {
@@ -95,7 +99,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 			parserSource.setSubCategory(subCategory.getId());
 			order.setSourceSite(parserSource);
 			return order;
-		}).filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(e -> {
+		}).filter(Order::isValidOrder).filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(e -> {
 			log.debug("found new order {} {}", e.getTitle(), e.getLink());
 			service.saveOrderLinks(category, subCategory, e.getLink());
 			ParserSource parserSource = e.getSourceSite();
@@ -109,7 +113,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 			e.setSourceSite(parserSource);
 			e = orderRepository.save(e);
 			return mapper.map(e, OrderDTO.class);
-		}).peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink())).toList();
+		}).toList();
 	}
 
 	private Date dateConvertor(String d) {
