@@ -96,17 +96,23 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
     private void sendOrderToUser(AppUser user, List<OrderDTO> list, String orderName) {
 	if (CollectionUtils.isEmpty(user.getUserAlertTimes()) || isMatchUserAlertTimes(user)) {
-	    List<String> orders = list.stream()
-		    .map(e -> String.format("%s, новый заказ - %s \n %s", orderName, e.getTitle(), e.getLink()))
-		    .toList();
+	    List<String> orders = list.stream().map(e -> {
+		SourceSiteDTO s = e.getSourceSite();
+		return createOrdersMessage(orderName, e.getTitle(), e.getLink(), s.getCategoryName(),
+			s.getSubCategoryName());
+	    }).toList();
 	    sendMessageToUser(user, orders);
 	} else {
 	    list.forEach(l -> {
+		SourceSiteDTO s = l.getSourceSite();
 		DelayOrderNotification don = new DelayOrderNotification();
 		don.setUser(user);
 		don.setLink(l.getLink());
 		don.setTitle(l.getTitle());
 		don.setOrderName(orderName);
+		don.setCategoryName(s.getCategoryName());
+		if (!StringUtils.isEmpty(s.getSubCategoryName()))
+		    don.setSubCategoryName(s.getSubCategoryName());
 		delayOrderRepository.save(don);
 	    });
 	}
@@ -204,8 +210,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
     public void sendDelayOrders() {
 	userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
 	    if (isMatchUserAlertTimes(user)) {
-		List<String> orders = user.getDelayOrderNotifications().stream().map(
-			e -> String.format("%s, новый заказ - %s \n %s", e.getOrderName(), e.getTitle(), e.getLink()))
+		List<String> orders = user.getDelayOrderNotifications().stream()
+			.map(e -> createOrdersMessage(e.getOrderName(), e.getTitle(), e.getLink(), e.getCategoryName(),
+				e.getSubCategoryName()))
 			.toList();
 		if (!orders.isEmpty()) {
 		    sendMessageToUser(user, orders);
@@ -254,4 +261,10 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
     }
 
+    private String createOrdersMessage(String name, String title, String link, String categoryName,
+	    String subCategoryName) {
+	return StringUtils.isNotEmpty(subCategoryName)
+		? String.format("%s, %s, %s новый заказ - %s \n %s", name, categoryName, subCategoryName, title, link)
+		: String.format("%s, %s, новый заказ - %s \n %s", name, categoryName, title, link);
+    }
 }
