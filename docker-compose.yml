@@ -118,7 +118,7 @@ services:
   notification:
     image: alert-job/notification-alert-job:0.0.1-SNAPSHOT
     ports:
-      - "8016:8016"
+      - "8019:8019"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
        - TZ=Europe/Moscow
@@ -151,4 +151,21 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
-  
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+  grafana:
+    container_name: grafana 
+    image: "grafana/grafana:latest"
+    ports:
+      - "3000:3000"
+networks:
+  alert-job:
+    driver: bridge      
+      

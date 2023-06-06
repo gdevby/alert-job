@@ -87,6 +87,14 @@
 			<artifactId>common-alert-job</artifactId>
 			<version>${revision}</version>
 		</dependency>
+		<dependency>
+    		<groupId>io.micrometer</groupId>
+    		<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+	    <dependency>
+		    <groupId>io.micrometer</groupId>
+		    <artifactId>micrometer-core</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

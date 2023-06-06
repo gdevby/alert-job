@@ -1,0 +1,24 @@
+global:
+  scrape_interval:     5s # Set the scrape interval to every 5 seconds.
+  evaluation_interval: 5s # Evaluate rules every 5 seconds.
+#  external_labels:
+#    monitor: 'codelab-monitor'
+scrape_configs:
+  - job_name: 'parser-alert-job'
+    scrape_interval: 5s
+    scheme: http
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['parser:8017']
+  - job_name: 'core-alert-job'
+    scrape_interval: 5s
+    scheme: http
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['core:8018']
+  - job_name: 'notification-alert-job'
+    scrape_interval: 5s
+    scheme: http
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['notification:8019']      

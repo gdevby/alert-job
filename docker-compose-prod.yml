@@ -215,6 +215,20 @@ services:
       dbcore:
         condition: service_started
     mem_limit: 512m  
-  
-        
-      
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+  grafana:
+    container_name: grafana 
+    image: "grafana/grafana:latest"
+    ports:
+      - "3000:3000"
+networks:
+  alert-job:
+    driver: bridge      
