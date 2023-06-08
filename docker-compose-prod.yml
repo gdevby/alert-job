@@ -229,6 +229,10 @@ services:
     image: "grafana/grafana:latest"
     ports:
       - "3000:3000"
+    volumes:
+    - grafana-volume:/var/lib/grafana
+volumes:
+  grafana-volume: {}      
 networks:
   alert-job:
     driver: bridge      
