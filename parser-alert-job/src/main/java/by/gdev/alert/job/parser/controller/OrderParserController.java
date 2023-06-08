@@ -3,7 +3,12 @@ package by.gdev.alert.job.parser.controller;
 import java.time.Duration;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +27,8 @@ import by.gdev.common.model.CategoryDTO;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteSourceDTO;
 import by.gdev.common.model.SubCategoryDTO;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -42,21 +49,41 @@ public class OrderParserController {
     @Value("${parser.interval}")
     private long parserInterval;
 
+    private final ApplicationContext context;
+    private final MeterRegistry meterRegistry;
+
     @GetMapping(value = "/stream-sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<List<OrderDTO>>> streamFlruEvents() {
 	log.trace("subscribed on orders");
-	Flux<ServerSentEvent<List<OrderDTO>>> flruFlux = Flux.interval(Duration.ofSeconds(parserInterval))
-		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
-			.event("periodic-flru-parse-event").data(fl.flruParser()).build());
+	Flux<ServerSentEvent<List<OrderDTO>>> flruFlux = Flux
+		.interval(Duration.ofSeconds(parserInterval)).map(sequence -> ServerSentEvent.<List<OrderDTO>>builder()
+			.id(String.valueOf(sequence)).event("periodic-flru-parse-event").data(fl.flruParser()).build())
+		.doOnNext(s -> {
+		    int size = s.data().size();
+		    context.getBean("counter_flru", Counter.class).increment(size);
+		});
 	Flux<ServerSentEvent<List<OrderDTO>>> hubrFlux = Flux.interval(Duration.ofSeconds(parserInterval))
 		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
-			.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build());
+			.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build())
+		.doOnNext(s -> {
+		    int size = s.data().size();
+		    context.getBean("counter_hubr", Counter.class).increment(size);
+		});
+
 	Flux<ServerSentEvent<List<OrderDTO>>> freelanceRuFlux = Flux.interval(Duration.ofSeconds(parserInterval))
 		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
-			.event("periodic-freelanceru-parse-event").data(freelanceRuOrderParser.getOrders()).build());
+			.event("periodic-freelanceru-parse-event").data(freelanceRuOrderParser.getOrders()).build())
+		.doOnNext(s -> {
+		    int size = s.data().size();
+		    context.getBean("counter_freelanceru", Counter.class).increment(size);
+		});
 	Flux<ServerSentEvent<List<OrderDTO>>> weblancerFlux = Flux.interval(Duration.ofSeconds(parserInterval))
 		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
-			.event("periodic-weblancer-parse-event").data(weblancerOrderParcer.weblancerParser()).build());
+			.event("periodic-weblancer-parse-event").data(weblancerOrderParcer.weblancerParser()).build())
+		.doOnNext(s -> {
+		    int size = s.data().size();
+		    context.getBean("counter_weblancer", Counter.class).increment(size);
+		});
 	return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux);
     }
 
@@ -103,5 +130,16 @@ public class OrderParserController {
 	    @RequestParam("category_id") Long category, @RequestParam(name = "sub_id", required = false) Long subId,
 	    @RequestParam("period") Long period) {
 	return service.getOrdersBySource(site, category, subId, period);
+    }
+
+    @PostConstruct
+    void init() {
+	ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) context).getBeanFactory();
+	beanFactory.registerSingleton("counter_hubr", meterRegistry.counter("proxy_client", "proxy_client", "hubr"));
+	beanFactory.registerSingleton("counter_flru", meterRegistry.counter("proxy_client", "proxy_client", "flru"));
+	beanFactory.registerSingleton("counter_freelanceru",
+		meterRegistry.counter("proxy_client", "proxy_client", "freelanceru"));
+	beanFactory.registerSingleton("counter_weblancer",
+		meterRegistry.counter("proxy_client", "proxy_client", "weblancer"));
     }
 }
