@@ -30,6 +30,7 @@ import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SourceSiteDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
@@ -43,76 +44,82 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HabrOrderParser extends AbsctractSiteParser {
 
-	private final WebClient webClient;
-	private final ParserService service;
-	private final SiteSourceJobRepository siteSourceJobRepository;
-	private final OrderRepository orderRepository;
-	private final ParserSourceRepository parserSourceRepository;
+    private final WebClient webClient;
+    private final ParserService service;
+    private final SiteSourceJobRepository siteSourceJobRepository;
+    private final OrderRepository orderRepository;
+    private final ParserSourceRepository parserSourceRepository;
 
-	private final ModelMapper mapper;
+    private final ModelMapper mapper;
 
-	@Transactional(timeout = 2000)
-	public List<OrderDTO> hubrParser() {
-		return super.getOrders(2L);
+    @Transactional(timeout = 2000)
+    public List<OrderDTO> hubrParser() {
+	return super.getOrders(2L);
+    }
+
+    @SneakyThrows
+    List<OrderDTO> mapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
+	JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
+	Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+	Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
+	return Objects.isNull(rss.getChannel().getItem()) ? Lists.newArrayList()
+		: rss.getChannel().getItem().stream()
+			.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
+			    log.debug("found new order {} {}", m.getTitle(), m.getLink());
+			    service.saveOrderLinks(category, subCategory, m.getLink());
+			    Order order = new Order();
+			    order.setTitle(m.getTitle());
+			    order.setDateTime(m.getPubDate());
+			    order.setMessage(m.getDescription());
+			    order.setLink(m.getLink());
+			    order = parsePrice(order);
+			    ParserSource parserSource = new ParserSource();
+			    parserSource.setSource(siteSourceJobId);
+			    parserSource.setCategory(category.getId());
+			    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
+			    order.setSourceSite(parserSource);
+			    return order;
+			}).filter(e -> e.isValidOrder()).map(m -> {
+
+			    ParserSource parserSource = m.getSourceSite();
+			    Optional<ParserSource> optionalSource = parserSourceRepository
+				    .findBySourceAndCategoryAndSubCategory(parserSource.getSource(),
+					    parserSource.getCategory(), parserSource.getSubCategory());
+			    if (optionalSource.isPresent()) {
+				parserSource = optionalSource.get();
+			    } else {
+				parserSource = parserSourceRepository.save(parserSource);
+			    }
+			    m.setSourceSite(parserSource);
+			    m = orderRepository.save(m);
+			    OrderDTO dto = mapper.map(m, OrderDTO.class);
+			    SourceSiteDTO source = dto.getSourceSite();
+			    source.setCategoryName(category.getNativeLocName());
+			    if (Objects.nonNull(subCategory))
+				source.setSubCategoryName(subCategory.getNativeLocName());
+			    dto.setSourceSite(source);
+			    return dto;
+			}).collect(Collectors.toList());
+    }
+
+    private Order parsePrice(Order order) {
+	Document doc = null;
+	try {
+	    doc = Jsoup.parse(new URL(order.getLink()), 30000);
+	    Element el = doc.selectFirst("span.count");
+	    Element elPaymentType = el.selectFirst(".suffix");
+	    if (Objects.nonNull(elPaymentType) && elPaymentType.text().equals("за проект")) {
+		String s = el.childNode(0).toString();
+		order.setPrice(new Price(s, Integer.valueOf(s.replaceAll(" ", "").replaceAll("руб.", ""))));
+	    }
+	    Elements elements = doc.select(".tags__item_link");
+	    order.setTechnologies(
+		    elements.eachText().stream().filter(e -> e.length() < 200).collect(Collectors.toList()));
+	} catch (Exception ex) {
+	    order.setValidOrder(false);
+	    log.debug("invalid hubr link " + order.getLink());
+	    return order;
 	}
-
-	@SneakyThrows
-	List<OrderDTO> mapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
-		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
-		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-		Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-		return Objects.isNull(rss.getChannel().getItem()) ? Lists.newArrayList()
-				: rss.getChannel().getItem().stream()
-						.filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(m -> {
-							log.debug("found new order {} {}", m.getTitle(), m.getLink());
-							service.saveOrderLinks(category, subCategory, m.getLink());
-							Order order = new Order();
-							order.setTitle(m.getTitle());
-							order.setDateTime(m.getPubDate());
-							order.setMessage(m.getDescription());
-							order.setLink(m.getLink());
-							order = parsePrice(order);
-							ParserSource parserSource = new ParserSource();
-							parserSource.setSource(siteSourceJobId);
-							parserSource.setCategory(category.getId());
-							parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-							order.setSourceSite(parserSource);
-							return order;
-						}).filter(e -> e.isValidOrder()).map(m -> {
-
-							ParserSource parserSource = m.getSourceSite();
-							Optional<ParserSource> optionalSource = parserSourceRepository
-									.findBySourceAndCategoryAndSubCategory(parserSource.getSource(),
-											parserSource.getCategory(), parserSource.getSubCategory());
-							if (optionalSource.isPresent()) {
-								parserSource = optionalSource.get();
-							} else {
-								parserSource = parserSourceRepository.save(parserSource);
-							}
-							m.setSourceSite(parserSource);
-							m = orderRepository.save(m);
-							return mapper.map(m, OrderDTO.class);
-						}).collect(Collectors.toList());
-	}
-
-	private Order parsePrice(Order order) {
-		Document doc = null;
-		try {
-			doc = Jsoup.parse(new URL(order.getLink()), 30000);
-			Element el = doc.selectFirst("span.count");
-			Element elPaymentType = el.selectFirst(".suffix");
-			if (Objects.nonNull(elPaymentType) && elPaymentType.text().equals("за проект")) {
-				String s = el.childNode(0).toString();
-				order.setPrice(new Price(s, Integer.valueOf(s.replaceAll(" ", "").replaceAll("руб.", ""))));
-			}
-			Elements elements = doc.select(".tags__item_link");
-			order.setTechnologies(
-					elements.eachText().stream().filter(e -> e.length() < 200).collect(Collectors.toList()));
-		} catch (Exception ex) {
-			order.setValidOrder(false);
-			log.debug("invalid hubr link " + order.getLink());
-			return order;
-		}
-		return order;
-	}
+	return order;
+    }
 }
