@@ -12,7 +12,7 @@ services:
       - TZ=Europe/Minsk
       - URL=aj.gdev.by
       - VALIDATION=http
-      - EXTRA_DOMAINS=auth.gdev.by
+      - EXTRA_DOMAINS=auth.gdev.by,grafana.gdev.by
       - TZ=Europe/Moscow
     volumes:
       - $swag_config_directory:/config
