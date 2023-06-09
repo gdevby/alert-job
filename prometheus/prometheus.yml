@@ -22,3 +22,16 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['notification:8019']      
+  - job_name: 'alert-job-gateway'
+    scrape_interval: 5s
+    scheme: http
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway:8015']   
+  - job_name: 'alert-job-eureka'
+    scrape_interval: 5s
+    scheme: http
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['eureka:8012']         
+      
