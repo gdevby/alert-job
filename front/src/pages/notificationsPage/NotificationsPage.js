@@ -25,9 +25,12 @@ const NotificationsPage = () => {
 	const { handleStatus } = changeAuthStatus()
 
 
-	const handleCurrentPlatform = (data) => {
+	const handleCurrentPlatform = (data, send) => {
 		setCurrentPlatform(data)
-		coreService.changeAlertsType(data.name == 'email')
+		console.log(telegramId)
+		if (send || telegramId) {
+			coreService.changeAlertsType(data.name == 'email')
+		}
 	}
 
 	useEffect(() => {
