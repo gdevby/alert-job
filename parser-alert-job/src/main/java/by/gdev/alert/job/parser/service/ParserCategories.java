@@ -189,8 +189,7 @@ public class ParserCategories {
     private Map<ParsedCategory, List<ParsedCategory>> getSiteCategoriesWeblancer(SiteSourceJob weblancer)
 	    throws IOException {
 	Document doc = Jsoup.connect(weblancer.getParsedURI()).get();
-	Element allCategories = doc.getElementsByClass("list-unstyled list-wide category_tree toggle_parents").get(0);
-
+	Element allCategories = doc.getElementsByClass("category_tree list-unstyled list-wide").get(0);
 	return allCategories.children().stream().filter(f -> !f.children().get(0).tagName().equals("b")).map(e -> {
 	    Elements elements = e.children();
 	    Element element = elements.get(0);
