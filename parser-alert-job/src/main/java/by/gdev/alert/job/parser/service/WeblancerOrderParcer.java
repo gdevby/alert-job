@@ -14,6 +14,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,9 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
     private final String sourceLink = "https://www.weblancer.net";
     private static final String DATE_FORMAT = "EEE, dd.MM.yyyy HH:mm";
 
+    @Value("${currency.rate}")
+    private Integer currencyRate;
+
     private SimpleDateFormat convertor = new SimpleDateFormat(DATE_FORMAT);
 
     @Transactional(timeout = 2000)
@@ -72,26 +76,27 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 
 	return full.children().stream().map(e -> {
 	    Order order = new Order();
-	    Element titleElement = e.selectFirst("div.title");
+	    Element titleElement = e.selectFirst("div.row > div.col-sm-10 > span.title");
 	    String titleText = titleElement.text();
 	    order.setTitle(titleText);
 	    String orderPage = titleElement.selectFirst("a[href]").attr("href");
 	    String orderLink = sourceLink.concat(orderPage);
 	    order.setLink(orderLink);
-	    Element descriptionElement = e.selectFirst("div.text_field.text-inline");
+	    Element descriptionElement = e
+		    .selectFirst("div.row > div.col-12 > div.show-more-container > div > div.text-rich");
 	    String descriptionText = descriptionElement.text();
 	    order.setMessage(descriptionText);
-	    Element dateOrder = e.selectFirst("span.text-muted");
+	    Element dateOrder = e.selectFirst("div.row > div.col-sm-4.text-sm-end > span.text-muted > span.ms-1 > div");
 	    if (Objects.nonNull(dateOrder)) {
-		order.setDateTime(dateConvertor(dateOrder.children().attr("title")));
+		order.setDateTime(dateConvertor(dateOrder.attr("title")));
 	    } else {
 		order.setValidOrder(false);
 	    }
-	    String priceElement = e.selectFirst("div.float-right.float-sm-none.title.amount.indent-xs-b0").children()
-		    .attr("title");
-	    if (!StringUtils.isEmpty(priceElement)) {
-		String[] sp = priceElement.split("•");
-		Price p = new Price(sp[1], Integer.valueOf(sp[1].replaceAll(" ", "").replaceAll("руб", "")));
+	    Element priceElement = e.selectFirst("div.row > div.col-sm-2.text-sm-end.amount.title");
+	    String price = priceElement.text();
+	    if (!StringUtils.isEmpty(price)) {
+		String pr = price.replaceAll("$", "");
+		Price p = new Price(price, Integer.valueOf(pr) * currencyRate);
 		order.setPrice(p);
 	    }
 	    ParserSource parserSource = new ParserSource();
