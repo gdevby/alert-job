@@ -95,7 +95,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 	    Element priceElement = e.selectFirst("div.row > div.col-sm-2.text-sm-end.amount.title");
 	    String price = priceElement.text();
 	    if (!StringUtils.isEmpty(price)) {
-		String pr = price.replaceAll("$", "");
+		String pr = price.replace("$", "");
 		Price p = new Price(price, Integer.valueOf(pr) * currencyRate);
 		order.setPrice(p);
 	    }
