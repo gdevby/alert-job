@@ -19,4 +19,11 @@ public class ErrorHandlingController {
 	return new ResponseExeption(ex.getMessage());
     }
 
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(WebClientResponseException.BadRequest.class)
+    @ResponseBody
+    public ResponseExeption webExchangeBindExceptionHandler(WebClientResponseException.BadRequest ex) {
+	return new ResponseExeption(ex.getMessage());
+    }
+
 }
