@@ -54,11 +54,13 @@ public class ParserCategories {
 	SiteSourceJob site = siteSourceJobRepository.findById(2L).get();
 	SiteSourceJob freelanceRuJob = siteSourceJobRepository.findById(3L).get();
 	SiteSourceJob weblancer = siteSourceJobRepository.findById(4L).get();
+	SiteSourceJob freelancehunt = siteSourceJobRepository.findById(5L).get();
 
 	getSiteCategoriesFL(fl).forEach((k, v) -> saveData(fl, k, v));
 	getSiteCategoriesHabr(site).forEach((k, v) -> saveData(site, k, v));
 	getSiteCategoriesFreelanceRu(freelanceRuJob).forEach((k, v) -> saveData(freelanceRuJob, k, v));
 	getSiteCategoriesWeblancer(weblancer).forEach((k, v) -> saveData(weblancer, k, v));
+	getFreelancehunt(freelancehunt).forEach((k, v) -> saveData(freelancehunt, k, v));
 
     }
 
@@ -167,7 +169,6 @@ public class ParserCategories {
 	Document doc = Jsoup.connect(site.getParsedURI()).get();
 	Elements res = doc.getElementsByClass("category-group__folder");
 	return res.stream().map(ee -> {
-
 	    String categoryString = ee.getElementsByClass("link_dotted js-toggle").text();
 	    String engNameCategory = ee.getElementsByClass("checkbox_flat").attr("for");
 	    ParsedCategory catNew = new ParsedCategory(engNameCategory, categoryString, null, null);
@@ -207,6 +208,31 @@ public class ParserCategories {
 	}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
 	    throw new IllegalStateException(String.format("Duplicate key %s", k));
 	}, LinkedHashMap::new));
+    }
+
+    private Map<ParsedCategory, List<ParsedCategory>> getFreelancehunt(SiteSourceJob freelancehunt) throws IOException {
+	Document doc = Jsoup.connect(freelancehunt.getParsedURI()).get();
+	Element allCategories = doc.getElementById("skill-group-selector");
+	Elements el = allCategories.children().select("div.panel.panel-default");
+	return el.stream().map(e -> {
+	    Element elemCategory = e.selectFirst("div.panel-heading");
+	    ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, null);
+	    Element elemSubCategory = e.selectFirst("ul.panel-body.collapse");
+	    List<ParsedCategory> subCategory = elemSubCategory.children().select("li.accordion-inner.clearfix").stream()
+		    .map(sub -> {
+			// remove first element (orders count)
+			List<String> listText = Lists.newArrayList(sub.text().split(" "));
+			listText.remove(0);
+			String text = listText.stream().collect(Collectors.joining(" "));
+			String link = sub.select("a").get(0).attr("href");
+			log.debug("		found subcategory {}, {}", text, link);
+			return new ParsedCategory(null, text, null, link);
+		    }).toList();
+	    return new SimpleEntry<ParsedCategory, List<ParsedCategory>>(category, subCategory);
+	}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
+	    throw new IllegalStateException(String.format("Duplicate key %s", k));
+	}, LinkedHashMap::new));
+
     }
 
     public static record ParsedCategory(String name, String translatedName, Long id, String rss) {
