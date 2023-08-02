@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.FreelanceRuOrderParser;
+import by.gdev.alert.job.parser.service.FreelancehuntOrderParcer;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.WeblancerOrderParcer;
@@ -44,6 +45,7 @@ public class OrderParserController {
     public final FLOrderParser fl;
     public final FreelanceRuOrderParser freelanceRuOrderParser;
     public final WeblancerOrderParcer weblancerOrderParcer;
+    public final FreelancehuntOrderParcer freelancehuntOrderParcer;
     public final ParserService service;
 
     @Value("${parser.interval}")
@@ -84,7 +86,16 @@ public class OrderParserController {
 		    int size = s.data().size();
 		    context.getBean("counter_weblancer", Counter.class).increment(size);
 		});
-	return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux);
+	Flux<ServerSentEvent<List<OrderDTO>>> freelancehuntOrderParcerFlux = Flux
+		.interval(Duration.ofSeconds(parserInterval))
+		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
+			.event("periodic-weblancer-parse-event").data(freelancehuntOrderParcer.freelancehuntParser())
+			.build())
+		.doOnNext(s -> {
+		    int size = s.data().size();
+		    context.getBean("counter_weblancer", Counter.class).increment(size);
+		});
+	return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux, freelancehuntOrderParcerFlux);
     }
 
     @GetMapping("sites")
