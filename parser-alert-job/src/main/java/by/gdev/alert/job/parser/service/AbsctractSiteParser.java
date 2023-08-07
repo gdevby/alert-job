@@ -20,7 +20,7 @@ public abstract class AbsctractSiteParser {
     @Autowired
     private SiteSourceJobRepository siteSourceJobRepository;
 
-    public List<OrderDTO> getOrders(Long siteId) throws javax.xml.bind.UnmarshalException {
+    public List<OrderDTO> getOrders(Long siteId) {
 
 	List<OrderDTO> orders = new ArrayList<>();
 	try {
