@@ -52,7 +52,7 @@ public abstract class AbsctractSiteParser {
 		    });
 	} catch (Exception e) {
 	    if (e instanceof UnmarshalException)
-		log.warn("{Unmarshal problem }", e.getCause().getMessage());
+		log.warn("Unmarshal problem {}", e.getCause().getMessage());
 	    log.error("error", e);
 	}
 	return orders;
