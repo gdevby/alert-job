@@ -2,6 +2,7 @@ package by.gdev.alert.job.parser.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.xml.bind.UnmarshalException;
 
@@ -51,9 +52,11 @@ public abstract class AbsctractSiteParser {
 				});
 		    });
 	} catch (Exception e) {
-	    if (e instanceof UnmarshalException)
-		log.warn("Unmarshal problem {}", e.getCause().getMessage());
-	    log.error("error", e);
+	    if (e instanceof UnmarshalException && Objects.nonNull(e.getCause())
+		    && e.getCause().getMessage().contains("Server returned HTTP response code: 5"))
+		log.warn("warn 500 error", e);
+	    else
+		log.error("error", e);
 	}
 	return orders;
     }
