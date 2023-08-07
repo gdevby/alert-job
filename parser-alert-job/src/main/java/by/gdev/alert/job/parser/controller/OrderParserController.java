@@ -89,11 +89,11 @@ public class OrderParserController {
 	Flux<ServerSentEvent<List<OrderDTO>>> freelancehuntOrderParcerFlux = Flux
 		.interval(Duration.ofSeconds(parserInterval))
 		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
-			.event("periodic-weblancer-parse-event").data(freelancehuntOrderParcer.freelancehuntParser())
+			.event("periodic-freelancehun-parse-event").data(freelancehuntOrderParcer.freelancehuntParser())
 			.build())
 		.doOnNext(s -> {
 		    int size = s.data().size();
-		    context.getBean("counter_weblancer", Counter.class).increment(size);
+		    context.getBean("counter_freelancehun", Counter.class).increment(size);
 		});
 	return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux, freelancehuntOrderParcerFlux);
     }
@@ -152,5 +152,7 @@ public class OrderParserController {
 		meterRegistry.counter("proxy_client", "proxy_client", "freelanceru"));
 	beanFactory.registerSingleton("counter_weblancer",
 		meterRegistry.counter("proxy_client", "proxy_client", "weblancer"));
+	beanFactory.registerSingleton("counter_freelancehun",
+		meterRegistry.counter("proxy_client", "proxy_client", "freelancehun"));
     }
 }
