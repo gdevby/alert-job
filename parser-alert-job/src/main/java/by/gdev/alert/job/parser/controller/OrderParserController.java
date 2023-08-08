@@ -1,5 +1,12 @@
 package by.gdev.alert.job.parser.controller;
 
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUN;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.PROXY_CLIENT;
+
 import java.time.Duration;
 import java.util.List;
 
@@ -62,14 +69,14 @@ public class OrderParserController {
 			.id(String.valueOf(sequence)).event("periodic-flru-parse-event").data(fl.flruParser()).build())
 		.doOnNext(s -> {
 		    int size = s.data().size();
-		    context.getBean("counter_flru", Counter.class).increment(size);
+		    context.getBean(COUNTER_FLRU, Counter.class).increment(size);
 		});
 	Flux<ServerSentEvent<List<OrderDTO>>> hubrFlux = Flux.interval(Duration.ofSeconds(parserInterval))
 		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
 			.event("periodic-hubr-parse-event").data(hubr.hubrParser()).build())
 		.doOnNext(s -> {
 		    int size = s.data().size();
-		    context.getBean("counter_hubr", Counter.class).increment(size);
+		    context.getBean(COUNTER_HUBR, Counter.class).increment(size);
 		});
 
 	Flux<ServerSentEvent<List<OrderDTO>>> freelanceRuFlux = Flux.interval(Duration.ofSeconds(parserInterval))
@@ -77,14 +84,14 @@ public class OrderParserController {
 			.event("periodic-freelanceru-parse-event").data(freelanceRuOrderParser.getOrders()).build())
 		.doOnNext(s -> {
 		    int size = s.data().size();
-		    context.getBean("counter_freelanceru", Counter.class).increment(size);
+		    context.getBean(COUNTER_FREELANCERU, Counter.class).increment(size);
 		});
 	Flux<ServerSentEvent<List<OrderDTO>>> weblancerFlux = Flux.interval(Duration.ofSeconds(parserInterval))
 		.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
 			.event("periodic-weblancer-parse-event").data(weblancerOrderParcer.weblancerParser()).build())
 		.doOnNext(s -> {
 		    int size = s.data().size();
-		    context.getBean("counter_weblancer", Counter.class).increment(size);
+		    context.getBean(COUNTER_WEBLANCER, Counter.class).increment(size);
 		});
 	Flux<ServerSentEvent<List<OrderDTO>>> freelancehuntOrderParcerFlux = Flux
 		.interval(Duration.ofSeconds(parserInterval))
@@ -93,7 +100,7 @@ public class OrderParserController {
 			.build())
 		.doOnNext(s -> {
 		    int size = s.data().size();
-		    context.getBean("counter_freelancehun", Counter.class).increment(size);
+		    context.getBean(COUNTER_FREELANCEHUN, Counter.class).increment(size);
 		});
 	return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux, freelancehuntOrderParcerFlux);
     }
@@ -146,13 +153,13 @@ public class OrderParserController {
     @PostConstruct
     void init() {
 	ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) context).getBeanFactory();
-	beanFactory.registerSingleton("counter_hubr", meterRegistry.counter("proxy_client", "proxy_client", "hubr"));
-	beanFactory.registerSingleton("counter_flru", meterRegistry.counter("proxy_client", "proxy_client", "flru"));
-	beanFactory.registerSingleton("counter_freelanceru",
-		meterRegistry.counter("proxy_client", "proxy_client", "freelanceru"));
-	beanFactory.registerSingleton("counter_weblancer",
-		meterRegistry.counter("proxy_client", "proxy_client", "weblancer"));
-	beanFactory.registerSingleton("counter_freelancehun",
-		meterRegistry.counter("proxy_client", "proxy_client", "freelancehun"));
+	beanFactory.registerSingleton(COUNTER_HUBR, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "hubr"));
+	beanFactory.registerSingleton(COUNTER_FLRU, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "flru"));
+	beanFactory.registerSingleton(COUNTER_FREELANCERU,
+		meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelanceru"));
+	beanFactory.registerSingleton(COUNTER_WEBLANCER,
+		meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "weblancer"));
+	beanFactory.registerSingleton(COUNTER_FREELANCEHUN,
+		meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancehun"));
     }
 }
