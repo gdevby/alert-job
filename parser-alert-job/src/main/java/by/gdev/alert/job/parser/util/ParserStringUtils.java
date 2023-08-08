@@ -4,12 +4,12 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class ParserStringUtils {
-
-    public final String PROXY_CLIENT = "proxy_client";
-    public final String COUNTER_HUBR = "counter_hubr";
-    public final String COUNTER_FLRU = "counter_flru";
-    public final String COUNTER_FREELANCERU = "counter_freelanceru";
-    public final String COUNTER_WEBLANCER = "counter_weblancer";
-    public final String COUNTER_FREELANCEHUN = "counter_freelancehun";
-
+	public String PROXY_CLIENT = "proxy_client";
+	public String COUNTER_HUBR = "counter_hubr";
+	public String COUNTER_FLRU = "counter_flru";
+	public String COUNTER_FREELANCERU = "counter_freelanceru";
+	public String COUNTER_WEBLANCER = "counter_weblancer";
+	public String COUNTER_FREELANCEHUNT = "counter_freelancehunt";
+	public String VALUE = "value";
+	public String DUPBLICATE_KEY = "Duplicate key %s";
 }

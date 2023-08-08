@@ -36,9 +36,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private String updateFilePath;
 	private final ParserCategories parserCategories;
 	private final OrderRepository orderRepository;
-	
+
 	private final ApplicationContext context;
-	
 
 	@Override
 	@Transactional
@@ -53,7 +52,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 									+ " For prod or dev needs you can changed parser.categories.file.path with proper rss for parser service."
 									+ " The example you can find here src/main/resources/hubr.txt");
 				}
-				parserCategories.updateHubrLink(Lists.newArrayList(IOUtils.toString(res.getInputStream()).split(System.lineSeparator())));
+				parserCategories.updateHubrLink(
+						Lists.newArrayList(IOUtils.toString(res.getInputStream()).split(System.lineSeparator())));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -72,7 +72,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			log.debug("removed parser link" + e.getLinks());
 		});
 	}
-	
+
 	@Scheduled(cron = "0 0 1 * * *")
 	public void removeOrders() {
 		Lists.newArrayList(orderRepository.findAll()).stream().filter(f -> {

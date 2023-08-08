@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.controller;
 
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUN;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUNT;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
@@ -100,7 +100,7 @@ public class OrderParserController {
 			.build())
 		.doOnNext(s -> {
 		    int size = s.data().size();
-		    context.getBean(COUNTER_FREELANCEHUN, Counter.class).increment(size);
+		    context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(size);
 		});
 	return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux, freelancehuntOrderParcerFlux);
     }
@@ -159,7 +159,7 @@ public class OrderParserController {
 		meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelanceru"));
 	beanFactory.registerSingleton(COUNTER_WEBLANCER,
 		meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "weblancer"));
-	beanFactory.registerSingleton(COUNTER_FREELANCEHUN,
+	beanFactory.registerSingleton(COUNTER_FREELANCEHUNT,
 		meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancehun"));
     }
 }
