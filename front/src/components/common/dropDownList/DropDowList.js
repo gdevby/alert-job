@@ -15,13 +15,12 @@ const DropDownList = ({ elems, onClick, label, defaultLabe, className = '', defa
 	const classes = cn(...className.split(' '))
 
 	useEffect(() => {
-		setCurrent(defaultValue)
-	}, [defaultValue])
-
-	useEffect(() => {
-		console.log(label)
 		setItems(elems)
 	}, [elems])
+	
+	useEffect(() => {
+		setCurrent(defaultValue)
+	}, [defaultValue])
 
 	const handleChange = e => {
 		if (e.target.value) {

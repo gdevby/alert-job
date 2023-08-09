@@ -10,7 +10,7 @@ import './sourcePanel.scss'
 const SourcePanel = ({ addSource, module_id }) => {
 	const [currentSite, setCurrentSite] = useState('')
 	const [currentCat, setCurrentCat] = useState('')
-	const [currentSubCat, setCurrentSubCat] = useState([])
+	const [currentSubCat, setCurrentSubCat] = useState({})
 	const [sites, setSites] = useState([])
 	const [categories, setCategories] = useState([])
 	const [subcategories, setSubcategories] = useState([])
@@ -25,6 +25,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 	useEffect(() => {
 		if (currentSite.id) {
+			setCategories([])
 			parserService
 				.getCategories(currentSite.id)
 				.then(response => {
@@ -42,8 +43,15 @@ const SourcePanel = ({ addSource, module_id }) => {
 				.getSubcategories(currentCat.id)
 				.then(response => {
 					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
-					setSubcategories([{ id: null, name: 'Все подкатегории' }, ...subcat])
-					setCurrentSubCat({ id: null, name: 'Все подкатегории' })
+					if (currentSite.id == 4 || currentSite.id == 5) {
+						setSubcategories([...subcat])
+						console.log('SUBCAT', subcat[0])
+						setCurrentSubCat(subcat[0])
+					}else {
+						setSubcategories([{ id: null, name: 'Все подкатегории' }, ...subcat])
+						setCurrentSubCat({ id: null, name: 'Все подкатегории' })
+					}
+					
 				})
 		}
 
@@ -52,16 +60,16 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 	const addingSource = () => {
 		if (Number(currentSite.id) && Number(currentCat.id)) {
-			if ((currentSite.id == 4 || currentSite.id == 5) && currentSubCat.name === 'Все подкатегории') {
+			/*if ((currentSite.id == 4 || currentSite.id == 5) && currentSubCat.name === 'Все подкатегории') {
 				subcategories.forEach(item => {
 					if (item.id) {
 						addSource({ currentSite, currentCat, currentSubCat: item })
 					}
 					
 				})
-			}else {
+			}else {*/
 				addSource({ currentSite, currentCat, currentSubCat })
-			}
+//			}
 			
 		}
 	}
@@ -94,7 +102,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 				</div>
 				<div className='subcat'>
-					<DropDownList defaultValue={0} label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'} />
+					<DropDownList defaultValue={currentSubCat.id} label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'} />
 				</div>
 				<div className='add-source'>
 					<Btn onClick={addingSource} text={'Добавить источник'} variant='contained' />
