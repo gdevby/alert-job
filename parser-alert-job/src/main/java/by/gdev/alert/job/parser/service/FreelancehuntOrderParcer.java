@@ -14,6 +14,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +46,11 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 
     private static final int currentYear = LocalDate.now().getYear();
 
+    @Value("${proxy.host}")
+    private String proxyHost;
+    @Value("${proxy.port}")
+    private int proxyPort;
+
     private final ParserService service;
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
@@ -61,7 +67,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 	if (Objects.isNull(link))
 	    return Lists.newArrayList();
-	Document doc = Jsoup.connect(link).get();
+	Document doc = Jsoup.connect(link).proxy(link, currentYear).proxy(proxyHost, proxyPort).get();
 	Element full = doc.getElementsByClass("col-md-9 col-md-push-3").get(0);
 	Element elements = full.selectFirst("div#projects-html > table.table.table-normal.project-list");
 	Element table = elements.selectFirst("tbody");
@@ -85,8 +91,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 	    Element pricePart = e.selectFirst("td.text-center.project-budget.hidden-xs > span > div.text-green.price");
 	    if (Objects.nonNull(pricePart)) {
 		String price = pricePart.text();
-		String pr = price.replaceAll(" UAH", "");
-		pr = pr.replaceAll(" ", "");
+		String pr = price.replaceAll(" UAH", "").trim();
 		Price p = new Price(price, Integer.valueOf(pr) * 1);
 		order.setPrice(p);
 	    }
