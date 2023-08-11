@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -14,9 +15,14 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import com.google.common.collect.Lists;
 
@@ -44,18 +50,15 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 
     private static final String DATE_FORMAT = "d MMMM yyyy";
 
-    private static final int currentYear = LocalDate.now().getYear();
-
-    @Value("${proxy.host}")
-    private String proxyHost;
-    @Value("${proxy.port}")
-    private int proxyPort;
+    private static final int CURRENTYEAR = LocalDate.now().getYear();
 
     private final ParserService service;
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
 
     private final ModelMapper mapper;
+
+    private final RestTemplate restTemplate;
 
     @Transactional(timeout = 2000)
     public List<OrderDTO> freelancehuntParser() {
@@ -67,7 +70,13 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 	if (Objects.isNull(link))
 	    return Lists.newArrayList();
-	Document doc = Jsoup.connect(link).proxy(link, currentYear).proxy(proxyHost, proxyPort).get();
+	HttpHeaders headers = new HttpHeaders();
+	headers.add("user-agent", "Application");
+	headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+	headers.setContentType(MediaType.APPLICATION_JSON);
+	HttpEntity<String> entity = new HttpEntity<>(headers);
+	ResponseEntity<String> res = restTemplate.exchange(link, HttpMethod.GET, entity, String.class);
+	Document doc = Jsoup.parse(res.getBody());
 	Element full = doc.getElementsByClass("col-md-9 col-md-push-3").get(0);
 	Element elements = full.selectFirst("div#projects-html > table.table.table-normal.project-list");
 	Element table = elements.selectFirst("tbody");
@@ -84,7 +93,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 		order.setDateTime(new Date());
 	    } else {
 		String pageDate = datePart.attr("title");
-		String orderDate = String.format("%s %s", pageDate, currentYear);
+		String orderDate = String.format("%s %s", pageDate, CURRENTYEAR);
 		Date date = generateOrderDate(orderDate);
 		order.setDateTime(date);
 	    }
