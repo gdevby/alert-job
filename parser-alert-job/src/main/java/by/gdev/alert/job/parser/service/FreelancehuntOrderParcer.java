@@ -100,7 +100,8 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 	    Element pricePart = e.selectFirst("td.text-center.project-budget.hidden-xs > span > div.text-green.price");
 	    if (Objects.nonNull(pricePart)) {
 		String price = pricePart.text();
-		String pr = price.replaceAll(" UAH", "").trim();
+		String pr = price.replaceAll(" UAH", "");
+		pr = pr.replaceAll(" ", "");
 		Price p = new Price(price, Integer.valueOf(pr) * 1);
 		order.setPrice(p);
 	    }
