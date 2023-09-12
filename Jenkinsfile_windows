@@ -1,0 +1,31 @@
+#!groovy
+pipeline {
+    agent any
+    //java should be 17
+    tools{
+    	jdk 'jdk_17'
+    }
+ 	environment {
+        REVISION = "1.0.${BUILD_ID}"
+    }
+    
+    stages {
+    	stage("build parent and dependencies"){
+            steps{
+                  bat 'mvn -Drevision=%REVISION% clean install'
+            }
+        }
+        stage('Push images to docker repo') {
+          steps {
+              withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
+              	  bat 'cd alert-job-config && mvn -Drevision=%REVISION% -Dregistry.username=$usernameVariable -Dregistry.password=$passwordVariable dockerfile:push'
+              	  bat 'cd alert-job-eureka && mvn -Drevision=%REVISION% -Dregistry.username=$usernameVariable -Dregistry.password=$passwordVariable dockerfile:push'
+              	  bat 'cd alert-job-gateway && mvn -Drevision=%REVISION% -Dregistry.username=$usernameVariable -Dregistry.password=$passwordVariable dockerfile:push'
+              	  bat 'cd core-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=$usernameVariable -Dregistry.password=$passwordVariable dockerfile:push'
+              	  bat 'cd notification-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=$usernameVariable -Dregistry.password=$passwordVariable dockerfile:push'
+              	  bat 'cd parser-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=$usernameVariable -Dregistry.password=$passwordVariable dockerfile:push'
+              }
+          }
+        }
+   	}
+}

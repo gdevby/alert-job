@@ -119,12 +119,14 @@
 	</dependencies>
 	<build>
 		<plugins>
-			<plugin>
+		<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>dockerfile-maven-plugin</artifactId>
 				<version>1.4.13</version>
 				<configuration>
-					<repository>${docker.image.prefix}/${project.artifactId}</repository>
+					<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
+					<username>${registry.username}</username>
+        			<password>${registry.password}</password>
 					<tag>${project.version}</tag>
 					<buildArgs>
 						<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
@@ -136,7 +138,6 @@
 						<phase>install</phase>
 						<goals>
 							<goal>build</goal>
-							<!-- <goal>push</goal>-->
 						</goals>
 					</execution>
 				</executions>

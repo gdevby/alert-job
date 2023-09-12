@@ -22,9 +22,10 @@
 	<properties>
 		<java.version>17</java.version>
 		<spring-cloud.version>2021.0.5</spring-cloud.version>
-		<docker.image.prefix>alert-job</docker.image.prefix>
-		<revision>0.0.1-SNAPSHOT</revision>
+		<revision>1.0</revision>
 		<logstash.version>7.2</logstash.version>
+		<docker.image.prefix>alert-job</docker.image.prefix>
+		<private.registry.url>rg.gdev.by</private.registry.url>
 	</properties>
 
 	<dependencies>
@@ -70,7 +71,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>flatten-maven-plugin</artifactId>
-				<version>1.2.7</version>
+				<version>1.5.0</version>
 				<configuration>
 					<updatePomFile>true</updatePomFile>
 					<flattenMode>resolveCiFriendliesOnly</flattenMode>
