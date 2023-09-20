@@ -7,4 +7,4 @@ WORKDIR /opt/front
 ADD . /opt/front/
 RUN npm install
 RUN npm run build
-RUN cp -r /opt/front/dist /usr/share/nginx/html
+RUN cp -r /opt/front/dist /usr/share/nginx/html/front
