@@ -18,8 +18,12 @@ const App = () => {
 
 	useEffect(() => {
 		coreService.checkAuth1()
-			.then(r => setAuthStatus(r.status == 200 || r.status == 201))
-			.catch(error => setAuthStatus(false))
+			.then(r => {
+				setAuthStatus(r.data === 'ok' || r.data === 'user created')
+			})
+			.catch(error => {
+				setAuthStatus(false)
+			})
 			.finally(() => setIsFetching(false))
 	}, [])
 
