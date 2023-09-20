@@ -1,90 +1,76 @@
 version: "3.9"
 services:
-  swag:
-    image: linuxserver/swag:2.2.0
+  nginx-proxy:
+    restart: always
+    container_name: nginx-proxy
+    image: nginxproxy/nginx-proxy
     ports:
-      - 80:80
-      - 443:443
-    cap_add:
-      - NET_ADMIN
-    environment:
-      - cap-add=NET_ADMIN
-      - TZ=Europe/Minsk
-      - URL=aj.gdev.by
-      - VALIDATION=http
-      - EXTRA_DOMAINS=auth.gdev.by,grafana.gdev.by
-      - TZ=Europe/Moscow
+      - "443:443"
+      - "80:80"
     volumes:
-      - $swag_config_directory:/config
-      - $front_directory:/etc/alert-job-front
+      - html:/usr/share/nginx/html
+      - ./config/vhost-nginx:/etc/nginx/vhost.d
+      - certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./config/nginx-conf-d:/etc/nginx/conf.d
+  nginx-proxy-acme:
+    restart: always
+    image: nginxproxy/acme-companion
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - ./conf/vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme:/etc/acme.sh
+    environment:
+      DEFAULT_EMAIL: $acme_email
+      NGINX_PROXY_CONTAINER: nginx-proxy
+     # - HTTPS_METHOD=redirect
     depends_on:
-      - gateway
-      - keycloak
-    networks:
-      default:
-        aliases:
-          - aj.gdev.by
-          - auth.gdev.by
-    mem_limit: 128m
+      - "nginx-proxy"
   db:
-    image: mariadb:10.9.4-jammy
+    restart: always
+    image: mariadb:11.1.2-jammy
     volumes:
-      - $database_directory/mariadb:/var/lib/mysql
+      - database-volume:/var/lib/mysql
+      - ./config/database:/docker-entrypoint-initdb.d
     environment:
       - MYSQL_ROOT_PASSWORD=$database_user_password
+      - MYSQL_USER=alert_job_user
       - MYSQL_PASSWORD=$database_user_password
-      - MYSQL_USER=$database_user_login
-      - MYSQL_DATABASE=keycloak
-      - TZ=Europe/Moscow
-  dbcore:
-    image: mariadb:10.9.4-jammy
-    volumes:
-      - $database_directory/mariadbcore:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=$database_user_password
-      - MYSQL_PASSWORD=$database_user_password
-      - MYSQL_USER=$database_user_login
-      - MYSQL_DATABASE=core_db
-      - TZ=Europe/Moscow
-  dbparser:
-    image: mariadb:10.9.4-jammy
-    volumes:
-      - $database_directory/mariadbparser:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=$database_user_password
-      - MYSQL_PASSWORD=$database_user_password
-      - MYSQL_USER=$database_user_login
-      - MYSQL_DATABASE=parser_db
       - TZ=Europe/Moscow
   keycloak:
-    image: quay.io/keycloak/keycloak:20.0.1
+    restart: always
+    image: quay.io/keycloak/keycloak
     command:
       - "start"
-      - "--hostname-url=$keycloak_url"
-      - "--hostname-admin-url=$keycloak_url"
+      - "--hostname-url=https://$domain/keycloak"
+      - "--hostname-admin-url=https://$domain/keycloak"
       - "--db mariadb"
       - "--db-url-host db"
-      - "--db-username $database_user_login"
+      - "--db-username alert_job_user"
       - "--db-password $database_user_password"
       #- health-enabled=true
       #- metrics-enabled=true
-    ports:
-      - "8080:8080"
     environment:
-      - "KC_HTTP_ENABLED=true"
-      - "KC_PROXY=edge"
-      - "KEYCLOAK_ADMIN=$keycloak_admin"
-      - "KEYCLOAK_ADMIN_PASSWORD=$keycloak_admin_password"
-      - "KEYCLOAK_USER=$keycloak_admin"
-      - "KEYCLOAK_PASSWORD=$keycloak_admin_password"
-      - TZ=Europe/Moscow
+      VIRTUAL_HOST: $domain
+      VIRTUAL_PORT: 8080
+      VIRTUAL_PATH: /keycloak
+      LETSENCRYPT_HOST: $domain
+#      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KC_PROXY: edge
+      KEYCLOAK_ADMIN: $keycloak_admin
+      KEYCLOAK_ADMIN_PASSWORD: $keycloak_admin_password
+      KEYCLOAK_USER: $keycloak_admin
+      KEYCLOAK_PASSWORD: $keycloak_admin_password
+      TZ: Europe/Moscow
     depends_on:
       - db
     mem_limit: 612m
   config:
-    image: alert-job/alert-job-config:0.0.1-SNAPSHOT
-    ports:
-      - "8011:8011"
+    restart: always
+    image: rg.gdev.by/alert-job/alert-job-config:$alert_job_version
     environment:
       - "SPRING_PROFILES_ACTIVE=dev,native"
       - "spring.cloud.config.server.native.search-locations=file:///alert-job-config-repo"
@@ -94,19 +80,19 @@ services:
       - "$local_config_directory:/alert-job-config-repo"
     mem_limit: 512m
   eureka:
-    image: alert-job/alert-job-eureka:0.0.1-SNAPSHOT
-    ports:
-      - "8012:8012"
+    restart: always
+    image: rg.gdev.by/alert-job/alert-job-eureka:$alert_job_version 
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
        - TZ=Europe/Moscow
     depends_on:
       config:
         condition: service_healthy
-        #set directory rules sudo chmod 777 ~/prod/elastic
     mem_limit: 512m
+  #set directory rules sudo chmod 777 files_prod/elasticsearc
   elasticsearch:
-    image: elasticsearch:8.7.0
+    restart: always
+    image: elasticsearch:8.9.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -115,37 +101,19 @@ services:
       - TZ=Europe/Moscow
     volumes:
        - $elasticsearch_directory:/usr/share/elasticsearch/data
-    ports:
-      - 9300:9300
-      - 9200:9200
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200/?pretty"]
       interval: 10s
       timeout: 10s
       retries: 3
       start_period: 60s
-  kibana:
-    image: kibana:8.7.0
-    container_name: kibana
-    environment:
-      ELASTICSEARCH_URL: "http://elasticsearch:9300"
-      SERVER_BASEPATH: $kibana_secret_path
-      SERVER_PUBLICBASEURL: $kibana_public_base_url
-      SERVER_REWRITEBASEPATH: true
-      TZ: Europe/Moscow
-      LS_JAVA_OPTS: "-Xms256m -Xmx1024m"
-    ports:
-      - 5601:5601
-    depends_on:
-      - elasticsearch
   logstash:
-    image: logstash:8.7.0
+    restart: always
+    image: logstash:8.9.2
     container_name: logstash
     command: logstash -f /etc/logstash/conf.d/logstash.conf
     volumes:
       - $logstash_config_directory:/etc/logstash/conf.d
-    ports:
-      - "5000:5000"
     environment:
        - TZ=Europe/Moscow
        - "LS_JAVA_OPTS=-Xms256m -Xmx1024m"
@@ -157,13 +125,18 @@ services:
       start_period: 60s
     depends_on:
       - elasticsearch
+    mem_limit: 1024m
   gateway:
-    image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
-    ports:
-      - "8015:8015"
+    restart: always
+    image: rg.gdev.by/alert-job/alert-job-gateway:$alert_job_version
     environment:
-       - "SPRING_PROFILES_ACTIVE=prod"
-       - TZ=Europe/Moscow
+      VIRTUAL_HOST: $domain
+      VIRTUAL_PATH: /
+      LETSENCRYPT_HOST: $domain
+      LETSENCRYPT_EMAIL: $acme_email
+      VIRTUAL_PORT: 8015
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Europe/Moscow
     depends_on:
       config:
         condition: service_healthy
@@ -171,9 +144,8 @@ services:
         condition: service_healthy
     mem_limit: 512m
   notification:
-    image: alert-job/notification-alert-job:0.0.1-SNAPSHOT
-    ports:
-      - "8016:8016"
+    restart: always
+    image: rg.gdev.by/alert-job/notification-alert-job:$alert_job_version
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - TZ=Europe/Moscow
@@ -184,9 +156,8 @@ services:
         condition: service_healthy
     mem_limit: 512m
   parser:
-    image: alert-job/parser-alert-job:0.0.1-SNAPSHOT
-    ports:
-      - "8017:8017"
+    restart: always
+    image: rg.gdev.by/alert-job/parser-alert-job:$alert_job_version
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
@@ -197,13 +168,12 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
-      dbparser:
+      db:
         condition: service_started
     mem_limit: 1g    
   core:
-    image: alert-job/core-alert-job:0.0.1-SNAPSHOT
-    ports:
-      - "8018:8018"
+    restart: always
+    image: rg.gdev.by/alert-job/core-alert-job:$alert_job_version
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
@@ -212,30 +182,37 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
-      dbcore:
+      db:
         condition: service_started
     mem_limit: 512m  
   prometheus:
+    restart: always
     container_name: prometheus
     image: prom/prometheus:latest
     volumes:
       - $prometheus_directory/:/etc/prometheus/
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - 9090:9090
   grafana:
+    restart: always
     container_name: grafana 
     image: "grafana/grafana:latest"
-    ports:
-      - "3000:3000"
     volumes:
     - grafana-volume:/var/lib/grafana
     environment:
+      VIRTUAL_HOST: grafana.gdev.by
+      LETSENCRYPT_HOST: grafana.gdev.by
+      VIRTUAL_PORT: 3000
       GF_SERVER_ROOT_URL: "https://grafana.gdev.by/"
       GF_SERVER_DOMAIN: grafana.gdev.by
 volumes:
-  grafana-volume: {}      
+  database-volume: {}
+  grafana-volume: {}
+  certs: {}      
+  vhost: {}
+  html: {}
+  nginx-conf-d: {}
+  acme: {}
 networks:
   alert-job:
     driver: bridge      
