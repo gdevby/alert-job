@@ -126,6 +126,16 @@ services:
     depends_on:
       - elasticsearch
     mem_limit: 1024m
+  front:
+    restart: always
+    image: rg.gdev.by/alert-job/front:$alert_job_version
+    environment:
+      VIRTUAL_HOST: $domain
+      VIRTUAL_PATH: /front
+      LETSENCRYPT_HOST: $domain
+      LETSENCRYPT_EMAIL: $acme_email
+      TZ: Europe/Moscow
+    mem_limit: 256m
   gateway:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-gateway:$alert_job_version
@@ -200,11 +210,12 @@ services:
     volumes:
     - grafana-volume:/var/lib/grafana
     environment:
-      VIRTUAL_HOST: grafana.gdev.by
-      LETSENCRYPT_HOST: grafana.gdev.by
+      VIRTUAL_HOST: $grafana_domain
+      LETSENCRYPT_EMAIL: $acme_email
+      LETSENCRYPT_HOST: $grafana_domain
       VIRTUAL_PORT: 3000
-      GF_SERVER_ROOT_URL: "https://grafana.gdev.by/"
-      GF_SERVER_DOMAIN: grafana.gdev.by
+      GF_SERVER_ROOT_URL: "https://$grafana_domain"
+      GF_SERVER_DOMAIN: $grafana_domain
 volumes:
   database-volume: {}
   grafana-volume: {}
