@@ -13,6 +13,8 @@ services:
       - certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./config/nginx-conf-d:/etc/nginx/conf.d
+    environment:
+      TZ: Europe/Moscow
   nginx-proxy-acme:
     restart: always
     image: nginxproxy/acme-companion
@@ -25,6 +27,7 @@ services:
     environment:
       DEFAULT_EMAIL: $acme_email
       NGINX_PROXY_CONTAINER: nginx-proxy
+      TZ: Europe/Moscow
      # - HTTPS_METHOD=redirect
     depends_on:
       - "nginx-proxy"
@@ -203,6 +206,8 @@ services:
       - $prometheus_directory/:/etc/prometheus/
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    environment:
+      TZ: Europe/Moscow
   grafana:
     restart: always
     container_name: grafana 
@@ -216,6 +221,7 @@ services:
       VIRTUAL_PORT: 3000
       GF_SERVER_ROOT_URL: "https://$grafana_domain"
       GF_SERVER_DOMAIN: $grafana_domain
+      TZ: Europe/Moscow
 volumes:
   database-volume: {}
   grafana-volume: {}
