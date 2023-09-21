@@ -20,7 +20,7 @@ services:
     image: nginxproxy/acme-companion
     volumes:
       - certs:/etc/nginx/certs:rw
-      - ./conf/vhost:/etc/nginx/vhost.d
+      - ./config/vhost-nginx:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - acme:/etc/acme.sh
