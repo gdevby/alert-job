@@ -86,8 +86,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 			String orderPage = titleElement.selectFirst("a[href]").attr("href");
 			String orderLink = sourceLink.concat(orderPage);
 			order.setLink(orderLink);
-			Element descriptionElement = e
-					.selectFirst("div.row > div.col-12 > div.show-more-container > div > div.text-rich");
+			Element descriptionElement = e.selectFirst("div.row > div.col-12 > div.text-rich");
 			String descriptionText = descriptionElement.text();
 			order.setMessage(descriptionText);
 			Element dateOrder = e.selectFirst("div.row > div.col-sm-4.text-sm-end > span.text-muted > span.ms-1 > div");
