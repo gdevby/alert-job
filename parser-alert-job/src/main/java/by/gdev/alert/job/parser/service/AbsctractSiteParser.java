@@ -7,6 +7,7 @@ import java.util.Objects;
 import javax.xml.bind.UnmarshalException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
@@ -19,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class AbsctractSiteParser {
 	@Autowired
 	private SiteSourceJobRepository siteSourceJobRepository;
+	@Value("${delay.reply.request}")
+	private long delayReplyRequest;
 
 	public List<OrderDTO> getOrders(Long siteId) {
 		Exception ex = null;
@@ -64,7 +67,7 @@ public abstract class AbsctractSiteParser {
 				}
 			}
 			try {
-				Thread.sleep(5000L);
+				Thread.sleep(delayReplyRequest);
 			} catch (InterruptedException e) {
 			}
 		}
