@@ -1,5 +1,6 @@
 package by.gdev.alert.job.parser.service;
 
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -71,8 +72,13 @@ public abstract class AbsctractSiteParser {
 			} catch (InterruptedException e) {
 			}
 		}
-		if (Objects.nonNull(ex))
-			log.error("erorr", ex);
+		if (Objects.nonNull(ex)) {
+			if(ex instanceof SocketTimeoutException) {
+				log.warn("warn",ex);
+			}else {
+				log.error("erorr", ex);
+			}
+		}
 		return orders;
 	}
 
