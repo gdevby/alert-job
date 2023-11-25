@@ -5,14 +5,14 @@ import Examples from '../../layouts/homePage/examples/Examples';
 
 import './homePage.scss';
 
-const HomePage = () => {
-	const list = ['Настройка по дням недели и времени, чтобы не уведомлять ночью и на выходных',
+const list = ['Настройка по дням недели и времени, чтобы не уведомлять ночью и на выходных',
 		'Фильтры по технологиям',
 		'Фильтры по описанию',
 		'Фильтры по названию']
 
 	const sites = ['https://freelance.ru', 'https://freelance.habr.com', 'https://www.fl.ru', 'https://www.weblancer.net']
 
+const HomePage = () => {
 	return <div className='container'>
 		<div className='homePage_content'>
 			<Title text={'Агрегатор заказов с фриланс бирж'} />
@@ -23,7 +23,7 @@ const HomePage = () => {
 					<li>Получать уведомления в удобную систему для вас: почта, телеграм. Можем расширить список.</li>
 				</ul>
 			</h3>
-			<p className='mt-1'>Если вы ищите заказы каждый день в ручном режиме, то попробуйте переложить поиск на наш сервис.
+			<p className='mt-1 currentSites'>Если вы ищите заказы каждый день в ручном режиме, то попробуйте переложить поиск на наш сервис.
 				Мы его разрабатывали для своих нужд и мы его используем каждый день. Доступны заказы для следующих бирж:
 				{sites.map((item, index) => {
 					return <span key={item}><a href={item}>{item}</a>
