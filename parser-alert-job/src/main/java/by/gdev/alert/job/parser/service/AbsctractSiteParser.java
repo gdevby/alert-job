@@ -61,7 +61,8 @@ public abstract class AbsctractSiteParser {
 				return orders;
 			} catch (Exception e) {
 				if (e instanceof UnmarshalException && Objects.nonNull(e.getCause())
-						&& e.getCause().getMessage().contains("Server returned HTTP response code: 5"))
+						&& (e.getCause().getMessage().contains("Server returned HTTP response code: 5") || 
+								e.getCause().getMessage().contains("Server returned HTTP response code: 4")) )
 					log.warn("warn 500 error", e);
 				else {
 					ex = e;
