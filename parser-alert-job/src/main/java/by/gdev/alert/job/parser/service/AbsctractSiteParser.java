@@ -61,10 +61,12 @@ public abstract class AbsctractSiteParser {
 				return orders;
 			} catch (Exception e) {
 				if (e instanceof UnmarshalException && Objects.nonNull(e.getCause())
-						&& (e.getCause().getMessage().contains("Server returned HTTP response code: 5") || 
-								e.getCause().getMessage().contains("Server returned HTTP response code: 4")) )
+						&& (e.getCause().getMessage().contains("Server returned HTTP response code: 5")
+								|| e.getCause().getMessage().contains("Server returned HTTP response code: 4")))
 					log.warn("warn 500 error", e);
-				else {
+				else if (e instanceof SocketTimeoutException) {
+					log.warn("warn", e);
+				} else {
 					ex = e;
 				}
 			}
@@ -74,11 +76,7 @@ public abstract class AbsctractSiteParser {
 			}
 		}
 		if (Objects.nonNull(ex)) {
-			if(ex instanceof SocketTimeoutException) {
-				log.warn("warn",ex);
-			}else {
-				log.error("erorr", ex);
-			}
+			log.error("erorr", ex);
 		}
 		return orders;
 	}
