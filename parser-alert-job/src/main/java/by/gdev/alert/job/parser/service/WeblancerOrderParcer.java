@@ -73,29 +73,29 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 		convertor.setDateFormatSymbols(dfs);
 
 		Document doc = Jsoup.connect(link).get();
-		Elements orders = doc.getElementsByClass("cols_table divided_rows");
+		Elements orders = doc.getElementsByClass("cols_table divided_rows ps-0");
 		if (orders.isEmpty())
 			return Lists.newArrayList();
 		Element full = orders.get(0);
 
 		return full.children().stream().map(e -> {
 			Order order = new Order();
-			Element titleElement = e.selectFirst("div.row > div.col-sm-10 > span.title");
+			Element titleElement = e.selectFirst("div.col-sm-10 > header.bg-none");
 			String titleText = titleElement.text();
 			order.setTitle(titleText);
 			String orderPage = titleElement.selectFirst("a[href]").attr("href");
 			String orderLink = sourceLink.concat(orderPage);
 			order.setLink(orderLink);
-			Element descriptionElement = e.selectFirst("div.row > div.col-12 > div.text-rich");
+			Element descriptionElement = e.selectFirst("div.col-12 > div.text-rich");
 			String descriptionText = descriptionElement.text();
 			order.setMessage(descriptionText);
-			Element dateOrder = e.selectFirst("div.row > div.col-sm-4.text-sm-end > span.text-muted > span.ms-1 > div");
+			Element dateOrder = e.selectFirst("div.col-sm-4.text-sm-end > span.text-muted > span.ms-1 > div");
 			if (Objects.nonNull(dateOrder)) {
 				order.setDateTime(dateConvertor(dateOrder.attr("title")));
 			} else {
 				order.setValidOrder(false);
 			}
-			Element priceElement = e.selectFirst("div.row > div.col-sm-2.text-sm-end.amount.title");
+			Element priceElement = e.selectFirst("div.col-sm-2.text-sm-end.amount.title");
 			String price = priceElement.text();
 			if (!StringUtils.isEmpty(price)) {
 				String pr = price.replace("$", "");
