@@ -62,7 +62,7 @@ services:
       - 9300:9300
       - 9200:9200
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9600/?pretty"]
+      test: ["CMD", "curl", "-f", "http://localhost:9200/?pretty"]
       interval: 10s
       timeout: 10s
       retries: 3
@@ -85,7 +85,7 @@ services:
     container_name: logstash
     command: logstash -f /etc/logstash/conf.d/logstash.conf
     volumes:
-      - ./logstash/config:/etc/logstash/conf.d
+      - ./config/logstash:/etc/logstash/conf.d
     ports:
       - "5000:5000"
     environment:
