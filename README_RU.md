@@ -10,6 +10,7 @@
 
 Проект писался на микросервисной архитектуре.<br>
 Используемые технологии:
+
 <ol>
 <li>Spring Framework</li>
 <li>Spring Cloud</li>
@@ -20,24 +21,28 @@
 <li>Docker</li>
 <li>Java 17</li>
 <li>Maven</li>
-</ol> 
+</ol>
 
 ### Запуск приложения на своём компьютере
 
-* Для запуска приложения необходимо чтобы был свободен 80 порт<br>
+- Для запуска приложения необходимо чтобы был свободен 80 порт<br>
 
 Для запуска приложения Вам необходимо иметь на своём компьютере **Java 17**, **Maven**, **Docker**.<br>
 
+Для начала необходимо добавить доменные имена к локальному хосту в файл etc/hosts/, надо узнать какой айпи выдал вашему компьютера модем, в линуксе команда ifconfig, исопльзовать локалхост нельзя из-за gateway
 
-Для начала необходимо добавить доменные имена к локальному хосту в файл etc/hosts/, надо узнать какой айпи выдал вашему компьютера модем, в линуксе команда ifconfig, исопльзовать локалхост нельзя из-за  gateway
 ```
-192.168.100.17 alertjob.by 
+192.168.100.17 alertjob.by
 ```
+
 Клонируем проект
+
 ```
 git clone https://github.com/gdevby/alert-job.git
 ```
+
 Переходим в директорию и собираем проект
+
 ```
 cd alert-job
 mvn clean install
@@ -45,14 +50,19 @@ mvn clean install
 для линукс можно установить sudo apt install openjdk-17-jdk
 Так же возможна проблема с запретом доступа для создание контейнеров, поможет эта инструкция https://randini-senanayake.medium.com/docker-maven-build-problem-unix-localhost-80-permission-
 ```
+
 Переходи в директорию keycloak и выполняем скрипт
+
 ```
 cd keycloak
 ./build.sh
 ```
+
 Далее необходимо вернуться в родительский каталог для запуска фронта
+
 ```
 cd front
+docker pull nginx:1.25.2
 npm i
 npm run build
 постороить образ с поомщью этого скрипта build-prod-example.sh
@@ -60,17 +70,22 @@ npm run build
 После получаем все образы проекта и запускаем их
 
 ```
+
 После получаем все образы проекта и запускаем их
+
 ```
-Получаем зависимости 
+Получаем зависимости
 docker compose pull grafana logstash elasticsearch prometheus nginx-proxy
 docker compose create
 docker compose start keycloak logstash
 ждем 15 секунд
 docker compose start
 ```
-Проверить статус служб можно при помощи команды 
+
+Проверить статус служб можно при помощи команды
+
 ```
-docker compose ps
+docker compose ps -a
 ```
+
 После выполнения вышеперечисленных шагов вы можете открыть страницу [alertjob.by ](http://alertjob.by)
