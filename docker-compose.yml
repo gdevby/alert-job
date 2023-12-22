@@ -31,14 +31,14 @@ services:
           - alertjob.by
           - auth.alertjob.by
   config:
-    image: alert-job/alert-job-config:0.0.1-SNAPSHOT
+    image: rg.gdev.by/alert-job/alert-job-config:1.0
     ports:
       - "8011:8011"
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
        - TZ=Europe/Moscow
   eureka:
-    image: alert-job/alert-job-eureka:0.0.1-SNAPSHOT
+    image: rg.gdev.by/alert-job/alert-job-eureka:1.0
     ports:
       - "8012:8012"
     environment:
@@ -100,7 +100,7 @@ services:
       - elasticsearch
     mem_limit: 512m
   gateway:
-    image: alert-job/alert-job-gateway:0.0.1-SNAPSHOT
+    image: rg.gdev.by/alert-job/alert-job-gateway:1.0
     ports:
       - "8015:8015"
     environment:
@@ -116,7 +116,7 @@ services:
       keycloak:
         condition: service_healthy
   notification:
-    image: alert-job/notification-alert-job:0.0.1-SNAPSHOT
+    image: rg.gdev.by/alert-job/notification-alert-job:1.0
     ports:
       - "8019:8019"
     environment:
@@ -128,7 +128,7 @@ services:
       eureka:
         condition: service_healthy
   parser:
-    image: alert-job/parser-alert-job:0.0.1-SNAPSHOT
+    image: rg.gdev.by/alert-job/parser-alert-job:1.0
     ports:
       - "8017:8017"
     environment:
@@ -140,7 +140,7 @@ services:
       eureka:
         condition: service_healthy
   core:
-    image: alert-job/core-alert-job:0.0.1-SNAPSHOT
+    image: rg.gdev.by/alert-job/core-alert-job:1.0
     ports:
       - "8018:8018"
     environment:
