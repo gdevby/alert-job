@@ -1,0 +1,4 @@
+location /page {
+    #try_files $uri front/index.html;
+	return 301 http://alertjob.by;
+}

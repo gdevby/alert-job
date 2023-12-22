@@ -6,7 +6,7 @@
 Имеется два типа фильтров позитивные и негативные. Сначала применяются фильтры для выбора заказов, потом негативные отсеивают заказы, которые вам не подходят.<br>
 К примеру "Я хочу получать заказы, которые содержат в названии backend и не хочу получать заказы, которые содержат в названии nodejs".<br>
 
-На данный момент на сайте доступны следующие биржи:[freelance.ru](https://freelance.ru), [freelance.habr.com](https://freelance.habr.com), [fl.ru](https://www.fl.ru).
+На данный момент на сайте доступны следующие биржи:[freelance.ru](https://freelance.ru), [freelance.habr.com](https://freelance.habr.com), [fl.ru](https://www.fl.ru),[weblancer.net](https://www.weblancer.net).
 
 Проект писался на микросервисной архитектуре.<br>
 Используемые технологии:
@@ -24,12 +24,14 @@
 
 ### Запуск приложения на своём компьютере
 
+* Для запуска приложения необходимо чтобы был свободен 80 порт<br>
+
 Для запуска приложения Вам необходимо иметь на своём компьютере **Java 17**, **Maven**, **Docker**.<br>
 
 
-Для начала необходимо добавить доменные имена к локальному хосту в файл etc/hosts/
+Для начала необходимо добавить доменные имена к локальному хосту в файл etc/hosts/, надо узнать какой айпи выдал вашему компьютера модем, в линуксе команда ifconfig, исопльзовать локалхост нельзя из-за  gateway
 ```
-127.0.0.1 alertjob.by auth.alertjob.by
+192.168.100.17 alertjob.by 
 ```
 Клонируем проект
 ```
@@ -39,6 +41,9 @@ git clone https://github.com/gdevby/alert-job.git
 ```
 cd alert-job
 mvn clean install
+Если здесь будет ошибка, то возможно проверьте версию джава, необходимо 17 следующей командой java -version,
+для линукс можно установить sudo apt install openjdk-17-jdk
+Так же возможна проблема с запретом доступа для создание контейнеров, поможет эта инструкция https://randini-senanayake.medium.com/docker-maven-build-problem-unix-localhost-80-permission-
 ```
 Переходи в директорию keycloak и выполняем скрипт
 ```
@@ -48,13 +53,20 @@ cd keycloak
 Далее необходимо вернуться в родительский каталог для запуска фронта
 ```
 cd front
+npm i
 npm run build
+постороить образ с поомщью этого скрипта build-prod-example.sh
+вернуться в родительский каталог
+После получаем все образы проекта и запускаем их
+
 ```
 После получаем все образы проекта и запускаем их
 ```
-docker compose pull
+Получаем зависимости 
+docker compose pull grafana logstash elasticsearch prometheus nginx-proxy
 docker compose create
 docker compose start keycloak logstash
+ждем 15 секунд
 docker compose start
 ```
 Проверить статус служб можно при помощи команды 
@@ -62,4 +74,3 @@ docker compose start
 docker compose ps
 ```
 После выполнения вышеперечисленных шагов вы можете открыть страницу [alertjob.by ](http://alertjob.by)
-* Для запуска приложения необходимо чтобы был свободен 80 порт

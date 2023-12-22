@@ -5,31 +5,30 @@ services:
     #restart: always
     command:
       - "start-dev"
-      - "--hostname-url=http://auth.alertjob.by"
-      - "--hostname-admin-url=http://auth.alertjob.by"
-      
+      - "--hostname-url=http://alertjob.by/keycloak"
+      - "--hostname-admin-url=http://alertjob.by/keycloak"
       #- health-enabled=true
       #- metrics-enabled=true
     ports:
       - "8080:8080"
-  nginx:
-    image: nginx:1.23.3
-    volumes:
-      - "./nginx/conf.d:/etc/nginx/conf.d"
-      - "./front:/etc/alert-job-front"
-    ports:
-      - "80:80"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-       - TZ=Europe/Moscow
-    depends_on:
-      - gateway
-      - keycloak
-    networks:
-      default:
-        aliases:
-          - alertjob.by
-          - auth.alertjob.by
+      VIRTUAL_HOST: alertjob.by
+      VIRTUAL_PORT: 8080
+      VIRTUAL_PATH: /keycloak
+  nginx-proxy:
+    container_name: nginx-proxy
+    image: nginxproxy/nginx-proxy
+    ports:
+#      - "443:443"
+      - "80:80"
+    volumes:
+#      - html:/usr/share/nginx/html
+      - ./config/vhost-nginx-dev:/etc/nginx/vhost.d
+#      - certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./config/nginx-conf-d:/etc/nginx/conf.d
+    environment:
+      TZ: Europe/Moscow
   config:
     image: rg.gdev.by/alert-job/alert-job-config:1.0
     ports:
@@ -68,18 +67,6 @@ services:
       retries: 3
       start_period: 60s
     mem_limit: 1g
-  kibana:
-    image: kibana:8.6.0
-    container_name: kibana
-    environment:
-      ELASTICSEARCH_URL: "http://elasticsearch:9300"
-      TZ: Europe/Moscow
-    ports:
-      - 5601:5601
-    depends_on:
-      - elasticsearch
-    mem_limit: 512m
-    restart: always
   logstash:
     image: logstash:8.6.0
     container_name: logstash
@@ -98,8 +85,11 @@ services:
     ports:
       - "8015:8015"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
-       - TZ=Europe/Moscow
+      SPRING_PROFILES_ACTIVE: dev
+      TZ: Europe/Moscow
+      VIRTUAL_HOST: alertjob.by
+      VIRTUAL_PORT: 8015
+      VIRTUAL_PATH: /
     #extra_hosts:
      #   - "aj.by:nginx-alert-job" #host and ip
     depends_on:
@@ -161,6 +151,13 @@ services:
       - "3000:3000"
     volumes:
     - grafana-volume:/var/lib/grafana
+  front:
+    image: rg.gdev.by/alert-job/front:1.0
+    environment:
+      VIRTUAL_HOST: alertjob.by
+      VIRTUAL_PATH: /front
+      TZ: Europe/Moscow
+    mem_limit: 256m
 volumes:
   grafana-volume: {}           
 networks:

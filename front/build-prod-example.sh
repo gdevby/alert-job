@@ -1,1 +1,1 @@
-docker build -t rg.gdev.by/alert-job/core-alert-job:1.0 .
+docker build -t rg.gdev.by/alert-job/front:1.0 .

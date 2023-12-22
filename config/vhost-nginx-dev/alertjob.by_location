@@ -1,0 +1,1 @@
+rewrite ^/keycloak/(.*) /$1 break;
