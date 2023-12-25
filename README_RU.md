@@ -51,7 +51,7 @@ mvn clean install
 Так же возможна проблема с запретом доступа для создание контейнеров, поможет эта инструкция https://randini-senanayake.medium.com/docker-maven-build-problem-unix-localhost-80-permission-
 ```
 
-Переходи в директорию keycloak и выполняем скрипт
+Переходим в директорию keycloak и выполняем скрипт
 
 ```
 cd keycloak
@@ -65,7 +65,7 @@ cd front
 docker pull nginx:1.25.2
 npm i
 npm run build
-постороить образ с поомщью этого скрипта build-prod-example.sh
+построить образ с помощью этого скрипта build-prod-example.sh
 вернуться в родительский каталог
 После получаем все образы проекта и запускаем их
 

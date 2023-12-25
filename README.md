@@ -1,5 +1,5 @@
 # alert-job
-
+Russian version you can open by [link](https://github.com/gdevby/alert-job/blob/main/README_RU.md)<br>
 The working project is available at the link [aj.gdev.by](https://aj.gdev.by)
 
 **The main goal of the project**:a fast, selective way to get notifications about the needed orders based on your configured filters.<br>
