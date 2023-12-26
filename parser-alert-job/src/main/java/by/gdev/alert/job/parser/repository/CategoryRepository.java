@@ -9,11 +9,14 @@ import org.springframework.data.repository.query.Param;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 
-public interface CategoryRepository extends CrudRepository<Category, Long>{
-	
+public interface CategoryRepository extends CrudRepository<Category, Long> {
+
 	@Query("select c from parser_category c left join fetch c.siteSourceJob s where s.id = :id")
 	List<Category> findAllBySourceId(@Param("id") Long id);
-	
+
+	@Query("select c from parser_category c left join fetch c.siteSourceJob s where s.id = :id and s.active = true")
+	List<Category> findAllBySourceIdAndSourceActive(@Param("id") Long id);
+
 	@Query("select c from parser_category c left join fetch c.siteSourceJob s where c.id = :id and s.id = :sid")
 	Optional<Category> findByIdAndSourceId(@Param("id") Long id, @Param("sid") Long sid);
 }

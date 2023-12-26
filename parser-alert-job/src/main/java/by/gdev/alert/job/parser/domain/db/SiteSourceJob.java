@@ -22,5 +22,5 @@ public class SiteSourceJob extends BasicId {
 	private List<Category> categories;
 	private String parsedURI;
 	private boolean parse;
-
+	private boolean active;
 }
