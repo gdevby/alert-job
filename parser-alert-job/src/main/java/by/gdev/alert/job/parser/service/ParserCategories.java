@@ -235,29 +235,24 @@ public class ParserCategories {
 	}
 
 	@SneakyThrows
-	public Map<ParsedCategory, List<ParsedCategory>> getYouDo(SiteSourceJob youdo) {
+	private Map<ParsedCategory, List<ParsedCategory>> getYouDo(SiteSourceJob youdo) {
 		Document doc = Jsoup.connect(youdo.getParsedURI()).get();
 		Element page = doc.getElementsByClass("TasksRedesignPage_categories__eixSG").get(0);
 		Elements el = page.getElementsByClass("Categories_item__Vxa16");
 		return el.stream().map(e -> {
 			Element elemCategory = e.selectFirst("label.Checkbox_label__2Tyla");
 			Elements subEl = e.getElementsByClass("Categories_subList__nDohu");
-			if (Objects.nonNull(subEl)) {
-				List<ParsedCategory> subCategory = subEl.stream().map(sub -> {
-					Element input = sub.selectFirst("input.Checkbox_checkbox__1fWfP");
-					String s = input.attr("value");
-					Element elemSubCategory = sub.selectFirst("label.Checkbox_label__2Tyla");
-					return new ParsedCategory(null, elemSubCategory.text(), null, s);
-				}).toList();
-
-				String rss = subCategory.stream().map(rs -> rs.rss).collect(Collectors.joining(","));
-
-				ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, rss);
-				return new SimpleEntry<>(category, subCategory);
-			} else {
-				ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, "all");
-				return new SimpleEntry<>(category, new ArrayList<ParsedCategory>());
-			}
+			List<ParsedCategory> subCategory = subEl.stream()
+					.flatMap(sub -> sub.select("li.Categories_subItem__GN_As").stream()).map(e1 -> {
+						Element input = e1.selectFirst("input.Checkbox_checkbox__1fWfP");
+						String link = input.attr("value");
+						return new ParsedCategory(null, e1.text(), null, link);
+					}).toList();
+			String rss = subCategory.stream().map(rs -> rs.rss).collect(Collectors.joining(","));
+			if (StringUtils.isEmpty(rss))
+				rss = "all";
+			ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, rss);
+			return new SimpleEntry<>(category, subCategory);
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
 			throw new IllegalStateException(String.format("Duplicate key %s", k));
 		}, LinkedHashMap::new));
