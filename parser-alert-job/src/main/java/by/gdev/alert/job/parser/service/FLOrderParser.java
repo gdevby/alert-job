@@ -18,7 +18,6 @@ import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.common.collect.Lists;
 
@@ -46,7 +45,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FLOrderParser extends AbsctractSiteParser {
 
-	private final WebClient webClient;
 	private final ParserService service;
 	private final SiteSourceJobRepository siteSourceJobRepository;
 	private final OrderRepository orderRepository;
@@ -62,6 +60,7 @@ public class FLOrderParser extends AbsctractSiteParser {
 		return super.getOrders(1L);
 	}
 
+	@Override
 	@SneakyThrows
 	List<OrderDTO> mapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
