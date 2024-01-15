@@ -48,7 +48,7 @@ ALTER TABLE "PUBLIC"."SITE_SOURCE_JOB" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_F" PR
 INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(1, 'FLRU', 'https://www.fl.ru/projects/', TRUE, FALSE);           
 INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE, FALSE);      
 INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(3, 'FREELANCE.RU', 'https://freelance.ru/project/search/pro', TRUE, FALSE);       
-INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(4, 'WEBLANCER.NET', 'https://www.weblancer.net/jobs', TRUE, FALSE);               
+INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(4, 'WEBLANCER.NET', 'https://www.weblancer.net/freelance/', TRUE, FALSE);               
 INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(5, 'FREELANCEHUNT.COM', 'https://freelancehunt.com/projects', TRUE, FALSE);       
 INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(6, 'YOUDO.COM', 'https://youdo.com/tasks-all-opened-all', TRUE, FALSE);           
 CREATE MEMORY TABLE "PUBLIC"."PARSER_CATEGORY"(
