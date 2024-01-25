@@ -68,6 +68,7 @@ public class ParserCategories {
 		SiteSourceJob weblancer = siteSourceJobRepository.findById(4L).get();
 		SiteSourceJob freelancehunt = siteSourceJobRepository.findById(5L).get();
 		SiteSourceJob youDo = siteSourceJobRepository.findById(6L).get();
+		SiteSourceJob kwork = siteSourceJobRepository.findById(7L).get();
 
 		getSiteCategoriesFL().forEach((k, v) -> saveData(fl, k, v));
 		getSiteCategoriesHabr(site).forEach((k, v) -> saveData(site, k, v));
@@ -75,6 +76,7 @@ public class ParserCategories {
 		getSiteCategoriesWeblancer(weblancer).forEach((k, v) -> saveData(weblancer, k, v));
 		getFreelancehunt(freelancehunt).forEach((k, v) -> saveData(freelancehunt, k, v));
 		getYouDo(youDo).forEach((k, v) -> saveData(youDo, k, v));
+		getKwork(kwork).forEach((k, v) -> saveData(kwork, k, v));
 	}
 
 	private void saveData(SiteSourceJob site, ParsedCategory k, List<ParsedCategory> v) {
@@ -253,6 +255,32 @@ public class ParserCategories {
 				rss = "all";
 			ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, rss);
 			return new SimpleEntry<>(category, subCategory);
+		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
+			throw new IllegalStateException(String.format("Duplicate key %s", k));
+		}, LinkedHashMap::new));
+	}
+
+	@SneakyThrows
+	private Map<ParsedCategory, List<ParsedCategory>> getKwork(SiteSourceJob kwork) {
+		Document doc = Jsoup.connect(kwork.getParsedURI()).get();
+		Element allCategories = doc.getElementsByClass("all-categories").get(0);
+		Elements elementsCategories = allCategories.select("div.categories-item.js-categories-collapse");
+		return elementsCategories.stream().map(c -> {
+			Element elemCategory = c.selectFirst("a");
+			String categoryLink = elemCategory.attr("href");
+			ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, categoryLink);
+			Elements sub = c.getElementsByClass("categories-columns__item");
+			List<ParsedCategory> subList = sub.stream()
+					.flatMap(e -> e.getElementsByClass("categories-item__subitem js-categories-collapse").stream())
+					.map(s -> {
+
+						Element subCategory = s
+								.selectFirst("div.js-categories-collapse-header.categories-item__subtitle > a");
+
+						String subCategoryLink = subCategory.attr("href");
+						return new ParsedCategory(null, subCategory.text(), null, subCategoryLink);
+					}).toList();
+			return new SimpleEntry<>(category, subList);
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
 			throw new IllegalStateException(String.format("Duplicate key %s", k));
 		}, LinkedHashMap::new));
