@@ -26,4 +26,5 @@ INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(3, 'FREELANCE
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(4, 'WEBLANCER.NET', 'https://www.weblancer.net/freelance/', TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(5, 'FREELANCEHUNT.COM', 'https://freelancehunt.com/projects', TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(6, 'YOUDO.COM', 'https://youdo.com/tasks-all-opened-all', TRUE);  
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(7, 'KWORK', 'https://kwork.ru/categories', TRUE);    
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(7, 'KWORK', 'https://kwork.ru/categories', TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(8, 'FREELANCER', 'https://www.freelancer.com/api/projects/0.1/projects/all', TRUE);
