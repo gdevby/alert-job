@@ -33,6 +33,7 @@ import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.parsing.FlCategories;
+import by.gdev.alert.job.parser.domain.parsing.FreelancerResult;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.repository.SubCategoryRepository;
@@ -55,6 +56,7 @@ public class ParserCategories {
 	private String freelanceRuRss = "https://freelance.ru/rss/index";
 	private String freelanceRuRssFeed = "https://freelance.ru/rss/feed/list/s.%s";
 	private String freelanceRuRssFeedSubcategories = "https://freelance.ru/rss/feed/list/s.%s.f.%s";
+	private String freelancerCategory = "https://www.freelancer.com/api/projects/0.1/jobs/search";
 
 	private final WebClient webClient;
 	private final RestTemplate restTemplate;
@@ -69,6 +71,7 @@ public class ParserCategories {
 		SiteSourceJob freelancehunt = siteSourceJobRepository.findById(5L).get();
 		SiteSourceJob youDo = siteSourceJobRepository.findById(6L).get();
 		SiteSourceJob kwork = siteSourceJobRepository.findById(7L).get();
+		SiteSourceJob freelancer = siteSourceJobRepository.findById(8L).get();
 
 		getSiteCategoriesFL().forEach((k, v) -> saveData(fl, k, v));
 		getSiteCategoriesHabr(site).forEach((k, v) -> saveData(site, k, v));
@@ -77,6 +80,7 @@ public class ParserCategories {
 		getFreelancehunt(freelancehunt).forEach((k, v) -> saveData(freelancehunt, k, v));
 		getYouDo(youDo).forEach((k, v) -> saveData(youDo, k, v));
 		getKwork(kwork).forEach((k, v) -> saveData(kwork, k, v));
+		getFreelancer().forEach((k, v) -> saveData(freelancer, k, v));
 	}
 
 	private void saveData(SiteSourceJob site, ParsedCategory k, List<ParsedCategory> v) {
@@ -284,6 +288,16 @@ public class ParserCategories {
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
 			throw new IllegalStateException(String.format("Duplicate key %s", k));
 		}, LinkedHashMap::new));
+	}
+
+	private Map<ParsedCategory, List<ParsedCategory>> getFreelancer() {
+		String orderLink = "https://www.freelancer.com/api/projects/0.1/projects/all?jobs[]=%s";
+		FreelancerResult result = restTemplate.getForObject(freelancerCategory, FreelancerResult.class);
+		return result.getCategories().stream().collect(Collectors.groupingByConcurrent(
+				e -> new ParsedCategory(null, e.getCategory().getName(), null, null), Collectors.mapping(e -> {
+					String subCategoryLink = String.format(orderLink, String.valueOf(e.getId()));
+					return new ParsedCategory(null, e.getName(), null, subCategoryLink);
+				}, Collectors.toList())));
 	}
 
 	public static record ParsedCategory(String name, String translatedName, Long id, String rss) {
