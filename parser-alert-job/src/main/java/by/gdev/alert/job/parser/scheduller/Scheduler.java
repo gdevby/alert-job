@@ -12,14 +12,21 @@ import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
+import by.gdev.alert.job.parser.domain.currency.CurrencyRoot;
+import by.gdev.alert.job.parser.domain.currency.Valute;
+import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
+import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.service.ParserCategories;
 import io.micrometer.core.instrument.util.IOUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -34,16 +41,22 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	boolean parseCategories;
 	@Value("${parser.categories.file.path}")
 	private String updateFilePath;
+	@Value("${currency.site}")
+	private String currencySiteUrl;
+
 	private final ParserCategories parserCategories;
 	private final OrderRepository orderRepository;
+	private final CurrencyRepository currencyRepository;
 
 	private final ApplicationContext context;
+	private final RestTemplate template;
 
 	@Override
 	@Transactional
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		Resource res = context.getResource(updateFilePath);
 		try {
+			currencyParser();
 			if (parseCategories) {
 				parserCategories.parse();
 				if (updateFilePath.startsWith("classpath")) {
@@ -84,5 +97,27 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			orderRepository.delete(e);
 			log.debug("removed order with title" + e.getTitle());
 		});
+	}
+
+	@Scheduled(cron = "0 0 12 * * *")
+	@SneakyThrows
+	public void currencyParser() {
+		String request = template.getForObject(currencySiteUrl, String.class);
+		ObjectMapper mapper = new ObjectMapper();
+		CurrencyRoot currency = mapper.readValue(request, CurrencyRoot.class);
+		currency.getValute().entrySet().forEach(e -> {
+			Valute valute = e.getValue();
+			CurrencyEntity entity = currencyRepository
+					.findByCurrencyCodeAndCurrencyName(valute.getCharCode(), valute.getName()).orElseGet(() -> {
+						CurrencyEntity ent = new CurrencyEntity();
+						ent.setNominal(valute.getNominal());
+						ent.setCurrencyCode(valute.getCharCode());
+						ent.setCurrencyName(valute.getName());
+						return ent;
+					});
+			entity.setCurrencyValue(valute.getValue());
+			currencyRepository.save(entity);
+		});
+
 	}
 }
