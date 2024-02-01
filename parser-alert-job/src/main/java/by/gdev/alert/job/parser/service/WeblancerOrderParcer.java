@@ -21,11 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import by.gdev.alert.job.parser.domain.currency.Currency;
 import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
 import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.common.model.OrderDTO;
@@ -46,6 +49,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 	private final ParserService service;
 	private final OrderRepository orderRepository;
 	private final ParserSourceRepository parserSourceRepository;
+	private final CurrencyRepository currencyRepository;
 
 	private final ModelMapper mapper;
 
@@ -99,7 +103,9 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 			String price = priceElement.text();
 			if (!StringUtils.isEmpty(price)) {
 				String pr = price.replace("$", "");
-				Price p = new Price(price, Integer.valueOf(pr) * currencyRate);
+				CurrencyEntity ce = currencyRepository.findByCurrencyCode(Currency.USD.name()).get();
+				Double priceValue = (Integer.valueOf(pr) / ce.getNominal()) * ce.getCurrencyValue();
+				Price p = new Price(price, priceValue.intValue());
 				order.setPrice(p);
 			}
 			ParserSource parserSource = new ParserSource();
