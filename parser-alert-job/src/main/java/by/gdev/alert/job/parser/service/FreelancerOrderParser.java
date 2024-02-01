@@ -48,7 +48,7 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 	private String sourceLink = "https://www.freelancer.com/projects/%s";
 
 	@Transactional(timeout = 2000)
-	public List<OrderDTO> freelancehuntParser() {
+	public List<OrderDTO> freelancerParser() {
 		return super.getOrders(8L);
 	}
 
@@ -69,7 +69,7 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 				String currencyCode = e.getCurrency().getCode();
 				Optional<CurrencyEntity> currency = currencyRepository.findByCurrencyCode(currencyCode);
 				currency.ifPresent(c -> {
-					int budget = e.getBudget().getMinimum();
+					int budget = e.getBudget().getMaximum();
 					Double priceValue = (budget / c.getNominal()) * c.getCurrencyValue();
 					String priceSource = String.format("%s %s", budget, currencyCode);
 					Price p = new Price(priceSource, priceValue.intValue());

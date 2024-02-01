@@ -120,7 +120,7 @@ public class OrderParserController {
 		Flux<ServerSentEvent<List<OrderDTO>>> freelancerOrderParcerFlux = Flux
 				.interval(Duration.ofSeconds(parserInterval))
 				.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
-						.event("periodic-freelancer-parse-event").data(freelancerOrderParcer.freelancehuntParser())
+						.event("periodic-freelancer-parse-event").data(freelancerOrderParcer.freelancerParser())
 						.build())
 				.doOnNext(s -> {
 					int size = s.data().size();
