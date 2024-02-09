@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -266,24 +268,20 @@ public class ParserCategories {
 
 	@SneakyThrows
 	private Map<ParsedCategory, List<ParsedCategory>> getKwork(SiteSourceJob kwork) {
-		Document doc = Jsoup.connect(kwork.getParsedURI()).get();
-		Element allCategories = doc.getElementsByClass("all-categories").get(0);
-		Elements elementsCategories = allCategories.select("div.categories-item.js-categories-collapse");
-		return elementsCategories.stream().map(c -> {
-			Element elemCategory = c.selectFirst("a");
-			String categoryLink = elemCategory.attr("href");
-			ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, categoryLink);
-			Elements sub = c.getElementsByClass("categories-columns__item");
-			List<ParsedCategory> subList = sub.stream()
-					.flatMap(e -> e.getElementsByClass("categories-item__subitem js-categories-collapse").stream())
-					.map(s -> {
+		String response = restTemplate.getForObject(kwork.getParsedURI(), String.class);
+		String regex = "\\{\"CATID\":\"([0-9]{1,3})\",\"name\":\"([А-Яа-я\\w\\s\\,]*)\",\"lang\":\"[\\w]{1,2}\",\"short_name\":\"[А-Яа-я\\w\\s\\,]*\","
+				+ "\"h1\":\"[А-Яа-я\\w\\s\\,]*\",\"seo\":\"[\\-\\w]*\",\"parent\":\"%s\"";
 
-						Element subCategory = s
-								.selectFirst("div.js-categories-collapse-header.categories-item__subtitle > a");
-
-						String subCategoryLink = subCategory.attr("href");
-						return new ParsedCategory(null, subCategory.text(), null, subCategoryLink);
-					}).toList();
+		String link = "https://kwork.ru/projects?c=%s";
+		Pattern categoryPattern = Pattern.compile(String.format(regex, 0));
+		Matcher categoryMatcer = categoryPattern.matcher(response);
+		return categoryMatcer.results().map(m -> {
+			ParsedCategory category = new ParsedCategory(null, m.group(2), null, String.format(link, m.group(1)));
+			Pattern subCategoryPattern = Pattern.compile(String.format(regex, m.group(1)));
+			Matcher subCategoryMatcher = subCategoryPattern.matcher(response);
+			List<ParsedCategory> subList = subCategoryMatcher.results().map(m1 -> {
+				return new ParsedCategory(null, m1.group(2), null, String.format(link, m1.group(1)));
+			}).toList();
 			return new SimpleEntry<>(category, subList);
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
 			throw new IllegalStateException(String.format("Duplicate key %s", k));
