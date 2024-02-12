@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import Autocomplete from '@mui/material/Autocomplete'
+import TextField from '@mui/material/TextField'
 
 import DropDownList from '../../common/dropDownList/DropDowList'
 import Btn from '../../common/button/Button'
@@ -31,6 +33,9 @@ const SourcePanel = ({ addSource, module_id }) => {
 				.then(response => {
 					let cat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
 					setCategories(cat)
+					setCurrentCat('')
+					setSubcategories([])
+					setCurrentSubCat('')
 				})
 		}
 
@@ -74,18 +79,18 @@ const SourcePanel = ({ addSource, module_id }) => {
 		}
 	}
 
-	const handleCurrentSubCat = data => {
-
-		if (data.id != 0) {
-			setCurrentSubCat(data)
-		} else {
-			setCurrentSubCat({
-				id: null,
-				name: 'Все подкатегории'
-			})
-		}
-
+	const handleCurrentCatChange = (_, values) => {
+		const { id, name } = values
+		setCurrentCat({ id, name })
 	}
+
+	const handleCurrentSubCatChange = (_, values) => {
+		const { id, name } = values
+		setCurrentSubCat({ id, name })
+	}
+
+	const categoryOptions = categories.map(({ id, name }) => ({ label: name, id, name }))
+	const subCategoryOptions = subcategories.map(({ id, name }) => ({ label: name, id, name }))
 
 	return <div className='source_panel'>
 
@@ -98,11 +103,28 @@ const SourcePanel = ({ addSource, module_id }) => {
 					<DropDownList label={'Выберите сайт'} elems={sites} onClick={setCurrentSite} defaultLabe={'Выберите сайт'} />
 				</div>
 				<div className='cat'>
-					<DropDownList label={'Выберите категорию'} elems={categories} onClick={setCurrentCat} defaultLabe={'Выберите категорию'} />
-
+					<Autocomplete
+						value={currentCat?.name ?? null}
+						options={categoryOptions}
+						disabled={!categoryOptions.length}
+						clearIcon={false}
+						renderInput={(params) => <TextField {...params} label="Выберите категорию" />}
+						isOptionEqualToValue={(option, value) => option.name === value}
+						onChange={handleCurrentCatChange}
+						size='small'
+					/>
 				</div>
 				<div className='subcat'>
-					<DropDownList defaultValue={currentSubCat.id} label={'Выберите подкатегорию'} elems={subcategories} onClick={handleCurrentSubCat} defaultLabe={'Выберите подкатегорию'} />
+					<Autocomplete
+						value={currentSubCat?.name ?? null}
+						options={subCategoryOptions}
+						disabled={!subCategoryOptions.length}
+						clearIcon={false}
+						renderInput={(params) => <TextField {...params} label="Выберите подкатегорию" />}
+						isOptionEqualToValue={(option, value) => option.name === value}
+						onChange={handleCurrentSubCatChange}
+						size='small'
+					/>
 				</div>
 				<div className='add-source'>
 					<Btn onClick={addingSource} text={'Добавить источник'} variant='contained' />
