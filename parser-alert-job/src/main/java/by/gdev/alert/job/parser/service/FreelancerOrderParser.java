@@ -18,6 +18,7 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.domain.freelancer.BudgetFreelancerOrder;
 import by.gdev.alert.job.parser.domain.freelancer.FreelancerRoot;
 import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
@@ -64,12 +65,12 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 			String orderLink = String.format(sourceLink, e.getSeoUrl());
 			order.setLink(orderLink);
 			order.setMessage(e.getDescription());
-
 			if (e.getType().equals("fixed")) {
 				String currencyCode = e.getCurrency().getCode();
 				Optional<CurrencyEntity> currency = currencyRepository.findByCurrencyCode(currencyCode);
 				currency.ifPresent(c -> {
-					int budget = e.getBudget().getMaximum();
+					BudgetFreelancerOrder b = e.getBudget();
+					int budget = Objects.nonNull(b.getMinimum()) ? b.getMaximum() : b.getMinimum();
 					Double priceValue = (budget / c.getNominal()) * c.getCurrencyValue();
 					String priceSource = String.format("%s %s", budget, currencyCode);
 					Price p = new Price(priceSource, priceValue.intValue());
