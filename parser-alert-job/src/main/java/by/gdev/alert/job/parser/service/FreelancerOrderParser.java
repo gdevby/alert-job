@@ -70,7 +70,7 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 				Optional<CurrencyEntity> currency = currencyRepository.findByCurrencyCode(currencyCode);
 				currency.ifPresent(c -> {
 					BudgetFreelancerOrder b = e.getBudget();
-					int budget = Objects.nonNull(b.getMinimum()) ? b.getMaximum() : b.getMinimum();
+					int budget = Objects.nonNull(b.getMaximum()) ? b.getMaximum() : b.getMinimum();
 					Double priceValue = (budget / c.getNominal()) * c.getCurrencyValue();
 					String priceSource = String.format("%s %s", budget, currencyCode);
 					Price p = new Price(priceSource, priceValue.intValue());
