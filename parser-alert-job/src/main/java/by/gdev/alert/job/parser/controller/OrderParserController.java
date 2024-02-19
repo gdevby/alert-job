@@ -5,6 +5,7 @@ import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEH
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.PROXY_CLIENT;
@@ -32,6 +33,7 @@ import by.gdev.alert.job.parser.service.FreelanceRuOrderParser;
 import by.gdev.alert.job.parser.service.FreelancehuntOrderParcer;
 import by.gdev.alert.job.parser.service.FreelancerOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
+import by.gdev.alert.job.parser.service.KworkOrderParcer;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.WeblancerOrderParcer;
 import by.gdev.alert.job.parser.service.YouDoOrderParcer;
@@ -59,6 +61,7 @@ public class OrderParserController {
 	public final FreelancehuntOrderParcer freelancehuntOrderParcer;
 	public final YouDoOrderParcer youDoOrderParcer;
 	public final FreelancerOrderParser freelancerOrderParcer;
+	public final KworkOrderParcer kworkOrderParcer;
 	public final ParserService service;
 
 	@Value("${parser.interval}")
@@ -117,6 +120,14 @@ public class OrderParserController {
 					context.getBean(COUNTER_YOUDO, Counter.class).increment(size);
 				});
 
+		Flux<ServerSentEvent<List<OrderDTO>>> kworkOrderParcerFlux = Flux.interval(Duration.ofSeconds(parserInterval))
+				.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
+						.event("periodic-kwork-parse-event").data(kworkOrderParcer.kworkParser()).build())
+				.doOnNext(s -> {
+					int size = s.data().size();
+					context.getBean(COUNTER_YOUDO, Counter.class).increment(size);
+				});
+
 		Flux<ServerSentEvent<List<OrderDTO>>> freelancerOrderParcerFlux = Flux
 				.interval(Duration.ofSeconds(parserInterval))
 				.map(sequence -> ServerSentEvent.<List<OrderDTO>>builder().id(String.valueOf(sequence))
@@ -128,7 +139,7 @@ public class OrderParserController {
 				});
 
 		return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux, freelancehuntOrderParcerFlux,
-				youDoOrderParcerFlux, freelancerOrderParcerFlux);
+				youDoOrderParcerFlux, kworkOrderParcerFlux, freelancerOrderParcerFlux);
 	}
 
 	@GetMapping("sites")
@@ -188,6 +199,7 @@ public class OrderParserController {
 		beanFactory.registerSingleton(COUNTER_FREELANCEHUNT,
 				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancehun"));
 		beanFactory.registerSingleton(COUNTER_YOUDO, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "youdo"));
+		beanFactory.registerSingleton(COUNTER_KWORK, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "kwork"));
 		beanFactory.registerSingleton(COUNTER_FREELANCER,
 				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancer"));
 	}
