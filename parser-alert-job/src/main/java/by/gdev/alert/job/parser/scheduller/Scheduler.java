@@ -1,6 +1,5 @@
 package by.gdev.alert.job.parser.scheduller;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -68,7 +67,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				parserCategories.updateHubrLink(
 						Lists.newArrayList(IOUtils.toString(res.getInputStream()).split(System.lineSeparator())));
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

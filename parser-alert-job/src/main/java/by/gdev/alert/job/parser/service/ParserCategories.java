@@ -41,7 +41,6 @@ import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.repository.SubCategoryRepository;
 import by.gdev.alert.job.parser.util.ParserStringUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -83,6 +82,7 @@ public class ParserCategories {
 		getYouDo(youDo).forEach((k, v) -> saveData(youDo, k, v));
 		getKwork(kwork).forEach((k, v) -> saveData(kwork, k, v));
 		getFreelancer().forEach((k, v) -> saveData(freelancer, k, v));
+		log.info("finished parsing sites and categories");
 	}
 
 	private void saveData(SiteSourceJob site, ParsedCategory k, List<ParsedCategory> v) {
@@ -242,8 +242,7 @@ public class ParserCategories {
 
 	}
 
-	@SneakyThrows
-	private Map<ParsedCategory, List<ParsedCategory>> getYouDo(SiteSourceJob youdo) {
+	private Map<ParsedCategory, List<ParsedCategory>> getYouDo(SiteSourceJob youdo) throws IOException {
 		Document doc = Jsoup.connect(youdo.getParsedURI()).get();
 		Element page = doc.getElementsByClass("TasksRedesignPage_categories__eixSG").get(0);
 		Elements el = page.getElementsByClass("Categories_item__Vxa16");
@@ -254,11 +253,14 @@ public class ParserCategories {
 					.flatMap(sub -> sub.select("li.Categories_subItem__GN_As").stream()).map(e1 -> {
 						Element input = e1.selectFirst("input.Checkbox_checkbox__1fWfP");
 						String link = input.attr("value");
+						log.debug("		found subcategory {}, {}", e1.text(), link);
 						return new ParsedCategory(null, e1.text(), null, link);
 					}).toList();
 			String rss = subCategory.stream().map(rs -> rs.rss).collect(Collectors.joining(","));
-			if (StringUtils.isEmpty(rss))
+			if (StringUtils.isEmpty(rss)) {
 				rss = "all";
+			}
+			log.debug("found category {}, {}", elemCategory.text(), rss);
 			ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, rss);
 			return new SimpleEntry<>(category, subCategory);
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
@@ -266,7 +268,6 @@ public class ParserCategories {
 		}, LinkedHashMap::new));
 	}
 
-	@SneakyThrows
 	private Map<ParsedCategory, List<ParsedCategory>> getKwork(SiteSourceJob kwork) {
 		String response = restTemplate.getForObject(kwork.getParsedURI(), String.class);
 		String regex = "\\{\"CATID\":\"([0-9]{1,3})\",\"name\":\"([А-Яа-я\\w\\s\\,]*)\",\"lang\":\"[\\w]{1,2}\",\"short_name\":\"[А-Яа-я\\w\\s\\,]*\","
@@ -276,10 +277,12 @@ public class ParserCategories {
 		Pattern categoryPattern = Pattern.compile(String.format(regex, 0));
 		Matcher categoryMatcer = categoryPattern.matcher(response);
 		return categoryMatcer.results().map(m -> {
+			log.debug("found category {}, {}", m.group(2), String.format(link, m.group(1)));
 			ParsedCategory category = new ParsedCategory(null, m.group(2), null, String.format(link, m.group(1)));
 			Pattern subCategoryPattern = Pattern.compile(String.format(regex, m.group(1)));
 			Matcher subCategoryMatcher = subCategoryPattern.matcher(response);
 			List<ParsedCategory> subList = subCategoryMatcher.results().map(m1 -> {
+				log.debug("		found subcategory {}, {}", m1.group(2), String.format(link, m1.group(1)));
 				return new ParsedCategory(null, m1.group(2), null, String.format(link, m1.group(1)));
 			}).toList();
 			return new SimpleEntry<>(category, subList);
@@ -291,17 +294,19 @@ public class ParserCategories {
 	private Map<ParsedCategory, List<ParsedCategory>> getFreelancer() {
 		String orderLink = "https://www.freelancer.com/api/projects/0.1/projects/all?jobs[]=%s";
 		FreelancerResult result = restTemplate.getForObject(freelancerCategory, FreelancerResult.class);
-		return result.getCategories().stream().collect(Collectors.groupingByConcurrent(
-				e -> new ParsedCategory(null, e.getCategory().getName(), null, null), Collectors.mapping(e -> {
-					String subCategoryLink = String.format(orderLink, String.valueOf(e.getId()));
-					return new ParsedCategory(null, e.getName(), null, subCategoryLink);
-				}, Collectors.toList())));
+		return result.getCategories().stream().collect(Collectors.groupingByConcurrent(e -> {
+			log.debug("found category {}", e.getCategory().getName());
+			return new ParsedCategory(null, e.getCategory().getName(), null, null);
+		}, Collectors.mapping(e -> {
+			String subCategoryLink = String.format(orderLink, String.valueOf(e.getId()));
+			log.debug("		found subcategory {}, {}", e.getName(), subCategoryLink);
+			return new ParsedCategory(null, e.getName(), null, subCategoryLink);
+		}, Collectors.toList())));
 	}
 
 	public static record ParsedCategory(String name, String translatedName, Long id, String rss) {
 	}
 
-	@SneakyThrows
 	public void updateHubrLink(List<String> lineFies) {
 		List<Category> categories = siteSourceJobRepository.findById(2L).get().getCategories();
 		Map<String, List<String>> map = aggregateByKeys(lineFies);
@@ -332,16 +337,17 @@ public class ParserCategories {
 								log.info(String.format("update link sub category with id = %s and name %s",
 										presentSubCategory.getId(), presentSubCategory.getNativeLocName()));
 							}
-						} else
+						} else {
 							log.warn("dont find sub category with name " + name1);
+						}
 					}
 				}
-			} else
+			} else {
 				log.warn("dont find category with name " + name);
+			}
 		});
 	}
 
-	@SneakyThrows
 	private Map<String, List<String>> aggregateByKeys(List<String> filePath) {
 		Map<String, List<String>> map = new LinkedHashMap<>();
 		String category = "";
