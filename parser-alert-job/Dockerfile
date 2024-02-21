@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.5_8-jre-ubi9-minimal as build
+FROM eclipse-temurin:17.0.10_7-jre-ubi9-minimal as build
 LABEL maintainer="Robert Makrytski <snajper.ro@yandex.ru>"
 VOLUME /tmp
 FROM eclipse-temurin:17.0.5_8-jre-ubi9-minimal
