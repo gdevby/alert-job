@@ -280,14 +280,18 @@ public class ParserCategories {
 		Matcher categoryMatcer = categoryPattern.matcher(body);
 		log.debug("kwork category matcher = {}", categoryMatcer.find());
 		return categoryMatcer.results().map(m -> {
-			log.debug("found category {}, {}", m.group(2), String.format(link, m.group(1)));
-			ParsedCategory category = new ParsedCategory(null, m.group(2), null, String.format(link, m.group(1)));
+			String cName = m.group(2);
+			String cLink = String.format(link, m.group(1));
+			log.debug("found category {}, {}", cName, cLink);
+			ParsedCategory category = new ParsedCategory(null, cName, null, cLink);
 			Pattern subCategoryPattern = Pattern.compile(String.format(regex, m.group(1)));
 			Matcher subCategoryMatcher = subCategoryPattern.matcher(body);
-			log.debug("kwork subcategory matcher = {}", categoryMatcer.find());
+			log.debug("kwork subcategory matcher = {}", subCategoryMatcher.find());
 			List<ParsedCategory> subList = subCategoryMatcher.results().map(m1 -> {
-				log.debug("		found subcategory {}, {}", m1.group(2), String.format(link, m1.group(1)));
-				return new ParsedCategory(null, m1.group(2), null, String.format(link, m1.group(1)));
+				String sName = m1.group(2);
+				String sLink = String.format(link, m1.group(1));
+				log.debug("		found subcategory {}, {}", sName, sLink);
+				return new ParsedCategory(null, sName, null, sLink);
 			}).toList();
 			return new SimpleEntry<>(category, subList);
 		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
