@@ -269,18 +269,22 @@ public class ParserCategories {
 	}
 
 	private Map<ParsedCategory, List<ParsedCategory>> getKwork(SiteSourceJob kwork) {
-		String response = restTemplate.getForObject(kwork.getParsedURI(), String.class);
+		log.debug("call kwork parser");
+		ResponseEntity<String> response = restTemplate.getForEntity(kwork.getParsedURI(), String.class);
 		String regex = "\\{\"CATID\":\"([0-9]{1,3})\",\"name\":\"([А-Яа-я\\w\\s\\,]*)\",\"lang\":\"[\\w]{1,2}\",\"short_name\":\"[А-Яа-я\\w\\s\\,]*\","
 				+ "\"h1\":\"[А-Яа-я\\w\\s\\,]*\",\"seo\":\"[\\-\\w]*\",\"parent\":\"%s\"";
-
+		log.debug("kwork return status code {}", response.getStatusCode());
+		String body = response.getBody();
 		String link = "https://kwork.ru/projects?c=%s";
 		Pattern categoryPattern = Pattern.compile(String.format(regex, 0));
-		Matcher categoryMatcer = categoryPattern.matcher(response);
+		Matcher categoryMatcer = categoryPattern.matcher(body);
+		log.debug("kwork category matcher = {}", categoryMatcer.find());
 		return categoryMatcer.results().map(m -> {
 			log.debug("found category {}, {}", m.group(2), String.format(link, m.group(1)));
 			ParsedCategory category = new ParsedCategory(null, m.group(2), null, String.format(link, m.group(1)));
 			Pattern subCategoryPattern = Pattern.compile(String.format(regex, m.group(1)));
-			Matcher subCategoryMatcher = subCategoryPattern.matcher(response);
+			Matcher subCategoryMatcher = subCategoryPattern.matcher(body);
+			log.debug("kwork subcategory matcher = {}", categoryMatcer.find());
 			List<ParsedCategory> subList = subCategoryMatcher.results().map(m1 -> {
 				log.debug("		found subcategory {}, {}", m1.group(2), String.format(link, m1.group(1)));
 				return new ParsedCategory(null, m1.group(2), null, String.format(link, m1.group(1)));
