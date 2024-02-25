@@ -125,7 +125,7 @@ public class OrderParserController {
 						.event("periodic-kwork-parse-event").data(kworkOrderParcer.kworkParser()).build())
 				.doOnNext(s -> {
 					int size = s.data().size();
-					context.getBean(COUNTER_YOUDO, Counter.class).increment(size);
+					context.getBean(COUNTER_KWORK, Counter.class).increment(size);
 				});
 
 		Flux<ServerSentEvent<List<OrderDTO>>> freelancerOrderParcerFlux = Flux
