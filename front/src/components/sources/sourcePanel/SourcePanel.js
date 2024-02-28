@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
 import TextField from '@mui/material/TextField'
 
@@ -16,6 +16,8 @@ const SourcePanel = ({ addSource, module_id }) => {
 	const [sites, setSites] = useState([])
 	const [categories, setCategories] = useState([])
 	const [subcategories, setSubcategories] = useState([])
+	const catRef = useRef(null)
+	const subCatRef = useRef(null)
 
 	useEffect(() => {
 		parserService
@@ -79,6 +81,13 @@ const SourcePanel = ({ addSource, module_id }) => {
 		}
 	}
 
+	const handleAutocompleteOpening = (ref) => {
+		const inputElement = ref.current.querySelector('input');
+		setTimeout(() => {
+			inputElement.value = '';
+		}, 0);
+	}
+
 	const handleCurrentCatChange = (_, values) => {
 		const { id, name } = values
 		setCurrentCat({ id, name })
@@ -108,10 +117,12 @@ const SourcePanel = ({ addSource, module_id }) => {
 						options={categoryOptions}
 						disabled={!categoryOptions.length}
 						clearIcon={false}
-						renderInput={(params) => <TextField {...params} label="Выберите категорию" />}
+						renderInput={(params) => <TextField {...params} ref={catRef} label="Выберите категорию" placeholder={currentCat?.name ?? null} />}
 						isOptionEqualToValue={(option, value) => option.name === value}
-						onChange={handleCurrentCatChange}
 						size='small'
+						selectOnFocus={false}
+						onChange={handleCurrentCatChange}
+						onOpen={() => handleAutocompleteOpening(catRef)}
 					/>
 				</div>
 				<div className='subcat'>
@@ -120,10 +131,12 @@ const SourcePanel = ({ addSource, module_id }) => {
 						options={subCategoryOptions}
 						disabled={!subCategoryOptions.length}
 						clearIcon={false}
-						renderInput={(params) => <TextField {...params} label="Выберите подкатегорию" />}
+						renderInput={(params) => <TextField {...params} ref={subCatRef} label="Выберите подкатегорию" placeholder={currentSubCat?.name ?? null} />}
 						isOptionEqualToValue={(option, value) => option.name === value}
-						onChange={handleCurrentSubCatChange}
 						size='small'
+						selectOnFocus={false}
+						onChange={handleCurrentSubCatChange}
+						onOpen={() => handleAutocompleteOpening(subCatRef)}
 					/>
 				</div>
 				<div className='add-source'>
