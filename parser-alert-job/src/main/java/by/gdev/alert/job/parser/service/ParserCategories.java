@@ -290,8 +290,8 @@ public class ParserCategories {
 				return new ParsedCategory(null, sName, null, sLink);
 			}).toList();
 			return new SimpleEntry<>(category, subList);
-		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (k, v) -> {
-			throw new IllegalStateException(String.format("Duplicate key %s", k));
+		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (existing, replacement) -> {
+			return existing;
 		}, LinkedHashMap::new));
 	}
 
