@@ -8,14 +8,18 @@ import CircularProgress from '@mui/material/CircularProgress';
 import ReplayIcon from '@mui/icons-material/Replay';
 import Period from '../../../components/orders/period/Period';
 import Popup from '../../../components/common/popup/Popup';
+import DropDownList from '../../../components/common/dropDownList/DropDowList';
 
 import { ordersService } from '../../../services/parser/endponits/orderService'
+import { parserService } from '../../../services/parser/endponits/parserService';
 
 import './orders.scss'
 
 
 
 const Orders = () => {
+	const [sites, setSites] = useState([])
+	const [currentSite, setCurrentSite] = useState('')
 	const [orders, setOrders] = useState([])
 	const [isShowingOrders, setIsShowingOrders] = useState(false)
 	const [isFetching, setIsFetching] = useState()
@@ -26,6 +30,14 @@ const Orders = () => {
 
 	const { id } = useParams()
 	const { isChoose } = useSelector(state => state.filter)
+
+	useEffect(() => {
+		parserService
+			.getSites()
+			.then(response => {
+				setSites(response.data)
+			})
+	}, [])
 
 	const showOrders = (type = ordersType) => {
 		if (!isChoose) {
@@ -76,6 +88,8 @@ const Orders = () => {
 		</div>
 	}
 
+	const filteredOrders = currentSite ? orders.filter(({ sourceSite }) => sourceSite.sourceName == currentSite.name) : orders
+
 	return <div className='orders'>
 		<Popup
 			handleClose={handleClosePopup}
@@ -85,14 +99,17 @@ const Orders = () => {
 			actions={popup.actions}
 		/>
 		<Period updatePeriod={updatePeriod} />
+		<div style={{marginBottom: 16, maxWidth: 256}}>
+			<DropDownList label={'Выберите сайт'} elems={sites} onClick={setCurrentSite} defaultLabe={'Источник'} />
+		</div>
 		<div className='orders__actions'>
 			<Btn onClick={() => showOrders(true)} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
-			{(isShowingOrders && orders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
+			{(isShowingOrders && filteredOrders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 			<Btn onClick={() => showOrders(false)} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
 		</div>
-		{(isShowingOrders && orders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Категории</div><div>Цена</div></div>}
+		{(isShowingOrders && filteredOrders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Категории</div><div>Цена</div></div>}
 		{
-			isShowingOrders && (isFetching ? <div style={{ textAlign: 'center', marginTop: '.5rem' }}><CircularProgress /></div> : (orders.length == 0 ? <Empty /> : <OrdersList orders={orders} />))
+			isShowingOrders && (isFetching ? <div style={{ textAlign: 'center', marginTop: '.5rem' }}><CircularProgress /></div> : (filteredOrders.length == 0 ? <Empty /> : <OrdersList orders={filteredOrders} />))
 		}
 
 	</div>
