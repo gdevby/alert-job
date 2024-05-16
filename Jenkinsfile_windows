@@ -7,17 +7,19 @@ pipeline {
     }
  	environment {
         REVISION = "1.0.${BUILD_ID}"
+        APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
     }
     
     stages {
     	stage("build parent and dependencies"){
             steps{
              	  bat 'cd front && docker build -t rg.gdev.by/alert-job/front:%REVISION% .'
-             	   script {
-	                 config = readFile "alert-job-gateway/src/main/resources/static/index.html"
+             	  bat 'git reset --hard'
+           	      script {
+	                 config = readFile "${APP_CONFIG_FILENAME}"
 	                 newconfig = config.replaceAll("build_version","${REVISION}")
-	                 writeFile file: "alert-job-gateway/src/main/resources/static/index.html", text: "${newconfig}"
-	             }
+	                 writeFile file: "${APP_CONFIG_FILENAME}", text: "${newconfig}"
+	              }
                   bat 'mvn -Drevision=%REVISION% clean install'
             }
         }
