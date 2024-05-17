@@ -14,6 +14,7 @@ module.exports = {
 	entry: "./src/index.js",
 	output: {
 		path: path.resolve(__dirname, 'dist'),
+		chunkFilename: '[name].[hash].js',
 		clean: true,
 	},
 	optimization: {
