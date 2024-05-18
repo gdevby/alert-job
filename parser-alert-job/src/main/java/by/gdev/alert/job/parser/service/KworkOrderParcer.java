@@ -67,7 +67,7 @@ public class KworkOrderParcer extends AbsctractSiteParser {
 		return list.map(e -> {
 			Order order = new Order();
 			order.setTitle(e.getName());
-			order.setLink(String.format("https://kwork.ru/%s", e.getUrl()));
+			order.setLink(String.format("https://kwork.ru/projects/%s/view", e.getId()));
 			order.setMessage(e.getDescription());
 			Date createdDate = covertStringToDate(e.getDateCreate());
 			order.setDateTime(createdDate);
