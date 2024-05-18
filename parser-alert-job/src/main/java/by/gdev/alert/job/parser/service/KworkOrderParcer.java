@@ -50,7 +50,7 @@ public class KworkOrderParcer extends AbsctractSiteParser {
 	private final ModelMapper mapper;
 	private final ObjectMapper objectMapper;
 
-	private final SimpleDateFormat formatter = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
 	@Transactional(timeout = 2000)
 	public List<OrderDTO> kworkParser() {
