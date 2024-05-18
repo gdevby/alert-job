@@ -35,7 +35,9 @@ const Orders = () => {
 		parserService
 			.getSites()
 			.then(response => {
-				setSites(response.data)
+				const additionalItem = { id: 0, name: 'ВСЕ ИСТОЧНИКИ' };
+				setSites([additionalItem, ...response.data])
+				setCurrentSite(additionalItem)
 			})
 	}, [])
 
@@ -88,7 +90,7 @@ const Orders = () => {
 		</div>
 	}
 
-	const filteredOrders = currentSite ? orders.filter(({ sourceSite }) => sourceSite.sourceName == currentSite.name) : orders
+	const filteredOrders = currentSite && currentSite.id !== 0 ? orders.filter(({ sourceSite }) => sourceSite.sourceName == currentSite.name) : orders
 
 	return <div className='orders'>
 		<Popup
@@ -100,7 +102,7 @@ const Orders = () => {
 		/>
 		<Period updatePeriod={updatePeriod} />
 		<div style={{marginBottom: 16, maxWidth: 256}}>
-			<DropDownList label={'Выберите сайт'} elems={sites} onClick={setCurrentSite} defaultLabe={'Источник'} />
+			<DropDownList defaultValue={currentSite?.id} label={'Источник'} elems={sites} onClick={setCurrentSite} defaultLabe={'Источник'} />
 		</div>
 		<div className='orders__actions'>
 			<Btn onClick={() => showOrders(true)} text={'Показать заказы, о которых вы были бы уведомлены'} variant='contained' />
