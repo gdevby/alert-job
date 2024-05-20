@@ -10,6 +10,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle'
 import ListItem from '../listItem/ListItem';
 import CircularProgress from '@mui/material/CircularProgress';
+import KeywordNotFound from '../keywordNotFound/KeywordNotFound';
 
 import { filterService } from '../../../services/parser/endponits/filterService'
 
@@ -204,10 +205,11 @@ const DescriptionWords = ({ filter_id, type, setIsLimit }) => {
 				</div>
 			</DialogTitle>
 			<DialogContent className='scroll' ref={listRef}>
-				<div className='searchPopup__body-head'>
+			{selectValue !== '' && result.length === 0 && <KeywordNotFound />}
+			{result && result.length > 0 && <div className='searchPopup__body-head'>
 					<div>Слово</div>
 					<div>Частота</div>
-				</div>
+				</div>}
 				<div className='searchPopup__body-list' >
 					{preloader ? <div className='text-center'><CircularProgress /></div> :
 						result && result.map(item => <ListItem key={item.name + item.id} onClick={handleSelect} item={item} 
