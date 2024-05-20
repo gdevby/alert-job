@@ -197,7 +197,7 @@ services:
         condition: service_healthy
       db:
         condition: service_started
-    mem_limit: 1024m  
+    mem_limit: 2g  
   prometheus:
     restart: always
     container_name: prometheus
