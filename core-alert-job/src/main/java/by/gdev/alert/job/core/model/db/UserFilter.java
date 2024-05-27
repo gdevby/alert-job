@@ -3,7 +3,6 @@ package by.gdev.alert.job.core.model.db;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 
@@ -18,33 +17,33 @@ import lombok.ToString;
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = { "technologies", "titles", "descriptions", "negativeTechnologies",
-	"negativeTitles", "negativeDescriptions" })
+		"negativeTitles", "negativeDescriptions" })
 @ToString(callSuper = true, exclude = { "technologies", "titles", "descriptions", "negativeTechnologies",
-	"negativeTitles", "negativeDescriptions" })
+		"negativeTitles", "negativeDescriptions" })
 public class UserFilter extends BasicId {
 
-    private String name;
-    private Integer minValue;
-    private Integer maxValue;
-    private boolean openForAll = false;
+	private String name;
+	private Integer minValue;
+	private Integer maxValue;
+	private boolean openForAll = false;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<DescriptionWordPrice> descriptionWordPrice;
+	@ManyToMany
+	private Set<DescriptionWordPrice> descriptionWordPrice;
 
-    @ManyToOne
-    private OrderModules module;
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<TechnologyWord> technologies;
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<TitleWord> titles;
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<DescriptionWord> descriptions;
+	@ManyToOne
+	private OrderModules module;
+	@ManyToMany
+	private Set<TechnologyWord> technologies;
+	@ManyToMany
+	private Set<TitleWord> titles;
+	@ManyToMany
+	private Set<DescriptionWord> descriptions;
 
-    private boolean activatedNegativeFilters = false;
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<TechnologyWord> negativeTechnologies;
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<TitleWord> negativeTitles;
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<DescriptionWord> negativeDescriptions;
+	private boolean activatedNegativeFilters = false;
+	@ManyToMany
+	private Set<TechnologyWord> negativeTechnologies;
+	@ManyToMany
+	private Set<TitleWord> negativeTitles;
+	@ManyToMany
+	private Set<DescriptionWord> negativeDescriptions;
 }

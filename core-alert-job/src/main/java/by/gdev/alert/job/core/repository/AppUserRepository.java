@@ -10,18 +10,18 @@ import by.gdev.alert.job.core.model.db.AppUser;
 
 public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 
-    Optional<AppUser> findByUuid(String uuid);
+	Optional<AppUser> findByUuid(String uuid);
 
-    @Query("select u from AppUser u left join fetch u.orderModules where u.uuid = :uuid")
-    Optional<AppUser> findByUuidOneEagerModules(String uuid);
-    
-    @Query("select u from AppUser u left join fetch u.userAlertTimes where u.uuid = :uuid")
-    Optional<AppUser> findByUuidOneEagerUserAlertTimes(String uuid);
+	@Query("select u from AppUser u left join fetch u.orderModules where u.uuid = :uuid")
+	Optional<AppUser> findByUuidOneEagerModules(String uuid);
 
-    @Query("select u from AppUser u left join fetch u.userAlertTimes left join fetch u.orderModules o left join fetch o.sources "
-	    + "where u.switchOffAlerts = true and o.available = true")
-    Set<AppUser> findAllUsersEagerOrderModules();
+	@Query("select u from AppUser u left join fetch u.userAlertTimes where u.uuid = :uuid")
+	Optional<AppUser> findByUuidOneEagerUserAlertTimes(String uuid);
 
-    @Query("select u from AppUser u left join fetch u.userAlertTimes left join fetch u.delayOrderNotifications")
-    Set<AppUser> findAllOneEagerUserAlertTimes();
+	@Query("select u from AppUser u left join fetch u.userAlertTimes left join fetch u.orderModules o left join fetch o.sources "
+			+ "where u.switchOffAlerts = true and o.available = true")
+	Set<AppUser> findAllUsersEagerOrderModules();
+
+	@Query("select u from AppUser u left join fetch u.userAlertTimes left join fetch u.delayOrderNotifications")
+	Set<AppUser> findAllOneEagerUserAlertTimes();
 }
