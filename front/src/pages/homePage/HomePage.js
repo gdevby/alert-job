@@ -10,7 +10,14 @@ const list = ['Настройка по дням недели и времени, 
 		'Фильтры по описанию',
 		'Фильтры по названию']
 
-	const sites = ['https://freelance.ru', 'https://freelance.habr.com', 'https://www.fl.ru', 'https://www.weblancer.net']
+	const sites = ['https://freelance.ru', 
+	'https://freelance.habr.com', 
+	'https://www.fl.ru', 
+	'https://www.weblancer.net', 
+	'https://freelancehunt.com', 
+	'https://youdo.com', 
+	'https://kwork.com', 
+	'https://www.freelancer.com']
 
 const HomePage = () => {
 	return <div className='container'>
@@ -24,13 +31,12 @@ const HomePage = () => {
 				</ul>
 			</h3>
 			<p className='mt-1 currentSites'>Если вы ищите заказы каждый день в ручном режиме, то попробуйте переложить поиск на наш сервис.
-				Мы его разрабатывали для своих нужд и мы его используем каждый день. Доступны заказы для следующих бирж:
-				{sites.map((item, index) => {
-					return <span key={item}><a href={item}>{item}</a>
-						{index === sites.length - 1 ? '' : ','}
-					</span>
+				Мы его разрабатывали для своих нужд и мы его используем каждый день. Доступны заказы для следующих бирж (если вы хотите видеть заказы с других бирж сообщите нам):</p>
+			<ul className='home-page_content_list'>
+				{sites.map((item) => {
+					return <li key={item}><a href={item}>{item}</a></li>
 				})}
-			, если вы хотите видеть заказы с других бирж сообщите нам.</p>
+			</ul>
 			<div className='home-page_content_advantage mt-1'>
 				<p>Возможности системы:</p>
 				<ul className='home-page_content_list'>
