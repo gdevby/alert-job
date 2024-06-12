@@ -233,9 +233,8 @@ public class UserFilterService {
 		});
 	}
 
-	public Mono<FilterDTO> showUserCurrentFilter(String uuid, Long moduleId) {
-		return Mono.justOrEmpty(modulesRepository.findByIdAndUserUuidOneEagerCurrentFilter(moduleId, uuid))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException("current filter not found")))
+	public FilterDTO showUserCurrentFilter(String uuid, Long moduleId) {
+		return modulesRepository.findByIdAndUserUuidOneEagerCurrentFilter(moduleId, uuid)
 				.filter(f -> Objects.nonNull(f.getCurrentFilter())).map(e -> {
 					UserFilter currentFilter = e.getCurrentFilter();
 					FilterDTO dto = mapper.map(currentFilter, FilterDTO.class);
@@ -255,7 +254,7 @@ public class UserFilterService {
 					dto.setDescriptionWordPrice(currentFilter.getDescriptionWordPrice().stream()
 							.map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					return dto;
-				});
+				}).orElse(null);
 	}
 
 	public Mono<FilterDTO> updateFilter(String uuid, Long moduleId, Long filterId, Filter filter) {
