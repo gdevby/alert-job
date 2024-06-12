@@ -99,7 +99,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 			} else {
 				order.setValidOrder(false);
 			}
-			Element priceElement = e.selectFirst("div.col-sm-2.text-sm-end.amount.title");
+			Element priceElement = e.selectFirst("div.col-sm-2.text-sm-end.text-success.title");
 			String price = priceElement.text();
 			if (!StringUtils.isEmpty(price)) {
 				String pr = price.replace("$", "");
