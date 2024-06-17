@@ -137,84 +137,76 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	}
 
 	public boolean isMatchUserFilter(OrderDTO order, UserFilter userFilter) {
-		long l = System.currentTimeMillis();
-		try {
-			boolean minValue = true, maxValue = true, containsTitle = false, containsTech = false, containsDesc = false,
-					containsTitle1 = false, containsTech1 = false, containsDesc1 = false;
-			if (property.getSitesOpenForAll().contains(order.getSourceSite().getSource())
-					&& userFilter.isOpenForAll()) {
-				boolean openForAll = order.isOpenForAll() == userFilter.isOpenForAll();
-				if (openForAll == false) {
-					return false;
+		boolean minValue = true, maxValue = true, containsTitle = false, containsTech = false, containsDesc = false,
+				containsTitle1 = false, containsTech1 = false, containsDesc1 = false;
+		if (property.getSitesOpenForAll().contains(order.getSourceSite().getSource()) && userFilter.isOpenForAll()) {
+			boolean openForAll = order.isOpenForAll() == userFilter.isOpenForAll();
+			if (openForAll == false) {
+				return false;
+			}
+		}
+		if (Objects.nonNull(order.getPrice())) {
+			if (Objects.nonNull(userFilter.getMinValue())) {
+				minValue = userFilter.getMinValue() <= order.getPrice().getValue();
+			}
+			if (Objects.nonNull(userFilter.getMaxValue()) && userFilter.getMaxValue() != 0) {
+				maxValue = userFilter.getMaxValue() >= order.getPrice().getValue();
+			}
+			if ((!minValue || !maxValue) && !CollectionUtils.isEmpty(userFilter.getDescriptionWordPrice())) {
+				boolean dwp = userFilter.getDescriptionWordPrice().stream()
+						.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
+				if (dwp) {
+					maxValue = true;
+					minValue = true;
 				}
 			}
-			if (Objects.nonNull(order.getPrice())) {
-				if (Objects.nonNull(userFilter.getMinValue())) {
-					minValue = userFilter.getMinValue() <= order.getPrice().getValue();
-				}
-				if (Objects.nonNull(userFilter.getMaxValue()) && userFilter.getMaxValue() != 0) {
-					maxValue = userFilter.getMaxValue() >= order.getPrice().getValue();
-				}
-				if ((!minValue || !maxValue) && !CollectionUtils.isEmpty(userFilter.getDescriptionWordPrice())) {
-					boolean dwp = userFilter.getDescriptionWordPrice().stream()
+			if (!(minValue && maxValue)) {
+				log.trace("ignore by min max {} {} {}", minValue, maxValue, order.getLink());
+				return false;
+			}
+		}
+		if (CollectionUtils.isEmpty(userFilter.getTitles()) && CollectionUtils.isEmpty(userFilter.getDescriptions())
+				&& CollectionUtils.isEmpty(userFilter.getTechnologies())) {
+			return true;
+		}
+		if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
+			containsTitle = userFilter.getTitles().stream()
+					.anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
+		}
+		if (!CollectionUtils.isEmpty(userFilter.getTechnologies()) && Objects.nonNull(order.getTechnologies())) {
+			containsTech = userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().stream()
+					.map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
+		}
+		if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
+			containsDesc = userFilter.getDescriptions().stream()
+					.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
+		}
+		if (containsTitle || containsDesc || containsTech) {
+			log.trace("some positive is true title {} desc {} tech {} {}", containsTitle, containsDesc, containsTech,
+					order.getLink());
+			if (userFilter.isActivatedNegativeFilters()) {
+				if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions())) {
+					containsDesc1 = userFilter.getNegativeDescriptions().stream()
 							.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
-					if (dwp) {
-						maxValue = true;
-						minValue = true;
-					}
 				}
-				if (!(minValue && maxValue)) {
-					log.trace("ignore by min max {} {} {}", minValue, maxValue, order.getLink());
-					return false;
+
+				if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies())
+						&& Objects.nonNull(order.getTechnologies())) {
+					containsTech1 = userFilter.getNegativeTechnologies().stream().anyMatch(e -> order.getTechnologies()
+							.stream().map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
 				}
-			}
-			if (CollectionUtils.isEmpty(userFilter.getTitles()) && CollectionUtils.isEmpty(userFilter.getDescriptions())
-					&& CollectionUtils.isEmpty(userFilter.getTechnologies())) {
+
+				if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles())) {
+					containsTitle1 = userFilter.getNegativeTitles().stream()
+							.anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
+				}
+				log.trace("negative filter title {} desc {} tech {} {}", containsTitle1, containsDesc1, containsTech1,
+						order.getLink());
+				return !(containsDesc1 || containsTech1 || containsTitle1);
+			} else {
 				return true;
 			}
-			if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
-				containsTitle = userFilter.getTitles().stream()
-						.anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
-			}
-			if (!CollectionUtils.isEmpty(userFilter.getTechnologies()) && Objects.nonNull(order.getTechnologies())) {
-				containsTech = userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().stream()
-						.map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
-			}
-			if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
-				containsDesc = userFilter.getDescriptions().stream()
-						.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
-			}
-			if (containsTitle || containsDesc || containsTech) {
-				log.trace("some positive is true title {} desc {} tech {} {}", containsTitle, containsDesc,
-						containsTech, order.getLink());
-				if (userFilter.isActivatedNegativeFilters()) {
-					if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions())) {
-						containsDesc1 = userFilter.getNegativeDescriptions().stream()
-								.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
-					}
-
-					if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies())
-							&& Objects.nonNull(order.getTechnologies())) {
-						containsTech1 = userFilter.getNegativeTechnologies().stream()
-								.anyMatch(e -> order.getTechnologies().stream().map(String::toLowerCase).toList()
-										.contains(e.getName().toLowerCase()));
-					}
-
-					if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles())) {
-						containsTitle1 = userFilter.getNegativeTitles().stream()
-								.anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
-					}
-					log.trace("negative filter title {} desc {} tech {} {}", containsTitle1, containsDesc1,
-							containsTech1, order.getLink());
-					return !(containsDesc1 || containsTech1 || containsTitle1);
-				} else {
-					return true;
-				}
-			}
-		} finally {
-			log.info("finish d {}", System.currentTimeMillis() - l);
 		}
-
 		return false;
 	}
 
