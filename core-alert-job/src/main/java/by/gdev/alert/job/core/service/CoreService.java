@@ -324,7 +324,8 @@ public class CoreService {
 			log.info("size {}", e);
 		});
 		Mono<UserFilter> currentFilter = modules.map(e -> {
-			return filterRepository.findByIdEagerAllWords(e.getId());
+			Long currentFilterId = e.getCurrentFilter().getId();
+			return filterRepository.findByIdEagerAllWords(currentFilterId);
 		}).onErrorResume(NullPointerException.class,
 				ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		return source.distinct(OrderDTO::getLink)
@@ -349,7 +350,8 @@ public class CoreService {
 		});
 
 		Mono<UserFilter> currentFilter = modules.map(e -> {
-			return filterRepository.findByIdEagerAllWords(e.getId());
+			Long currentFilterId = e.getCurrentFilter().getId();
+			return filterRepository.findByIdEagerAllWords(currentFilterId);
 		}).onErrorResume(NullPointerException.class,
 				ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		return source.distinct(OrderDTO::getLink)
