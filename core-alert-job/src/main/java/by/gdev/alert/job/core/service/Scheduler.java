@@ -120,9 +120,22 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private void sendMessageToUser(AppUser user, List<String> list) {
 		String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
 				: "http://notification:8019/telegram";
-		UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), null)
-				: new UserNotification(String.valueOf(user.getTelegram()), null);
-		un.setMessage(list.stream().collect(Collectors.joining(", ")));
+		StringBuilder b = new StringBuilder();
+		for (String s : list) {
+			b.append(s).append(", ");
+			if (b.length() > 3000) {
+				sendMessage(user, sendMessage, b.substring(0, b.length() - 2));
+				b.setLength(0);
+			}
+		}
+		if (b.length() != 0) {
+			sendMessage(user, sendMessage, b.substring(0, b.length() - 2));
+		}
+	}
+
+	private void sendMessage(AppUser user, String sendMessage, String message) {
+		UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), message)
+				: new UserNotification(String.valueOf(user.getTelegram()), message);
 		Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
 		mono.subscribe(
 				e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(), un.getToMail()),
