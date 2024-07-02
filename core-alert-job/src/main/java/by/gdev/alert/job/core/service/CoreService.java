@@ -320,17 +320,16 @@ public class CoreService {
 				return b.build();
 			}).retrieve().bodyToFlux(OrderDTO.class);
 		});
-		source.count().subscribe(e -> {
-			log.info("size {}", e);
-		});
 		Mono<UserFilter> currentFilter = modules.map(e -> {
 			Long currentFilterId = e.getCurrentFilter().getId();
 			return filterRepository.findByIdEagerAllWords(currentFilterId);
 		}).onErrorResume(NullPointerException.class,
 				ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-		return source.distinct(OrderDTO::getLink)
-				.filterWhen(m -> currentFilter.map(e -> scheduler.isMatchUserFilter(m, e)))
-				.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
+		return currentFilter.flatMapMany(mono -> {
+			return source.distinct(OrderDTO::getLink).filter(m -> {
+				return scheduler.isMatchUserFilter(m, mono);
+			}).sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
+		});
 	}
 
 	public Flux<OrderDTO> showFalseFilterOrders(String uuid, Long moduleId, Long period) {
@@ -354,9 +353,11 @@ public class CoreService {
 			return filterRepository.findByIdEagerAllWords(currentFilterId);
 		}).onErrorResume(NullPointerException.class,
 				ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
-		return source.distinct(OrderDTO::getLink)
-				.filterWhen(m -> currentFilter.map(e -> !scheduler.isMatchUserFilter(m, e)))
-				.sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
+		return currentFilter.flatMapMany(mono -> {
+			return source.distinct(OrderDTO::getLink).filter(m -> {
+				return !scheduler.isMatchUserFilter(m, mono);
+			}).sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
+		});
 	}
 
 	private void diactiveteSource(SourceSite sourceSite) {
