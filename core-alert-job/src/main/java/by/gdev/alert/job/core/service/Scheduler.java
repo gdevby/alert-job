@@ -3,7 +3,6 @@ package by.gdev.alert.job.core.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -228,15 +227,12 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	public void sendDelayOrders() {
 		userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
 			boolean isMatchAlertdate = isMatchUserAlertTimes(user);
-			log.info("time {} for client{}, date value {}", new Date(), user.getUuid(), isMatchAlertdate);
 			if (isMatchAlertdate) {
 				List<String> orders = user.getDelayOrderNotifications().stream()
 						.map(e -> createOrdersMessage(e.getOrderName(), e.getTitle(), e.getLink(), e.getCategoryName(),
 								e.getSubCategoryName()))
 						.toList();
-				log.info("order size {}", orders.size());
 				if (!orders.isEmpty()) {
-					log.info("start send message");
 					sendMessageToUser(user, orders);
 					delayOrderRepository.deleteAll(user.getDelayOrderNotifications());
 				}
@@ -250,10 +246,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			LocalDateTime time = LocalDateTime.now(ZoneId.of(pr.getTimeZone()));
 			Integer day = time.getDayOfWeek().getValue();
 			Integer hour = time.getHour();
-			log.info("time {}, day {}, hour{}", time, day, hour);
-			log.info("equals day {}", pr.getAlertDate().equals(day));
-			log.info("equals start hour {}", pr.getStartAlert() <= hour);
-			log.info("equals end hour {}", hour < pr.getEndAlert());
 			return pr.getAlertDate().equals(day) && pr.getStartAlert() <= hour && hour < pr.getEndAlert();
 		});
 	}
