@@ -54,7 +54,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		ParameterizedTypeReference<List<OrderDTO>> type = new ParameterizedTypeReference<List<OrderDTO>>() {
 		};
 		Mono<List<OrderDTO>> conection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
-				.bodyToMono(type).doOnSubscribe(s -> log.info("trying subscribe"));
+				.bodyToMono(type).doOnSubscribe(s -> log.info("send request for new orders"));
 		conection.subscribe(event -> {
 			try {
 				log.trace("got elements size {}", event.size());
