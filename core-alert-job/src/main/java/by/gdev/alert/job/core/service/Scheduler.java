@@ -1,6 +1,5 @@
 package by.gdev.alert.job.core.service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -12,8 +11,6 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -32,9 +29,7 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 @Service
 @RequiredArgsConstructor
@@ -54,23 +49,21 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		sseConnection();
 	}
 
+	@Scheduled(fixedRate = 300000)
 	public void sseConnection() {
-		ParameterizedTypeReference<ServerSentEvent<List<OrderDTO>>> type = new ParameterizedTypeReference<ServerSentEvent<List<OrderDTO>>>() {
+		ParameterizedTypeReference<List<OrderDTO>> type = new ParameterizedTypeReference<List<OrderDTO>>() {
 		};
-		Flux<ServerSentEvent<List<OrderDTO>>> sseConection = webClient.get().uri("http://parser:8017/api/stream-sse")
-				.accept(MediaType.TEXT_EVENT_STREAM).retrieve().bodyToFlux(type)
-				.doOnSubscribe(s -> log.info("trying subscribe"))
-				.retryWhen(Retry.backoff(Integer.MAX_VALUE, Duration.ofSeconds(30)));
-		sseConection.subscribe(event -> {
+		Mono<List<OrderDTO>> conection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
+				.bodyToMono(type).doOnSubscribe(s -> log.info("trying subscribe"));
+		conection.subscribe(event -> {
 			try {
-				log.trace("got elements by subscription {} size {}", event.event(), event.data().size());
+				log.trace("got elements size {}", event.size());
 				Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
-				forEachOrders(users, event.data());
+				forEachOrders(users, event);
 			} catch (Throwable ex) {
 				log.error("problem with subscribe", ex);
 			}
 		}, error -> log.warn("failed to get orders from parser {}", error));
-
 	}
 
 	private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
