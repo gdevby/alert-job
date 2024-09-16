@@ -19,6 +19,8 @@ public class ProxySupplier {
     private List<ProxyCredentials> proxies = new ArrayList<>();
     private final ProxyParser proxyParser = new ProxyParser();
 
+    private int index = 0;
+
     private void parse(List<String> proxiesLines) {
         for (String proxiesLine : proxiesLines) {
             ProxyCredentials proxyCredentials = proxyParser.parse(proxiesLine);
@@ -32,14 +34,16 @@ public class ProxySupplier {
             parse(proxiesLines);
         }
 
-        ProxyCredentials proxyCredentials = getRandomProxyCredentials();
+        ProxyCredentials proxyCredentials = getNextProxyCredentials();
         return proxyCredentials;
     }
 
-    private ProxyCredentials getRandomProxyCredentials() {
-        Random random = new Random();
-        int randomIndex = random.nextInt(proxies.size());
-        ProxyCredentials proxyCredentials = proxies.get(randomIndex);
+    private ProxyCredentials getNextProxyCredentials() {
+        if (index >= proxies.size()) {
+            index = 0;
+        }
+        ProxyCredentials proxyCredentials = proxies.get(index);
+        index++;
         return proxyCredentials;
     }
 
