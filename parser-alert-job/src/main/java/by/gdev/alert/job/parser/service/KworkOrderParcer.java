@@ -10,7 +10,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import by.gdev.alert.job.parser.configuration.RestTemplateConfigurer;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -42,13 +44,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class KworkOrderParcer extends AbsctractSiteParser {
 
+	@Value("${upwork.proxy.active}")
+	private boolean isNeedProxy;
+
 	private final ParserService service;
 	private final SiteSourceJobRepository siteSourceJobRepository;
 	private final OrderRepository orderRepository;
 	private final ParserSourceRepository parserSourceRepository;
-	private final RestTemplate restTemplate;
+	private RestTemplate restTemplate;
 	private final ModelMapper mapper;
 	private final ObjectMapper objectMapper;
+	private final RestTemplateConfigurer restTemplateConfigurer;
+
 
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
@@ -60,6 +67,9 @@ public class KworkOrderParcer extends AbsctractSiteParser {
 	@Override
 	@SneakyThrows
 	public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+
+		restTemplate = getRestTemplate(isNeedProxy);
+
 		String kw = restTemplate.getForObject(link, String.class);
 		Pattern pattern = Pattern.compile("\"wants\":(.+?),\"wantsFromAllRubrics");
 		Matcher matcer = pattern.matcher(kw);

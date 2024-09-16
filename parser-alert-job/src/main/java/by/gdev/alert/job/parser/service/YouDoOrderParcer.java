@@ -11,6 +11,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -43,6 +44,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class YouDoOrderParcer extends AbsctractSiteParser {
 
+	@Value("${youdo.proxy.active}")
+	private boolean isNeedProxy;
+
+
 	private final String youDoLink = "https://youdo.com/api/tasks/tasks/";
 	private final String youDoOrderLink = "https://youdo.com";
 	private final String regex = "[а-яА-Я\\.\\s]";
@@ -51,7 +56,7 @@ public class YouDoOrderParcer extends AbsctractSiteParser {
 	private final SiteSourceJobRepository siteSourceJobRepository;
 	private final OrderRepository orderRepository;
 	private final ParserSourceRepository parserSourceRepository;
-	private final RestTemplate restTemplate;
+	private RestTemplate restTemplate;
 	private final ModelMapper mapper;
 
 	@Transactional(timeout = 2000)
@@ -66,6 +71,7 @@ public class YouDoOrderParcer extends AbsctractSiteParser {
 		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN, MediaType.ALL));
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		HttpEntity<String> entity = new HttpEntity<>(body, headers);
+		restTemplate = getRestTemplate(isNeedProxy);
 		ResponseEntity<YouDoRoot> r = restTemplate.postForEntity(youDoLink, entity, YouDoRoot.class);
 		List<String> urls = r.getBody().getResultObject().getItems().stream()
 				.map(e -> String.format(youDoOrderLink + "%s", e.getUrl())).toList();

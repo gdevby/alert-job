@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import javax.xml.bind.UnmarshalException;
 
+import by.gdev.alert.job.parser.configuration.RestTemplateConfigurer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -16,6 +17,7 @@ import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.OrderDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 public abstract class AbsctractSiteParser {
@@ -23,6 +25,9 @@ public abstract class AbsctractSiteParser {
 	private SiteSourceJobRepository siteSourceJobRepository;
 	@Value("${delay.reply.request}")
 	private long delayReplyRequest;
+
+	@Autowired
+	private RestTemplateConfigurer restTemplateConfigurer;
 
 	public List<OrderDTO> getOrders(Long siteId) {
 		Exception ex = null;
@@ -79,6 +84,13 @@ public abstract class AbsctractSiteParser {
 			log.error("erorr", ex);
 		}
 		return orders;
+	}
+
+	protected RestTemplate getRestTemplate(boolean isProxyNeeded){
+		if (isProxyNeeded){
+			return restTemplateConfigurer.getRestTemplateWithProxy();
+		}
+		return restTemplateConfigurer.getRestTemplate();
 	}
 
 	abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category c, Subcategory sub);

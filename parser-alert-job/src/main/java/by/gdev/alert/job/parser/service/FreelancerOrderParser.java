@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -38,12 +39,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FreelancerOrderParser extends AbsctractSiteParser {
 
+	@Value("${freelancer.proxy.active}")
+	private boolean isNeedProxy;
+
 	private final ParserService service;
 	private final OrderRepository orderRepository;
 	private final ParserSourceRepository parserSourceRepository;
 	private final CurrencyRepository currencyRepository;
 
-	private final RestTemplate restTemplate;
+	private RestTemplate restTemplate;
 	private final ModelMapper mapper;
 
 	private String sourceLink = "https://www.freelancer.com/projects/%s";
@@ -58,6 +62,7 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 	public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		if (Objects.isNull(link))
 			return Lists.newArrayList();
+		restTemplate = getRestTemplate(isNeedProxy);
 		FreelancerRoot response = restTemplate.getForObject(link, FreelancerRoot.class);
 		return response.getResult().getProjects().stream().map(e -> {
 			Order order = new Order();

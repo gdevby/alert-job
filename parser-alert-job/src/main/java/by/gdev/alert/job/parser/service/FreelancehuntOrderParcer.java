@@ -15,6 +15,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -51,6 +52,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 
+	@Value("${freelancehunt.proxy.active}")
+	private boolean isNeedProxy;
+
 	private static final String DATE_FORMAT = "d MMMM yyyy";
 
 	private static final int CURRENTYEAR = LocalDate.now().getYear();
@@ -62,7 +66,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 
 	private final ModelMapper mapper;
 
-	private final RestTemplate restTemplate;
+	private RestTemplate restTemplate;
 
 	@Transactional(timeout = 2000)
 	public List<OrderDTO> freelancehuntParser() {
@@ -79,6 +83,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		HttpEntity<String> entity = new HttpEntity<>(headers);
+		restTemplate = getRestTemplate(isNeedProxy);
 		ResponseEntity<String> res = restTemplate.exchange(link, HttpMethod.GET, entity, String.class);
 		Document doc = Jsoup.parse(res.getBody());
 		Element full = doc.getElementsByClass("col-md-9 col-md-push-3").get(0);
