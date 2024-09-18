@@ -11,7 +11,7 @@ import java.util.Random;
 @Component
 public class ProxySupplier {
 
-    @Value("${proxy.file}")
+    @Value("${parser.proxy.file.path}")
     private String proxyFile;
     @Autowired
     private FileReader fileReader;
