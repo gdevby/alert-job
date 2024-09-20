@@ -34,19 +34,19 @@ public class StatisticService {
     public void statisticTitleWord(String title, SourceSiteDTO sourceSite) {
 	SourceSite site = findSourceSite(sourceSite);
 	Stream.of(title.split(REGX)).map(String::toLowerCase).forEach(e -> {
-	    Optional<TitleWord> titleWord = titleRepository.findByNameAndSourceSite(e, site);
-	    if (titleWord.isPresent()) {
-		TitleWord tw = titleWord.get();
-		Long counter = tw.getCounter() + 1L;
-		tw.setCounter(counter);
-		titleRepository.save(tw);
-	    } else {
-		TitleWord tw = new TitleWord();
-		tw.setCounter(1L);
-		tw.setName(e);
-		tw.setSourceSite(site);
-		titleRepository.save(tw);
-	    }
+	    List<TitleWord> titleWord = titleRepository.findByNameAndSourceSite(e, site);
+		if (!titleWord.isEmpty()) {
+			TitleWord tw = titleWord.get(0);
+			Long counter = tw.getCounter() + 1L;
+			tw.setCounter(counter);
+			titleRepository.save(tw);
+		} else {
+			TitleWord tw = new TitleWord();
+			tw.setCounter(1L);
+			tw.setName(e);
+			tw.setSourceSite(site);
+			titleRepository.save(tw);
+		}
 	});
     }
 

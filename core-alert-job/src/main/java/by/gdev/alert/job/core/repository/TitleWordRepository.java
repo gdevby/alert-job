@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -15,7 +16,7 @@ public interface TitleWordRepository extends CrudRepository<TitleWord, Long> {
 
     Optional<TitleWord> findByNameAndUuid(String name, String uuid);
 
-    Optional<TitleWord> findByNameAndSourceSite(String name, SourceSite sourceSite);
+    List<TitleWord> findByNameAndSourceSite(String name, SourceSite sourceSite);
 
     @Query("select t from TitleWord t where (t.sourceSite.id IN :sourceSite and t.hidden is false) "
 	    + "or (t.uuid =:uuid and t.hidden is false) order by t.counter desc ")
