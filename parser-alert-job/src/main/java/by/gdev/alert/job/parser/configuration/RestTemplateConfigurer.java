@@ -11,12 +11,20 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+
 @Component
 public class RestTemplateConfigurer {
+
+    @Value("${request.timeout.socket}")
+    private int socketTimeout;
+    @Value("${request.timeout.connect}")
+    private int connectTimeout;
 
     @Autowired
     private ProxySupplier proxySupplier;
@@ -29,9 +37,11 @@ public class RestTemplateConfigurer {
 
         HttpClient httpClient = createHttpClient(myProxy, credsProvider);
 
-        return new RestTemplate(
-                new HttpComponentsClientHttpRequestFactory(httpClient)
-        );
+        HttpComponentsClientHttpRequestFactory requestFactory = getRequestFactory();
+        requestFactory.setHttpClient(httpClient);
+
+
+        return new RestTemplate(requestFactory);
     }
 
     private CredentialsProvider getCredentialsProvider(ProxyCredentials proxyCredentials){
@@ -42,7 +52,7 @@ public class RestTemplateConfigurer {
         return credsProvider;
     }
 
-    private static CloseableHttpClient createHttpClient(HttpHost myProxy, CredentialsProvider credsProvider) {
+    private CloseableHttpClient createHttpClient(HttpHost myProxy, CredentialsProvider credsProvider) {
         return HttpClientBuilder
                 .create()
                 .setProxy(myProxy)
@@ -51,8 +61,17 @@ public class RestTemplateConfigurer {
                 .build();
     }
 
+    private HttpComponentsClientHttpRequestFactory getRequestFactory() {
+        HttpComponentsClientHttpRequestFactory clientRequestFactory = new HttpComponentsClientHttpRequestFactory();
+
+        clientRequestFactory.setConnectTimeout(connectTimeout);
+        clientRequestFactory.setReadTimeout(socketTimeout);
+
+        return clientRequestFactory;
+    }
+
     public RestTemplate getRestTemplate(){
-        return new RestTemplate();
+        return new RestTemplate(getRequestFactory());
     }
     
 }
