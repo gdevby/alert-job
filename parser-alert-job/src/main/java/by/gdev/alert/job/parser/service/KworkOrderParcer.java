@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class KworkOrderParcer extends AbsctractSiteParser {
 
-	@Value("${upwork.proxy.active}")
+	@Value("${kwork.proxy.active}")
 	private boolean isNeedProxy;
 
 	private final ParserService service;
