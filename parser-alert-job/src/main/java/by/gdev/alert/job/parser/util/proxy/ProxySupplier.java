@@ -28,7 +28,7 @@ public class ProxySupplier {
         }
     }
 
-    public ProxyCredentials get() {
+    public synchronized ProxyCredentials get() {
         if (proxies.isEmpty()) {
             List<String> proxiesLines = fileReader.read(proxyFile);
             parse(proxiesLines);
@@ -39,7 +39,7 @@ public class ProxySupplier {
     }
 
     private ProxyCredentials getNextProxyCredentials() {
-        if (index >= proxies.size()) {
+        if (index >= proxies.size() - 1) {
             index = 0;
         }
         ProxyCredentials proxyCredentials = proxies.get(index);
