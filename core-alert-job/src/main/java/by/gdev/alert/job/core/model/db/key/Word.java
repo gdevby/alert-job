@@ -1,6 +1,6 @@
 package by.gdev.alert.job.core.model.db.key;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 import by.gdev.alert.job.core.model.db.BasicId;
 import lombok.Data;
