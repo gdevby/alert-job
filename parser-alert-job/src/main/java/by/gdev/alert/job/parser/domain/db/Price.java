@@ -1,6 +1,6 @@
 package by.gdev.alert.job.parser.domain.db;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Embeddable;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

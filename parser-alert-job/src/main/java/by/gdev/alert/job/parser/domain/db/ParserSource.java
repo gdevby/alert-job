@@ -2,8 +2,8 @@ package by.gdev.alert.job.parser.domain.db;
 
 import java.util.Set;
 
-import javax.persistence.Entity;
-import javax.persistence.OneToMany;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

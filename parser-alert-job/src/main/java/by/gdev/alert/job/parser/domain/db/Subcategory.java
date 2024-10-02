@@ -1,9 +1,9 @@
 package by.gdev.alert.job.parser.domain.db;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
