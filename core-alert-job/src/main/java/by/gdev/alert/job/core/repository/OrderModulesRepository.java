@@ -1,13 +1,13 @@
 package by.gdev.alert.job.core.repository;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
-
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.SourceSite;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface OrderModulesRepository extends CrudRepository<OrderModules, Long> {
 
@@ -22,11 +22,11 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 	List<OrderModules> findAllByUserUuid(String uuid);
 
 	@Query("select o from OrderModules o left join fetch o.filters left join fetch o.user u where o.id = :id and u.uuid = :uuid")
-	Optional<OrderModules> findByIdAndUserUuidOneEagerFilters(Long id, String uuid);
+	Optional<OrderModules> findByIdAndUserUuidOneEagerFilters(@Param("id")Long id, @Param("uuid")String uuid);
 
 	@Query("select o from OrderModules o left join fetch o.sources left join fetch o.user u where o.id = :id and u.uuid = :uuid")
-	Optional<OrderModules> findByIdAndUserUuidOneEagerSources(Long id, String uuid);
+	Optional<OrderModules> findByIdAndUserUuidOneEagerSources(@Param("id")Long id, @Param("uuid")String uuid);
 
 	@Query("select module from OrderModules module where module.id = :id and user.uuid = :uuid")
-	Optional<OrderModules> findByIdAndUserUuidOneEagerCurrentFilter(Long id, String uuid);
+	Optional<OrderModules> findByIdAndUserUuidOneEagerCurrentFilter(@Param("id")Long id, @Param("uuid")String uuid);
 }
