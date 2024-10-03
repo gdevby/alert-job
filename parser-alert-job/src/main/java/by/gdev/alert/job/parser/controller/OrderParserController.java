@@ -1,29 +1,5 @@
 package by.gdev.alert.job.parser.controller;
 
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUNT;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
-import static by.gdev.alert.job.parser.util.ParserStringUtils.PROXY_CLIENT;
-
-import java.util.List;
-
-import javax.annotation.PostConstruct;
-
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import by.gdev.alert.job.parser.service.FLOrderParser;
 import by.gdev.alert.job.parser.service.FreelanceRuOrderParser;
 import by.gdev.alert.job.parser.service.FreelancehuntOrderParcer;
@@ -38,11 +14,28 @@ import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteSourceDTO;
 import by.gdev.common.model.SubCategoryDTO;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUNT;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
 
 @RestController
 @RequestMapping("/api/")
@@ -61,7 +54,6 @@ public class OrderParserController {
 	public final ParserService service;
 
 	private final ApplicationContext context;
-	private final MeterRegistry meterRegistry;
 
 	@GetMapping("/stream-orders")
 	public Flux<List<OrderDTO>> flruEvents() {
@@ -153,22 +145,5 @@ public class OrderParserController {
 			@RequestParam("category_id") Long category, @RequestParam(name = "sub_id", required = false) Long subId,
 			@RequestParam("period") Long period) {
 		return service.getOrdersBySource(site, category, subId, period);
-	}
-
-	@PostConstruct
-	void init() {
-		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) context).getBeanFactory();
-		beanFactory.registerSingleton(COUNTER_HUBR, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "hubr"));
-		beanFactory.registerSingleton(COUNTER_FLRU, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "flru"));
-		beanFactory.registerSingleton(COUNTER_FREELANCERU,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelanceru"));
-		beanFactory.registerSingleton(COUNTER_WEBLANCER,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "weblancer"));
-		beanFactory.registerSingleton(COUNTER_FREELANCEHUNT,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancehun"));
-		beanFactory.registerSingleton(COUNTER_YOUDO, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "youdo"));
-		beanFactory.registerSingleton(COUNTER_KWORK, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "kwork"));
-		beanFactory.registerSingleton(COUNTER_FREELANCER,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancer"));
 	}
 }

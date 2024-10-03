@@ -1,7 +1,10 @@
 package by.gdev.alert.job.parser.configuration;
 
-import java.util.concurrent.TimeUnit;
-
+import io.micrometer.core.instrument.MeterRegistry;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.epoll.EpollChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -11,7 +14,11 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -24,14 +31,23 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
-import io.netty.channel.ChannelOption;
-import io.netty.channel.epoll.EpollChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import lombok.extern.slf4j.Slf4j;
+import javax.annotation.PostConstruct;
+import java.util.concurrent.TimeUnit;
+
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUNT;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.PROXY_CLIENT;
 
 @Configuration
 @EnableScheduling
 @Slf4j
+
 public class ApplicationConfig {
 
 	@Value("${proxy.host}")
@@ -42,6 +58,11 @@ public class ApplicationConfig {
 	private String proxyUsername;
 	@Value("${proxy.password}")
 	private String proxyPassword;
+
+	@Autowired
+	private ApplicationContext context;
+	@Autowired
+	private MeterRegistry meterRegistry;
 
 	@Bean
 	public WebClient createWebClient() {
@@ -84,5 +105,22 @@ public class ApplicationConfig {
 		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
 		factory.setHttpClient(httpClient);
 		return new RestTemplate(factory);
+	}
+
+	@PostConstruct
+	void init() {
+		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) context).getBeanFactory();
+		beanFactory.registerSingleton(COUNTER_HUBR, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "hubr"));
+		beanFactory.registerSingleton(COUNTER_FLRU, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "flru"));
+		beanFactory.registerSingleton(COUNTER_FREELANCERU,
+				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelanceru"));
+		beanFactory.registerSingleton(COUNTER_WEBLANCER,
+				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "weblancer"));
+		beanFactory.registerSingleton(COUNTER_FREELANCEHUNT,
+				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancehun"));
+		beanFactory.registerSingleton(COUNTER_YOUDO, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "youdo"));
+		beanFactory.registerSingleton(COUNTER_KWORK, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "kwork"));
+		beanFactory.registerSingleton(COUNTER_FREELANCER,
+				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancer"));
 	}
 }
