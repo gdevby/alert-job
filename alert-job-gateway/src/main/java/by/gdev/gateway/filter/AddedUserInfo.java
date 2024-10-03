@@ -1,21 +1,20 @@
 package by.gdev.gateway.filter;
 
-import java.util.Objects;
-
+import by.gdev.common.model.HeaderName;
+import by.gdev.common.model.UsernameInfo;
+import by.gdev.gateway.util.FilterUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.json.JSONObject;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-
-import by.gdev.common.model.HeaderName;
-import by.gdev.common.model.UsernameInfo;
-import by.gdev.gateway.util.FilterUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Order(1)
@@ -54,13 +53,18 @@ public class AddedUserInfo implements GlobalFilter {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-		String jwt = filterUtils.getAuthToken(exchange.getRequest().getHeaders());
-		if (Objects.nonNull(jwt)) {
-			UsernameInfo u = getUsername(exchange.getRequest().getHeaders());
-			exchange = filterUtils.setRequestHeader(exchange, HeaderName.USERNAME_HEADER, u.getUsername());
-			exchange = filterUtils.setRequestHeader(exchange, HeaderName.UUID_USER_HEADER, u.getUuid());
-			exchange = filterUtils.setRequestHeader(exchange, HeaderName.EMAIL_USER_HEADER, u.getEmail());
-		}
-		return chain.filter(exchange);
+		Mono<Void> monoFilter = ReactiveSecurityContextHolder.getContext().map(sc -> sc.getAuthentication())
+				.flatMap(authentication -> {
+
+					Object principal = authentication.getPrincipal();
+					DefaultOidcUser user = (DefaultOidcUser) principal;
+					filterUtils.setRequestHeader(exchange, HeaderName.USERNAME_HEADER, user.getUserInfo().getGivenName());
+					filterUtils.setRequestHeader(exchange, HeaderName.UUID_USER_HEADER, user.getUserInfo().getSubject());
+					filterUtils.setRequestHeader(exchange, HeaderName.EMAIL_USER_HEADER, user.getUserInfo().getEmail());
+
+					return chain.filter(exchange);
+				});
+
+		return  monoFilter;
 	}
 }

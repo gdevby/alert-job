@@ -2,7 +2,8 @@ package by.gdev.gateway.conf;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
@@ -11,21 +12,23 @@ import org.springframework.security.web.server.authentication.logout.ServerLogou
 
 @Configuration
 //@EnableWebSecurity
-@EnableGlobalMethodSecurity(jsr250Enabled = true)
+@EnableMethodSecurity(jsr250Enabled = true)
 public class SecurityConfig {
 
 	@Bean
 	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
 			ServerLogoutSuccessHandler handler) {
-		http.csrf().disable().authorizeExchange()
-				.pathMatchers("/logout.html", "/", "/favicon.ico", "/actuator/**", "/core-alert-job/api/user/test")
-				.permitAll().and().authorizeExchange().anyExchange().authenticated().and().oauth2Login().and() // to
-																												// redirect
-																												// to
-																												// oauth2
-																												// login
-																												// page.
-				.logout().logoutSuccessHandler(handler).and();
+		http.csrf(ServerHttpSecurity.CsrfSpec::disable)
+				.authorizeExchange(req ->
+						req.pathMatchers("/logout.html", "/", "/favicon.ico", "/actuator/**", "/core-alert-job/api/user/test")
+								.permitAll()
+				)
+
+				.authorizeExchange(req ->
+						req.anyExchange()
+								.authenticated())
+				.oauth2Login(Customizer.withDefaults())
+				.logout(logout -> logout.logoutSuccessHandler(handler));
 		return http.build();
 	}
 
