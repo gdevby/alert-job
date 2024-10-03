@@ -10,9 +10,7 @@ import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.PROXY_CLIENT;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
@@ -66,35 +64,50 @@ public class OrderParserController {
 	private final MeterRegistry meterRegistry;
 
 	@GetMapping("/stream-orders")
-	public List<OrderDTO> ordersEvents() {
+	public Flux<List<OrderDTO>> flruEvents() {
 		log.trace("subscribed on orders");
+		Flux<List<OrderDTO>> flruFlux = Flux.just(fl.flruParser()).doOnNext(s -> {
+			int size = s.size();
+			context.getBean(COUNTER_FLRU, Counter.class).increment(size);
+		});
 
-		List<OrderDTO> flList = fl.flruParser();
-		context.getBean(COUNTER_FLRU, Counter.class).increment(flList.size());
+		Flux<List<OrderDTO>> hubrFlux = Flux.just(hubr.hubrParser()).doOnNext(s -> {
+			int size = s.size();
+			context.getBean(COUNTER_HUBR, Counter.class).increment(size);
+		});
 
-		List<OrderDTO> hubrList = hubr.hubrParser();
-		context.getBean(COUNTER_HUBR, Counter.class).increment(hubrList.size());
+		Flux<List<OrderDTO>> freelanceRuFlux = Flux.just(freelanceRuOrderParser.getOrders()).doOnNext(s -> {
+			int size = s.size();
+			context.getBean(COUNTER_FREELANCERU, Counter.class).increment(size);
+		});
 
-		List<OrderDTO> freelanceRuList = freelanceRuOrderParser.getOrders();
-		context.getBean(COUNTER_FREELANCERU, Counter.class).increment(freelanceRuList.size());
+		Flux<List<OrderDTO>> weblancerFlux = Flux.just(weblancerOrderParcer.weblancerParser()).doOnNext(s -> {
+			int size = s.size();
+			context.getBean(COUNTER_WEBLANCER, Counter.class).increment(size);
+		});
+		Flux<List<OrderDTO>> freelancehuntOrderParcerFlux = Flux.just(freelancehuntOrderParcer.freelancehuntParser())
+				.doOnNext(s -> {
+					int size = s.size();
+					context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(size);
+				});
 
-		List<OrderDTO> weblancerList = weblancerOrderParcer.weblancerParser();
-		context.getBean(COUNTER_WEBLANCER, Counter.class).increment(weblancerList.size());
+		Flux<List<OrderDTO>> youDoOrderParcerFlux = Flux.just(youDoOrderParcer.youDoParser()).doOnNext(s -> {
+			int size = s.size();
+			context.getBean(COUNTER_YOUDO, Counter.class).increment(size);
+		});
 
-		List<OrderDTO> freelancehuntList = freelancehuntOrderParcer.freelancehuntParser();
-		context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(freelancehuntList.size());
+		Flux<List<OrderDTO>> kworkOrderParcerFlux = Flux.just(kworkOrderParcer.kworkParser()).doOnNext(s -> {
+			int size = s.size();
+			context.getBean(COUNTER_KWORK, Counter.class).increment(size);
+		});
 
-		List<OrderDTO> youDoList = youDoOrderParcer.youDoParser();
-		context.getBean(COUNTER_YOUDO, Counter.class).increment(youDoList.size());
-
-		List<OrderDTO> kworkList = kworkOrderParcer.kworkParser();
-		context.getBean(COUNTER_KWORK, Counter.class).increment(kworkList.size());
-
-		List<OrderDTO> freelancerList = freelancerOrderParcer.freelancerParser();
-		context.getBean(COUNTER_FREELANCER, Counter.class).increment(freelancerList.size());
-
-		return Stream.of(flList, hubrList, freelanceRuList, weblancerList, freelancehuntList, youDoList, kworkList,
-				freelancerList).flatMap(Collection::stream).toList();
+		Flux<List<OrderDTO>> freelancerOrderParcerFlux = Flux.just(freelancerOrderParcer.freelancerParser())
+				.doOnNext(s -> {
+					int size = s.size();
+					context.getBean(COUNTER_FREELANCER, Counter.class).increment(size);
+				});
+		return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux, freelancehuntOrderParcerFlux,
+				youDoOrderParcerFlux, kworkOrderParcerFlux, freelancerOrderParcerFlux);
 	}
 
 	@GetMapping("sites")

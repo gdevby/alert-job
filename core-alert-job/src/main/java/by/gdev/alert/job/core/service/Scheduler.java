@@ -29,6 +29,7 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -53,9 +54,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	public void sseConnection() {
 		ParameterizedTypeReference<List<OrderDTO>> type = new ParameterizedTypeReference<List<OrderDTO>>() {
 		};
-		Mono<List<OrderDTO>> conection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
-				.bodyToMono(type).doOnSubscribe(s -> log.info("send request for new orders"));
-		conection.subscribe(event -> {
+		Flux<List<OrderDTO>> sseConection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
+				.bodyToFlux(type).doOnSubscribe(s -> log.info("send request for new orders"));
+		sseConection.subscribe(event -> {
 			try {
 				log.trace("got elements size {}", event.size());
 				Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
@@ -64,6 +65,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 				log.error("problem with subscribe", ex);
 			}
 		}, error -> log.warn("failed to get orders from parser {}", error));
+
 	}
 
 	private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
