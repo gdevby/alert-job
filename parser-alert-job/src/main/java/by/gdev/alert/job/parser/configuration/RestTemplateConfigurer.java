@@ -2,21 +2,22 @@ package by.gdev.alert.job.parser.configuration;
 
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.core5.http.HttpHost;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class RestTemplateConfigurer {
@@ -32,46 +33,54 @@ public class RestTemplateConfigurer {
     public RestTemplate getRestTemplateWithProxy(){
         ProxyCredentials proxyCredentials = proxySupplier.get();
 
-        CredentialsProvider credsProvider = getCredentialsProvider(proxyCredentials);
         HttpHost myProxy = new HttpHost(proxyCredentials.getHost(), proxyCredentials.getPort());
+        CredentialsProvider credsProvider = getCredentialsProvider(proxyCredentials);
 
-        HttpClient httpClient = createHttpClient(myProxy, credsProvider);
+        HttpClient httpClient = getHttpClient(myProxy, credsProvider);
 
-        HttpComponentsClientHttpRequestFactory requestFactory = getRequestFactory();
-        requestFactory.setHttpClient(httpClient);
+        return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
 
-
-        return new RestTemplate(requestFactory);
     }
 
-    private CredentialsProvider getCredentialsProvider(ProxyCredentials proxyCredentials){
-        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+    public RestTemplate getRestTemplate(){
+        HttpClient httpClient = getHttpClient();
+        return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
+    }
+
+    private BasicCredentialsProvider getCredentialsProvider(ProxyCredentials proxyCredentials){
+        BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(new AuthScope(proxyCredentials.getHost(), proxyCredentials.getPort()),
-                                    new UsernamePasswordCredentials(proxyCredentials.getUsername(), proxyCredentials.getPassword()));
+                new UsernamePasswordCredentials(proxyCredentials.getUsername(), proxyCredentials.getPassword().toCharArray()));
 
         return credsProvider;
     }
 
-    private CloseableHttpClient createHttpClient(HttpHost myProxy, CredentialsProvider credsProvider) {
-        return HttpClientBuilder
-                .create()
+    private HttpClient getHttpClient(HttpHost myProxy, CredentialsProvider credsProvider) {
+        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+
+        return HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+                        .setResponseTimeout(socketTimeout, TimeUnit.MILLISECONDS)
+                        .build())
                 .setProxy(myProxy)
                 .setDefaultCredentialsProvider(credsProvider)
-                .disableCookieManagement()
                 .build();
     }
 
-    private HttpComponentsClientHttpRequestFactory getRequestFactory() {
-        HttpComponentsClientHttpRequestFactory clientRequestFactory = new HttpComponentsClientHttpRequestFactory();
+    private HttpClient getHttpClient() {
+        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
 
-        clientRequestFactory.setConnectTimeout(connectTimeout);
-        clientRequestFactory.setReadTimeout(socketTimeout);
-
-        return clientRequestFactory;
+        return HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+                        .setResponseTimeout(socketTimeout, TimeUnit.MILLISECONDS)
+                        .build())
+                .build();
     }
 
-    public RestTemplate getRestTemplate(){
-        return new RestTemplate(getRequestFactory());
-    }
-    
+
+
 }
