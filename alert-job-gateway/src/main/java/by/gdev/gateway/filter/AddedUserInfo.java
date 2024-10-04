@@ -58,11 +58,11 @@ public class AddedUserInfo implements GlobalFilter {
 
 					Object principal = authentication.getPrincipal();
 					DefaultOidcUser user = (DefaultOidcUser) principal;
-					filterUtils.setRequestHeader(exchange, HeaderName.USERNAME_HEADER, user.getUserInfo().getGivenName());
-					filterUtils.setRequestHeader(exchange, HeaderName.UUID_USER_HEADER, user.getUserInfo().getSubject());
-					filterUtils.setRequestHeader(exchange, HeaderName.EMAIL_USER_HEADER, user.getUserInfo().getEmail());
+					ServerWebExchange exchange1 = filterUtils.setRequestHeader(exchange, HeaderName.USERNAME_HEADER, user.getUserInfo().getPreferredUsername());
+					exchange1 = filterUtils.setRequestHeader(exchange1, HeaderName.UUID_USER_HEADER, user.getUserInfo().getSubject());
+					exchange1 = filterUtils.setRequestHeader(exchange1, HeaderName.EMAIL_USER_HEADER, user.getUserInfo().getEmail());
 
-					return chain.filter(exchange);
+					return chain.filter(exchange1);
 				});
 
 		return  monoFilter;
