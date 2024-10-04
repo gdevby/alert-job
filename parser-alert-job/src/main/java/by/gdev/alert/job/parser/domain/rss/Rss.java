@@ -1,6 +1,6 @@
 package by.gdev.alert.job.parser.domain.rss;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import lombok.Data;
 

@@ -2,8 +2,8 @@ package by.gdev.alert.job.core.model.db;
 
 import java.util.Set;
 
-import javax.persistence.Entity;
-import javax.persistence.OneToMany;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

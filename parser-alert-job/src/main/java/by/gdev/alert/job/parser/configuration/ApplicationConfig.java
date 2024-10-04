@@ -6,13 +6,15 @@ import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.core5.http.HttpHost;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +33,7 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.concurrent.TimeUnit;
 
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
@@ -47,7 +49,6 @@ import static by.gdev.alert.job.parser.util.ParserStringUtils.PROXY_CLIENT;
 @Configuration
 @EnableScheduling
 @Slf4j
-
 public class ApplicationConfig {
 
 	@Value("${proxy.host}")
@@ -58,6 +59,11 @@ public class ApplicationConfig {
 	private String proxyUsername;
 	@Value("${proxy.password}")
 	private String proxyPassword;
+
+	@Value("${request.timeout.socket}")
+	private int socketTimeout;
+	@Value("${request.timeout.connect}")
+	private int connectTimeout;
 
 	@Autowired
 	private ApplicationContext context;
@@ -95,16 +101,29 @@ public class ApplicationConfig {
 			log.warn("proxy host is empty, it means that FreelancehuntOrderParcer should work without proxy.");
 			return new RestTemplate();
 		}
-		CredentialsProvider credsProvider = new BasicCredentialsProvider();
-		credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort),
-				new UsernamePasswordCredentials(proxyUsername, proxyPassword));
 		HttpHost myProxy = new HttpHost(proxyHost, proxyPort);
-		HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-		clientBuilder.setProxy(myProxy).setDefaultCredentialsProvider(credsProvider).disableCookieManagement();
-		HttpClient httpClient = clientBuilder.build();
-		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
-		factory.setHttpClient(httpClient);
-		return new RestTemplate(factory);
+		BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+		credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort),
+				new UsernamePasswordCredentials(proxyUsername, proxyPassword.toCharArray()));
+
+		HttpClient httpClient = getHttpClient(myProxy, credsProvider);
+
+		return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
+	}
+
+
+	private HttpClient getHttpClient(HttpHost myProxy, CredentialsProvider credsProvider) {
+		PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+
+		return HttpClients.custom()
+				.setConnectionManager(connectionManager)
+				.setDefaultRequestConfig(RequestConfig.custom()
+						.setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+						.setResponseTimeout(socketTimeout, TimeUnit.MILLISECONDS)
+						.build())
+				.setProxy(myProxy)
+				.setDefaultCredentialsProvider(credsProvider)
+				.build();
 	}
 
 	@PostConstruct

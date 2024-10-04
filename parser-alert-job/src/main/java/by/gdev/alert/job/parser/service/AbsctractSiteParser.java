@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import javax.xml.bind.UnmarshalException;
+import jakarta.xml.bind.UnmarshalException;
 
 import by.gdev.alert.job.parser.configuration.RestTemplateConfigurer;
 import org.springframework.beans.factory.annotation.Autowired;

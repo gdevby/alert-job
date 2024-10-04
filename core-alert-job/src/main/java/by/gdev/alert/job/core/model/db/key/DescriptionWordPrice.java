@@ -1,6 +1,6 @@
 package by.gdev.alert.job.core.model.db.key;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
