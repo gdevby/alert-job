@@ -29,7 +29,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.common.collect.Lists;
 
@@ -61,7 +60,6 @@ public class ParserCategories {
     private String freelanceRuRssFeedSubcategories = "https://freelance.ru/rss/feed/list/s.%s.f.%s";
     private String freelancerCategory = "https://www.freelancer.com/api/projects/0.1/jobs/search";
 
-    private final WebClient webClient;
     private RestTemplate restTemplate;
 
     private final RestTemplateConfigurer restTemplateConfigurer;
@@ -138,22 +136,28 @@ public class ParserCategories {
 
     private Map<ParsedCategory, List<ParsedCategory>> getSiteCategoriesFL() {
         Map<ParsedCategory, List<ParsedCategory>> map = new HashMap<>();
-        webClient.get().uri(categoriesLinkFl).accept(org.springframework.http.MediaType.APPLICATION_JSON).retrieve()
-                .bodyToMono(FlCategories.class).block().items().stream().forEach(e -> {
-                    ParsedCategory c = new ParsedCategory(e.name_en(), e.name(), e.id(), String.format(flRss, e.id()));
-                    log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
-                    List<ParsedCategory> listSubcat = new ArrayList<>();
-                    map.put(c, listSubcat);
-                    webClient.get().uri(String.format(subcategoriesLink, e.id()))
-                            .accept(org.springframework.http.MediaType.APPLICATION_JSON).retrieve()
-                            .bodyToMono(FlCategories.class).block().items().forEach(ee -> {
-                                ParsedCategory pc = new ParsedCategory(ee.name_en(), ee.name(), ee.id(),
-                                        String.format(flRssWithSubcategory, ee.id(), c.id()));
-                                listSubcat.add(pc);
-                                log.debug("		found subcategory {} {} {} ", pc.id(), pc.translatedName, pc.rss());
-                            });
-                    log.debug("			subcategory size {}", listSubcat.size());
-                });
+
+        restTemplate = restTemplateConfigurer.getRestTemplate();
+
+        FlCategories flCategories = restTemplate.getForObject(categoriesLinkFl, FlCategories.class);
+        flCategories.items().stream()
+                        .forEach(parsedCategory -> {
+                            ParsedCategory c = new ParsedCategory(parsedCategory.name_en(), parsedCategory.name(), parsedCategory.id(), String.format(flRss, parsedCategory.id()));
+                            log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
+                            List<ParsedCategory> listSubcat = new ArrayList<>();
+                            map.put(c, listSubcat);
+
+                            FlCategories flCategories1 = restTemplate.getForObject(String.format(subcategoriesLink, parsedCategory.id()), FlCategories.class);
+                            flCategories1.items().stream()
+                                            .forEach(ee -> {
+                                                ParsedCategory pc = new ParsedCategory(ee.name_en(), ee.name(), ee.id(),
+                                                        String.format(flRssWithSubcategory, ee.id(), c.id()));
+                                                listSubcat.add(pc);
+                                                log.debug("found subcategory {} {} {} ", pc.id(), pc.translatedName, pc.rss());
+                                            });
+
+                            log.debug("subcategory size {}", listSubcat.size());
+                        });
         return map;
     }
 
