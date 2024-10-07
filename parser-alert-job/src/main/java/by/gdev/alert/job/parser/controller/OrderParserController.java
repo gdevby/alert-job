@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -51,7 +50,7 @@ public class OrderParserController {
 	public final YouDoOrderParcer youDoOrderParcer;
 	public final FreelancerOrderParser freelancerOrderParcer;
 	public final KworkOrderParcer kworkOrderParcer;
-	public final ParserService service;
+	public final ParserService parserService;
 
 	private final ApplicationContext context;
 
@@ -103,47 +102,47 @@ public class OrderParserController {
 	}
 
 	@GetMapping("sites")
-	public Flux<SiteSourceDTO> sites() {
-		return service.getSites();
+	public List<SiteSourceDTO>  sites() {
+		return parserService.getSites();
 	}
 
 	@GetMapping("categories")
-	public Flux<CategoryDTO> categories(@RequestParam("site_id") Long site) {
-		return service.getCategories(site);
+	public List<CategoryDTO> categories(@RequestParam("site_id") Long site) {
+		return parserService.getCategories(site);
 	}
 
 	@GetMapping("subcategories")
-	public Flux<SubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
-		return service.getSubCategories(category);
+	public List<SubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
+		return parserService.getSubCategories(category);
 	}
 
 	@GetMapping("site/{id}")
-	public Mono<SiteSourceDTO> site(@PathVariable("id") Long id) {
-		return service.getSite(id);
+	public SiteSourceDTO  site(@PathVariable("id") Long id) {
+		return parserService.getSite(id);
 	}
 
 	@GetMapping("site/{id}/category/{category_id}")
-	public Mono<CategoryDTO> category(@PathVariable("id") Long id, @PathVariable("category_id") Long cId) {
-		return service.getCategory(id, cId);
+	public CategoryDTO category(@PathVariable("id") Long id, @PathVariable("category_id") Long cId) {
+		return parserService.getCategory(id, cId);
 	}
 
 	@GetMapping("category/{id}/subcategory/{sub_id}")
-	public Mono<SubCategoryDTO> subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
-		return service.getSubCategory(id, subId);
+	public SubCategoryDTO subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
+		return parserService.getSubCategory(id, subId);
 	}
 
 	@PatchMapping("subscribe/sources")
-	public Mono<Void> subscribeSources(@RequestParam("category_id") Long categoryId,
+	public void subscribeSources(@RequestParam("category_id") Long categoryId,
 			@RequestParam(name = "subcategory_id", required = false) Long subCategoryId,
 			@RequestParam("category_value") boolean cValue,
 			@RequestParam(name = "subcategory_value", required = false) boolean sValue) {
-		return service.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
+		parserService.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
 	}
 
 	@GetMapping("orders")
-	public Flux<OrderDTO> showOrdersBySource(@RequestParam("site_id") Long site,
+	public List<OrderDTO> showOrdersBySource(@RequestParam("site_id") Long site,
 			@RequestParam("category_id") Long category, @RequestParam(name = "sub_id", required = false) Long subId,
 			@RequestParam("period") Long period) {
-		return service.getOrdersBySource(site, category, subId, period);
+		return parserService.getOrdersBySource(site, category, subId, period);
 	}
 }
