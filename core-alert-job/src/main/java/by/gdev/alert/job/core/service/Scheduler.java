@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
+public class Scheduler {
 
 	private final WebClient webClient;
 	private final StatisticService statisticService;
@@ -44,11 +44,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private final DelayOrderNotificationRepository delayOrderRepository;
 
 	private final ApplicationProperty property;
-
-	@Override
-	public void onApplicationEvent(ContextRefreshedEvent event) {
-		sseConnection();
-	}
 
 	@Scheduled(fixedRate = 300000)
 	public void sseConnection() {
