@@ -54,7 +54,6 @@ public class KworkOrderParcer extends AbsctractSiteParser {
 	private RestTemplate restTemplate;
 	private final ModelMapper mapper;
 	private final ObjectMapper objectMapper;
-	private final RestTemplateConfigurer restTemplateConfigurer;
 
 
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");

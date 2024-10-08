@@ -1,9 +1,7 @@
 package by.gdev.alert.job.parser.configuration;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.epoll.EpollChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -24,16 +22,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.http.codec.xml.Jaxb2XmlDecoder;
-import org.springframework.http.codec.xml.Jaxb2XmlEncoder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.reactive.function.client.ExchangeStrategies;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.DefaultUriBuilderFactory;
 
-import jakarta.annotation.PostConstruct;
 import java.util.concurrent.TimeUnit;
 
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
@@ -69,26 +60,6 @@ public class ApplicationConfig {
 	private ApplicationContext context;
 	@Autowired
 	private MeterRegistry meterRegistry;
-
-	@Bean
-	public WebClient createWebClient() {
-		reactor.netty.http.client.HttpClient httpClient = reactor.netty.http.client.HttpClient.create()
-				.followRedirect(true)
-				.doOnConnected(con -> con.addHandlerFirst(new ReadTimeoutHandler(60, TimeUnit.SECONDS)))
-				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 60000).option(ChannelOption.SO_KEEPALIVE, true)
-				.option(EpollChannelOption.TCP_KEEPIDLE, 300).option(EpollChannelOption.TCP_KEEPINTVL, 60)
-				.option(EpollChannelOption.TCP_KEEPCNT, 8);
-
-		ReactorClientHttpConnector conn = new ReactorClientHttpConnector(httpClient);
-		DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(); // Here comes your base url
-		factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
-		return WebClient.builder().uriBuilderFactory(factory)
-				.exchangeStrategies(ExchangeStrategies.builder().codecs(codecs -> {
-					codecs.defaultCodecs().maxInMemorySize(10 * 1024 * 1024 * 1024);
-					codecs.defaultCodecs().jaxb2Encoder(new Jaxb2XmlEncoder());
-					codecs.defaultCodecs().jaxb2Decoder(new Jaxb2XmlDecoder());
-				}).build()).clientConnector(conn).build();
-	}
 
 	@Bean
 	public ModelMapper createModelMapper() {

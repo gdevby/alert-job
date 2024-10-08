@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
+public class Scheduler {
 
 	private final WebClient webClient;
 	private final StatisticService statisticService;
@@ -45,17 +45,12 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 
 	private final ApplicationProperty property;
 
-	@Override
-	public void onApplicationEvent(ContextRefreshedEvent event) {
-		sseConnection();
-	}
-
 	@Scheduled(fixedRate = 300000)
 	public void sseConnection() {
 		ParameterizedTypeReference<List<OrderDTO>> type = new ParameterizedTypeReference<List<OrderDTO>>() {
 		};
-		Flux<List<OrderDTO>> sseConection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
-				.bodyToFlux(type).doOnSubscribe(s -> log.info("send request for new orders"));
+		Mono<List<OrderDTO>> sseConection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
+				.bodyToMono(type).doOnSubscribe(s -> log.info("send request for new orders"));
 		sseConection.subscribe(event -> {
 			try {
 				log.trace("got elements size {}", event.size());

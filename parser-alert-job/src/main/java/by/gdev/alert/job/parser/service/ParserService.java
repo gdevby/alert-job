@@ -1,15 +1,9 @@
 package by.gdev.alert.job.parser.service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.Objects;
-
-import org.modelmapper.ModelMapper;
-import org.springframework.stereotype.Service;
-
 import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.OrderLinks;
+import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
@@ -25,8 +19,16 @@ import by.gdev.common.model.SubCategoryDTO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 @Data
 @Service
@@ -42,21 +44,30 @@ public class ParserService {
 
 	private final ModelMapper mapper;
 
-	public Flux<SiteSourceDTO> getSites() {
-		return Flux.fromIterable(siteSourceJobRepository.findAllByActiveTrue())
-				.map(e -> mapper.map(e, SiteSourceDTO.class));
+	public List<SiteSourceDTO>  getSites() {
+		return siteSourceJobRepository.findAllByActiveTrue().stream()
+				.map(el -> mapper.map(el, SiteSourceDTO.class))
+				.toList();
 	}
 
-	public Flux<CategoryDTO> getCategories(Long id) {
-		return Flux.fromIterable(categoryRepository.findAllBySourceIdAndSourceActive(id))
-				.map(e -> mapper.map(e, CategoryDTO.class))
-				.switchIfEmpty(Flux.error(new ResourceNotFoundException("not found category with source id " + id)));
+	public List<CategoryDTO> getCategories(Long id) {
+		List<CategoryDTO> list = categoryRepository.findAllBySourceIdAndSourceActive(id).stream()
+				.map(el -> mapper.map(el, CategoryDTO.class))
+				.toList();
+		if (list.isEmpty()) {
+			throw new ResourceNotFoundException("not found category with source id " + id);
+		}
+		return list;
 	}
 
-	public Flux<SubCategoryDTO> getSubCategories(Long category) {
-		return Flux.fromIterable(subCategoryRepository.findAllByCategoryId(category))
-				.map(e -> mapper.map(e, SubCategoryDTO.class)).switchIfEmpty(Flux
-						.error(new ResourceNotFoundException("not found sub category with category id " + category)));
+	public List<SubCategoryDTO> getSubCategories(Long category) {
+		List<SubCategoryDTO> list = subCategoryRepository.findAllByCategoryId(category).stream()
+				.map(el -> mapper.map(el, SubCategoryDTO.class))
+				.toList();
+		if (list.isEmpty()) {
+			throw new ResourceNotFoundException("not found sub category with category id " + category);
+		}
+		return list;
 	}
 
 	public boolean isExistsOrder(Category category, Subcategory subCategory, String link) {
@@ -71,71 +82,77 @@ public class ParserService {
 		linkRepository.save(ol);
 	}
 
-	public Mono<SiteSourceDTO> getSite(Long id) {
-		return Mono.justOrEmpty(siteSourceJobRepository.findById(id)).map(e -> mapper.map(e, SiteSourceDTO.class))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException("not found site with id " + id)));
+	public SiteSourceDTO getSite(Long id) {
+		Optional<SiteSourceJob> byId = siteSourceJobRepository.findById(id);
+		SiteSourceJob siteSourceJob = byId.orElseThrow(() -> new ResourceNotFoundException("not found site with id " + id));
+		return mapper.map(siteSourceJob, SiteSourceDTO.class);
 	}
 
-	public Mono<CategoryDTO> getCategory(Long id, Long cId) {
-		return Mono.justOrEmpty(categoryRepository.findByIdAndSourceId(cId, id))
-				.map(e -> mapper.map(e, CategoryDTO.class)).switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found category by category %s and source %s", cId, id))));
+	public CategoryDTO getCategory(Long id, Long cId) {
+		Optional<Category> byIdAndSourceId = categoryRepository.findByIdAndSourceId(cId, id);
+		Category category = byIdAndSourceId.orElseThrow(() ->
+				new ResourceNotFoundException(String.format("not found category by category %s and source %s", cId, id)));
+		return mapper.map(category, CategoryDTO.class);
 	}
 
-	public Mono<SubCategoryDTO> getSubCategory(Long cId, Long sId) {
-		return Mono.justOrEmpty(subCategoryRepository.findByIdAndCategoryId(sId, cId))
-				.map(e -> mapper.map(e, SubCategoryDTO.class)).switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found sub category by sub category %s and category %s", sId, cId))));
+	public SubCategoryDTO getSubCategory(Long cId, Long sId) {
+		Optional<Subcategory> byIdAndCategoryId = subCategoryRepository.findByIdAndCategoryId(sId, cId);
+		Subcategory subcategory = byIdAndCategoryId.orElseThrow(() ->
+				new ResourceNotFoundException(String.format("not found sub category by sub category %s and category %s", sId, cId)));
+
+		return mapper.map(subcategory, SubCategoryDTO.class);
 	}
 
-	public Mono<Void> subcribeOnSource(Long categoryId, Long subCategoryId, boolean cValue, boolean sValue) {
-		return Mono.create(m -> {
-			Category c = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException());
-			c.setParse(cValue);
-			categoryRepository.save(c);
-			if (Objects.nonNull(subCategoryId)) {
-				Subcategory s = subCategoryRepository.findById(subCategoryId)
-						.orElseThrow(() -> new ResourceNotFoundException());
-				s.setParse(sValue);
-				subCategoryRepository.save(s);
-			}
-			log.trace("changed parser value {} {}, {} {}", categoryId, cValue, subCategoryId, sValue);
-			m.success();
-		});
+	public void subcribeOnSource(Long categoryId, Long subCategoryId, boolean cValue, boolean sValue) {
+		Category c = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException());
+		c.setParse(cValue);
+		categoryRepository.save(c);
+		if (Objects.nonNull(subCategoryId)) {
+			Subcategory s = subCategoryRepository.findById(subCategoryId)
+					.orElseThrow(() -> new ResourceNotFoundException());
+			s.setParse(sValue);
+			subCategoryRepository.save(s);
+		}
+		log.trace("changed parser value {} {}, {} {}", categoryId, cValue, subCategoryId, sValue);
 	}
 
-	public Flux<OrderDTO> getOrdersBySource(Long source, Long category, Long subcategory, Long period) {
-		return Flux.defer(() -> {
-			LocalDateTime ldt = LocalDateTime.now().minusDays(period);
-			Date date = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-			return Flux
-					.fromIterable(Objects.isNull(subcategory)
-							? orderRepository.findAllBySourceSubCategoryIsNullOneEagerTechnologies(source, category,
-									date)
-							: orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory, date))
-					.map(e -> {
-						OrderDTO dto = mapper.map(e, OrderDTO.class);
-						SourceSiteDTO s = dto.getSourceSite();
+	public List<OrderDTO> getOrdersBySource(Long source, Long category, Long subcategory, Long period) {
 
-						String sourceName = siteSourceJobRepository.findById(s.getSource()).orElseThrow(
-								() -> new ResourceNotFoundException("don't found by source id " + s.getSource()))
-								.getName();
-						s.setSourceName(sourceName);
-						String categoryName = categoryRepository.findById(s.getCategory()).orElseThrow(
-								() -> new ResourceNotFoundException("don't found by category id " + s.getCategory()))
+		LocalDateTime ldt = LocalDateTime.now().minusDays(period);
+		Date date = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+		Set<Order> orders;
+		if (Objects.isNull(subcategory)) {
+			orders = orderRepository.findAllBySourceSubCategoryIsNullOneEagerTechnologies(source, category, date);
+		}else {
+			orders = orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory, date);
+		}
+
+		List<OrderDTO> list = orders.stream()
+				.map(order -> {
+					OrderDTO dto = mapper.map(order, OrderDTO.class);
+					SourceSiteDTO s = dto.getSourceSite();
+
+					String sourceName = siteSourceJobRepository.findById(s.getSource())
+							.orElseThrow(() -> new ResourceNotFoundException("don't found by source id " + s.getSource()))
+							.getName();
+					s.setSourceName(sourceName);
+
+					String categoryName = categoryRepository.findById(s.getCategory())
+							.orElseThrow(() -> new ResourceNotFoundException("don't found by category id " + s.getCategory()))
+							.getNativeLocName();
+					s.setCategoryName(categoryName);
+
+					if (Objects.nonNull(s.getSubCategory())) {
+						String subCategoryName = subCategoryRepository.findById(s.getSubCategory())
+								.orElseThrow(() -> new ResourceNotFoundException("don't found by subcategory id " + s.getSubCategory()))
 								.getNativeLocName();
-						s.setCategoryName(categoryName);
+						s.setSubCategoryName(subCategoryName);
+					}
+					dto.setSourceSite(s);
+					return dto;
+				})
+				.toList();
 
-						if (Objects.nonNull(s.getSubCategory())) {
-							String subCategoryName = subCategoryRepository.findById(s.getSubCategory())
-									.orElseThrow(() -> new ResourceNotFoundException(
-											"don't found by subcategory id " + s.getSubCategory()))
-									.getNativeLocName();
-							s.setSubCategoryName(subCategoryName);
-						}
-						dto.setSourceSite(s);
-						return dto;
-					});
-		});
+		return list;
 	}
 }

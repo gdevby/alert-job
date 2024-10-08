@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUNT;
@@ -51,99 +51,108 @@ public class OrderParserController {
 	public final YouDoOrderParcer youDoOrderParcer;
 	public final FreelancerOrderParser freelancerOrderParcer;
 	public final KworkOrderParcer kworkOrderParcer;
-	public final ParserService service;
+	public final ParserService parserService;
 
 	private final ApplicationContext context;
 
 	@GetMapping("/stream-orders")
-	public Flux<List<OrderDTO>> flruEvents() {
+	public List<OrderDTO> ordersEvents() {
 		log.trace("subscribed on orders");
-		Flux<List<OrderDTO>> flruFlux = Flux.just(fl.flruParser()).doOnNext(s -> {
-			int size = s.size();
-			context.getBean(COUNTER_FLRU, Counter.class).increment(size);
-		});
 
-		Flux<List<OrderDTO>> hubrFlux = Flux.just(hubr.hubrParser()).doOnNext(s -> {
-			int size = s.size();
-			context.getBean(COUNTER_HUBR, Counter.class).increment(size);
-		});
+		List<CompletableFuture<List<OrderDTO>>> futures = List.of(
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = fl.flruParser();
+					context.getBean(COUNTER_FLRU, Counter.class).increment(list.size());
+					return list;
+				}),
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = hubr.hubrParser();
+					context.getBean(COUNTER_HUBR, Counter.class).increment(list.size());
+					return list;
+				}),
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = freelanceRuOrderParser.getOrders();
+					context.getBean(COUNTER_FREELANCERU, Counter.class).increment(list.size());
+					return list;
+				}),
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = weblancerOrderParcer.weblancerParser();
+					context.getBean(COUNTER_WEBLANCER, Counter.class).increment(list.size());
+					return list;
+				}),
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = freelancehuntOrderParcer.freelancehuntParser();
+					context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(list.size());
+					return list;
+				}),
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = youDoOrderParcer.youDoParser();
+					context.getBean(COUNTER_YOUDO, Counter.class).increment(list.size());
+					return list;
+				}),
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = kworkOrderParcer.kworkParser();
+					context.getBean(COUNTER_KWORK, Counter.class).increment(list.size());
+					return list;
+				}),
+				CompletableFuture.supplyAsync(() -> {
+					List<OrderDTO> list = freelancerOrderParcer.freelancerParser();
+					context.getBean(COUNTER_FREELANCER, Counter.class).increment(list.size());
+					return list;
+				})
+		);
 
-		Flux<List<OrderDTO>> freelanceRuFlux = Flux.just(freelanceRuOrderParser.getOrders()).doOnNext(s -> {
-			int size = s.size();
-			context.getBean(COUNTER_FREELANCERU, Counter.class).increment(size);
-		});
+		List<OrderDTO> allOrders = futures.stream()
+				.map(CompletableFuture::join)
+				.flatMap(Collection::stream)
+				.toList();
 
-		Flux<List<OrderDTO>> weblancerFlux = Flux.just(weblancerOrderParcer.weblancerParser()).doOnNext(s -> {
-			int size = s.size();
-			context.getBean(COUNTER_WEBLANCER, Counter.class).increment(size);
-		});
-		Flux<List<OrderDTO>> freelancehuntOrderParcerFlux = Flux.just(freelancehuntOrderParcer.freelancehuntParser())
-				.doOnNext(s -> {
-					int size = s.size();
-					context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(size);
-				});
-
-		Flux<List<OrderDTO>> youDoOrderParcerFlux = Flux.just(youDoOrderParcer.youDoParser()).doOnNext(s -> {
-			int size = s.size();
-			context.getBean(COUNTER_YOUDO, Counter.class).increment(size);
-		});
-
-		Flux<List<OrderDTO>> kworkOrderParcerFlux = Flux.just(kworkOrderParcer.kworkParser()).doOnNext(s -> {
-			int size = s.size();
-			context.getBean(COUNTER_KWORK, Counter.class).increment(size);
-		});
-
-		Flux<List<OrderDTO>> freelancerOrderParcerFlux = Flux.just(freelancerOrderParcer.freelancerParser())
-				.doOnNext(s -> {
-					int size = s.size();
-					context.getBean(COUNTER_FREELANCER, Counter.class).increment(size);
-				});
-		return Flux.merge(flruFlux, hubrFlux, freelanceRuFlux, weblancerFlux, freelancehuntOrderParcerFlux,
-				youDoOrderParcerFlux, kworkOrderParcerFlux, freelancerOrderParcerFlux);
+		return allOrders;
 	}
 
+
 	@GetMapping("sites")
-	public Flux<SiteSourceDTO> sites() {
-		return service.getSites();
+	public List<SiteSourceDTO>  sites() {
+		return parserService.getSites();
 	}
 
 	@GetMapping("categories")
-	public Flux<CategoryDTO> categories(@RequestParam("site_id") Long site) {
-		return service.getCategories(site);
+	public List<CategoryDTO> categories(@RequestParam("site_id") Long site) {
+		return parserService.getCategories(site);
 	}
 
 	@GetMapping("subcategories")
-	public Flux<SubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
-		return service.getSubCategories(category);
+	public List<SubCategoryDTO> subCategories(@RequestParam("category_id") Long category) {
+		return parserService.getSubCategories(category);
 	}
 
 	@GetMapping("site/{id}")
-	public Mono<SiteSourceDTO> site(@PathVariable("id") Long id) {
-		return service.getSite(id);
+	public SiteSourceDTO  site(@PathVariable("id") Long id) {
+		return parserService.getSite(id);
 	}
 
 	@GetMapping("site/{id}/category/{category_id}")
-	public Mono<CategoryDTO> category(@PathVariable("id") Long id, @PathVariable("category_id") Long cId) {
-		return service.getCategory(id, cId);
+	public CategoryDTO category(@PathVariable("id") Long id, @PathVariable("category_id") Long cId) {
+		return parserService.getCategory(id, cId);
 	}
 
 	@GetMapping("category/{id}/subcategory/{sub_id}")
-	public Mono<SubCategoryDTO> subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
-		return service.getSubCategory(id, subId);
+	public SubCategoryDTO subCategory(@PathVariable("id") Long id, @PathVariable("sub_id") Long subId) {
+		return parserService.getSubCategory(id, subId);
 	}
 
 	@PatchMapping("subscribe/sources")
-	public Mono<Void> subscribeSources(@RequestParam("category_id") Long categoryId,
+	public void subscribeSources(@RequestParam("category_id") Long categoryId,
 			@RequestParam(name = "subcategory_id", required = false) Long subCategoryId,
 			@RequestParam("category_value") boolean cValue,
 			@RequestParam(name = "subcategory_value", required = false) boolean sValue) {
-		return service.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
+		parserService.subcribeOnSource(categoryId, subCategoryId, cValue, sValue);
 	}
 
 	@GetMapping("orders")
-	public Flux<OrderDTO> showOrdersBySource(@RequestParam("site_id") Long site,
+	public List<OrderDTO> showOrdersBySource(@RequestParam("site_id") Long site,
 			@RequestParam("category_id") Long category, @RequestParam(name = "sub_id", required = false) Long subId,
 			@RequestParam("period") Long period) {
-		return service.getOrdersBySource(site, category, subId, period);
+		return parserService.getOrdersBySource(site, category, subId, period);
 	}
 }
