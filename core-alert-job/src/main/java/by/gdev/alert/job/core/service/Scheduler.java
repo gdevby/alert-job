@@ -44,20 +44,19 @@ public class Scheduler {
 
 	@Scheduled(fixedRate = 300000)
 	public void sseConnection() {
+		log.trace("send request for parsing");
 		ParameterizedTypeReference<List<OrderDTO>> type = new ParameterizedTypeReference<List<OrderDTO>>() {
 		};
-		Mono<List<OrderDTO>> sseConection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
-				.bodyToMono(type).doOnSubscribe(s -> log.info("send request for new orders"));
-		sseConection.subscribe(event -> {
-			try {
-				log.trace("got elements size {}", event.size());
-				Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
-				forEachOrders(users, event);
-				log.trace("finished process elements {}", event.size());
-			} catch (Throwable ex) {
-				log.error("problem with subscribe", ex);
-			}
-		}, error -> log.warn("failed to get orders from parser {}", error));
+		List<OrderDTO> sseConection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
+				.bodyToMono(type).block();
+		try {
+			log.trace("got elements size {}", sseConection.size());
+			Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
+			forEachOrders(users, sseConection);
+			log.trace("finished process elements {}", sseConection.size());
+		} catch (Throwable ex) {
+			log.error("problem with subscribe", ex);
+		}
 
 	}
 
