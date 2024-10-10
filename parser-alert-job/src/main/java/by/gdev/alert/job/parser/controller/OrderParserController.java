@@ -24,9 +24,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FLRU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCEHUNT;
@@ -54,62 +57,66 @@ public class OrderParserController {
 	public final ParserService parserService;
 
 	private final ApplicationContext context;
+	private ExecutorService executor = Executors.newCachedThreadPool();
 
 	@GetMapping("/stream-orders")
 	public List<OrderDTO> ordersEvents() {
 		log.trace("subscribed on orders");
 
-		List<CompletableFuture<List<OrderDTO>>> futures = List.of(
-				CompletableFuture.supplyAsync(() -> {
+		List<Future<List<OrderDTO>>> futures = List.of(
+				executor.submit(() -> {
 					List<OrderDTO> list = fl.flruParser();
 					context.getBean(COUNTER_FLRU, Counter.class).increment(list.size());
 					return list;
 				}),
-				CompletableFuture.supplyAsync(() -> {
+				executor.submit(() -> {
 					List<OrderDTO> list = hubr.hubrParser();
 					context.getBean(COUNTER_HUBR, Counter.class).increment(list.size());
 					return list;
 				}),
-				CompletableFuture.supplyAsync(() -> {
+				executor.submit(() -> {
 					List<OrderDTO> list = freelanceRuOrderParser.getOrders();
 					context.getBean(COUNTER_FREELANCERU, Counter.class).increment(list.size());
 					return list;
 				}),
-				CompletableFuture.supplyAsync(() -> {
+				executor.submit(() -> {
 					List<OrderDTO> list = weblancerOrderParcer.weblancerParser();
 					context.getBean(COUNTER_WEBLANCER, Counter.class).increment(list.size());
 					return list;
 				}),
-				CompletableFuture.supplyAsync(() -> {
+				executor.submit(() -> {
 					List<OrderDTO> list = freelancehuntOrderParcer.freelancehuntParser();
 					context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(list.size());
 					return list;
 				}),
-				CompletableFuture.supplyAsync(() -> {
+				executor.submit(() -> {
 					List<OrderDTO> list = youDoOrderParcer.youDoParser();
 					context.getBean(COUNTER_YOUDO, Counter.class).increment(list.size());
 					return list;
 				}),
-				CompletableFuture.supplyAsync(() -> {
+				executor.submit(() -> {
 					List<OrderDTO> list = kworkOrderParcer.kworkParser();
 					context.getBean(COUNTER_KWORK, Counter.class).increment(list.size());
 					return list;
 				}),
-				CompletableFuture.supplyAsync(() -> {
+				executor.submit(() -> {
 					List<OrderDTO> list = freelancerOrderParcer.freelancerParser();
 					context.getBean(COUNTER_FREELANCER, Counter.class).increment(list.size());
 					return list;
 				})
 		);
-
-		List<OrderDTO> allOrders = futures.stream()
-				.map(CompletableFuture::join)
-				.flatMap(Collection::stream)
-				.toList();
-
-		return allOrders;
+		return futures.stream()
+				.map(future -> {
+					try {
+						return future.get();
+					} catch (InterruptedException | ExecutionException e) {
+						log.error(e.getMessage());
+						return List.<OrderDTO>of();
+					}
+				})
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
 	}
-
 
 	@GetMapping("sites")
 	public List<SiteSourceDTO>  sites() {
