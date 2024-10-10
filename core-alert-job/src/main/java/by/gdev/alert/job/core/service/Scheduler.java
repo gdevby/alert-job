@@ -8,8 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,7 +27,6 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -56,6 +53,7 @@ public class Scheduler {
 				log.trace("got elements size {}", event.size());
 				Set<AppUser> users = userRepository.findAllUsersEagerOrderModules();
 				forEachOrders(users, event);
+				log.trace("finished process elements {}", event.size());
 			} catch (Throwable ex) {
 				log.error("problem with subscribe", ex);
 			}
