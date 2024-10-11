@@ -183,7 +183,7 @@ services:
         condition: service_healthy
       db:
         condition: service_started
-    mem_limit: 1g    
+    mem_limit: 2g
   core:
     restart: always
     image: rg.gdev.by/alert-job/core-alert-job:$alert_job_version
