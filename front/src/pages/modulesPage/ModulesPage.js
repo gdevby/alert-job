@@ -11,6 +11,7 @@ import Item from '../../components/common/item/Item'
 import Alert from '../../components/common/alert/Alert'
 import Popup from '../../components/common/popup/Popup';
 import LimitPopup from '../../components/common/popup/LimitPopup';
+import Chart from '../../components/orders/chart/Chart';
 
 import { moduleService } from '../../services/parser/endponits/moduleService'
 import { changeAuthStatus } from '../../hooks/changeAuthStatus';
@@ -155,6 +156,7 @@ const ModulesPage = () => {
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && showModules}
 			</List>}
+			<Chart />
 		</div>
 	</div>
 }
