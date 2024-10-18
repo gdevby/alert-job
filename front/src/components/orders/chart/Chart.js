@@ -37,6 +37,13 @@ const Chart = () => {
 				yAxis={[{label: 'количество заказов'}]}
 				xAxis={[{ scaleType: 'utc', data: dates }]}
 				series={data}
+				slotProps={{legend: {
+					position: {
+						horizontal: 'middle',
+						vertical: 'bottom'
+					},
+					padding: 0,
+				}}}
 			/>
     </div>
   )
