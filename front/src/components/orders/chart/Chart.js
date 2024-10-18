@@ -34,15 +34,16 @@ const Chart = () => {
     <div style={{height: 384, marginTop: 32}}>
 			<p style={{textAlign: 'center'}}>График количество заказов по дням</p>
 			<LineChart
-				yAxis={[{label: 'количество заказов'}]}
+				yAxis={[{ label: 'количество заказов' }]}
 				xAxis={[{ scaleType: 'utc', data: dates }]}
 				series={data}
-				slotProps={{legend: {
+				slotProps={{ legend: {
 					position: {
 						horizontal: 'middle',
 						vertical: 'bottom'
 					},
 					padding: 0,
+					labelStyle: { fontSize: 12, textTransform: 'lowercase' }
 				}}}
 			/>
     </div>
