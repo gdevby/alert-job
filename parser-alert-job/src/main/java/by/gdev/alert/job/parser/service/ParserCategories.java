@@ -95,38 +95,38 @@ public class ParserCategories {
         log.info("finished parsing sites and categories");
     }
 
-    private void saveData(SiteSourceJob site, ParsedCategory k, List<ParsedCategory> v) {
+    private void saveData(SiteSourceJob site, ParsedCategory parsedCategory, List<ParsedCategory> subCategories) {
         Optional<Category> op = site.getCategories().stream()
-                .filter(sc -> (Objects.nonNull(sc.getName()) && Objects.equals(sc.getName(), k.name()))
-                        || (Objects.nonNull(sc.getNativeLocName())
-                        && Objects.equals(sc.getNativeLocName(), k.translatedName())))
+                .filter(category -> (Objects.nonNull(category.getName()) && Objects.equals(category.getName(), parsedCategory.name()))
+                        || (Objects.nonNull(category.getNativeLocName())
+                        && Objects.equals(category.getNativeLocName(), parsedCategory.translatedName())))
                 .findAny();
         if (op.isEmpty()) {
             Category siteCategory = new Category();
-            siteCategory.setName(k.name());
-            siteCategory.setNativeLocName(k.translatedName);
+            siteCategory.setName(parsedCategory.name());
+            siteCategory.setNativeLocName(parsedCategory.translatedName);
             siteCategory.setSiteSourceJob(site);
-            siteCategory.setLink(k.rss);
+            siteCategory.setLink(parsedCategory.rss);
             op = Optional.of(categoryRepository.save(siteCategory));
             site.getCategories().add(op.get());
-            log.debug("added site category {},{}, {}", site.getName(), k.name(), k.translatedName());
+            log.debug("added site category {},{}, {}", site.getName(), parsedCategory.name(), parsedCategory.translatedName());
         }
         Category sc = op.get();
         if (Objects.isNull(sc.getSubCategories())) {
             sc.setSubCategories(new ArrayList<>());
         }
-        v.forEach(sub -> {
+        subCategories.forEach(subCategory -> {
             Optional<Subcategory> sscOp = sc.getSubCategories().stream()
-                    .filter(ssc -> (Objects.nonNull(ssc.getName()) && Objects.equals(ssc.getName(), sub.name()))
+                    .filter(ssc -> (Objects.nonNull(ssc.getName()) && Objects.equals(ssc.getName(), subCategory.name()))
                             || (Objects.nonNull(ssc.getNativeLocName())
-                            && Objects.equals(ssc.getNativeLocName(), sub.translatedName())))
+                            && Objects.equals(ssc.getNativeLocName(), subCategory.translatedName())))
                     .findAny();
             if (sscOp.isEmpty()) {
                 Subcategory ssc1 = new Subcategory();
-                ssc1.setName(sub.name());
-                ssc1.setNativeLocName(sub.translatedName);
+                ssc1.setName(subCategory.name());
+                ssc1.setNativeLocName(subCategory.translatedName);
                 ssc1.setCategory(sc);
-                ssc1.setLink(sub.rss);
+                ssc1.setLink(subCategory.rss);
                 sc.getSubCategories().add(subCategoryRepository.save(ssc1));
                 log.debug("added site subcategory {}, {},{}, ", site.getName(), ssc1.getName(),
                         ssc1.getNativeLocName());
@@ -141,23 +141,23 @@ public class ParserCategories {
 
         FlCategories flCategories = restTemplate.getForObject(categoriesLinkFl, FlCategories.class);
         flCategories.items().stream()
-                        .forEach(parsedCategory -> {
-                            ParsedCategory c = new ParsedCategory(parsedCategory.name_en(), parsedCategory.name(), parsedCategory.id(), String.format(flRss, parsedCategory.id()));
-                            log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
-                            List<ParsedCategory> listSubcat = new ArrayList<>();
-                            map.put(c, listSubcat);
+                .forEach(parsedCategory -> {
+                    ParsedCategory c = new ParsedCategory(parsedCategory.name_en(), parsedCategory.name(), parsedCategory.id(), String.format(flRss, parsedCategory.id()));
+                    log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
+                    List<ParsedCategory> listSubcat = new ArrayList<>();
+                    map.put(c, listSubcat);
 
-                            FlCategories flCategories1 = restTemplate.getForObject(String.format(subcategoriesLink, parsedCategory.id()), FlCategories.class);
-                            flCategories1.items().stream()
-                                            .forEach(ee -> {
-                                                ParsedCategory pc = new ParsedCategory(ee.name_en(), ee.name(), ee.id(),
-                                                        String.format(flRssWithSubcategory, ee.id(), c.id()));
-                                                listSubcat.add(pc);
-                                                log.debug("found subcategory {} {} {} ", pc.id(), pc.translatedName, pc.rss());
-                                            });
+                    FlCategories flCategories1 = restTemplate.getForObject(String.format(subcategoriesLink, parsedCategory.id()), FlCategories.class);
+                    flCategories1.items().stream()
+                            .forEach(ee -> {
+                                ParsedCategory pc = new ParsedCategory(ee.name_en(), ee.name(), ee.id(),
+                                        String.format(flRssWithSubcategory, ee.id(), c.id()));
+                                listSubcat.add(pc);
+                                log.debug("found subcategory {} {} {} ", pc.id(), pc.translatedName, pc.rss());
+                            });
 
-                            log.debug("subcategory size {}", listSubcat.size());
-                        });
+                    log.debug("subcategory size {}", listSubcat.size());
+                });
         return map;
     }
 
@@ -233,10 +233,10 @@ public class ParserCategories {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(headers);
         if (freelancehuntProxyActive) {
-			restTemplate = restTemplateConfigurer.getRestTemplateWithProxy();
-		}else{
-			restTemplate = restTemplateConfigurer.getRestTemplate();
-		}
+            restTemplate = restTemplateConfigurer.getRestTemplateWithProxy();
+        } else {
+            restTemplate = restTemplateConfigurer.getRestTemplate();
+        }
         ResponseEntity<String> res = restTemplate.exchange(freelancehunt.getParsedURI(), HttpMethod.GET, entity,
                 String.class);
         Document doc = Jsoup.parse(res.getBody());
@@ -289,45 +289,45 @@ public class ParserCategories {
         }, LinkedHashMap::new));
     }
 
-	private Map<ParsedCategory, List<ParsedCategory>> getKwork(SiteSourceJob kwork) {
+    private Map<ParsedCategory, List<ParsedCategory>> getKwork(SiteSourceJob kwork) {
         if (kworkProxyActive) {
             restTemplate = restTemplateConfigurer.getRestTemplateWithProxy();
-        }else{
+        } else {
             restTemplate = restTemplateConfigurer.getRestTemplate();
         }
-		ResponseEntity<String> response = restTemplate.getForEntity(kwork.getParsedURI(), String.class);
-		String regex = "\\{\"CATID\":\"([0-9]{1,3})\",\"name\":\"([А-Яа-я\\w\\s\\,]*)\",\"lang\":\"[\\w]{1,2}\",\"short_name\":\"[А-Яа-я\\w\\s\\,]*\","
-				+ "\"h1\":\"[А-Яа-я\\w\\s\\,]*\",\"seo\":\"[\\-\\w]*\",\"parent\":\"%s\"";
-		String body = response.getBody();
-		String link = "https://kwork.ru/projects?c=%s";
-		Pattern categoryPattern = Pattern.compile(String.format(regex, 0));
-		Matcher categoryMatcer = categoryPattern.matcher(body);
-		return categoryMatcer.results().map(m -> {
-			String cName = m.group(2);
-			String cLink = String.format(link, m.group(1));
-			log.debug("found category {}, {}", cName, cLink);
-			ParsedCategory category = new ParsedCategory(null, cName, null, cLink);
-			Pattern subCategoryPattern = Pattern.compile(String.format(regex, m.group(1)));
-			Matcher subCategoryMatcher = subCategoryPattern.matcher(body);
-			List<ParsedCategory> subList = subCategoryMatcher.results().map(m1 -> {
-				String sName = m1.group(2);
-				String sLink = String.format(link, m1.group(1));
-				log.debug("		found subcategory {}, {}", sName, sLink);
-				return new ParsedCategory(null, sName, null, sLink);
-			}).toList();
-			return new SimpleEntry<>(category, subList);
-		}).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (existing, replacement) -> {
-			return existing;
-		}, LinkedHashMap::new));
-	}
+        ResponseEntity<String> response = restTemplate.getForEntity(kwork.getParsedURI(), String.class);
+        String regex = "\\{\"CATID\":\"([0-9]{1,3})\",\"name\":\"([А-Яа-я\\w\\s\\,]*)\",\"lang\":\"[\\w]{1,2}\",\"short_name\":\"[А-Яа-я\\w\\s\\,]*\","
+                + "\"h1\":\"[А-Яа-я\\w\\s\\,]*\",\"seo\":\"[\\-\\w]*\",\"parent\":\"%s\"";
+        String body = response.getBody();
+        String link = "https://kwork.ru/projects?c=%s";
+        Pattern categoryPattern = Pattern.compile(String.format(regex, 0));
+        Matcher categoryMatcer = categoryPattern.matcher(body);
+        return categoryMatcer.results().map(m -> {
+            String cName = m.group(2);
+            String cLink = String.format(link, m.group(1));
+            log.debug("found category {}, {}", cName, cLink);
+            ParsedCategory category = new ParsedCategory(null, cName, null, cLink);
+            Pattern subCategoryPattern = Pattern.compile(String.format(regex, m.group(1)));
+            Matcher subCategoryMatcher = subCategoryPattern.matcher(body);
+            List<ParsedCategory> subList = subCategoryMatcher.results().map(m1 -> {
+                String sName = m1.group(2);
+                String sLink = String.format(link, m1.group(1));
+                log.debug("		found subcategory {}, {}", sName, sLink);
+                return new ParsedCategory(null, sName, null, sLink);
+            }).toList();
+            return new SimpleEntry<>(category, subList);
+        }).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue, (existing, replacement) -> {
+            return existing;
+        }, LinkedHashMap::new));
+    }
 
     private Map<ParsedCategory, List<ParsedCategory>> getFreelancer() {
         String orderLink = "https://www.freelancer.com/api/projects/0.1/projects/all?jobs[]=%s";
-		if (freelancerProxyActive) {
-			restTemplate = restTemplateConfigurer.getRestTemplateWithProxy();
-		}else{
-			restTemplate = restTemplateConfigurer.getRestTemplate();
-		}
+        if (freelancerProxyActive) {
+            restTemplate = restTemplateConfigurer.getRestTemplateWithProxy();
+        } else {
+            restTemplate = restTemplateConfigurer.getRestTemplate();
+        }
         FreelancerResult result = restTemplate.getForObject(freelancerCategory, FreelancerResult.class);
         return result.getCategories().stream().collect(Collectors.groupingByConcurrent(e -> {
             log.debug("found category {}", e.getCategory().getName());
