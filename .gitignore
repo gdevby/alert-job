@@ -32,3 +32,4 @@ target
 dist
 front/package-lock.json
 /public/
+.vscode

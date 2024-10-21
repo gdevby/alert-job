@@ -6,10 +6,12 @@ import by.gdev.alert.job.parser.service.FreelancehuntOrderParcer;
 import by.gdev.alert.job.parser.service.FreelancerOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.KworkOrderParcer;
+import by.gdev.alert.job.parser.service.StatisticsService;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.TruelancerOrderParser;
 import by.gdev.alert.job.parser.service.WeblancerOrderParcer;
 import by.gdev.alert.job.parser.service.YouDoOrderParcer;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.CategoryDTO;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteSourceDTO;
@@ -58,6 +60,7 @@ public class OrderParserController {
 	public final KworkOrderParcer kworkOrderParcer;
 	public final TruelancerOrderParser truelancerOrderParser;
 	public final ParserService parserService;
+	private final StatisticsService statisticsService;
 
 	private final ApplicationContext context;
 	private ExecutorService executor = Executors.newCachedThreadPool();
@@ -69,42 +72,58 @@ public class OrderParserController {
 		List<Future<List<OrderDTO>>> futures = List.of(
 				executor.submit(() -> {
 					List<OrderDTO> list = fl.flruParser();
-					context.getBean(COUNTER_FLRU, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_FLRU, Counter.class).increment(size);
+					statisticsService.save(SiteName.FLRU, size);
 					return list;
 				}),
 				executor.submit(() -> {
 					List<OrderDTO> list = hubr.hubrParser();
-					context.getBean(COUNTER_HUBR, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_HUBR, Counter.class).increment(size);
+					statisticsService.save(SiteName.HABR, size);
 					return list;
 				}),
 				executor.submit(() -> {
 					List<OrderDTO> list = freelanceRuOrderParser.getOrders();
-					context.getBean(COUNTER_FREELANCERU, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_FREELANCERU, Counter.class).increment(size);
+					statisticsService.save(SiteName.FREELANCERU, size);
 					return list;
 				}),
 				executor.submit(() -> {
 					List<OrderDTO> list = weblancerOrderParcer.weblancerParser();
-					context.getBean(COUNTER_WEBLANCER, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_WEBLANCER, Counter.class).increment(size);
+					statisticsService.save(SiteName.WEBLANCER, size);
 					return list;
 				}),
 				executor.submit(() -> {
 					List<OrderDTO> list = freelancehuntOrderParcer.freelancehuntParser();
-					context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_FREELANCEHUNT, Counter.class).increment(size);
+					statisticsService.save(SiteName.FREELANCEHUNT, size);
 					return list;
 				}),
 				executor.submit(() -> {
 					List<OrderDTO> list = youDoOrderParcer.youDoParser();
-					context.getBean(COUNTER_YOUDO, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_YOUDO, Counter.class).increment(size);
+					statisticsService.save(SiteName.YOUDO, size);
 					return list;
 				}),
 				executor.submit(() -> {
 					List<OrderDTO> list = kworkOrderParcer.kworkParser();
-					context.getBean(COUNTER_KWORK, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_KWORK, Counter.class).increment(size);
+					statisticsService.save(SiteName.KWORK, size);
 					return list;
 				}),
 				executor.submit(() -> {
 					List<OrderDTO> list = freelancerOrderParcer.freelancerParser();
-					context.getBean(COUNTER_FREELANCER, Counter.class).increment(list.size());
+					int size = list.size();
+					context.getBean(COUNTER_FREELANCER, Counter.class).increment(size);
+					statisticsService.save(SiteName.FREELANCER, size);
 					return list;
 				}),
 
