@@ -8,6 +8,7 @@ import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.KworkOrderParcer;
 import by.gdev.alert.job.parser.service.StatisticsService;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.service.TruelancerOrderParser;
 import by.gdev.alert.job.parser.service.WeblancerOrderParcer;
 import by.gdev.alert.job.parser.service.YouDoOrderParcer;
 import by.gdev.alert.job.parser.util.SiteName;
@@ -39,6 +40,7 @@ import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_TRUELANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
 
@@ -56,6 +58,7 @@ public class OrderParserController {
 	public final YouDoOrderParcer youDoOrderParcer;
 	public final FreelancerOrderParser freelancerOrderParcer;
 	public final KworkOrderParcer kworkOrderParcer;
+	public final TruelancerOrderParser truelancerOrderParser;
 	public final ParserService parserService;
 	private final StatisticsService statisticsService;
 
@@ -121,6 +124,12 @@ public class OrderParserController {
 					int size = list.size();
 					context.getBean(COUNTER_FREELANCER, Counter.class).increment(size);
 					statisticsService.save(SiteName.FREELANCER, size);
+					return list;
+				}),
+
+				executor.submit(() -> {
+					List<OrderDTO> list = truelancerOrderParser.truelancerParser();
+					context.getBean(COUNTER_TRUELANCER, Counter.class).increment(list.size());
 					return list;
 				})
 		);
