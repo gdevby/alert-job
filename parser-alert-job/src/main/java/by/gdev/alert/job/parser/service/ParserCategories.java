@@ -1,20 +1,20 @@
 package by.gdev.alert.job.parser.service;
 
-import java.io.IOException;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 import by.gdev.alert.job.parser.configuration.RestTemplateConfigurer;
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.domain.parsing.FlCategories;
+import by.gdev.alert.job.parser.domain.parsing.FreelancerResult;
+import by.gdev.alert.job.parser.domain.truelancer.TrueLancerCategory;
+import by.gdev.alert.job.parser.domain.truelancer.TruelancerCategoriesResponse;
+import by.gdev.alert.job.parser.repository.CategoryRepository;
+import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
+import by.gdev.alert.job.parser.repository.SubCategoryRepository;
+import by.gdev.alert.job.parser.util.ParserStringUtils;
+import com.google.common.collect.Lists;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -30,19 +30,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import com.google.common.collect.Lists;
-
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.domain.parsing.FlCategories;
-import by.gdev.alert.job.parser.domain.parsing.FreelancerResult;
-import by.gdev.alert.job.parser.repository.CategoryRepository;
-import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
-import by.gdev.alert.job.parser.repository.SubCategoryRepository;
-import by.gdev.alert.job.parser.util.ParserStringUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -70,7 +71,8 @@ public class ParserCategories {
     private boolean freelancerProxyActive;
     @Value("${kwork.proxy.active}")
     private boolean kworkProxyActive;
-
+    @Value("${truelancer.proxy.active}")
+    private boolean truelancerProxyActive;
 
     @Transactional
     public void parse() throws IOException {
@@ -83,6 +85,7 @@ public class ParserCategories {
         SiteSourceJob youDo = siteSourceJobRepository.findById(6L).get();
         SiteSourceJob kwork = siteSourceJobRepository.findById(7L).get();
         SiteSourceJob freelancer = siteSourceJobRepository.findById(8L).get();
+        SiteSourceJob truelancer = siteSourceJobRepository.findById(9L).get();
 
         getSiteCategoriesFL().forEach((k, v) -> saveData(fl, k, v));
         getSiteCategoriesHabr(site).forEach((k, v) -> saveData(site, k, v));
@@ -92,6 +95,7 @@ public class ParserCategories {
         getYouDo(youDo).forEach((k, v) -> saveData(youDo, k, v));
         getKwork(kwork).forEach((k, v) -> saveData(kwork, k, v));
         getFreelancer().forEach((k, v) -> saveData(freelancer, k, v));
+        getTruelancer().forEach((k, v) -> saveData(truelancer, k, v));
         log.info("finished parsing sites and categories");
     }
 
@@ -340,6 +344,41 @@ public class ParserCategories {
     }
 
     public static record ParsedCategory(String name, String translatedName, Long id, String rss) {
+    }
+
+    private Map<ParsedCategory, List<ParsedCategory>> getTruelancer() {
+        if (truelancerProxyActive) {
+            restTemplate = restTemplateConfigurer.getRestTemplateWithProxy();
+        } else {
+            restTemplate = restTemplateConfigurer.getRestTemplate();
+        }
+
+        try {
+            log.info("Stared parsing truelancer categories");
+            TruelancerCategoriesResponse response = restTemplate.postForObject("https://api.truelancer.com/api/v1/categories", null, TruelancerCategoriesResponse.class);
+
+            Map<String, TrueLancerCategory> categories = response.getCategories();
+            Map<ParsedCategory, List<ParsedCategory>> result = categories.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            keyMapper -> {
+                                String categoryName = keyMapper.getValue().getCategory();
+                                log.debug("found category {}", categoryName);
+                                return new ParsedCategory(null, categoryName, null, keyMapper.getKey());
+                            },
+                            valueMapper -> valueMapper.getValue().getSubCategories().entrySet().stream()
+                                    .map(subCategory -> {
+                                        String subCategoryName = subCategory.getValue();
+                                        log.debug("found subcategory {}", subCategoryName);
+                                        return new ParsedCategory(null, subCategoryName, null, subCategory.getKey());
+                                    })
+                                    .collect(Collectors.toList())
+
+                    ));
+            return result;
+        } catch (Exception e) {
+            log.error("Cannot parse truelancer categories");
+            return Collections.emptyMap();
+        }
     }
 
     public void updateHubrLink(List<String> lineFies) {
