@@ -8,7 +8,8 @@ public enum SiteName {
     FREELANCEHUNT(5),
     YOUDO(6),
     KWORK(7),
-    FREELANCER(8);
+    FREELANCER(8),
+    TRUELANCER(9);
 
     private long id;
 

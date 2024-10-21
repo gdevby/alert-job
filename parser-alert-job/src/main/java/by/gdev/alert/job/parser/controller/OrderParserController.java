@@ -6,8 +6,8 @@ import by.gdev.alert.job.parser.service.FreelancehuntOrderParcer;
 import by.gdev.alert.job.parser.service.FreelancerOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.KworkOrderParcer;
-import by.gdev.alert.job.parser.service.StatisticsService;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.service.StatisticsService;
 import by.gdev.alert.job.parser.service.TruelancerOrderParser;
 import by.gdev.alert.job.parser.service.WeblancerOrderParcer;
 import by.gdev.alert.job.parser.service.YouDoOrderParcer;
@@ -129,7 +129,9 @@ public class OrderParserController {
 
 				executor.submit(() -> {
 					List<OrderDTO> list = truelancerOrderParser.truelancerParser();
+					int size = list.size();
 					context.getBean(COUNTER_TRUELANCER, Counter.class).increment(list.size());
+					statisticsService.save(SiteName.TRUELANCER, size);
 					return list;
 				})
 		);
