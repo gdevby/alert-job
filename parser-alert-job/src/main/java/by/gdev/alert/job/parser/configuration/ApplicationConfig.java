@@ -33,6 +33,7 @@ import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_TRUELANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.PROXY_CLIENT;
@@ -102,15 +103,12 @@ public class ApplicationConfig {
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) context).getBeanFactory();
 		beanFactory.registerSingleton(COUNTER_HUBR, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "hubr"));
 		beanFactory.registerSingleton(COUNTER_FLRU, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "flru"));
-		beanFactory.registerSingleton(COUNTER_FREELANCERU,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelanceru"));
-		beanFactory.registerSingleton(COUNTER_WEBLANCER,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "weblancer"));
-		beanFactory.registerSingleton(COUNTER_FREELANCEHUNT,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancehun"));
+		beanFactory.registerSingleton(COUNTER_FREELANCERU, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelanceru"));
+		beanFactory.registerSingleton(COUNTER_WEBLANCER, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "weblancer"));
+		beanFactory.registerSingleton(COUNTER_FREELANCEHUNT, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancehun"));
 		beanFactory.registerSingleton(COUNTER_YOUDO, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "youdo"));
 		beanFactory.registerSingleton(COUNTER_KWORK, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "kwork"));
-		beanFactory.registerSingleton(COUNTER_FREELANCER,
-				meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancer"));
+		beanFactory.registerSingleton(COUNTER_FREELANCER, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancer"));
+		beanFactory.registerSingleton(COUNTER_TRUELANCER, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "truelancer"));
 	}
 }
