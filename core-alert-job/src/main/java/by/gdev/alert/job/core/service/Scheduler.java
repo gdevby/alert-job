@@ -1,21 +1,5 @@
 package by.gdev.alert.job.core.service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang.StringUtils;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import by.gdev.alert.job.core.configuration.ApplicationProperty;
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.DelayOrderNotification;
@@ -29,8 +13,20 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -65,20 +61,25 @@ public class Scheduler {
 
 	private void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		users.forEach(user -> {
-			user.getOrderModules().stream().filter(e -> Objects.nonNull(e.getCurrentFilter())).forEach(o -> {
-				UserFilter currentFilter = filterRepository.findByIdEagerAllWords(o.getCurrentFilter().getId());
-				o.getSources().forEach(s -> {
-					List<OrderDTO> list = orders.stream().peek(p -> {
-						statisticService.statisticTitleWord(p.getTitle(), p.getSourceSite());
-						statisticService.statisticTechnologyWord(p.getTechnologies(), p.getSourceSite());
-					}).filter(f -> compareSiteSources(f.getSourceSite(), s))
-							.filter(f -> isMatchUserFilter(f, currentFilter)).collect(Collectors.toList());
-					if (!list.isEmpty()) {
-						sendOrderToUser(user, list, o.getName());
-
-					}
-				});
-			});
+			user.getOrderModules().stream()
+					.filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
+					.forEach(orderModule -> {
+						UserFilter currentFilter = filterRepository.findByIdEagerAllWords(orderModule.getCurrentFilter().getId());
+						orderModule.getSources()
+								.forEach(s -> {
+									List<OrderDTO> list = orders.stream()
+											.peek(orderDTO -> {
+												statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite());
+												statisticService.statisticTechnologyWord(orderDTO.getTechnologies(), orderDTO.getSourceSite());
+											})
+											.filter(f -> compareSiteSources(f.getSourceSite(), s))
+											.filter(f -> isMatchUserFilter(f, currentFilter))
+											.collect(Collectors.toList());
+									if (!list.isEmpty()) {
+										sendOrderToUser(user, list, orderModule.getName());
+									}
+								});
+					});
 		});
 	}
 
