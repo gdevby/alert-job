@@ -75,9 +75,8 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
 
                     ParserSource parserSource = new ParserSource();
                     parserSource.setSource(siteSourceJobId);
-                    parserSource.setSource(siteSourceJobId);
                     parserSource.setCategory(category.getId());
-                    parserSource.setSubCategory(subCategory.getId());
+                    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
 
                     order.setSourceSite(parserSource);
                     return order;
