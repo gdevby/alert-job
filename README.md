@@ -1,4 +1,5 @@
 # alert-job
+Version for developers available by [link](README_FOR_DEVELOPERS_EN.md)<br>
 Russian version you can open by [link](README_RU.md)<br>
 The working project is available at the link [aj.gdev.by](https://aj.gdev.by)
 
