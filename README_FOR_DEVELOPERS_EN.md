@@ -1,4 +1,4 @@
-### Запуск приложения для разработки
+### Launching app for development
 
 Open terminal and clone the projects
 
