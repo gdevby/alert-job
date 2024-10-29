@@ -7,6 +7,7 @@ import by.gdev.alert.job.parser.service.FreelancerOrderParser;
 import by.gdev.alert.job.parser.service.HabrOrderParser;
 import by.gdev.alert.job.parser.service.KworkOrderParcer;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.service.PeoplePerHourParser;
 import by.gdev.alert.job.parser.service.StatisticsService;
 import by.gdev.alert.job.parser.service.TruelancerOrderParser;
 import by.gdev.alert.job.parser.service.WeblancerOrderParcer;
@@ -40,6 +41,7 @@ import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_PEOPLEPERHOUR;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_TRUELANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
@@ -59,6 +61,7 @@ public class OrderParserController {
 	public final FreelancerOrderParser freelancerOrderParcer;
 	public final KworkOrderParcer kworkOrderParcer;
 	public final TruelancerOrderParser truelancerOrderParser;
+	public final PeoplePerHourParser peoplePerHourParser;
 	public final ParserService parserService;
 	private final StatisticsService statisticsService;
 
@@ -132,6 +135,14 @@ public class OrderParserController {
 					int size = list.size();
 					context.getBean(COUNTER_TRUELANCER, Counter.class).increment(list.size());
 					statisticsService.save(SiteName.TRUELANCER, size);
+					return list;
+				}),
+
+				executor.submit(() -> {
+					List<OrderDTO> list = peoplePerHourParser.peoplePerHourParser();
+					int size = list.size();
+					context.getBean(COUNTER_PEOPLEPERHOUR, Counter.class).increment(list.size());
+					statisticsService.save(SiteName.PEOPLEPERHOUR, size);
 					return list;
 				})
 		);
