@@ -86,6 +86,7 @@ public class ParserCategories {
         SiteSourceJob kwork = siteSourceJobRepository.findById(7L).get();
         SiteSourceJob freelancer = siteSourceJobRepository.findById(8L).get();
         SiteSourceJob truelancer = siteSourceJobRepository.findById(9L).get();
+        SiteSourceJob peoplePerHour = siteSourceJobRepository.findById(10L).get();
 
         getSiteCategoriesFL().forEach((k, v) -> saveData(fl, k, v));
         getSiteCategoriesHabr(site).forEach((k, v) -> saveData(site, k, v));
@@ -96,6 +97,7 @@ public class ParserCategories {
         getKwork(kwork).forEach((k, v) -> saveData(kwork, k, v));
         getFreelancer().forEach((k, v) -> saveData(freelancer, k, v));
         getTruelancer().forEach((k, v) -> saveData(truelancer, k, v));
+        getPeoplePerHour(peoplePerHour).forEach((k, v) -> saveData(peoplePerHour, k, v));
         log.info("finished parsing sites and categories");
     }
 
@@ -175,11 +177,13 @@ public class ParserCategories {
                     log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
                     return c;
                 }).filter(f -> !f.id.equals(0L))
-                .forEach(f -> result.put(f, doc.getElementById("spec-" + f.id).select("label").stream().map(sc -> {
+                .forEach(f -> result.put(f, doc.getElementById("spec-" + f.id).select("label").stream()
+                        .map(sc -> {
                             Long id = Long.valueOf(sc.child(0).attr("value"));
                             return new ParsedCategory(null, sc.text(), id,
                                     String.format(freelanceRuRssFeedSubcategories, f.id, id));
-                        }).filter(fc -> !fc.id.equals(f.id))
+                        })
+                        .filter(fc -> !fc.id.equals(f.id))
                         .peek(fc -> log.debug("		found subcategory {} {} {} ", fc.id(), fc.translatedName, fc.rss()))
                         .collect(Collectors.toList())));
         return result;
@@ -378,6 +382,45 @@ public class ParserCategories {
         } catch (Exception e) {
             log.error("Cannot parse truelancer categories");
             return Collections.emptyMap();
+        }
+    }
+
+    private Map<ParsedCategory, List<ParsedCategory>> getPeoplePerHour(SiteSourceJob siteSourceJob) {
+        log.info("Started parsing peopleperhour categories");
+        String baseURI = siteSourceJob.getParsedURI();
+
+        Document categoriesDocument = getDocument(baseURI);
+
+        Elements elementCategories = categoriesDocument.getElementsByClass("small dropdown__link⤍Megamenu⤚Tqs7l");
+
+        return elementCategories.stream()
+                .map(categoryElement -> {
+                    String categoryName = categoryElement.text();
+                    String link = categoryElement.attr("href");
+                    ParserCategories.ParsedCategory category = new ParserCategories.ParsedCategory(null, categoryName, null, null);
+                    log.debug("found category {}", categoryName);
+                    List<ParserCategories.ParsedCategory> subCategories = Collections.emptyList();
+                    if (link.startsWith("/categories")) {
+                        Document subCategoriesDocument = getDocument(baseURI + link);
+                        Elements elements = subCategoriesDocument.getElementsByClass("link-list__link⤍Menu⤚htHq3");
+                        subCategories = elements.stream()
+                                .map(Element::text)
+                                .map(element -> {
+                                    log.debug("found subcategory {}", element);
+                                    return new ParserCategories.ParsedCategory(null, element, null, null);
+                                })
+                                .toList();
+                    }
+                    return new SimpleEntry<>(category, subCategories);
+                }).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+    }
+
+    private Document getDocument(String uri) {
+        try {
+            return Jsoup.connect(uri).get();
+        } catch (IOException e) {
+            log.error("Cannot parse site {}", uri);
+            throw new RuntimeException(e);
         }
     }
 

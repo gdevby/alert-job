@@ -33,6 +33,7 @@ import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCER
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_FREELANCERU;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_HUBR;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_KWORK;
+import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_PEOPLEPERHOUR;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_TRUELANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_WEBLANCER;
 import static by.gdev.alert.job.parser.util.ParserStringUtils.COUNTER_YOUDO;
@@ -110,5 +111,6 @@ public class ApplicationConfig {
 		beanFactory.registerSingleton(COUNTER_KWORK, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "kwork"));
 		beanFactory.registerSingleton(COUNTER_FREELANCER, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "freelancer"));
 		beanFactory.registerSingleton(COUNTER_TRUELANCER, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "truelancer"));
+		beanFactory.registerSingleton(COUNTER_PEOPLEPERHOUR, meterRegistry.counter(PROXY_CLIENT, PROXY_CLIENT, "peopleperhour"));
 	}
 }

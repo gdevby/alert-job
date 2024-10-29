@@ -29,3 +29,4 @@ INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(6, 'YOUDO.COM
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(7, 'KWORK.RU', 'https://kwork.ru/categories', TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(8, 'FREELANCER.com', 'https://www.freelancer.com/api/projects/0.1/projects/all', TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(9, 'TRUELANCER.COM', 'https://api.truelancer.com/api/v1/projects', TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(10, 'PEOPLEPERHOUR', 'https://www.peopleperhour.com', TRUE);
