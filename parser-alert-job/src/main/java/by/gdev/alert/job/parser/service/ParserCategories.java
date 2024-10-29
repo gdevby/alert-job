@@ -386,6 +386,7 @@ public class ParserCategories {
     }
 
     private Map<ParsedCategory, List<ParsedCategory>> getPeoplePerHour(SiteSourceJob siteSourceJob) {
+        log.info("Started parsing peopleperhour categories");
         String baseURI = siteSourceJob.getParsedURI();
 
         Document categoriesDocument = getDocument(baseURI);
@@ -397,13 +398,17 @@ public class ParserCategories {
                     String categoryName = categoryElement.text();
                     String link = categoryElement.attr("href");
                     ParserCategories.ParsedCategory category = new ParserCategories.ParsedCategory(null, categoryName, null, null);
+                    log.debug("found category {}", categoryName);
                     List<ParserCategories.ParsedCategory> subCategories = Collections.emptyList();
                     if (link.startsWith("/categories")) {
                         Document subCategoriesDocument = getDocument(baseURI + link);
                         Elements elements = subCategoriesDocument.getElementsByClass("link-list__link⤍Menu⤚htHq3");
                         subCategories = elements.stream()
                                 .map(Element::text)
-                                .map(element -> new ParserCategories.ParsedCategory(null, element, null, null))
+                                .map(element -> {
+                                    log.debug("found subcategory {}", element);
+                                    return new ParserCategories.ParsedCategory(null, element, null, null);
+                                })
                                 .toList();
                     }
                     return new SimpleEntry<>(category, subCategories);
