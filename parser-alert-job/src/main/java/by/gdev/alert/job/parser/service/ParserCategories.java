@@ -177,11 +177,13 @@ public class ParserCategories {
                     log.debug("found category {} {} {}", c.id(), c.translatedName, c.rss());
                     return c;
                 }).filter(f -> !f.id.equals(0L))
-                .forEach(f -> result.put(f, doc.getElementById("spec-" + f.id).select("label").stream().map(sc -> {
+                .forEach(f -> result.put(f, doc.getElementById("spec-" + f.id).select("label").stream()
+                        .map(sc -> {
                             Long id = Long.valueOf(sc.child(0).attr("value"));
                             return new ParsedCategory(null, sc.text(), id,
                                     String.format(freelanceRuRssFeedSubcategories, f.id, id));
-                        }).filter(fc -> !fc.id.equals(f.id))
+                        })
+                        .filter(fc -> !fc.id.equals(f.id))
                         .peek(fc -> log.debug("		found subcategory {} {} {} ", fc.id(), fc.translatedName, fc.rss()))
                         .collect(Collectors.toList())));
         return result;
