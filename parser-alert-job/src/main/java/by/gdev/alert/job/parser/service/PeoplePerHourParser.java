@@ -57,7 +57,7 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
     }
 
     @Override
-    List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 
         String uri = url;
         if (urlMapping.containsKey(category.getNativeLocName())) {
@@ -90,11 +90,8 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
                     order.setLink(orderLink);
                     order.setDateTime(new Date());
 
-                    String price = card.getElementsByClass("title-nano").text();
-                    String amount = price.substring(1);
-
-                    order.setPrice(new Price());
-
+                    String price = card.getElementsByClass("u-txt--right card__price⤍HourlieTileMeta⤚3su1s").text();
+                    String amount = price.substring(1).replace(",", "");
 
                     Optional<CurrencyEntity> optionalCurrency = currencyRepository.findByCurrencyCode(CURRENCY_CODE);
 
