@@ -26,17 +26,26 @@ const Chart = () => {
 		return null;
 	}
 
-	const dates = Object.entries(statistics)[0][1].map(({date}) => new Date(date));
+	const dates = Object.entries(statistics).reduce((acc, [_, data]) => {
+		const result = [...acc, ...data.map(({ date }) => date)];
+		return result;
+	}, []);
+	const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(a) - new Date(b));
+
 	const data = Object.entries(statistics).map(([siteName, stats]) => {
-		return { curve: "linear", label: siteName, data: stats.map(({numberOfOrders}) => numberOfOrders) };
-	})
+		const statsByDate = stats.reduce((acc, { date, numberOfOrders }) => {
+			acc[date] = numberOfOrders;
+			return acc;
+		}, {});
+		return { curve: 'linear', label: siteName, data: uniqueDates.map(date => statsByDate[date] ?? 0) };
+	});
 
   return (
     <div style={{height: 384, marginTop: 32}}>
 			<p style={{textAlign: 'center'}}>График количество заказов по дням</p>
 			<LineChart
 				yAxis={[{ label: 'количество заказов' }]}
-				xAxis={[{ scaleType: 'utc', data: dates }]}
+				xAxis={[{ scaleType: 'utc', data: uniqueDates.map(date => new Date(date)) }]}
 				series={data}
 				slotProps={{ legend: {
 					position: {
