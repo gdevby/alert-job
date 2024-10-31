@@ -19,15 +19,10 @@ public class SecurityConfig {
 	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
 			ServerLogoutSuccessHandler handler) {
 		http.csrf(ServerHttpSecurity.CsrfSpec::disable)
-				.authorizeExchange(req ->
-						req.pathMatchers("/logout.html", "/", "/favicon.ico", "/actuator/**", "/core-alert-job/api/user/test")
-								.permitAll()
-				)
+				.authorizeExchange(req -> req.pathMatchers("/logout.html", "/", "/favicon.ico", "/actuator/**",
+						"/core-alert-job/api/user/test", "/parser/api/orders/statistics").permitAll())
 
-				.authorizeExchange(req ->
-						req.anyExchange()
-								.authenticated())
-				.oauth2Login(Customizer.withDefaults())
+				.authorizeExchange(req -> req.anyExchange().authenticated()).oauth2Login(Customizer.withDefaults())
 				.logout(logout -> logout.logoutSuccessHandler(handler));
 		return http.build();
 	}
