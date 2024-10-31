@@ -11,7 +11,8 @@ const Chart = () => {
 
 		parserService.getStatistics()
 			.then(response => {
-				setStatistics(response.data)
+				const haveData = Object.keys(response.data).length > 0;
+				setStatistics(haveData ? response.data : undefined)
 			})
 			.catch(() => {
         setStatistics(undefined);
