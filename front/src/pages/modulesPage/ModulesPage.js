@@ -156,7 +156,6 @@ const ModulesPage = () => {
 			{isFetching ? <CircularProgress /> : <List className='modules__items'>
 				{modules.length > 0 && showModules}
 			</List>}
-			<Chart />
 		</div>
 	</div>
 }

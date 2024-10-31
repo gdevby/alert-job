@@ -2,6 +2,7 @@ import React from 'react';
 
 import Title from '../../components/common/title/Title';
 import Examples from '../../layouts/homePage/examples/Examples';
+import Chart from '../../components/orders/chart/Chart';
 
 import './homePage.scss';
 
@@ -44,6 +45,7 @@ const HomePage = () => {
 				</ul>
 			</div>
 			<p className='mt-1'>Чтобы начать, создайте аккаунт и авторизуйтесь на этом сайте, в правом верхнем углу можете сконфигурировать фильтры.</p>
+			<Chart />
 			<Examples />
 			<p className='mt-1' style={{ fontWeight: 'bold' }}>
 				Весь функционал работает, предложениям и замечаниям писать
