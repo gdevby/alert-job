@@ -86,14 +86,14 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
                 .map(card -> {
                     String title = card.getElementsByClass("title-nano card__title⤍HourlieTile⤚5LQtW").text();
                     String orderLink = card.getElementsByClass("card__title-link⤍HourlieTile⤚13loh").attr("href");
+                    String price = card.getElementsByClass("u-txt--right card__price⤍HourlieTileMeta⤚3su1s").text();
+                    String amount = price.substring(1).replace(",", "");
 
                     Order order = new Order();
                     order.setTitle(title);
                     order.setLink(orderLink);
                     order.setDateTime(new Date());
 
-                    String price = card.getElementsByClass("u-txt--right card__price⤍HourlieTileMeta⤚3su1s").text();
-                    String amount = price.substring(1).replace(",", "");
 
                     Optional<CurrencyEntity> optionalCurrency = currencyRepository.findByCurrencyCode(CURRENCY_CODE);
 

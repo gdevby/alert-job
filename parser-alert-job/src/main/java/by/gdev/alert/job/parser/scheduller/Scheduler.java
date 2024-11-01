@@ -3,7 +3,6 @@ package by.gdev.alert.job.parser.scheduller;
 import by.gdev.alert.job.parser.domain.currency.CurrencyRoot;
 import by.gdev.alert.job.parser.domain.currency.Valute;
 import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
-import by.gdev.alert.job.parser.domain.rss.Rss;
 import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderLinksRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
@@ -11,7 +10,6 @@ import by.gdev.alert.job.parser.service.category.ParserCategories;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.util.IOUtils;
-import jakarta.xml.bind.JAXBContext;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -25,8 +23,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.net.URLDecoder;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -55,17 +51,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	@Override
 	@Transactional
 	public void onApplicationEvent(ContextRefreshedEvent event) {
-		JAXBContext jaxbContext;
-		try {
-
-			jaxbContext = JAXBContext.newInstance(Rss.class);
-			File jarFile = new File(URLDecoder.decode(
-					jaxbContext.getClass().getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8"));
-			log.info("test {} {}", jaxbContext.getClass(), jarFile.getAbsolutePath().toString());
-		} catch (Exception e) {
-			log.error("error", e);
-		}
-
 		Resource res = context.getResource(updateFilePath);
 		try {
 			currencyParser();

@@ -19,10 +19,13 @@ import java.util.Objects;
 
 @Slf4j
 public abstract class AbsctractSiteParser implements SiteParser{
-	@Autowired
-	private SiteSourceJobRepository siteSourceJobRepository;
+
 	@Value("${delay.reply.request}")
 	private long delayReplyRequest;
+	private static final int ATTEMPTS_COUNT = 3;
+
+	@Autowired
+	private SiteSourceJobRepository siteSourceJobRepository;
 
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
@@ -30,7 +33,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	public List<OrderDTO> getOrders(Long siteId) {
 		Exception ex = null;
 		List<OrderDTO> orders = new ArrayList<>();
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < ATTEMPTS_COUNT; i++) {
 			try {
 				SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
 				log.trace("parsed {}", siteSourceJob.getName());

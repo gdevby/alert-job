@@ -39,91 +39,95 @@ import java.util.stream.Stream;
 @Slf4j
 public class KworkOrderParcer extends AbsctractSiteParser {
 
-	@Value("${kwork.proxy.active}")
-	private boolean isNeedProxy;
+    @Value("${kwork.proxy.active}")
+    private boolean isNeedProxy;
 
-	private final ParserService service;
-	private final SiteSourceJobRepository siteSourceJobRepository;
-	private final OrderRepository orderRepository;
-	private final ParserSourceRepository parserSourceRepository;
-	private RestTemplate restTemplate;
-	private final ModelMapper mapper;
-	private final ObjectMapper objectMapper;
+    private final ParserService service;
+    private final SiteSourceJobRepository siteSourceJobRepository;
+    private final OrderRepository orderRepository;
+    private final ParserSourceRepository parserSourceRepository;
+    private RestTemplate restTemplate;
+    private final ModelMapper mapper;
+    private final ObjectMapper objectMapper;
 
 
-	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
-	@Transactional(timeout = 2000)
-	public List<OrderDTO> parse() {
-		return super.getOrders(7L);
-	}
+    @Transactional(timeout = 2000)
+    public List<OrderDTO> parse() {
+        return super.getOrders(7L);
+    }
 
-	@Override
-	@SneakyThrows
-	public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+    @Override
+    @SneakyThrows
+    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 
-		restTemplate = getRestTemplate(isNeedProxy);
+        restTemplate = getRestTemplate(isNeedProxy);
 
-		String kw = restTemplate.getForObject(link, String.class);
-		Pattern pattern = Pattern.compile("\"wants\":(.+?),\"wantsFromAllRubrics");
-		Matcher matcer = pattern.matcher(kw);
-		Stream<Kwork> list = matcer.results().map(e -> readValue(e.group(1))).flatMap(e -> e.stream());
-		return list.map(e -> {
-			Order order = new Order();
-			order.setTitle(e.getName());
-			order.setLink(String.format("https://kwork.ru/projects/%s/view", e.getId()));
-			order.setMessage(e.getDescription());
-			Date createdDate = covertStringToDate(e.getDateCreate());
-			order.setDateTime(createdDate);
-			Price p = new Price(String.valueOf(e.getPossiblePriceLimit()), e.getPossiblePriceLimit());
-			order.setPrice(p);
-			ParserSource parserSource = new ParserSource();
-			parserSource.setSource(siteSourceJobId);
-			parserSource.setCategory(category.getId());
-			parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-			order.setSourceSite(parserSource);
-			return order;
-		}).filter(Order::isValidOrder).filter(f -> service.isExistsOrder(category, subCategory, f.getLink())).map(e -> {
-			log.debug("found new order {} {}", e.getTitle(), e.getLink());
-			service.saveOrderLinks(category, subCategory, e.getLink());
-			ParserSource parserSource = e.getSourceSite();
-			Optional<ParserSource> optionalSource = parserSourceRepository.findBySourceAndCategoryAndSubCategory(
-					parserSource.getSource(), parserSource.getCategory(), parserSource.getSubCategory());
-			if (optionalSource.isPresent()) {
-				parserSource = optionalSource.get();
-			} else {
-				parserSource = parserSourceRepository.save(parserSource);
-			}
-			e.setSourceSite(parserSource);
-			e = orderRepository.save(e);
-			OrderDTO dto = mapper.map(e, OrderDTO.class);
-			SourceSiteDTO source = dto.getSourceSite();
-			source.setCategoryName(category.getNativeLocName());
-			if (Objects.nonNull(subCategory)) {
-				source.setSubCategoryName(subCategory.getNativeLocName());
-			}
-			dto.setSourceSite(source);
-			return dto;
-		}).toList();
-	}
+        String kw = restTemplate.getForObject(link, String.class);
+        Pattern pattern = Pattern.compile("\"wants\":(.+?),\"wantsFromAllRubrics");
+        Matcher matcer = pattern.matcher(kw);
+        Stream<Kwork> list = matcer.results().map(e -> readValue(e.group(1))).flatMap(e -> e.stream());
+        return list.map(e -> {
+                    Order order = new Order();
+                    order.setTitle(e.getName());
+                    order.setLink(String.format("https://kwork.ru/projects/%s/view", e.getId()));
+                    order.setMessage(e.getDescription());
+                    Date createdDate = covertStringToDate(e.getDateCreate());
+                    order.setDateTime(createdDate);
+                    Price p = new Price(String.valueOf(e.getPossiblePriceLimit()), e.getPossiblePriceLimit());
+                    order.setPrice(p);
+                    ParserSource parserSource = new ParserSource();
+                    parserSource.setSource(siteSourceJobId);
+                    parserSource.setCategory(category.getId());
+                    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
+                    order.setSourceSite(parserSource);
+                    return order;
+                })
+                .filter(Order::isValidOrder)
+                .filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
+                .map(e -> {
+                    log.debug("found new order {} {}", e.getTitle(), e.getLink());
+                    service.saveOrderLinks(category, subCategory, e.getLink());
+                    ParserSource parserSource = e.getSourceSite();
+                    Optional<ParserSource> optionalSource = parserSourceRepository.findBySourceAndCategoryAndSubCategory(
+                            parserSource.getSource(), parserSource.getCategory(), parserSource.getSubCategory());
+                    if (optionalSource.isPresent()) {
+                        parserSource = optionalSource.get();
+                    } else {
+                        parserSource = parserSourceRepository.save(parserSource);
+                    }
+                    e.setSourceSite(parserSource);
+                    e = orderRepository.save(e);
+                    OrderDTO dto = mapper.map(e, OrderDTO.class);
+                    SourceSiteDTO source = dto.getSourceSite();
+                    source.setCategoryName(category.getNativeLocName());
+                    if (Objects.nonNull(subCategory)) {
+                        source.setSubCategoryName(subCategory.getNativeLocName());
+                    }
+                    dto.setSourceSite(source);
+                    return dto;
+                })
+                .toList();
+    }
 
-	@SneakyThrows
-	private List<Kwork> readValue(String value) {
-		return objectMapper.readValue(value, new TypeReference<List<Kwork>>() {
-		});
-	}
+    @SneakyThrows
+    private List<Kwork> readValue(String value) {
+        return objectMapper.readValue(value, new TypeReference<List<Kwork>>() {
+        });
+    }
 
-	private Date covertStringToDate(String date) {
-		try {
-			return formatter.parse(date);
-		} catch (ParseException e) {
-			log.error(e.getMessage());
-			return new Date();
-		}
-	}
+    private Date covertStringToDate(String date) {
+        try {
+            return formatter.parse(date);
+        } catch (ParseException e) {
+            log.error(e.getMessage());
+            return new Date();
+        }
+    }
 
-	@Override
-	public SiteName getSiteName() {
-		return SiteName.KWORK;
-	}
+    @Override
+    public SiteName getSiteName() {
+        return SiteName.KWORK;
+    }
 }

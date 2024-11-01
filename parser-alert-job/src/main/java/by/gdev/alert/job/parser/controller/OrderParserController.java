@@ -35,10 +35,9 @@ public class OrderParserController {
     @Autowired
     private List<SiteParser> parsers;
     private final StatisticsService statisticsService;
-
-    private ExecutorService executor = Executors.newCachedThreadPool();
     private final ParserService parserService;
     private final MetricsService metricsService;
+    private ExecutorService executor = Executors.newCachedThreadPool();
 
     @GetMapping("/stream-orders")
     public List<OrderDTO> ordersEvents() {
@@ -58,11 +57,10 @@ public class OrderParserController {
                 List<OrderDTO> orders = future.get();
                 allOrders.addAll(orders);
 
-                int size = orders.size();
-                metricsService.save(parser.getSiteName(), size);
-                statisticsService.save(parser.getSiteName(), size);
+                metricsService.save(parser.getSiteName(), orders.size());
+                statisticsService.save(parser.getSiteName(), orders.size());
             } catch (InterruptedException | ExecutionException e) {
-                System.err.println("Error while parsing with " + parser.getSiteName() + ": " + e.getMessage());
+                log.error("Error parsing site {}: {}", parser.getSiteName(), e.getMessage());
             }
         }
 
