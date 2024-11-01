@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.configuration;
+package by.gdev.alert.job.parser.factory;
 
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
@@ -8,6 +8,7 @@ import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.core5.http.HttpHost;
@@ -20,7 +21,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.concurrent.TimeUnit;
 
 @Component
-public class RestTemplateConfigurer {
+public class RestTemplateFactory {
 
     @Value("${request.timeout.socket}")
     private int socketTimeout;
@@ -30,24 +31,26 @@ public class RestTemplateConfigurer {
     @Autowired
     private ProxySupplier proxySupplier;
 
-    public RestTemplate getRestTemplateWithProxy(){
+    private RestTemplate restTemplate;
+
+    public RestTemplate getRestTemplate(boolean proxy) {
+        return proxy ? getRestTemplateWithProxy() : getRestTemplate();
+    }
+
+    private RestTemplate getRestTemplateWithProxy() {
         ProxyCredentials proxyCredentials = proxySupplier.get();
 
         HttpHost myProxy = new HttpHost(proxyCredentials.getHost(), proxyCredentials.getPort());
         CredentialsProvider credsProvider = getCredentialsProvider(proxyCredentials);
 
-        HttpClient httpClient = getHttpClient(myProxy, credsProvider);
-
-        return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
-
+        return new RestTemplate(new HttpComponentsClientHttpRequestFactory(getHttpClient(myProxy, credsProvider)));
     }
 
-    public RestTemplate getRestTemplate(){
-        HttpClient httpClient = getHttpClient();
-        return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
+    private RestTemplate getRestTemplate() {
+        return restTemplate == null ? restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory(getHttpClient())) : restTemplate;
     }
 
-    private BasicCredentialsProvider getCredentialsProvider(ProxyCredentials proxyCredentials){
+    private BasicCredentialsProvider getCredentialsProvider(ProxyCredentials proxyCredentials) {
         BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(new AuthScope(proxyCredentials.getHost(), proxyCredentials.getPort()),
                 new UsernamePasswordCredentials(proxyCredentials.getUsername(), proxyCredentials.getPassword().toCharArray()));
@@ -56,31 +59,27 @@ public class RestTemplateConfigurer {
     }
 
     private HttpClient getHttpClient(HttpHost myProxy, CredentialsProvider credsProvider) {
-        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-
-        return HttpClients.custom()
-                .setConnectionManager(connectionManager)
-                .setDefaultRequestConfig(RequestConfig.custom()
-                        .setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
-                        .setResponseTimeout(socketTimeout, TimeUnit.MILLISECONDS)
-                        .build())
+        return getHttpClientBuilder()
                 .setProxy(myProxy)
                 .setDefaultCredentialsProvider(credsProvider)
                 .build();
     }
 
     private HttpClient getHttpClient() {
-        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+        return getHttpClientBuilder()
+                .build();
+    }
 
+    private HttpClientBuilder getHttpClientBuilder() {
+        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
         return HttpClients.custom()
                 .setConnectionManager(connectionManager)
                 .setDefaultRequestConfig(RequestConfig.custom()
                         .setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
                         .setResponseTimeout(socketTimeout, TimeUnit.MILLISECONDS)
-                        .build())
-                .build();
+                        .build()
+                );
     }
-
 
 
 }

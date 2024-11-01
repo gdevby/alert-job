@@ -1,38 +1,39 @@
-package by.gdev.alert.job.parser.service;
+package by.gdev.alert.job.parser.service.order;
+
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.factory.RestTemplateFactory;
+import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
+import by.gdev.common.model.OrderDTO;
+import jakarta.xml.bind.UnmarshalException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import jakarta.xml.bind.UnmarshalException;
-
-import by.gdev.alert.job.parser.configuration.RestTemplateConfigurer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
-import by.gdev.common.model.OrderDTO;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.client.RestTemplate;
-
 @Slf4j
-public abstract class AbsctractSiteParser {
-	@Autowired
-	private SiteSourceJobRepository siteSourceJobRepository;
+public abstract class AbsctractSiteParser implements SiteParser{
+
 	@Value("${delay.reply.request}")
 	private long delayReplyRequest;
+	private static final int ATTEMPTS_COUNT = 3;
 
 	@Autowired
-	private RestTemplateConfigurer restTemplateConfigurer;
+	private SiteSourceJobRepository siteSourceJobRepository;
+
+	@Autowired
+	private RestTemplateFactory restTemplateFactory;
 
 	public List<OrderDTO> getOrders(Long siteId) {
 		Exception ex = null;
 		List<OrderDTO> orders = new ArrayList<>();
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < ATTEMPTS_COUNT; i++) {
 			try {
 				SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
 				log.trace("parsed {}", siteSourceJob.getName());
@@ -87,12 +88,11 @@ public abstract class AbsctractSiteParser {
 	}
 
 	protected RestTemplate getRestTemplate(boolean isProxyNeeded){
-		if (isProxyNeeded){
-			return restTemplateConfigurer.getRestTemplateWithProxy();
-		}
-		return restTemplateConfigurer.getRestTemplate();
+		return restTemplateFactory.getRestTemplate(isProxyNeeded);
 	}
 
-	abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
+	public abstract List<OrderDTO> parse();
+
+	protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
 
 }

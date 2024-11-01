@@ -2,7 +2,7 @@ package by.gdev.alert.job.parser.controller;
 
 import by.gdev.alert.job.parser.domain.OrderStatisticsDTO;
 import by.gdev.alert.job.parser.domain.db.OrderStatistics;
-import by.gdev.alert.job.parser.service.StatisticsService;
+import by.gdev.alert.job.parser.service.statistic.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.GetMapping;

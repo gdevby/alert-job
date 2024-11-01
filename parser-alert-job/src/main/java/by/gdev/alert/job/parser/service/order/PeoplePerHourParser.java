@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.service;
+package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
@@ -9,6 +9,8 @@ import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
+import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import jakarta.transaction.Transactional;
@@ -52,7 +54,7 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
     private final ModelMapper mapper;
 
     @Transactional
-    public List<OrderDTO> peoplePerHourParser() {
+    public List<OrderDTO> parse() {
         return super.getOrders(10L);
     }
 
@@ -84,14 +86,14 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
                 .map(card -> {
                     String title = card.getElementsByClass("title-nano card__title⤍HourlieTile⤚5LQtW").text();
                     String orderLink = card.getElementsByClass("card__title-link⤍HourlieTile⤚13loh").attr("href");
+                    String price = card.getElementsByClass("u-txt--right card__price⤍HourlieTileMeta⤚3su1s").text();
+                    String amount = price.substring(1).replace(",", "");
 
                     Order order = new Order();
                     order.setTitle(title);
                     order.setLink(orderLink);
                     order.setDateTime(new Date());
 
-                    String price = card.getElementsByClass("u-txt--right card__price⤍HourlieTileMeta⤚3su1s").text();
-                    String amount = price.substring(1).replace(",", "");
 
                     Optional<CurrencyEntity> optionalCurrency = currencyRepository.findByCurrencyCode(CURRENCY_CODE);
 
@@ -137,5 +139,10 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
                     return orderDto;
                 })
                 .toList();
+    }
+
+    @Override
+    public SiteName getSiteName() {
+        return SiteName.PEOPLEPERHOUR;
     }
 }
