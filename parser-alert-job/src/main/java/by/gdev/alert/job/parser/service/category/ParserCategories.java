@@ -42,18 +42,16 @@ public class ParserCategories {
     public void parse() throws IOException {
         log.info("parsed sites and categories");
 
-        categoryParserMap.entrySet().stream()
-                .forEach(entry -> {
-                    SiteName siteName = entry.getKey();
+        categoryParserMap.forEach((siteName, categoryParser) -> {
                     Optional<SiteSourceJob> optionalSiteSourceJob = siteSourceJobRepository.findById(siteName.getId());
                     optionalSiteSourceJob.ifPresentOrElse(siteSourceJob -> {
-                        CategoryParser categoryParser = entry.getValue();
                         Map<ParsedCategory, List<ParsedCategory>> parsed = categoryParser.parse(siteSourceJob);
-                        parsed.forEach((k, v) -> saveData(siteSourceJob, k, v));
+                        parsed.forEach((category, subCategories) -> saveData(siteSourceJob, category, subCategories));
                     }, () -> {
                         throw new RuntimeException(String.format("Cannot find %s site", siteName));
                     });
-                });
+                }
+        );
 
         log.info("finished parsing sites and categories");
     }
