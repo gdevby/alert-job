@@ -1,7 +1,6 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.util.ParserStringUtils;
 import by.gdev.alert.job.parser.util.SiteName;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -20,6 +19,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class HabrCategoryParser implements CategoryParser{
+
+    private static final String DUPBLICATE_KEY = "Duplicate key %s";
+
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
         Document doc = null;
@@ -46,7 +48,7 @@ public class HabrCategoryParser implements CategoryParser{
             log.debug("			subcategory size {}", subList.size());
             return new AbstractMap.SimpleEntry<>(catNew, subList);
         }).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (u, v) -> {
-            throw new IllegalStateException(String.format(ParserStringUtils.DUPBLICATE_KEY, u));
+            throw new IllegalStateException(String.format(DUPBLICATE_KEY, u));
         }, LinkedHashMap::new));    }
 
     @Override

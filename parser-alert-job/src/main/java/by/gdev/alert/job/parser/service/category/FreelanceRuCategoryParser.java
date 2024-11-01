@@ -1,7 +1,6 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.util.ParserStringUtils;
 import by.gdev.alert.job.parser.util.SiteName;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -22,6 +21,7 @@ public class FreelanceRuCategoryParser implements CategoryParser {
     private String freelanceRuRss = "https://freelance.ru/rss/index";
     private String freelanceRuRssFeed = "https://freelance.ru/rss/feed/list/s.%s";
     private String freelanceRuRssFeedSubcategories = "https://freelance.ru/rss/feed/list/s.%s.f.%s";
+    private static final String VALUE = "value";
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
@@ -32,8 +32,8 @@ public class FreelanceRuCategoryParser implements CategoryParser {
             Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
             res.stream()
                     .map(fs -> {
-                        ParsedCategory c = new ParsedCategory(null, fs.text(), Long.valueOf(fs.attr(ParserStringUtils.VALUE)),
-                                String.format(freelanceRuRssFeed, fs.attr(ParserStringUtils.VALUE)));
+                        ParsedCategory c = new ParsedCategory(null, fs.text(), Long.valueOf(fs.attr(VALUE)),
+                                String.format(freelanceRuRssFeed, fs.attr(VALUE)));
                         log.debug("found category {} {} {}", c.id(), c.translatedName(), c.rss());
                         return c;
                     })
