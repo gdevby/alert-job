@@ -1,9 +1,9 @@
 package by.gdev.alert.job.parser.service.order;
 
-import by.gdev.alert.job.parser.configuration.RestTemplateFactory;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.factory.RestTemplateFactory;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.OrderDTO;
 import jakarta.xml.bind.UnmarshalException;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Slf4j
-public abstract class AbsctractSiteParser {
+public abstract class AbsctractSiteParser implements SiteParser{
 	@Autowired
 	private SiteSourceJobRepository siteSourceJobRepository;
 	@Value("${delay.reply.request}")
@@ -87,6 +87,8 @@ public abstract class AbsctractSiteParser {
 	protected RestTemplate getRestTemplate(boolean isProxyNeeded){
 		return restTemplateFactory.getRestTemplate(isProxyNeeded);
 	}
+
+	public abstract List<OrderDTO> parse();
 
 	protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
 

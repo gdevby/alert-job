@@ -10,13 +10,12 @@ import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.google.common.collect.Lists;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -36,8 +35,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -54,7 +51,7 @@ public class FLOrderParser extends AbsctractSiteParser {
 	private final ModelMapper mapper;
 
 	@Transactional(timeout = 2000)
-	public List<OrderDTO> flruParser() {
+	public List<OrderDTO> parse() {
 		return super.getOrders(1L);
 	}
 
@@ -133,4 +130,11 @@ public class FLOrderParser extends AbsctractSiteParser {
 		}
 		return order;
 	}
+
+
+	public SiteName getSiteName() {
+		return SiteName.FLRU;
+	}
+
+
 }

@@ -10,13 +10,12 @@ import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.google.common.collect.Lists;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -39,8 +38,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -67,7 +65,7 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 	private int timeout;
 
 	@Transactional(timeout = 2000)
-	public List<OrderDTO> getOrders() {
+	public List<OrderDTO> parse() {
 		return super.getOrders(3L);
 	}
 
@@ -152,5 +150,10 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 			return order;
 		}
 		return order;
+	}
+
+	@Override
+	public SiteName getSiteName() {
+		return SiteName.FREELANCERU;
 	}
 }

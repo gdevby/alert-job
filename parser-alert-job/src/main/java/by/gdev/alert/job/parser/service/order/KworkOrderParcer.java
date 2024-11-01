@@ -10,12 +10,11 @@ import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +34,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -57,7 +54,7 @@ public class KworkOrderParcer extends AbsctractSiteParser {
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
 	@Transactional(timeout = 2000)
-	public List<OrderDTO> kworkParser() {
+	public List<OrderDTO> parse() {
 		return super.getOrders(7L);
 	}
 
@@ -123,5 +120,10 @@ public class KworkOrderParcer extends AbsctractSiteParser {
 			log.error(e.getMessage());
 			return new Date();
 		}
+	}
+
+	@Override
+	public SiteName getSiteName() {
+		return SiteName.KWORK;
 	}
 }

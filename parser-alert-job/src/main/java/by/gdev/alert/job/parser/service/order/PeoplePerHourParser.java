@@ -10,6 +10,7 @@ import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import jakarta.transaction.Transactional;
@@ -53,7 +54,7 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
     private final ModelMapper mapper;
 
     @Transactional
-    public List<OrderDTO> peoplePerHourParser() {
+    public List<OrderDTO> parse() {
         return super.getOrders(10L);
     }
 
@@ -138,5 +139,10 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
                     return orderDto;
                 })
                 .toList();
+    }
+
+    @Override
+    public SiteName getSiteName() {
+        return SiteName.PEOPLEPERHOUR;
     }
 }

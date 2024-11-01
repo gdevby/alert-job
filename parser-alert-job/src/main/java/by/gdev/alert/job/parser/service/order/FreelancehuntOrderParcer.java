@@ -11,11 +11,10 @@ import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.google.common.collect.Lists;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -44,8 +43,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -68,7 +65,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 	private RestTemplate restTemplate;
 
 	@Transactional(timeout = 2000)
-	public List<OrderDTO> freelancehuntParser() {
+	public List<OrderDTO> parse() {
 		return super.getOrders(5L);
 	}
 
@@ -152,5 +149,10 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
 			log.error("problem with convert date {}", orderDate);
 			return new Date();
 		}
+	}
+
+	@Override
+	public SiteName getSiteName() {
+		return SiteName.FREELANCEHUNT;
 	}
 }

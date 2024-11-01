@@ -12,11 +12,10 @@ import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.google.common.collect.Lists;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -31,8 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -52,7 +50,7 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 	private String sourceLink = "https://www.freelancer.com/projects/%s";
 
 	@Transactional(timeout = 2000)
-	public List<OrderDTO> freelancerParser() {
+	public List<OrderDTO> parse() {
 		return super.getOrders(8L);
 	}
 
@@ -109,5 +107,10 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 			dto.setSourceSite(source);
 			return dto;
 		}).toList();
+	}
+
+	@Override
+	public SiteName getSiteName() {
+		return SiteName.FREELANCER;
 	}
 }

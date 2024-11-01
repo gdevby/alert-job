@@ -10,10 +10,9 @@ import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +36,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -60,7 +57,7 @@ public class YouDoOrderParcer extends AbsctractSiteParser {
 	private final ModelMapper mapper;
 
 	@Transactional(timeout = 2000)
-	public List<OrderDTO> youDoParser() {
+	public List<OrderDTO> parse() {
 		return super.getOrders(6L);
 	}
 
@@ -135,5 +132,10 @@ public class YouDoOrderParcer extends AbsctractSiteParser {
 				+ "\"onlyB2B\":false,\"onlyVacancies\":false,\"priceMin\":\"\",\"sortType\":1,"
 				+ "\"onlyVirtual\":false, %s,\"searchRequestId\":\"%s\"}";
 		return String.format(b, field, UUID.randomUUID().toString());
+	}
+
+	@Override
+	public SiteName getSiteName() {
+		return SiteName.YOUDO;
 	}
 }

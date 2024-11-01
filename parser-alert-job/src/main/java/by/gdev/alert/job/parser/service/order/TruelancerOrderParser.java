@@ -13,6 +13,7 @@ import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
@@ -42,12 +43,12 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
     private final ParserSourceRepository parserSourceRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper mapper;
+    private RestTemplate restTemplate;
 
     @Transactional(timeout = 2000)
-    public List<OrderDTO> truelancerParser() {
+    public List<OrderDTO> parse() {
         return super.getOrders(9L);
     }
-    private RestTemplate restTemplate;
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
@@ -111,5 +112,10 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
                     return orderDto;
                 })
                 .toList();
+    }
+
+    @Override
+    public SiteName getSiteName() {
+        return SiteName.TRUELANCER;
     }
 }
