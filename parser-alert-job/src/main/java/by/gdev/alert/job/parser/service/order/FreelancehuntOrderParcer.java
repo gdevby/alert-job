@@ -1,16 +1,24 @@
-package by.gdev.alert.job.parser.service;
+package by.gdev.alert.job.parser.service.order;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-
+import by.gdev.alert.job.parser.domain.currency.Currency;
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
+import by.gdev.alert.job.parser.domain.db.Order;
+import by.gdev.alert.job.parser.domain.db.ParserSource;
+import by.gdev.alert.job.parser.domain.db.Price;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.repository.CurrencyRepository;
+import by.gdev.alert.job.parser.repository.OrderRepository;
+import by.gdev.alert.job.parser.repository.ParserSourceRepository;
+import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SourceSiteDTO;
+import com.google.common.collect.Lists;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -25,25 +33,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import com.google.common.collect.Lists;
-
-import by.gdev.alert.job.parser.domain.currency.Currency;
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
-import by.gdev.alert.job.parser.domain.db.Order;
-import by.gdev.alert.job.parser.domain.db.ParserSource;
-import by.gdev.alert.job.parser.domain.db.Price;
-import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.repository.CurrencyRepository;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
 
 @Data
 @EqualsAndHashCode(callSuper = false)

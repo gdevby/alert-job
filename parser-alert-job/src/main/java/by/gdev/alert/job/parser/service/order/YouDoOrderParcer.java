@@ -1,12 +1,22 @@
-package by.gdev.alert.job.parser.service;
+package by.gdev.alert.job.parser.service.order;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-
+import by.gdev.alert.job.parser.domain.YouDoRoot;
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.Order;
+import by.gdev.alert.job.parser.domain.db.ParserSource;
+import by.gdev.alert.job.parser.domain.db.Price;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.repository.OrderRepository;
+import by.gdev.alert.job.parser.repository.ParserSourceRepository;
+import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
+import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SourceSiteDTO;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -20,22 +30,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import by.gdev.alert.job.parser.domain.YouDoRoot;
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.Order;
-import by.gdev.alert.job.parser.domain.db.ParserSource;
-import by.gdev.alert.job.parser.domain.db.Price;
-import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
-import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @Data
 @EqualsAndHashCode(callSuper = false)

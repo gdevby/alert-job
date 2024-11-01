@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.service;
+package by.gdev.alert.job.parser.service.statistic;
 
 import by.gdev.alert.job.parser.domain.db.OrderStatistics;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;

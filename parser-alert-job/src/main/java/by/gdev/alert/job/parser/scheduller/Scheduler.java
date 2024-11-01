@@ -1,10 +1,20 @@
 package by.gdev.alert.job.parser.scheduller;
 
-import java.io.File;
-import java.net.URLDecoder;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-
+import by.gdev.alert.job.parser.domain.currency.CurrencyRoot;
+import by.gdev.alert.job.parser.domain.currency.Valute;
+import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
+import by.gdev.alert.job.parser.domain.rss.Rss;
+import by.gdev.alert.job.parser.repository.CurrencyRepository;
+import by.gdev.alert.job.parser.repository.OrderLinksRepository;
+import by.gdev.alert.job.parser.repository.OrderRepository;
+import by.gdev.alert.job.parser.service.category.ParserCategories;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import io.micrometer.core.instrument.util.IOUtils;
+import jakarta.xml.bind.JAXBContext;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
@@ -15,22 +25,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
-
-import by.gdev.alert.job.parser.domain.currency.CurrencyRoot;
-import by.gdev.alert.job.parser.domain.currency.Valute;
-import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
-import by.gdev.alert.job.parser.domain.rss.Rss;
-import by.gdev.alert.job.parser.repository.CurrencyRepository;
-import by.gdev.alert.job.parser.repository.OrderLinksRepository;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.service.ParserCategories;
-import io.micrometer.core.instrument.util.IOUtils;
-import jakarta.xml.bind.JAXBContext;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import java.io.File;
+import java.net.URLDecoder;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Component
 @RequiredArgsConstructor
