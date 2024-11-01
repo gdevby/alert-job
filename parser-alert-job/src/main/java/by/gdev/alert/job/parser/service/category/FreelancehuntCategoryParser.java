@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.service.category;
 
-import by.gdev.alert.job.parser.configuration.RestTemplateFactory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.factory.RestTemplateFactory;
 import by.gdev.alert.job.parser.util.SiteName;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;

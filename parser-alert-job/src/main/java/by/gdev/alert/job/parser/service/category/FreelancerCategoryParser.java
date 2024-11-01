@@ -1,8 +1,8 @@
 package by.gdev.alert.job.parser.service.category;
 
-import by.gdev.alert.job.parser.configuration.RestTemplateFactory;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.parsing.FreelancerResult;
+import by.gdev.alert.job.parser.factory.RestTemplateFactory;
 import by.gdev.alert.job.parser.util.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +21,9 @@ public class FreelancerCategoryParser implements CategoryParser {
 
     @Value("${freelancer.proxy.active}")
     private boolean freelancerProxyActive;
-
     private String freelancerCategory = "https://www.freelancer.com/api/projects/0.1/jobs/search";
-    private final RestTemplateFactory restTemplateFactory;
 
+    private final RestTemplateFactory restTemplateFactory;
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {

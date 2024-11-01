@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.configuration;
+package by.gdev.alert.job.parser.factory;
 
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
