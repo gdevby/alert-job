@@ -50,7 +50,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private final CurrencyRepository currencyRepository;
 
 	private final ApplicationContext context;
-	private final RestTemplate template;
+	private final RestTemplate restTemplate;
 
 	@Override
 	@Transactional
@@ -114,7 +114,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	@Scheduled(cron = "0 0 12 * * *")
 	@SneakyThrows
 	public void currencyParser() {
-		String request = template.getForObject(currencySiteUrl, String.class);
+		String request = restTemplate.getForObject(currencySiteUrl, String.class);
 		ObjectMapper mapper = new ObjectMapper();
 		CurrencyRoot currency = mapper.readValue(request, CurrencyRoot.class);
 		currency.getValute().entrySet().forEach(e -> {
