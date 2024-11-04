@@ -26,28 +26,38 @@ public class FreelanceRuCategoryParser implements CategoryParser {
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
         try {
-            Document doc = Jsoup.connect(siteSourceJob.getParsedURI()).get();
+            Document doc = Jsoup.connect(freelanceRuRss).get();
 
             Elements res = doc.getElementById("spec-selector-id").children();
             Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
             res.stream()
-                    .map(fs -> {
-                        ParsedCategory c = new ParsedCategory(null, fs.text(), Long.valueOf(fs.attr(VALUE)),
-                                String.format(freelanceRuRssFeed, fs.attr(VALUE)));
-                        log.debug("found category {} {} {}", c.id(), c.translatedName(), c.rss());
-                        return c;
+                    .map(element -> {
+                        ParsedCategory parsedCategory = new ParsedCategory(
+                                null,
+                                element.text(),
+                                Long.valueOf(element.attr(VALUE)),
+                                String.format(freelanceRuRssFeed, element.attr(VALUE))
+                        );
+                        log.debug("found category {} {} {}", parsedCategory.id(), parsedCategory.translatedName(), parsedCategory.rss());
+                        return parsedCategory;
                     })
-                    .filter(f -> !f.id().equals(0L))
-                    .peek(f -> result.put(f, doc.getElementById("spec-" + f.id()).select("label")
-                            .stream()
-                            .map(sc -> {
-                                Long id = Long.valueOf(sc.child(0).attr("value"));
-                                return new ParsedCategory(null, sc.text(), id,
-                                        String.format(freelanceRuRssFeedSubcategories, f.id(), id));
-                            })
-                            .filter(fc -> !fc.id().equals(f.id()))
-                            .peek(fc -> log.debug("		found subcategory {} {} {} ", fc.id(), fc.translatedName(), fc.rss()))
-                            .collect(Collectors.toList())));
+                    .filter(parsedCategory -> !parsedCategory.id().equals(0L))
+                    .peek(parsedCategory ->
+                            result.put(parsedCategory,
+                                    doc.getElementById("spec-" + parsedCategory.id()).select("label").stream()
+                                    .map(element -> {
+                                        Long id = Long.valueOf(element.child(0).attr("value"));
+                                        return new ParsedCategory(
+                                                null,
+                                                element.text(),
+                                                id,
+                                                String.format(freelanceRuRssFeedSubcategories, parsedCategory.id(), id));
+                                    })
+                                    .filter(subCategory -> !subCategory.id().equals(parsedCategory.id()))
+                                    .peek(subCategory -> log.debug("found subcategory {} {} {} ", subCategory.id(), subCategory.translatedName(), subCategory.rss()))
+                                    .collect(Collectors.toList())
+                            )
+                    ).findAny();
             return result;
         } catch (IOException e) {
             log.error("cannot parse {} site", siteSourceJob.getParsedURI());
