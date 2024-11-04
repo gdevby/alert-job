@@ -12,6 +12,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -53,17 +54,20 @@ public class AddedUserInfo implements GlobalFilter {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-		Mono<Void> monoFilter = ReactiveSecurityContextHolder.getContext().map(sc -> sc.getAuthentication())
+		Mono<Void> monoFilter = ReactiveSecurityContextHolder.getContext()
+				.map(SecurityContext::getAuthentication)
 				.flatMap(authentication -> {
 
 					Object principal = authentication.getPrincipal();
 					DefaultOidcUser user = (DefaultOidcUser) principal;
-					ServerWebExchange exchange1 = filterUtils.setRequestHeader(exchange, HeaderName.USERNAME_HEADER, user.getUserInfo().getPreferredUsername());
-					exchange1 = filterUtils.setRequestHeader(exchange1, HeaderName.UUID_USER_HEADER, user.getUserInfo().getSubject());
-					exchange1 = filterUtils.setRequestHeader(exchange1, HeaderName.EMAIL_USER_HEADER, user.getUserInfo().getEmail());
 
-					return chain.filter(exchange1);
-				});
+					ServerWebExchange exchangeWithHeaders = filterUtils.setRequestHeader(exchange, HeaderName.USERNAME_HEADER, user.getUserInfo().getPreferredUsername());
+					exchangeWithHeaders = filterUtils.setRequestHeader(exchangeWithHeaders, HeaderName.UUID_USER_HEADER, user.getUserInfo().getSubject());
+					exchangeWithHeaders = filterUtils.setRequestHeader(exchangeWithHeaders, HeaderName.EMAIL_USER_HEADER, user.getUserInfo().getEmail());
+
+					return chain.filter(exchangeWithHeaders);
+				})
+				.switchIfEmpty(chain.filter(exchange));
 
 		return  monoFilter;
 	}
