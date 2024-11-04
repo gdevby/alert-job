@@ -15,27 +15,35 @@ import org.springframework.security.web.server.authentication.logout.ServerLogou
 @EnableMethodSecurity(jsr250Enabled = true)
 public class SecurityConfig {
 
-	@Bean
-	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
-			ServerLogoutSuccessHandler handler) {
-		http.csrf(ServerHttpSecurity.CsrfSpec::disable)
-				.authorizeExchange(req -> req.pathMatchers("/logout.html", "/", "/favicon.ico", "/actuator/**",
-						"/core-alert-job/api/user/test", "/parser/api/orders/statistics").permitAll())
+    @Bean
+    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
+                                                            ServerLogoutSuccessHandler handler) {
+        http.csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .authorizeExchange(req ->
+                        req.pathMatchers("/logout.html",
+                                        "/",
+                                        "/favicon.ico",
+                                        "/actuator/**",
+                                        "/core-alert-job/api/user/test",
+                                        "/parser/api/orders/statistics")
+                                .permitAll()
+                                .anyExchange()
+                                .authenticated()
+                )
+                .oauth2Login(Customizer.withDefaults())
+                .logout(logout -> logout.logoutSuccessHandler(handler));
+        return http.build();
+    }
 
-				.authorizeExchange(req -> req.anyExchange().authenticated()).oauth2Login(Customizer.withDefaults())
-				.logout(logout -> logout.logoutSuccessHandler(handler));
-		return http.build();
-	}
+    @Bean
+    public ServerLogoutSuccessHandler keycloakLogoutSuccessHandler(ReactiveClientRegistrationRepository repository) {
 
-	@Bean
-	public ServerLogoutSuccessHandler keycloakLogoutSuccessHandler(ReactiveClientRegistrationRepository repository) {
+        OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler =
+                new OidcClientInitiatedServerLogoutSuccessHandler(repository);
 
-		OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
-				repository);
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}");
 
-		oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}");
-
-		return oidcLogoutSuccessHandler;
-	}
+        return oidcLogoutSuccessHandler;
+    }
 
 }
