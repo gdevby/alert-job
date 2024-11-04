@@ -11,6 +11,13 @@ const Chart = () => {
 
 		parserService.getStatistics()
 			.then(response => {
+				const contentType = response.headers['content-type'];
+
+				if (contentType !== 'application/json') {
+					setStatistics(undefined)
+					return;
+				}
+
 				const haveData = Object.keys(response.data).length > 0;
 				setStatistics(haveData ? response.data : undefined)
 			})
