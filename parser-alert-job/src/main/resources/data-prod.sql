@@ -20,13 +20,13 @@ INSERT IGNORE INTO fl_category(ID,NATIVE_LOC_NAME) VALUES(22, 'Обучение 
 INSERT IGNORE INTO fl_category(ID,NATIVE_LOC_NAME) VALUES(23, 'Мобильные приложения');           
 INSERT IGNORE INTO fl_category(ID,NATIVE_LOC_NAME) VALUES(24, 'Сети и инфосистемы');          
        
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(1, 'FLRU', 'https://www.fl.ru/projects/', TRUE); 
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(3, 'FREELANCE.RU', 'https://freelance.ru/project/search/pro', TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(4, 'WEBLANCER.NET', 'https://www.weblancer.net/freelance/', TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(5, 'FREELANCEHUNT.COM', 'https://freelancehunt.com/projects', TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(6, 'YOUDO.COM', 'https://youdo.com/tasks-all-opened-all', TRUE);  
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(7, 'KWORK.RU', 'https://kwork.ru/categories', TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(8, 'FREELANCER.com', 'https://www.freelancer.com/api/projects/0.1/projects/all', TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(9, 'TRUELANCER.COM', 'https://api.truelancer.com/api/v1/projects', TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse) VALUES(10, 'PEOPLEPERHOUR', 'https://www.peopleperhour.com', TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(1, 'FLRU', 'https://www.fl.ru/projects/', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(3, 'FREELANCE.RU', 'https://freelance.ru/project/search/pro', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(4, 'WEBLANCER.NET', 'https://www.weblancer.net/freelance/', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(5, 'FREELANCEHUNT.COM', 'https://freelancehunt.com/projects', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(6, 'YOUDO.COM', 'https://youdo.com/tasks-all-opened-all', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(7, 'KWORK.RU', 'https://kwork.ru/categories', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(8, 'FREELANCER.COM', 'https://www.freelancer.com/api/projects/0.1/projects/all', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(9, 'TRUELANCER.COM', 'https://api.truelancer.com/api/v1/projects', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(10, 'PEOPLEPERHOUR.COM', 'https://www.peopleperhour.com', TRUE, TRUE);
