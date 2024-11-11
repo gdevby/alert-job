@@ -19,17 +19,21 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WorkspaceCategoryParser implements CategoryParser {
 
+
+    private final String baseURL = "https://workspace.ru";
+
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
         try {
             Document document = Jsoup.connect(siteSourceJob.getParsedURI()).get();
 
-            Elements elements = document.getElementsByClass("main-new-list__item _small _arrow-right");
-
-            Map<ParsedCategory, List<ParsedCategory>> collect = elements.stream()
-                    .map(element -> {
-                        String link = element.attr("href");
-                        String categoryName = element.child(1).child(0).text();
+            Elements categoryBar = document.getElementsByClass("filters__group _need vacancies__filters");
+            Elements categoryElements = categoryBar.get(0).getElementsByClass("vacancies__filters-check-item");
+            Map<ParsedCategory, List<ParsedCategory>> collect = categoryElements.stream()
+                    .map(categoryElement -> {
+                        String relativePath = categoryElement.getElementsByTag("a").get(0).attr("href");
+                        String link = baseURL + relativePath;
+                        String categoryName = categoryElement.text();
                         log.debug("found category {}", categoryName);
                         return new ParsedCategory(null, categoryName, null, link);
                     })
@@ -39,7 +43,7 @@ public class WorkspaceCategoryParser implements CategoryParser {
                     ));
             return collect;
         } catch (IOException e) {
-            log.error("Cannot parse {} site", siteSourceJob.getParsedURI());
+            log.error("Cannot parse categories by link {}", siteSourceJob.getParsedURI());
             return Map.of();
         }
     }
