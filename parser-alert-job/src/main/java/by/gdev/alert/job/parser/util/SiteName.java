@@ -10,7 +10,8 @@ public enum SiteName {
     KWORK(7),
     FREELANCER(8),
     TRUELANCER(9),
-    PEOPLEPERHOUR(10);
+    PEOPLEPERHOUR(10),
+    WORKSPACE(11);
 
     private long id;
 
