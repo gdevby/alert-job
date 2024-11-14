@@ -24,7 +24,6 @@ import org.jsoup.nodes.Document;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.net.URL;
@@ -64,11 +63,6 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
     private volatile Map<String, String> cookies;
     private volatile LocalDateTime lastLogin;
 
-
-    @Transactional(timeout = 2000)
-    public List<OrderDTO> parse() {
-        return super.getOrders(3L);
-    }
 
     @Override
     @SneakyThrows

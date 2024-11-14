@@ -13,7 +13,6 @@ import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -52,11 +51,6 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
     private final ParserSourceRepository parserSourceRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper mapper;
-
-    @Transactional
-    public List<OrderDTO> parse() {
-        return super.getOrders(10L);
-    }
 
     @Override
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {

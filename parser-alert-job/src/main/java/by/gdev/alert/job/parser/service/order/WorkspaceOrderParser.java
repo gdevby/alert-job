@@ -19,7 +19,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -43,12 +42,6 @@ public class WorkspaceOrderParser extends AbsctractSiteParser {
     private final ParserSourceRepository parserSourceRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper mapper;
-
-    @Override
-    @Transactional
-    public List<OrderDTO> parse() {
-        return super.getOrders(11L);
-    }
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
