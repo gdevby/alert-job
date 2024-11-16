@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WorkanaCategoryParser implements CategoryParser {
 
-
     private String baseURL;
 
     @Override
@@ -32,28 +31,16 @@ public class WorkanaCategoryParser implements CategoryParser {
             );
             Page page = context.newPage();
 
-
             baseURL = siteSourceJob.getParsedURI();
+
             page.navigate(baseURL);
             page.waitForLoadState();
-            handleCookiePopup(page);
 
+            handleCookiePopup(page);
 
             Map<ParsedCategory, List<ParsedCategory>> categories = extractCategories(page);
             browser.close();
             return categories;
-        }
-    }
-
-    private void handleCookiePopup(Page page) {
-        try {
-            page.locator("button#onetrust-pc-btn-handler").click();
-
-            page.waitForSelector("button.ot-pc-refuse-all-handler", new Page.WaitForSelectorOptions().setTimeout(5000));
-
-            page.locator("button.ot-pc-refuse-all-handler").click();
-        } catch (Exception e) {
-            System.out.println("Popup handling failed or no popup detected: " + e.getMessage());
         }
     }
 
@@ -65,25 +52,23 @@ public class WorkanaCategoryParser implements CategoryParser {
                 .map(categoryLocator -> {
 
                     String categoryName = categoryLocator.textContent();
+                    String categoryUrlParam = categoryLocator.locator("input[type='checkbox']").getAttribute("value");
+                    String categoryURL = getURL(categoryUrlParam);
 
                     Locator checkbox = page.locator("label").filter(new Locator.FilterOptions().setHasText(categoryName));
-                    Locator input = categoryLocator.locator("input[type='checkbox']");
 
-                    String categoryValue = input.getAttribute("value");
-                    String categoryURL = getURL(categoryValue);
                     checkbox.click();
 
                     ParsedCategory parsedCategory = new ParsedCategory(null, categoryName, null, categoryURL);
                     log.debug("found category {}, {}", categoryName, categoryURL);
 
-
                     List<Locator> subcategoryLocators = categoryLocator.locator("ul > li").all();
                     List<ParsedCategory> subCategories = subcategoryLocators.stream()
                             .map(subcategoryLocator -> {
+
                                 String subCategoryName = subcategoryLocator.innerText();
-                                Locator input1 = subcategoryLocator.locator("input[type='checkbox']");
-                                String subCategoryValue = input1.getAttribute("value");
-                                String subCategoryURL = getURL(categoryValue, subCategoryValue);
+                                String subCategoryUrlParam = subcategoryLocator.locator("input[type='checkbox']").getAttribute("value");
+                                String subCategoryURL = getURL(categoryUrlParam, subCategoryUrlParam);
 
                                 log.debug("found category {}, {}", subCategoryName, subCategoryURL);
 
@@ -97,6 +82,23 @@ public class WorkanaCategoryParser implements CategoryParser {
                 .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
     }
 
+    @Override
+    public SiteName getSiteName() {
+        return SiteName.WORKANA;
+    }
+
+    private void handleCookiePopup(Page page) {
+        try {
+            page.locator("button#onetrust-pc-btn-handler").click();
+
+            page.waitForSelector("button.ot-pc-refuse-all-handler");
+
+            page.locator("button.ot-pc-refuse-all-handler").click();
+        } catch (Exception e) {
+            System.out.println("Popup handling failed or no popup detected: " + e.getMessage());
+        }
+    }
+
     private String getURL(String categoryValue) {
         if (!categoryValue.isEmpty()) {
             return baseURL + "?category=" + categoryValue;
@@ -106,10 +108,5 @@ public class WorkanaCategoryParser implements CategoryParser {
 
     private String getURL(String categoryValue, String subCategoryValue) {
         return baseURL + "?category=" + categoryValue + "&subcategory=" + subCategoryValue;
-    }
-
-    @Override
-    public SiteName getSiteName() {
-        return SiteName.WORKANA;
     }
 }
