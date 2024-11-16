@@ -31,7 +31,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
 
-	@Transactional
+	@Transactional(timeout = 2000)
 	public List<OrderDTO> parse(){
 		return getOrders(getSiteName().getId());
 	};
