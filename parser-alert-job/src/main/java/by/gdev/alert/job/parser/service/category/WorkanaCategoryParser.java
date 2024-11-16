@@ -47,6 +47,7 @@ public class WorkanaCategoryParser implements CategoryParser {
     public Map<ParsedCategory, List<ParsedCategory>> extractCategories(Page page) {
 
         List<Locator> categories = page.locator("ul.search-category > li").all();
+        categories.remove(0); // to delete "all categories" category
 
         return categories.stream()
                 .map(categoryLocator -> {
