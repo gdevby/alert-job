@@ -10,6 +10,7 @@ import jakarta.xml.bind.UnmarshalException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
@@ -19,9 +20,9 @@ import java.util.Objects;
 
 @Slf4j
 public abstract class AbsctractSiteParser implements SiteParser{
-
 	@Value("${delay.reply.request}")
 	private long delayReplyRequest;
+
 	private static final int ATTEMPTS_COUNT = 3;
 
 	@Autowired
@@ -29,6 +30,11 @@ public abstract class AbsctractSiteParser implements SiteParser{
 
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
+
+	@Transactional
+	public List<OrderDTO> parse(){
+		return getOrders(getSiteName().getId());
+	};
 
 	public List<OrderDTO> getOrders(Long siteId) {
 		Exception ex = null;
@@ -91,8 +97,5 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		return restTemplateFactory.getRestTemplate(isProxyNeeded);
 	}
 
-	public abstract List<OrderDTO> parse();
-
 	protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
-
 }

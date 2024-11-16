@@ -23,7 +23,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.net.URL;
@@ -47,11 +46,6 @@ public class FLOrderParser extends AbsctractSiteParser {
     private Pattern currencyPatter = Pattern.compile("\\d.*&#8381;");
 
     private final ModelMapper mapper;
-
-    @Transactional(timeout = 2000)
-    public List<OrderDTO> parse() {
-        return super.getOrders(1L);
-    }
 
     @Override
     @SneakyThrows

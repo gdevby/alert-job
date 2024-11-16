@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Date;
@@ -48,11 +47,6 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 
     private RestTemplate restTemplate;
 
-
-    @Transactional(timeout = 2000)
-    public List<OrderDTO> parse() {
-        return super.getOrders(8L);
-    }
 
     @Override
     @SneakyThrows

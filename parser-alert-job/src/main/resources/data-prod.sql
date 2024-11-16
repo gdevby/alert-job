@@ -31,3 +31,4 @@ INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(8, 'FR
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(9, 'TRUELANCER.COM', 'https://api.truelancer.com/api/v1/projects', TRUE, TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(10, 'PEOPLEPERHOUR.COM', 'https://www.peopleperhour.com', TRUE, TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(11, 'WORKSPACE.RU', 'https://workspace.ru/tenders', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(12, 'WORKANA.COM', 'https://www.workana.com/jobs', TRUE, TRUE);

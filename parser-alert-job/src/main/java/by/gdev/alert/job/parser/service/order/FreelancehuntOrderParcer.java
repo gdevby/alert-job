@@ -29,7 +29,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.text.DateFormat;
@@ -62,11 +61,6 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
     private final ModelMapper mapper;
 
     private RestTemplate restTemplate;
-
-    @Transactional(timeout = 2000)
-    public List<OrderDTO> parse() {
-        return super.getOrders(5L);
-    }
 
     @Override
     @SneakyThrows

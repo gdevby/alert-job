@@ -25,7 +25,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
@@ -50,11 +49,6 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
     private final CurrencyRepository currencyRepository;
     private final ModelMapper mapper;
     private SimpleDateFormat convertor = new SimpleDateFormat(DATE_FORMAT);
-
-    @Transactional(timeout = 2000)
-    public List<OrderDTO> parse() {
-        return super.getOrders(4L);
-    }
 
     @Override
     @SneakyThrows

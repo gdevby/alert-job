@@ -24,7 +24,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URL;
 import java.util.List;
@@ -42,12 +41,6 @@ public class HabrOrderParser extends AbsctractSiteParser {
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
     private final ModelMapper mapper;
-
-
-    @Transactional(timeout = 2000)
-    public List<OrderDTO> parse() {
-        return super.getOrders(2L);
-    }
 
     @Override
     @SneakyThrows
