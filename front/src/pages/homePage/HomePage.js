@@ -17,8 +17,13 @@ const list = ['Настройка по дням недели и времени, 
 	'https://www.weblancer.net', 
 	'https://freelancehunt.com', 
 	'https://youdo.com', 
-	'https://kwork.com', 
-	'https://www.freelancer.com']
+	'https://kwork.ru', 
+	'https://www.freelancer.com',
+	'https://www.peopleperhour.com',
+	'https://truelancer.com',
+	'https://workana.com',
+	'https://workspace.ru'
+]
 
 const HomePage = () => {
 	return <div className='container'>
