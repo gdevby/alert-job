@@ -48,9 +48,10 @@ const Chart = () => {
 	});
 
   return (
-    <div style={{height: 384, marginTop: 32}}>
+    <div style={{ height: 384, marginTop: 32, marginBottom: 32 }}>
 			<p style={{textAlign: 'center'}}>График количество заказов по дням</p>
 			<LineChart
+				margin={{bottom: 96}}
 				yAxis={[{ label: 'количество заказов' }]}
 				xAxis={[{ scaleType: 'utc', data: uniqueDates.map(date => new Date(date)) }]}
 				series={data}
