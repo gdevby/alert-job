@@ -158,6 +158,13 @@ services:
       VIRTUAL_PATH: /front
       TZ: Europe/Moscow
     mem_limit: 256m
+  adminer:
+    image: adminer
+    restart: always
+    environment:
+      VIRTUAL_HOST: alertjob.by
+      VIRTUAL_PORT: 8080
+      VIRTUAL_PATH: /db
 volumes:
   grafana-volume: {}           
 networks:

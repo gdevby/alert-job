@@ -222,6 +222,14 @@ services:
       GF_SERVER_ROOT_URL: "https://$grafana_domain"
       GF_SERVER_DOMAIN: $grafana_domain
       TZ: Europe/Moscow
+  adminer:
+    image: adminer
+    restart: always
+    environment:
+      VIRTUAL_HOST: $domain
+      VIRTUAL_PORT: 8080
+      VIRTUAL_PATH: /db
+      LETSENCRYPT_HOST: $domain
 volumes:
   database-volume: {}
   grafana-volume: {}
