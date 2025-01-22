@@ -9,6 +9,8 @@ import { coreService } from '../../../services/parser/endponits/coreService';
 
 import './alertTime.scss'
 
+import { getTimeZone } from '../helpers/getTimeZone';
+
 const AlertTime = (props) => {
 
 	const { shedule } = props;
@@ -43,22 +45,13 @@ const AlertTime = (props) => {
 			alertDate: newDay.id,
 			startAlert,
 			endAlert,
-			timeZone: getTimeZone(new Date().getTimezoneOffset() / 60)
+			timeZone: getTimeZone()
 		}
 		try {
 			const newAlert = await coreService.addAlertTime(data)
 			setAddedAlertDays(prev => [...prev, newAlert.data])
 		} catch (e) {
 			console.log(e)
-		}
-	}
-	
-	const getTimeZone = (zone) => {
-		if (Math.sign(zone) == 1) {
-			return `-${zone}`
-		}
-		if (Math.sign(zone) == -1) {
-			return `+${-zone}`
 		}
 	}
 
