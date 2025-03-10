@@ -1,4 +1,6 @@
-### Launching app for development
+## Launching app for development
+
+### 1. Clone the projects
 
 Open terminal and clone the projects
 
@@ -7,12 +9,16 @@ git clone https://github.com/gdevby/alert-job.git
 git clone https://github.com/gdevby/alert-job-config-repo.git
 ```
 
+### 2. Keycloak
+
 Enter project folder and after that enter keycloak folder
 ```bash
 cd alert-job
 cd keycloak
 ./build.sh
 ```
+
+### 3. Node installing
 
 Go to parent directory and after that enter front folder, and run next commands
 ```bash
@@ -23,6 +29,8 @@ npm i
 npm run build
 ```
 
+### 4. Docker 
+
 Go to parent directory, create images and run containers 
 ```bash
 cd ..
@@ -31,21 +39,27 @@ docker compose up -d keycloak logstash
 sudo chmod 777 public
 ```
 
+### 5. Config repo
+
 There are two ways wo setup config:
-1) In config module, in resource folder in `application.properties` file uncomment `#spring.cloud.config.server.native.search-locations=file:///....../alert-job-config` specify the local path to the config project.
+1) In config module, in resource folder in `application.properties` file uncomment `#spring.cloud.config.server.native.search-locations=file:///....../alert-job-config-repo` specify the local path to the config project.
 Should look like this:
 `spring.cloud.config.server.native.search-locations=/home/username/IdeaProjects/alert-job-config-repo`. 
 Add `native` profile to the `spring.profiles.active=dev`. This is needed to use local configuration
 2) You may add Environment Variables in Running configuration in your IDE.
 
+### 6. Hosts
+
 Then open terminal and alter hosts file
 ```bash
 sudo nano /etc/hosts
 
-add next line
-127.0.0.1       config eureka keycloak gateway notification parser core auth.alertjob.by alertjob.by logstash
-
+add next lines
+127.0.0.1 config eureka keycloak gateway notification parser core 
+127.0.0.1 auth.alertjob.by alertjob.by logstash
 ```
+
+### 7. Nginx
 
 Downloading nginx
 ```bash
@@ -109,6 +123,14 @@ Then adding user www-data to yours group
 sudo usermod -aG $USER www-data 
 ```
 
-In next order run next services config eureka gateway parser core notification
+### 8. Run project
+
+Run project services using your IDE in next order: 
+1. config 
+2. eureka 
+3. gateway 
+4. parser 
+5. core 
+6. notification 
 
 After that project available on [alertjob.by](http://alertjob.by/)
