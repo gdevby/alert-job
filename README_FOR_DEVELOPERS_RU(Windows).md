@@ -74,7 +74,7 @@ docker compose up -d keycloak logstash
 ```
 определите локальный путь к проекту конфигураций. Должно получиться примерно следующее
 ```bash
-spring.cloud.config.server.native.search-locations=file:///e:/Programming/Java EE/alert-job-config-repo/
+spring.cloud.config.server.native.search-locations=file:///e:/Programming/Java_EE/alert-job-config-repo/
 ```
 <b> обратите внимание на тип слешей (здесь "/"), использованные в путях во всех файлах конфигурации. </b>
 

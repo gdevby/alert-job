@@ -73,7 +73,7 @@ There are two ways wo setup config:
 ```
 specify the local path to the config project. Should look like next lines
 ```bash
-spring.cloud.config.server.native.search-locations=file:///e:/Programming/Java EE/alert-job-config-repo/
+spring.cloud.config.server.native.search-locations=file:///e:/Programming/Java_EE/alert-job-config-repo/
 ```
 <b> pay attention for type of slashes (here is "/") used at paths in all config files. </b>
 
