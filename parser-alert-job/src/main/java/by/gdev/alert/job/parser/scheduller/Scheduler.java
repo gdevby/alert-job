@@ -9,7 +9,6 @@ import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.service.category.ParserCategories;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import io.micrometer.core.instrument.util.IOUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +49,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	@Override
 	@Transactional
 	public void onApplicationEvent(ContextRefreshedEvent event) {
-		Resource res = context.getResource(updateFilePath);
 		try {
 			currencyParser();
 			if (parseCategories) {
@@ -62,8 +59,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 									+ " For prod or dev needs you can changed parser.categories.file.path with proper rss for parser service."
 									+ " The example you can find here src/main/resources/hubr.txt");
 				}
-				parserCategories.updateHubrLink(
-						Lists.newArrayList(IOUtils.toString(res.getInputStream()).split(System.lineSeparator())));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -7,10 +7,8 @@ import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.repository.SubCategoryRepository;
 import by.gdev.alert.job.parser.util.SiteName;
-import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -18,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -93,65 +90,5 @@ public class ParserCategories {
                         ssc1.getNativeLocName());
             }
         });
-    }
-
-    public void updateHubrLink(List<String> lineFies) {
-        List<Category> categories = siteSourceJobRepository.findById(2L).get().getCategories();
-        Map<String, List<String>> map = aggregateByKeys(lineFies);
-        map.forEach((k, v) -> {
-            String[] l = k.split("\t");
-            String name = l[0];
-            String link = l[1];
-            Optional<Category> cat = categories.stream().filter(n -> n.getNativeLocName().equals(name)).findAny();
-            if (cat.isPresent()) {
-                Category presentCategory = cat.get();
-                if (StringUtils.isEmpty(presentCategory.getLink()) || !presentCategory.getLink().equals(link)) {
-                    presentCategory.setLink(link);
-                    presentCategory = categoryRepository.save(presentCategory);
-                    log.info(String.format("update link category with id = %s and name %s", presentCategory.getId(),
-                            presentCategory.getNativeLocName()));
-                    for (String s : v) {
-                        String[] l1 = s.split("\t");
-                        String name1 = l1[0];
-                        String link1 = l1[1];
-                        Optional<Subcategory> sub = presentCategory.getSubCategories().stream()
-                                .filter(n -> n.getNativeLocName().equals(name1)).findAny();
-                        if (sub.isPresent()) {
-                            Subcategory presentSubCategory = sub.get();
-                            if (StringUtils.isEmpty(presentSubCategory.getLink())
-                                    || !presentSubCategory.getLink().equals(link1)) {
-                                presentSubCategory.setLink(link1);
-                                presentSubCategory = subCategoryRepository.save(presentSubCategory);
-                                log.info(String.format("update link sub category with id = %s and name %s",
-                                        presentSubCategory.getId(), presentSubCategory.getNativeLocName()));
-                            }
-                        } else {
-                            log.warn("dont find sub category with name " + name1);
-                        }
-                    }
-                }
-            } else {
-                log.warn("dont find category with name " + name);
-            }
-        });
-    }
-
-    private Map<String, List<String>> aggregateByKeys(List<String> filePath) {
-        Map<String, List<String>> map = new LinkedHashMap<>();
-        String category = "";
-        for (String line : filePath) {
-            if (!line.startsWith("\t")) {
-                category = line;
-                map.put(line, Lists.newArrayList());
-            } else {
-                String value = line.replaceFirst("\t", "");
-                if (map.containsKey(category)) {
-                    map.get(category).add(value);
-                } else {
-                    map.put(category, Lists.newArrayList(value));
-                }
-            }
-        }
-        return map;
     }
 }

@@ -2,7 +2,7 @@ package by.gdev.alert.job.parser.util;
 
 public enum SiteName {
     FLRU(1),
-    HABR(2),
+    //HABR(2), not in use anymore
     FREELANCERU(3),
     WEBLANCER(4),
     FREELANCEHUNT(5),
