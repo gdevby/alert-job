@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 public class PeoplePerHourCategoryParser implements CategoryParser{
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        log.info("Started parsing peopleperhour categories");
         String baseURI = siteSourceJob.getParsedURI();
 
         Document categoriesDocument = getDocument(baseURI);
@@ -56,10 +55,9 @@ public class PeoplePerHourCategoryParser implements CategoryParser{
 
     private Document getDocument(String uri) {
         try {
-            return Jsoup.connect(uri).get();
+        	return Jsoup.connect(uri).get();
         } catch (IOException e) {
-            log.error("Cannot parse site {}", uri);
-            throw new RuntimeException(e);
+        	throw new RuntimeException(e);
         }
     }
 

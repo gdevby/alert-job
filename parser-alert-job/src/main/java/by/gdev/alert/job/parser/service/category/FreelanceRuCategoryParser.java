@@ -5,10 +5,12 @@ import by.gdev.alert.job.parser.util.SiteName;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,44 +27,34 @@ public class FreelanceRuCategoryParser implements CategoryParser {
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
+    	Document doc = null;
         try {
-            Document doc = Jsoup.connect(freelanceRuRss).get();
-
-            Elements res = doc.getElementById("spec-selector-id").children();
-            Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
-            res.stream()
-                    .map(element -> {
-                        ParsedCategory parsedCategory = new ParsedCategory(
-                                null,
-                                element.text(),
-                                Long.valueOf(element.attr(VALUE)),
-                                String.format(freelanceRuRssFeed, element.attr(VALUE))
-                        );
-                        log.debug("found category {} {} {}", parsedCategory.id(), parsedCategory.translatedName(), parsedCategory.rss());
-                        return parsedCategory;
-                    })
-                    .filter(parsedCategory -> !parsedCategory.id().equals(0L))
-                    .peek(parsedCategory ->
-                            result.put(parsedCategory,
-                                    doc.getElementById("spec-" + parsedCategory.id()).select("label").stream()
-                                    .map(element -> {
-                                        Long id = Long.valueOf(element.child(0).attr("value"));
-                                        return new ParsedCategory(
-                                                null,
-                                                element.text(),
-                                                id,
-                                                String.format(freelanceRuRssFeedSubcategories, parsedCategory.id(), id));
-                                    })
-                                    .filter(subCategory -> !subCategory.id().equals(parsedCategory.id()))
-                                    .peek(subCategory -> log.debug("found subcategory {} {} {} ", subCategory.id(), subCategory.translatedName(), subCategory.rss()))
-                                    .collect(Collectors.toList())
-                            )
-                    ).findAny();
-            return result;
+        	doc = Jsoup.connect(freelanceRuRss).get();           
         } catch (IOException e) {
-            log.error("cannot parse {} site", siteSourceJob.getParsedURI());
-            throw new RuntimeException(e);
+        	throw new RuntimeException(e);
+        }            
+        Elements categoryElements = doc.getElementById("categories").getElementsByClass("col-md-4 col-sm-6 col-xs-12");
+        
+        if (categoryElements.size() == 0) {
+        	throw new RuntimeException("Parent element not found");
         }
+        Map<ParsedCategory, List<ParsedCategory>> resultMap = new LinkedHashMap<>();
+        resultMap = categoryElements.stream().map(e -> {
+        	Element label = e.selectFirst("label");
+        	Element input = label.selectFirst("input.spec");
+        	ParsedCategory parsedCategory = new ParsedCategory(
+                     null,
+                     label.text(),
+                     Long.valueOf(input.attr(VALUE)),
+                     String.format(freelanceRuRssFeed, input.attr(VALUE))
+             );
+        	log.debug("found category {}", label.text());
+        	return parsedCategory;
+        }).collect(Collectors.toMap(
+                parsedCategory -> parsedCategory,
+                parsedCategory -> Collections.emptyList()
+        ));           
+        return resultMap;      
     }
 
     @Override

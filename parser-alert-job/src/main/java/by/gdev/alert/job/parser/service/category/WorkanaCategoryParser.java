@@ -24,7 +24,6 @@ public class WorkanaCategoryParser implements CategoryParser {
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        log.info("Stared parsing workana categories");
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()

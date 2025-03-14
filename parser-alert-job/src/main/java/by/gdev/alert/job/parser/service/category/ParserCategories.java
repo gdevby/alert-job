@@ -42,8 +42,14 @@ public class ParserCategories {
         categoryParserMap.forEach((siteName, categoryParser) -> {
                     Optional<SiteSourceJob> optionalSiteSourceJob = siteSourceJobRepository.findById(siteName.getId());
                     optionalSiteSourceJob.ifPresentOrElse(siteSourceJob -> {
-                        Map<ParsedCategory, List<ParsedCategory>> parsed = categoryParser.parse(siteSourceJob);
-                        parsed.forEach((category, subCategories) -> saveData(siteSourceJob, category, subCategories));
+                    	log.info("Categories parsing started: " + siteSourceJob.getParsedURI());
+                    	try {
+	                        Map<ParsedCategory, List<ParsedCategory>> parsed = categoryParser.parse(siteSourceJob);
+	                        parsed.forEach((category, subCategories) -> saveData(siteSourceJob, category, subCategories));
+                    	} catch (Exception e) {
+                    		log.error("cannot parse site: {}", siteSourceJob.getParsedURI());
+                    		e.printStackTrace();  
+                        }
                     }, () -> {
                         throw new RuntimeException(String.format("Cannot find %s site", siteName));
                     });

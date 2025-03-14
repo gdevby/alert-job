@@ -9,8 +9,9 @@ import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 public class DateAdapter extends XmlAdapter<String, Date> {
 
-	// example hubr date: Wed, 07 Dec 2022 15:07:06 +0300
-	// fl.ru: Mon, 07 Aug 2023 06:13:59 GMT
+	// example 
+	// hubr date: Wed, 07 Dec 2022 15:07:06 +0300
+	// fl.ru date: Mon, 07 Aug 2023 06:13:59 GMT
 	private static final String DATE_FORMAT = "EEE, d MMM yyyy HH:mm:ss Z";
 
 	@Override

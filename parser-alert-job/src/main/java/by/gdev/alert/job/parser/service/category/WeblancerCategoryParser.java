@@ -20,15 +20,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WeblancerCategoryParser implements CategoryParser{
     @Override
-    public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
+    public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {    	
         Document doc = null;
         try {
             doc = Jsoup.connect(siteSourceJob.getParsedURI()).get();
         } catch (IOException e) {
-            log.error("cannot parse {} site", siteSourceJob.getParsedURI());
-            throw new RuntimeException(e);
+        	throw new RuntimeException(e);
         }
-
+            
         Element allCategories = doc.getElementsByClass("category_tree list-unstyled list-wide").get(0);
         return allCategories.children().stream().filter(f -> !f.children().get(0).tagName().equals("b")).map(e -> {
             Elements elements = e.children();
@@ -47,6 +46,7 @@ public class WeblancerCategoryParser implements CategoryParser{
         }).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (k, v) -> {
             throw new IllegalStateException(String.format("Duplicate key %s", k));
         }, LinkedHashMap::new));
+               
     }
 
     @Override

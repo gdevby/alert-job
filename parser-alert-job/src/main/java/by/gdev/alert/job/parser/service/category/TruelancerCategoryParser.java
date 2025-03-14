@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,34 +26,28 @@ public class TruelancerCategoryParser implements CategoryParser{
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        RestTemplate restTemplate = restTemplateFactory.getRestTemplate(truelancerProxyActive);
+        RestTemplate restTemplate = restTemplateFactory.getRestTemplate(truelancerProxyActive);  
+ 
+        TruelancerCategoriesResponse response = restTemplate.postForObject("https://api.truelancer.com/api/v1/categories", null, TruelancerCategoriesResponse.class);
 
-        try {
-            log.info("Stared parsing truelancer categories");
-            TruelancerCategoriesResponse response = restTemplate.postForObject("https://api.truelancer.com/api/v1/categories", null, TruelancerCategoriesResponse.class);
+        Map<String, TrueLancerCategory> categories = response.getCategories();
+        Map<ParsedCategory, List<ParsedCategory>> result = categories.entrySet().stream()
+                .collect(Collectors.toMap(
+                        keyMapper -> {
+                            String categoryName = keyMapper.getValue().getCategory();
+                            log.debug("found category {}", categoryName);
+                            return new ParsedCategory(null, categoryName, null, keyMapper.getKey());
+                        },
+                        valueMapper -> valueMapper.getValue().getSubCategories().entrySet().stream()
+                                .map(subCategory -> {
+                                    String subCategoryName = subCategory.getValue();
+                                    log.debug("found subcategory {}", subCategoryName);
+                                    return new ParsedCategory(null, subCategoryName, null, subCategory.getKey());
+                                })
+                                .collect(Collectors.toList())
 
-            Map<String, TrueLancerCategory> categories = response.getCategories();
-            Map<ParsedCategory, List<ParsedCategory>> result = categories.entrySet().stream()
-                    .collect(Collectors.toMap(
-                            keyMapper -> {
-                                String categoryName = keyMapper.getValue().getCategory();
-                                log.debug("found category {}", categoryName);
-                                return new ParsedCategory(null, categoryName, null, keyMapper.getKey());
-                            },
-                            valueMapper -> valueMapper.getValue().getSubCategories().entrySet().stream()
-                                    .map(subCategory -> {
-                                        String subCategoryName = subCategory.getValue();
-                                        log.debug("found subcategory {}", subCategoryName);
-                                        return new ParsedCategory(null, subCategoryName, null, subCategory.getKey());
-                                    })
-                                    .collect(Collectors.toList())
-
-                    ));
-            return result;
-        } catch (Exception e) {
-            log.error("Cannot parse truelancer categories");
-            return Collections.emptyMap();
-        }
+                ));
+        return result;
     }
 
     @Override
