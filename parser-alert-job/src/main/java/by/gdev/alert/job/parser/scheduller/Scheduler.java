@@ -100,7 +100,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		currency.getValute().entrySet().forEach(e -> {
 			Valute valute = e.getValue();
 			CurrencyEntity entity = currencyRepository
-					.findByCurrencyCodeAndCurrencyName(valute.getCharCode(), valute.getName()).orElseGet(() -> {
+					.findByCurrencyCode(valute.getCharCode()).orElseGet(() -> {
 						CurrencyEntity ent = new CurrencyEntity();
 						ent.setNominal(valute.getNominal());
 						ent.setCurrencyCode(valute.getCharCode());
