@@ -134,3 +134,7 @@ Run project services using your IDE in next order:
 6. notification 
 
 After that project available on [alertjob.by](http://alertjob.by/)
+
+### 9. Test account
+* Login: test
+* Password: test

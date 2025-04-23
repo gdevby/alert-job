@@ -88,6 +88,9 @@ docker compose ps -a
 
 After completing the above steps, you can open [alertjob.by ](http://alertjob.by)
 
+Test account:
+* Login: test
+* Password: test
 
 You may encounter next problems:
 1) After running `mvn clean install` project's build may fail. For that check java version (`java --version`) it's should be 17. And if necessary install appropriate java version via command `sudo apt install openjdk-17-jdk`
