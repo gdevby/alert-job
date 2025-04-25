@@ -21,7 +21,7 @@ INSERT IGNORE INTO fl_category(ID,NATIVE_LOC_NAME) VALUES(23, 'Мобильны�
 INSERT IGNORE INTO fl_category(ID,NATIVE_LOC_NAME) VALUES(24, 'Сети и инфосистемы');          
        
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(1, 'FLRU', 'https://www.fl.ru/projects/', TRUE, TRUE);
-INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE, TRUE);
+--INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE, TRUE); not in use anymore
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(3, 'FREELANCE.RU', 'https://freelance.ru/project/search/pro', TRUE, TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(4, 'WEBLANCER.NET', 'https://www.weblancer.net/freelance/', TRUE, TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(5, 'FREELANCEHUNT.COM', 'https://freelancehunt.com/projects', TRUE, TRUE);

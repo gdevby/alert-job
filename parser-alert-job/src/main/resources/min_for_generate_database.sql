@@ -50,4 +50,4 @@ CREATE MEMORY TABLE "PUBLIC"."SITE_SOURCE_JOB"(
 ALTER TABLE "PUBLIC"."SITE_SOURCE_JOB" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_F" PRIMARY KEY("ID");               
 -- 2 +/- SELECT COUNT(*) FROM PUBLIC.SITE_SOURCE_JOB;          
 INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(1, 'FLRU', 'https://www.fl.ru/projects/', TRUE, TRUE); 
-INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE, TRUE);            
+--INSERT INTO "PUBLIC"."SITE_SOURCE_JOB" VALUES(2, 'HABR', 'https://freelance.habr.com/tasks', TRUE, TRUE); not in use anymore           

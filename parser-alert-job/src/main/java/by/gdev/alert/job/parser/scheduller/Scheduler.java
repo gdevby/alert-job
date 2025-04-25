@@ -34,8 +34,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private long parserUpdateLinksAfterDay;
 	@Value("${parser.insert.categories.active}")
 	boolean parseCategories;
-	@Value("${parser.categories.file.path}")
-	private String updateFilePath;
 	@Value("${currency.site}")
 	private String currencySiteUrl;
 
@@ -53,12 +51,6 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			currencyParser();
 			if (parseCategories) {
 				parserCategories.parse();
-				if (updateFilePath.startsWith("classpath")) {
-					log.info(
-							"Used one rss link for every categories and subcategory of the habr orders for dev environment."
-									+ " For prod or dev needs you can changed parser.categories.file.path with proper rss for parser service."
-									+ " The example you can find here src/main/resources/hubr.txt");
-				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
