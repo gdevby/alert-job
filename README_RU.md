@@ -6,7 +6,7 @@
 Имеется два типа фильтров позитивные и негативные. Сначала применяются фильтры для выбора заказов, потом негативные отсеивают заказы, которые вам не подходят.<br>
 К примеру "Я хочу получать заказы, которые содержат в названии backend и не хочу получать заказы, которые содержат в названии nodejs".<br>
 
-На данный момент на сайте доступны следующие биржи:[freelance.ru](https://freelance.ru), [freelance.habr.com](https://freelance.habr.com), [fl.ru](https://www.fl.ru),[weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
+На данный момент на сайте доступны следующие биржи:[freelance.ru](https://freelance.ru), [fl.ru](https://www.fl.ru),[weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
 
 Проект писался на микросервисной архитектуре.<br>
 Используемые технологии:
