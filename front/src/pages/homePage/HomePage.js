@@ -12,7 +12,6 @@ const list = ['Настройка по дням недели и времени, 
 		'Фильтры по названию']
 
 	const sites = ['https://freelance.ru', 
-	'https://freelance.habr.com', 
 	'https://www.fl.ru', 
 	'https://www.weblancer.net', 
 	'https://freelancehunt.com', 
