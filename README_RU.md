@@ -1,12 +1,12 @@
 # alert-job
-Версия для разработчиков доступна по [ссылке](README_FOR_DEVELOPERS_RU.md)<br>
+Версия для разработчиков доступна по ссылкам [для Windows](README_FOR_DEVELOPERS_WINDOWS_RU.md) и [для Linux](README_FOR_DEVELOPERS_LINUX_RU.md)<br>
 Рабочий проект доступен по ссылке [aj.gdev.by](https://aj.gdev.by)
 
 **Основная цель проекта**: быстрый, избирательный способ получения уведомлений о нужных заказах по вашим настроенным фильтрам.<br>
 Имеется два типа фильтров позитивные и негативные. Сначала применяются фильтры для выбора заказов, потом негативные отсеивают заказы, которые вам не подходят.<br>
 К примеру "Я хочу получать заказы, которые содержат в названии backend и не хочу получать заказы, которые содержат в названии nodejs".<br>
 
-На данный момент на сайте доступны следующие биржи:[freelance.ru](https://freelance.ru), [fl.ru](https://www.fl.ru),[weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
+На данный момент на сайте доступны следующие биржи: [freelance.ru](https://freelance.ru), [fl.ru](https://www.fl.ru), [weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
 
 Проект писался на микросервисной архитектуре.<br>
 Используемые технологии:
@@ -91,6 +91,10 @@ docker compose ps -a
 ```
 
 После выполнения вышеперечисленных шагов вы можете открыть страницу [alertjob.by ](http://alertjob.by)
+
+Тестовый аккаунт:
+* Логин: test
+* Пароль: test
 
 Возможные проблемы:
 1) При запуске `mvn clean install` сборка проекта может упасть. Для этого проверьте версию Java (`java --version`). При необходимости установите Java 17 с помощью команды `sudo apt install openjdk-17-jdk`

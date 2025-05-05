@@ -1,5 +1,5 @@
 # alert-job
-Version for developers available by [link](README_FOR_DEVELOPERS_EN.md)<br>
+Version for developers available by links [for Windows](README_FOR_DEVELOPERS_WNDOWS_EN.md) and [for Linux](README_FOR_DEVELOPERS_LINUX_EN.md)<br>
 Russian version you can open by [link](README_RU.md)<br>
 The working project is available at the link [aj.gdev.by](https://aj.gdev.by)
 
@@ -7,7 +7,7 @@ The working project is available at the link [aj.gdev.by](https://aj.gdev.by)
 There are two types of filters positive and negative. First, filters are applied to select orders, then negative ones filter out orders that do not suit you.<br>
 For example "I want to receive orders that contain backend in the name and do not want to receive orders that contain nodejs in the name".<br>
 
-At the moment, the following exchanges are available on the website:[freelance.ru](https://freelance.ru), [fl.ru](https://www.fl.ru),[weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
+At the moment, the following exchanges are available on the website: [freelance.ru](https://freelance.ru), [fl.ru](https://www.fl.ru), [weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
 
 The project has a microservice architecture.<br>
 Used technologies:
@@ -88,6 +88,9 @@ docker compose ps -a
 
 After completing the above steps, you can open [alertjob.by ](http://alertjob.by)
 
+Test account:
+* Login: test
+* Password: test
 
 You may encounter next problems:
 1) After running `mvn clean install` project's build may fail. For that check java version (`java --version`) it's should be 17. And if necessary install appropriate java version via command `sudo apt install openjdk-17-jdk`

@@ -143,3 +143,7 @@ sudo usermod -aG $USER www-data
 6. notification 
 
 Заходим в браузер и пишем [alertjob.by](http://alertjob.by/)
+
+### 9. Тестовый аккаунт
+* Логин: test
+* Пароль: test
