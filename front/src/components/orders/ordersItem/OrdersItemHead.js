@@ -5,7 +5,7 @@ import OrderDate from './OrderDate';
 
 const OrdersItemHead = (props) => {
 
-	const { title, dateTime, technologies, price, sourceSite } = props.order
+	const { title, dateTime,  price, sourceSite } = props.order
 
 	return <>
 		<Typography sx={{ width: '33%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
@@ -18,9 +18,6 @@ const OrdersItemHead = (props) => {
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 				Источник: {sourceSite.sourceName}
 			</Typography>
-		</Typography>
-		<Typography sx={{ width: '20%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
-			{technologies.join(',')}
 		</Typography>
 		<Typography sx={{ width: '23%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 			{ sourceSite.categoryName } <br/> {sourceSite.subCategoryName || ''}

@@ -5,7 +5,7 @@ import OrderDate from '../../orders/ordersItem/OrderDate';
 
 const MobileOrderItemHead = (props) => {
 	
-	const { title, dateTime, technologies, price, sourceSite } = props.order;
+	const { title, dateTime,  price, sourceSite } = props.order;
 	
 	return <>
 		<Typography sx={{ width: '100%', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', userSelect: 'text' }} component='div'>
@@ -17,9 +17,6 @@ const MobileOrderItemHead = (props) => {
 			</Typography>
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 				Источник: {sourceSite.sourceName}
-			</Typography>
-			<Typography sx={{ width: '100%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
-				Технологии: {technologies.join(',')}
 			</Typography>
 			<Typography sx={{ width: '100%', flexShrink: 0, wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 				Категории: { sourceSite.categoryName } { sourceSite.subCategoryName?  ', ' + sourceSite.subCategoryName :  '' }
