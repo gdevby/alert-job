@@ -109,7 +109,7 @@ const Orders = () => {
 			{(isShowingOrders && filteredOrders.length != 0) && <ReplayIcon className='orders__list_empty_icon' onClick={() => setIsFetching(true)} />}
 			<Btn onClick={() => showOrders(false)} text={'Показать заказы, которые вы не получили'} color={'error'} variant='contained' />
 		</div>
-		{(isShowingOrders && filteredOrders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Технологии</div><div>Категории</div><div>Цена</div></div>}
+		{(isShowingOrders && filteredOrders.length > 0) && <div className='orders__list-head'><div>Название</div><div>Категории</div><div>Цена</div></div>}
 		{
 			isShowingOrders && (isFetching ? <div style={{ textAlign: 'center', marginTop: '.5rem' }}><CircularProgress /></div> : (filteredOrders.length == 0 ? <Empty /> : <OrdersList orders={filteredOrders} />))
 		}
