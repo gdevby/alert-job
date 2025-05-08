@@ -62,7 +62,6 @@ const CurrentFilter = () => {
 					setCurrentFilter({
 						description: data.descriptionsDTO,
 						title: data.titlesDTO,
-						technologies: data.technologiesDTO,
 						maxPrice: data.maxValue,
 						minPrice: data.minValue,
 						id: data.id,
@@ -101,7 +100,6 @@ const CurrentFilter = () => {
 						setCurrentFilter({
 							description: response.data.descriptionsDTO,
 							title: response.data.titlesDTO,
-							technologies: response.data.technologiesDTO,
 							maxPrice: response.data.maxValue,
 							minPrice: response.data.minValue,
 							id: response.data.id,
