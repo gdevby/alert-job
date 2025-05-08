@@ -40,10 +40,8 @@ const AddFilterForm = ({ updateFilter }) => {
 					setCurrentFilter({
 						description: [],
 						title: [],
-						technologies: [],
 						negativeDescription: [],
 						negativeTitle: [],
-						negativeTechnologies: [],
 						maxPrice: '',
 						minPrice: '',
 						id: id,

@@ -40,10 +40,8 @@ const AddFilterPage = () => {
 						setCurrentFilter({
 							description: response.data.descriptionsDTO,
 							title: response.data.titlesDTO,
-							technologies: response.data.technologiesDTO,
 							negativeDescription: response.data.negativeDescriptionsDTO,
 							negativeTitle: response.data.negativeTitlesDTO,
-							negativeTechnologies: response.data.negativeTechnologiesDTO,
 							descriptionWordPrice: response.data.descriptionWordPrice,
 							maxPrice: response.data.maxValue,
 							minPrice: response.data.minValue,
