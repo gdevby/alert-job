@@ -72,7 +72,6 @@ public class Scheduler {
 									List<OrderDTO> list = orders.stream()
 											.peek(orderDTO -> {
 												statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite());
-												statisticService.statisticTechnologyWord(orderDTO.getTechnologies(), orderDTO.getSourceSite());
 											})
 											.filter(f -> compareSiteSources(f.getSourceSite(), s))
 											.filter(f -> isMatchUserFilter(f, currentFilter))
@@ -171,17 +170,12 @@ public class Scheduler {
 				return false;
 			}
 		}
-		if (CollectionUtils.isEmpty(userFilter.getTitles()) && CollectionUtils.isEmpty(userFilter.getDescriptions())
-				&& CollectionUtils.isEmpty(userFilter.getTechnologies())) {
+		if (CollectionUtils.isEmpty(userFilter.getTitles()) && CollectionUtils.isEmpty(userFilter.getDescriptions())) {
 			return true;
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getTitles())) {
 			containsTitle = userFilter.getTitles().stream()
 					.anyMatch(e -> StringUtils.containsIgnoreCase(order.getTitle(), e.getName()));
-		}
-		if (!CollectionUtils.isEmpty(userFilter.getTechnologies()) && Objects.nonNull(order.getTechnologies())) {
-			containsTech = userFilter.getTechnologies().stream().anyMatch(e -> order.getTechnologies().stream()
-					.map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
 		}
 		if (!CollectionUtils.isEmpty(userFilter.getDescriptions())) {
 			containsDesc = userFilter.getDescriptions().stream()
@@ -194,12 +188,6 @@ public class Scheduler {
 				if (!CollectionUtils.isEmpty(userFilter.getNegativeDescriptions())) {
 					containsDesc1 = userFilter.getNegativeDescriptions().stream()
 							.anyMatch(e -> StringUtils.containsIgnoreCase(order.getMessage(), e.getName()));
-				}
-
-				if (!CollectionUtils.isEmpty(userFilter.getNegativeTechnologies())
-						&& Objects.nonNull(order.getTechnologies())) {
-					containsTech1 = userFilter.getNegativeTechnologies().stream().anyMatch(e -> order.getTechnologies()
-							.stream().map(String::toLowerCase).toList().contains(e.getName().toLowerCase()));
 				}
 
 				if (!CollectionUtils.isEmpty(userFilter.getNegativeTitles())) {

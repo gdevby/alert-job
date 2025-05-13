@@ -14,12 +14,10 @@ public class FilterDTO {
 	private boolean openForAll;
 	
 	private List<WordDTO> descriptionWordPrice;
-	private List<WordDTO> technologiesDTO;
 	private List<WordDTO> titlesDTO;
 	private List<WordDTO> descriptionsDTO;
 	
 	private boolean activatedNegativeFilters;
-	private List<WordDTO> negativeTechnologiesDTO;
 	private List<WordDTO> negativeTitlesDTO;
 	private List<WordDTO> negativeDescriptionsDTO;
 }

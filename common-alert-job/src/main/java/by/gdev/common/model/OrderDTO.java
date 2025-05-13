@@ -1,7 +1,6 @@
 package by.gdev.common.model;
 
 import java.util.Date;
-import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,7 +15,6 @@ public class OrderDTO {
 	private String link;
 	private Date dateTime;
 	private PriceDTO price;
-	private List<String> technologies;
 	private SourceSiteDTO sourceSite;
 	private boolean openForAll;
 	private boolean validOrder;

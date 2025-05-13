@@ -9,11 +9,9 @@ import org.springframework.stereotype.Service;
 
 import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
-import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.SourceSiteRepository;
-import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.common.exeption.ResourceNotFoundException;
 import by.gdev.common.model.SourceSiteDTO;
@@ -27,7 +25,6 @@ public class StatisticService {
 
     private final TitleWordRepository titleRepository;
     private final DescriptionWordRepository descriptionRepository;
-    private final TechnologyWordRepository technologyRepository;
 
     private final SourceSiteRepository sourceSiteRepository;
 
@@ -63,27 +60,6 @@ public class StatisticService {
 		dw.setCounter(1L);
 		dw.setName(e);
 		descriptionRepository.save(dw);
-	    }
-	});
-    }
-
-    public void statisticTechnologyWord(List<String> technologies, SourceSiteDTO sourceSite) {
-	if (Objects.isNull(technologies))
-	    return;
-	SourceSite site = findSourceSite(sourceSite);
-	technologies.forEach(e -> {
-	    Optional<TechnologyWord> technoWord = technologyRepository.findByNameAndSourceSite(e, site);
-	    if (technoWord.isPresent()) {
-		TechnologyWord tw = technoWord.get();
-		Long counter = tw.getCounter() + 1L;
-		tw.setCounter(counter);
-		technologyRepository.save(tw);
-	    } else {
-		TechnologyWord tw = new TechnologyWord();
-		tw.setCounter(1L);
-		tw.setName(e);
-		tw.setSourceSite(site);
-		technologyRepository.save(tw);
 	    }
 	});
     }

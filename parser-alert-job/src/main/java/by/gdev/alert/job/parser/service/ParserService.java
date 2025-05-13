@@ -122,9 +122,9 @@ public class ParserService {
 		Date date = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
 		Set<Order> orders;
 		if (Objects.isNull(subcategory)) {
-			orders = orderRepository.findAllBySourceSubCategoryIsNullOneEagerTechnologies(source, category, date);
+			orders = orderRepository.findAllBySourceSubCategoryIsNullOneEager(source, category, date);
 		}else {
-			orders = orderRepository.findAllBySourceOneEagerTechnologies(source, category, subcategory, date);
+			orders = orderRepository.findAllBySourceOneEager(source, category, subcategory, date);
 		}
 
 		List<OrderDTO> list = orders.stream()

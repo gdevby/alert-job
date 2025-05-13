@@ -29,13 +29,11 @@ import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.model.db.key.DescriptionWord;
 import by.gdev.alert.job.core.model.db.key.DescriptionWordPrice;
-import by.gdev.alert.job.core.model.db.key.TechnologyWord;
 import by.gdev.alert.job.core.model.db.key.TitleWord;
 import by.gdev.alert.job.core.model.db.key.Word;
 import by.gdev.alert.job.core.repository.DescriptionWordPriceRepository;
 import by.gdev.alert.job.core.repository.DescriptionWordRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
-import by.gdev.alert.job.core.repository.TechnologyWordRepository;
 import by.gdev.alert.job.core.repository.TitleWordRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.exeption.CollectionLimitExeption;
@@ -53,7 +51,6 @@ public class UserFilterService {
 	private final UserFilterRepository filterRepository;
 	private final TitleWordRepository titleRepository;
 	private final DescriptionWordRepository descriptionRepository;
-	private final TechnologyWordRepository technologyRepository;
 	private final DescriptionWordPriceRepository descriptionWordPriceRepository;
 
 	private final ModelMapper mapper;
@@ -88,39 +85,6 @@ public class UserFilterService {
 				titleWord.setUuid(uuid);
 				titleWord = titleRepository.save(titleWord);
 				m.success(ResponseEntity.ok(mapper.map(titleWord, WordDTO.class)));
-			}
-		});
-	}
-
-	public Mono<Page<WordDTO>> showTechnologyWords(Long moduleId, String uuid, String name, Integer page) {
-		return Mono.defer(() -> {
-			OrderModules om = modulesRepository.findByIdAndUserUuidOneEagerSources(moduleId, uuid)
-					.orElseThrow(() -> new ResourceNotFoundException("not found module with id " + moduleId));
-			PageRequest p = PageRequest.of(page, appProperty.getWordsPerPage());
-			Set<Long> sources = om.getSources().stream().map(e -> e.getId()).collect(Collectors.toSet());
-			Page<? extends Word> pageWord = StringUtils.isEmpty(name)
-					? technologyRepository.findByNameAndSourceSiteInOrUuid(uuid, sources, p)
-					: technologyRepository.findByNameAndSourceSiteInOrNameAndUuid(name, uuid, sources, p);
-			List<WordDTO> сollection = pageWord.stream().map(keyWordsToDTO())
-					.collect(Collectors.toMap(w -> w.getName(), Function.identity(),
-							(w1, w2) -> mergeDuplicates(w1, w2)))
-					.values().stream().sorted(Comparator.comparing(WordDTO::getCounter).reversed())
-					.collect(Collectors.toList());
-			return Mono.just(new PageImpl<>(сollection, pageWord.getPageable(), pageWord.getTotalElements()));
-		});
-	}
-
-	public Mono<ResponseEntity<WordDTO>> addTechnologyWord(KeyWord keyWord, String uuid) {
-		return Mono.create(m -> {
-			Optional<TechnologyWord> t = technologyRepository.findByNameAndUuid(keyWord.getName(), uuid);
-			if (t.isPresent()) {
-				m.success(ResponseEntity.status(HttpStatus.CONFLICT).build());
-			} else {
-				TechnologyWord technologyWordWord = new TechnologyWord();
-				technologyWordWord.setName(keyWord.getName());
-				technologyWordWord.setUuid(uuid);
-				technologyWordWord = technologyRepository.save(technologyWordWord);
-				m.success(ResponseEntity.ok(mapper.map(technologyWordWord, WordDTO.class)));
 			}
 		});
 	}
@@ -242,14 +206,10 @@ public class UserFilterService {
 							currentFilter.getTitles().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					dto.setDescriptionsDTO(
 							currentFilter.getDescriptions().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-					dto.setTechnologiesDTO(
-							currentFilter.getTechnologies().stream().map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					dto.setActivatedNegativeFilters(currentFilter.isActivatedNegativeFilters());
 					dto.setNegativeTitlesDTO(currentFilter.getNegativeTitles().stream()
 							.map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					dto.setNegativeDescriptionsDTO(currentFilter.getNegativeDescriptions().stream()
-							.map(e1 -> mapper.map(e1, WordDTO.class)).toList());
-					dto.setNegativeTechnologiesDTO(currentFilter.getNegativeTechnologies().stream()
 							.map(e1 -> mapper.map(e1, WordDTO.class)).toList());
 					dto.setDescriptionWordPrice(currentFilter.getDescriptionWordPrice().stream()
 							.map(e1 -> mapper.map(e1, WordDTO.class)).toList());
@@ -305,46 +265,6 @@ public class UserFilterService {
 					UserFilter f = tuple.getT1();
 					TitleWord t = tuple.getT2();
 					if (f.getTitles().removeIf(e -> e.getId().equals(t.getId()))) {
-						filterRepository.save(f);
-						return ResponseEntity.ok().build();
-					} else {
-						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-					}
-				});
-	}
-
-	public Mono<FilterDTO> createTechnologyWordToFilter(Long filterId, Long wordId) {
-		return Mono.justOrEmpty(filterRepository.findByIdOneEagerTechnologies(filterId))
-				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId)))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))))
-				.map(tuple -> {
-					UserFilter f = tuple.getT1();
-					TechnologyWord w = tuple.getT2();
-					if (f.getTechnologies().size() >= appProperty.getLimitKeyWords()) {
-						throw new CollectionLimitExeption("the limit for added technologes");
-					}
-					if (CollectionUtils.isEmpty(f.getTechnologies())) {
-						f.setTechnologies(Sets.newHashSet());
-					}
-					if (f.getTechnologies().contains(w)) {
-						throw new ConflictExeption("exists technology word with name " + w.getName());
-					}
-					f.getTechnologies().add(w);
-					filterRepository.save(f);
-					return mapper.map(f, FilterDTO.class);
-				});
-	}
-
-	public Mono<ResponseEntity<Void>> removeTechnologyWordFromFilter(Long filterId, Long wordId) {
-		return Mono.justOrEmpty(filterRepository.findByIdOneEagerTechnologies(filterId))
-				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId)))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))))
-				.map(tuple -> {
-					UserFilter f = tuple.getT1();
-					TechnologyWord t = tuple.getT2();
-					if (f.getTechnologies().removeIf(e -> e.getId().equals(t.getId()))) {
 						filterRepository.save(f);
 						return ResponseEntity.ok().build();
 					} else {
@@ -426,46 +346,6 @@ public class UserFilterService {
 					UserFilter f = tuple.getT1();
 					TitleWord t = tuple.getT2();
 					if (f.getNegativeTitles().removeIf(e -> e.getId().equals(t.getId()))) {
-						filterRepository.save(f);
-						return ResponseEntity.ok().build();
-					} else {
-						return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-					}
-				});
-	}
-
-	public Mono<FilterDTO> createTechnologyWordToNegativeFilter(Long filterId, Long wordId) {
-		return Mono.justOrEmpty(filterRepository.findByIdOneEagerNegativeTechnologies(filterId))
-				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId)))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))))
-				.map(tuple -> {
-					UserFilter f = tuple.getT1();
-					TechnologyWord w = tuple.getT2();
-					if (f.getNegativeTechnologies().size() >= appProperty.getLimitKeyWords()) {
-						throw new CollectionLimitExeption("the limit for added negative technologes");
-					}
-					if (CollectionUtils.isEmpty(f.getNegativeTechnologies())) {
-						f.setNegativeTechnologies(Sets.newHashSet());
-					}
-					if (f.getNegativeTechnologies().contains(w)) {
-						throw new ConflictExeption("exists technology word with name " + w.getName());
-					}
-					f.getNegativeTechnologies().add(w);
-					filterRepository.save(f);
-					return mapper.map(f, FilterDTO.class);
-				});
-	}
-
-	public Mono<ResponseEntity<Void>> removeTechnologyWordFromNegativeFilter(Long filterId, Long wordId) {
-		return Mono.justOrEmpty(filterRepository.findByIdOneEagerNegativeTechnologies(filterId))
-				.zipWith(Mono.justOrEmpty(technologyRepository.findById(wordId)))
-				.switchIfEmpty(Mono.error(new ResourceNotFoundException(
-						String.format("not found by filter id %s or word id %s", filterId, wordId))))
-				.map(tuple -> {
-					UserFilter f = tuple.getT1();
-					TechnologyWord t = tuple.getT2();
-					if (f.getNegativeTechnologies().removeIf(e -> e.getId().equals(t.getId()))) {
 						filterRepository.save(f);
 						return ResponseEntity.ok().build();
 					} else {

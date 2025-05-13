@@ -26,17 +26,11 @@ public interface UserFilterRepository extends CrudRepository<UserFilter, Long> {
 	@Query("select filter from UserFilter filter left join fetch filter.descriptionWordPrice where filter.id = :id")
 	Optional<UserFilter> findByIdOneEagerDescriptionWordPrice(Long id);
 
-	@Query("select filter from UserFilter filter left join fetch filter.technologies where filter.id = :id")
-	Optional<UserFilter> findByIdOneEagerTechnologies(Long id);
-
 	@Query("select filter from UserFilter filter left join fetch filter.titles where filter.id = :id")
 	Optional<UserFilter> findByIdOneEagerTitles(Long id);
 
 	@Query("select filter from UserFilter filter left join fetch filter.descriptions where filter.id = :id")
 	Optional<UserFilter> findByIdOneEagerDescriptions(Long id);
-
-	@Query("select filter from UserFilter filter left join fetch filter.negativeTechnologies where filter.id = :id")
-	Optional<UserFilter> findByIdOneEagerNegativeTechnologies(Long id);
 
 	@Query("select filter from UserFilter filter left join fetch filter.negativeTitles where filter.id = :id")
 	Optional<UserFilter> findByIdOneEagerNegativeTitles(Long id);
@@ -45,8 +39,8 @@ public interface UserFilterRepository extends CrudRepository<UserFilter, Long> {
 	Optional<UserFilter> findByIdOneEagerNegativeDescriptions(Long id);
 
 	@Query("select filter from UserFilter filter left join fetch filter.descriptionWordPrice"
-			+ " left join fetch filter.technologies left join fetch filter.titles"
-			+ " left join fetch filter.descriptions left join fetch filter.negativeTechnologies"
+			+ " left join fetch filter.titles"
+			+ " left join fetch filter.descriptions"
 			+ " left join fetch filter.negativeTitles left join fetch filter.negativeDescriptions"
 			+ " where filter.id = :id")
 	UserFilter findByIdEagerAllWords(Long id);
