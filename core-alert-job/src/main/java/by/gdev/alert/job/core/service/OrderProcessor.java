@@ -3,8 +3,10 @@ package by.gdev.alert.job.core.service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -41,13 +43,14 @@ public class OrderProcessor {
 
 	public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
+		Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
+				.collect(Collectors.toMap(e -> e.getId(), Function.identity()));
 		users.forEach(user -> {
 			user.getOrderModules().stream().filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
 					.forEach(orderModule -> {
-						UserFilter currentFilter = filterRepository
-								.findByIdEagerAllWords(orderModule.getCurrentFilter().getId());
+						UserFilter currentFilter = map.get(orderModule.getId());
 						orderModule.getSources().forEach(s -> {
-							List<OrderDTO> list = orders.stream().peek(orderDTO -> {
+							List<OrderDTO> list = orders.parallelStream().peek(orderDTO -> {
 							}).filter(f -> compareSiteSources(f.getSourceSite(), s))
 									.filter(f -> isMatchUserFilter(f, currentFilter)).collect(Collectors.toList());
 							if (!list.isEmpty()) {
