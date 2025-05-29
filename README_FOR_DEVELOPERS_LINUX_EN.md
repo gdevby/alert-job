@@ -68,7 +68,7 @@ sudo apt install nginx
 
 Configure nginx config
 ```bash
-sudo nano /etc/nginx/sites-available/default
+sudo nano /etc/nginx/sites-enabled/aj.conf
 ```
 
 Then adding next configuration (do no forget to change in location /front/ field root on your local path)

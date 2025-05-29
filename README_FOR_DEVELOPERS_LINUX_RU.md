@@ -74,7 +74,7 @@ sudo apt install nginx
 Изменяем настройки nginx
 
 ```bash
-sudo nano /etc/nginx/sites-available/default
+sudo nano /etc/nginx/sites-enabled/aj.conf
 ```
 
 Добавляем следующее в настройки (не забудьте изменить в location /front/ поле root на путь к вашему проекту)

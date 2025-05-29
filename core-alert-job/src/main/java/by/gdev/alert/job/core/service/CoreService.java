@@ -59,9 +59,9 @@ public class CoreService {
 	private final UserAlertTimeRepository alertTimeRepository;
 	private final UserFilterRepository filterRepository;
 
-	private final Scheduler scheduler;
 	private final ModelMapper mapper;
 	private final ApplicationProperty appProperty;
+	private final OrderProcessor orderProcessor;
 
 	public Mono<ResponseEntity<String>> authentication(String uuid, String mail) {
 		return Mono.create(m -> {
@@ -327,7 +327,7 @@ public class CoreService {
 				ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		return currentFilter.flatMapMany(mono -> {
 			return source.distinct(OrderDTO::getLink).filter(m -> {
-				return scheduler.isMatchUserFilter(m, mono);
+				return orderProcessor.isMatchUserFilter(m, mono);
 			}).sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
 		});
 	}
@@ -355,7 +355,7 @@ public class CoreService {
 				ex -> Mono.error(new ResourceNotFoundException("current filter is empty")));
 		return currentFilter.flatMapMany(mono -> {
 			return source.distinct(OrderDTO::getLink).filter(m -> {
-				return !scheduler.isMatchUserFilter(m, mono);
+				return !orderProcessor.isMatchUserFilter(m, mono);
 			}).sort(Comparator.comparing(OrderDTO::getDateTime).reversed());
 		});
 	}
