@@ -48,7 +48,7 @@ public class OrderProcessor {
 		users.forEach(user -> {
 			user.getOrderModules().stream().filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
 					.forEach(orderModule -> {
-						UserFilter currentFilter = map.get(orderModule.getId());
+						UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
 						orderModule.getSources().forEach(s -> {
 							List<OrderDTO> list = orders.parallelStream().peek(orderDTO -> {
 							}).filter(f -> compareSiteSources(f.getSourceSite(), s))
