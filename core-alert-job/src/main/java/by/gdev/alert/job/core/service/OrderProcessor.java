@@ -91,7 +91,7 @@ public class OrderProcessor {
 				: "http://notification:8019/telegram";
 		StringBuilder b = new StringBuilder();
 		for (String s : list) {
-			b.append(s).append(", ");
+			b.append(s).append("\n");
 			if (b.length() > 3000) {
 				sendMessage(user, sendMessage, b.substring(0, b.length() - 2));
 				b.setLength(0);
@@ -211,7 +211,7 @@ public class OrderProcessor {
 	private String createOrdersMessage(String name, String title, String link, String categoryName,
 			String subCategoryName) {
 		return StringUtils.isNotEmpty(subCategoryName)
-				? String.format("%s, %s, %s новый заказ - %s \n %s", name, categoryName, subCategoryName, title, link)
-				: String.format("%s, %s, новый заказ - %s \n %s", name, categoryName, title, link);
+				? String.format("%s, %s, %s новый заказ - %s %s", name, categoryName, subCategoryName, title, link)
+				: String.format("%s, %s, новый заказ - %s %s", name, categoryName, title, link);
 	}
 }
