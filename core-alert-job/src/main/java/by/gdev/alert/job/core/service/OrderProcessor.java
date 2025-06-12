@@ -93,12 +93,12 @@ public class OrderProcessor {
 		for (String s : list) {
 			b.append(s).append("\n");
 			if (b.length() > 3000) {
-				sendMessage(user, sendMessage, b.substring(0, b.length() - 2));
+				sendMessage(user, sendMessage, b.substring(0, b.length() - 1));
 				b.setLength(0);
 			}
 		}
 		if (b.length() != 0) {
-			sendMessage(user, sendMessage, b.substring(0, b.length() - 2));
+			sendMessage(user, sendMessage, b.substring(0, b.length() - 1));
 		}
 	}
 
