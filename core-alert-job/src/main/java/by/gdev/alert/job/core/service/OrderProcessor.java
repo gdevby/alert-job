@@ -44,31 +44,43 @@ public class OrderProcessor {
 	public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
 		Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
-				.collect(Collectors.toMap(e -> e.getId(), Function.identity()));
-		users.forEach(user -> {
-			user.getOrderModules().stream().filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
-					.forEach(orderModule -> {
-						UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
-						orderModule.getSources().forEach(s -> {
-							List<OrderDTO> list = orders.parallelStream().peek(orderDTO -> {
-							}).filter(f -> compareSiteSources(f.getSourceSite(), s))
-									.filter(f -> isMatchUserFilter(f, currentFilter)).collect(Collectors.toList());
-							if (!list.isEmpty()) {
-								sendOrderToUser(user, list, orderModule.getName());
-							}
-						});
-					});
+				.collect(Collectors.toMap(e -> e.getId(), Function.identity()));		
+		users.stream().forEach(user -> {
+			List<OrderDTO> orderListToSend = user.getOrderModules().stream().filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
+			.map(orderModule -> {		
+				UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
+				return orderModule.getSources().stream().map(s -> {					
+					List<OrderDTO> list = orders.parallelStream()
+							.peek(orderDTO -> {})
+							.filter(f -> compareSiteSources(f.getSourceSite(), s))
+							.filter(f -> isMatchUserFilter(f, currentFilter))
+							.map(order -> {
+								order.setModuleName(orderModule.getName());
+								return order;
+							}).collect(Collectors.toList());		
+					return list;
+				}).flatMap(list -> list.stream()).toList();				 
+			}).flatMap(list -> list.stream()).toList();
+			if (!orderListToSend.isEmpty()) {
+				sendOrderToUser(user, orderListToSend);
+			}			
 		});
 	}
 
-	private void sendOrderToUser(AppUser user, List<OrderDTO> list, String orderName) {
+	private void sendOrderToUser(AppUser user, List<OrderDTO> list) {
 		if (CollectionUtils.isEmpty(user.getUserAlertTimes()) || isMatchUserAlertTimes(user)) {
-			List<String> orders = list.stream().map(e -> {
-				SourceSiteDTO s = e.getSourceSite();
-				return createOrdersMessage(orderName, e.getTitle(), e.getLink(), s.getCategoryName(),
-						s.getSubCategoryName());
+			Map<String, List<OrderDTO>> byLink = list.stream().collect(Collectors.groupingBy(OrderDTO::getLink));
+			List<String> resultOrdersString = byLink.entrySet().stream().map(entry -> {
+				List<OrderDTO> orderList = entry.getValue();
+				
+				String modulesString = orderList.stream().map(order -> {
+					return order.getModuleName();
+				}).distinct().collect(Collectors.joining(", "));
+				SourceSiteDTO s = orderList.get(0).getSourceSite();
+				return createOrdersMessage(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), s.getCategoryName(),
+						s.getSubCategoryName());			
 			}).toList();
-			sendMessageToUser(user, orders);
+			sendMessageToUser(user, resultOrdersString);
 		} else {
 			list.forEach(l -> {
 				SourceSiteDTO s = l.getSourceSite();
@@ -76,7 +88,7 @@ public class OrderProcessor {
 				don.setUser(user);
 				don.setLink(l.getLink());
 				don.setTitle(l.getTitle());
-				don.setOrderName(orderName);
+				don.setOrderName(l.getModuleName());
 				don.setCategoryName(s.getCategoryName());
 				if (!StringUtils.isEmpty(s.getSubCategoryName())) {
 					don.setSubCategoryName(s.getSubCategoryName());
@@ -186,12 +198,18 @@ public class OrderProcessor {
 		userRepository.findAllOneEagerUserAlertTimes().forEach(user -> {
 			boolean isMatchAlertdate = isMatchUserAlertTimes(user);
 			if (isMatchAlertdate) {
-				List<String> orders = user.getDelayOrderNotifications().stream()
-						.map(e -> createOrdersMessage(e.getOrderName(), e.getTitle(), e.getLink(), e.getCategoryName(),
-								e.getSubCategoryName()))
-						.toList();
-				if (!orders.isEmpty()) {
-					sendMessageToUser(user, orders);
+				Map<String, List<DelayOrderNotification>> byLink = user.getDelayOrderNotifications().stream().collect(Collectors.groupingBy(DelayOrderNotification::getLink));
+				List<String> resultOrdersString = byLink.entrySet().stream().map(entry -> {
+					List<DelayOrderNotification> orderList = entry.getValue();
+					
+					String modulesString = orderList.stream().map(order -> {
+						return order.getOrderName();
+					}).distinct().collect(Collectors.joining(", "));
+					return createOrdersMessage(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), orderList.get(0).getCategoryName(),
+							orderList.get(0).getSubCategoryName());			
+				}).toList();
+				if (!resultOrdersString.isEmpty()) {
+					sendMessageToUser(user, resultOrdersString);
 					delayOrderRepository.deleteAll(user.getDelayOrderNotifications());
 				}
 			}

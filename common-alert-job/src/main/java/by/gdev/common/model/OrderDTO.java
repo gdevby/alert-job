@@ -16,6 +16,7 @@ public class OrderDTO {
 	private Date dateTime;
 	private PriceDTO price;
 	private SourceSiteDTO sourceSite;
+	private String moduleName; //field for internal processing, not for receiving
 	private boolean openForAll;
 	private boolean validOrder;
 }
