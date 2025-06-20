@@ -19,7 +19,6 @@ import reactor.netty.http.client.HttpClient;
 
 @Configuration
 public class BeanConfiguration {
-
 	@Bean
 	public ApplicationProperty property() {
 		return new ApplicationProperty();
@@ -27,9 +26,9 @@ public class BeanConfiguration {
 
 	@Bean
 	public Mailer test() {
-		return MailerBuilder.withSMTPServerHost("smtp.gmail.com").withSMTPServerPort(587)
-				.withSMTPServerUsername(property().getMailLogin()).withSMTPServerPassword(property().getMailPassword())
-				.withTransportStrategy(TransportStrategy.SMTP_TLS).withDebugLogging(false).buildMailer();
+		return MailerBuilder.withSMTPServerHost(property().getSmtpHost()).withSMTPServerPort(property().getSmtpPort())
+				.withSMTPServerUsername(property().getSmtpMailUsername()).withSMTPServerPassword(property().getSmtpMailPassword())
+				.withTransportStrategy(property().getTransportStrategy()).withDebugLogging(false).buildMailer();
 
 	}
 	//TODO test in future to remove from warning
