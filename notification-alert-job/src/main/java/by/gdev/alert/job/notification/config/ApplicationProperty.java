@@ -16,7 +16,8 @@ public class ApplicationProperty {
 	@Value("${telegram.chat.token}")
 	private String telegramChatToken;
 	
-	
+	@Value("${mail.from.address}")
+	private String fromAddress;
 	@Value("${mail.smtp.username}")
 	private String smtpMailUsername;	
 	@Value("${mail.smtp.password}")

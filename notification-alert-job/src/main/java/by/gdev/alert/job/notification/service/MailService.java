@@ -36,7 +36,7 @@ public class MailService {
 
         return Mono.defer(() -> {
                     Email mail = EmailBuilder.startingBlank()
-                            .from(property.getSmtpMailUsername())
+                            .from(property.getFromAddress())
                             .to(userMail.getToMail())
                             .withSubject("Email")
                             .withHTMLText(userMail.getMessage())
