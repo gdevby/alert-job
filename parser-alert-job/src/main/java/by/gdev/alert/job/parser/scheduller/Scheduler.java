@@ -86,6 +86,7 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	@Scheduled(cron = "0 0 12 * * *")
 	@SneakyThrows
 	public void currencyParser() {
+		log.info("Currency parsing");
 		String request = restTemplate.getForObject(currencySiteUrl, String.class);
 		ObjectMapper mapper = new ObjectMapper();
 		CurrencyRoot currency = mapper.readValue(request, CurrencyRoot.class);
