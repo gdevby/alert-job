@@ -47,39 +47,6 @@ services:
       config:
         condition: service_healthy
   #set directory rules chmod 777 public
-  elasticsearch:
-    image: elasticsearch:8.6.0
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
-      - xpack.security.enabled=false
-      - TZ=Europe/Moscow
-    volumes:
-       - ./public:/usr/share/elasticsearch/data
-    ports:
-      - 9300:9300
-      - 9200:9200
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/?pretty"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    mem_limit: 1g
-  logstash:
-    image: logstash:8.6.0
-    container_name: logstash
-    command: logstash -f /etc/logstash/conf.d/logstash.conf
-    volumes:
-      - ./config/logstash:/etc/logstash/conf.d
-    ports:
-      - "5000:5000"
-    environment:
-       - TZ=Europe/Moscow
-    depends_on:
-      - elasticsearch
-    mem_limit: 1024m
   gateway:
     image: rg.gdev.by/alert-job/alert-job-gateway:1.0
     ports:
@@ -166,7 +133,7 @@ services:
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /db
 volumes:
-  grafana-volume: {}           
+  grafana-volume: {}  
 networks:
   alert-job:
     driver: bridge      

@@ -37,8 +37,7 @@ npm run build
 
 ```bash
 cd ..
-docker compose pull logstash elasticsearch
-docker compose up -d keycloak logstash
+docker compose up -d keycloak
 sudo chmod 777 public
 ```
 

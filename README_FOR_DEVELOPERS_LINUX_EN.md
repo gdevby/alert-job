@@ -34,8 +34,7 @@ npm run build
 Go to parent directory, create images and run containers 
 ```bash
 cd ..
-docker compose pull logstash elasticsearch
-docker compose up -d keycloak logstash
+docker compose up -d keycloak
 sudo chmod 777 public
 ```
 

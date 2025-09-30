@@ -60,8 +60,7 @@ npm run build
 Перейдите в родительскую директорию, создайте образы и запустите контейнеры
 ```bash
 cd ..
-docker compose pull logstash elasticsearch
-docker compose up -d keycloak logstash
+docker compose up -d keycloak
 ```
 
 ### 6. Config repo

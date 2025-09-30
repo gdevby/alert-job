@@ -93,52 +93,42 @@ services:
         condition: service_healthy
     mem_limit: 512m
   #set directory rules sudo chmod 777 files_prod/elasticsearc
-  elasticsearch:
-    restart: always
-    image: elasticsearch:8.9.2
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms256m -Xmx1024m
-      - xpack.security.enabled=false
-      - TZ=Europe/Moscow
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
     volumes:
-       - $elasticsearch_directory:/usr/share/elasticsearch/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/?pretty"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-  logstash:
-    restart: always
-    image: logstash:8.9.2
-    container_name: logstash
-    command: logstash -f /etc/logstash/conf.d/logstash.conf
+      - ./config/loki:/etc/loki
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
     volumes:
-      - $logstash_config_directory:/etc/logstash/conf.d
-    environment:
-       - TZ=Europe/Moscow
-       - "LS_JAVA_OPTS=-Xms256m -Xmx1024m"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9600/?pretty"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    depends_on:
-      - elasticsearch
-    mem_limit: 1024m
-  front:
-    restart: always
-    image: rg.gdev.by/alert-job/front:$alert_job_version
-    environment:
-      VIRTUAL_HOST: $domain
-      VIRTUAL_PATH: /front
-      LETSENCRYPT_HOST: $domain
-      LETSENCRYPT_EMAIL: $acme_email
-      TZ: Europe/Moscow
-    mem_limit: 256m
+      - ./config/promtail:/etc/promtail
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro  # Логи контейнеров
+      - /var/log:/var/log:ro  # Системные логи
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Сокет Docker
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   gateway:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-gateway:$alert_job_version
@@ -238,6 +228,7 @@ volumes:
   html: {}
   nginx-conf-d: {}
   acme: {}
+  loki-data: {}
 networks:
   alert-job:
     driver: bridge      
