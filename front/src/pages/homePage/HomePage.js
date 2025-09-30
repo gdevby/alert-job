@@ -52,8 +52,8 @@ const HomePage = () => {
 			<Chart />
 			<Examples />
 			<p className='mt-1' style={{ fontWeight: 'bold' }}>
-				Весь функционал работает, предложениям и замечаниям писать
-				<a href='https://t.me/robertmakrytski'>https://t.me/robertmakrytski</a>
+				Весь функционал работает, поддержка и обсуждение здесь
+				<a href='https://t.me/robertmakrytski'>https://t.me/supp_aj_gdev_by</a>
 			</p>
 		</div>
 	</div>
