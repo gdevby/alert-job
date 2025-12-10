@@ -16,7 +16,6 @@ export parser_config_directory=/home/app/service/aj/parser
 export swag_config_directory=/home/app/service/aj/swag
 export front_directory=/home/app/service/aj/sources/alert-job/front
 export prometheus_directory=/home/app/service/aj/sources/alert-job/prometheus
-export logstash_config_directory=/home/app/service/aj/sources/alert-job/logstash/config
 export logger_level=INFO
 export kibana_secret_path=
 export kibana_public_base_url=

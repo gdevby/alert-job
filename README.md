@@ -72,9 +72,9 @@ build-prod-example.sh
 After that returning to the parent directory, getting all images and running them
 ```
 cd ..
-docker compose pull grafana logstash elasticsearch prometheus nginx-proxy
+docker compose pull grafana elasticsearch prometheus nginx-proxy
 docker compose create
-docker compose start keycloak logstash
+docker compose start keycloak
 
 wait 15 seconds
 

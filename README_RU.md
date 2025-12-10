@@ -75,9 +75,9 @@ build-prod-example.sh
 После снова переходим в родительский каталог и получаем все образы проекта, и запускаем их
 ```
 cd ..
-docker compose pull grafana logstash elasticsearch prometheus nginx-proxy
+docker compose pull grafana elasticsearch prometheus nginx-proxy
 docker compose create
-docker compose start keycloak logstash
+docker compose start keycloak
 
 ждем 15 секунд
 

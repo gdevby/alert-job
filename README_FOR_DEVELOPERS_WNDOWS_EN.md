@@ -94,7 +94,7 @@ c:\Windows\System32\drivers\etc\hosts
 Add next lines to the end of file
 ```bash
 127.0.0.1 config eureka keycloak gateway notification parser core 
-127.0.0.1 auth.alertjob.by alertjob.by logstash
+127.0.0.1 auth.alertjob.by alertjob.by
 ```
 
 ### 8. Nginx
