@@ -94,9 +94,8 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
             log.error("Date parse error", ex);
             order.setValidOrder(false);
         }
-
-        // Цена — в HTML её нет
-        order.setPrice(new Price("По договоренности", 0));
+        
+        order.setPrice(parcePrice(e));
 
         // Источник
         ParserSource parserSource = new ParserSource();
@@ -106,6 +105,24 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
         order.setSourceSite(parserSource);
 
         return order;
+    }
+
+    private Price parcePrice(Element e){
+        try {
+            Element priceEl = e.selectFirst("span.text-green-600");
+            if (priceEl != null) {
+                String priceText = priceEl.text(); // например, "100 $"
+                // Удаляем все не цифры, чтобы оставить только число
+                String numericPart = priceText.replaceAll("[^\\d]", "");
+                int priceValue = Integer.parseInt(numericPart);
+                return new Price(priceText, priceValue);
+            } else {
+                // Если элемент не найден, указываем "По договоренности"
+                return new Price("По договоренности", 0);
+            }
+        } catch (Exception ex) {
+            return new Price("По договоренности", 0);
+        }
     }
 
     private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
