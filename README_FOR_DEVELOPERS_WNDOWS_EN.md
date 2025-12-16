@@ -129,7 +129,6 @@ server{
     location /front/ {
         rewrite ^/front/(.*) /$1 break;
         root YOUR_PATH
-        #try_files  /$1 =404;
     }
     
     location /page {

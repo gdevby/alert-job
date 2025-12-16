@@ -45,7 +45,10 @@ public class ParserCategories {
                     	log.info("Categories parsing started: " + siteSourceJob.getParsedURI());
                     	try {
 	                        Map<ParsedCategory, List<ParsedCategory>> parsed = categoryParser.parse(siteSourceJob);
-	                        parsed.forEach((category, subCategories) -> saveData(siteSourceJob, category, subCategories));
+                            boolean emptyMap = parsed == null || parsed.isEmpty();
+                            if (!emptyMap){
+                                parsed.forEach((category, subCategories) -> saveData(siteSourceJob, category, subCategories));
+                            }
                     	} catch (Exception e) {
                     		log.error("cannot parse site: {}", siteSourceJob.getParsedURI());
                     		e.printStackTrace();  

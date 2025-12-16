@@ -103,7 +103,6 @@ server{
     location /front/ {
         rewrite ^/front/(.*) /$1 break;
         root /home/dima/IdeaProjects/alert-job/front/dist;
-        #try_files  /$1 =404;
     }
     
     location /page {
