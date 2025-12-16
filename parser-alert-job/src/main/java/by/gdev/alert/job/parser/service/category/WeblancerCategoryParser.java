@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service
-@Slf4j
+//@Service
+//@Slf4j
 public class WeblancerCategoryParser implements CategoryParser{
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {    	
@@ -33,13 +33,13 @@ public class WeblancerCategoryParser implements CategoryParser{
             Elements elements = e.children();
             Element element = elements.get(0);
             ParsedCategory category = new ParsedCategory(null, element.text(), null, null);
-            log.debug("found category {},{}, {}", element.text());
+            //log.debug("found category {},{}, {}", element.text());
             Element subElements = elements.get(2).getElementsByClass("collapse").get(0);
             Elements subElement = subElements.children();
             List<ParsedCategory> subCategory = subElement.stream().map(sub -> {
                 Element n = sub.children().get(0);
                 String link = siteSourceJob.getParsedURI() + n.attr("href").replaceAll("/jobs", "");
-                log.debug("		found subcategory {}, {}", n.text(), link);
+                //log.debug("		found subcategory {}, {}", n.text(), link);
                 return new ParsedCategory(null, n.text(), null, link);
             }).toList();
             return new AbstractMap.SimpleEntry<>(category, subCategory);
