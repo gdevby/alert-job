@@ -23,7 +23,7 @@ public class Scheduler {
 	private final AppUserRepository userRepository;
 	private final OrderProcessor orderProcessor;
 
-    private static final int period = 75;  //период обновления в секундах
+    private static final int period = 300;  //период обновления в секундах
     private static final int millsCoeff = 1000;
 
 	@Scheduled(fixedDelay = period * millsCoeff)
