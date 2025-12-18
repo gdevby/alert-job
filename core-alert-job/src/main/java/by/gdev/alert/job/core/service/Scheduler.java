@@ -23,7 +23,10 @@ public class Scheduler {
 	private final AppUserRepository userRepository;
 	private final OrderProcessor orderProcessor;
 
-	@Scheduled(fixedDelay = 300000)
+    private static final int period = 75;  //период обновления в секундах
+    private static final int millsCoeff = 1000;
+
+	@Scheduled(fixedDelay = period * millsCoeff)
 	public void sseConnection() {
 		log.trace("send request for parsing");
 		ParameterizedTypeReference<List<OrderDTO>> type = new ParameterizedTypeReference<List<OrderDTO>>() {
