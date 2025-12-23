@@ -97,7 +97,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
             Page page = context.newPage();
             page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
 
-            System.out.println("TITLE: " + page.title());
+            /*System.out.println("TITLE: " + page.title());
             page.waitForSelector("div.job-list-item"); // ждём появления вакансий
 
             String html = page.content();
@@ -105,7 +105,7 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
                 System.out.println("Нашёл блок!!!!!");
             } else {
                 System.out.println("Элемента нет в контенте >>>>");
-            }
+            }*/
 
 // выбираем все блоки заказов
             Locator items = page.locator("div.job-list-item");
