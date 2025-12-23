@@ -1,5 +1,7 @@
 package by.gdev.alert.job.parser.util.proxy;
 
+import by.gdev.alert.job.parser.proxy.db.ProxyState;
+
 public class ProxyParser {
     public ProxyCredentials parse(String proxyLine){
         String[] split = proxyLine.split(":");
@@ -14,6 +16,7 @@ public class ProxyParser {
                 .password(password)
                 .host(host)
                 .port(port)
+                .state(ProxyState.NEW)
                 .build();
     }
 }
