@@ -96,6 +96,8 @@ public class YouDoOrderParser extends AbsctractSiteParser {
                 return List.of();
             }
 
+            // удаляем существующий ParserSource по сайту категории и субкатегории
+            parserSourceRepository.deleteBySourceAndCategoryAndSubCategory(siteSourceJobId, category.getId(), subCategory.getId());
             List<OrderDTO> result = new ArrayList<>();
 
             for (Element e : orders) {
