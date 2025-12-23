@@ -12,8 +12,8 @@ public class ProxyCheckerJob {
 
     private final ProxyCheckerService proxyCheckerService;
 
-    // Запускаем каждые 30 минут
-    @Scheduled(cron = "0 */30 * * * *")
+    // Запускаем каждые 15 минут
+    @Scheduled(cron = "0 */5 * * * *")
     public void run() {
         log.info("Запуск проверки прокси...");
         proxyCheckerService.checkAllProxies();

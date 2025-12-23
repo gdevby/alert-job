@@ -8,13 +8,13 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.proxy.db.ProxyInfo;
 import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
@@ -57,12 +57,11 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
     private List<OrderDTO> mapItemsInternalCloudflare(Long siteSourceJobId, Category category, Subcategory subCategory){
         List<OrderDTO> orders = new ArrayList<>();
         try (Playwright playwright = Playwright.create()) {
-            ProxyInfo randomProxy = proxyService.getRandomActiveProxy();
+            ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
 
             BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                     .setHeadless(true) // в докере всегда headless
-                    .setProxy(new Proxy(randomProxy.getType().name().toLowerCase() + "://"
-                            + randomProxy.getIp() + ":" + randomProxy.getPort())
+                    .setProxy(new Proxy("http://" + randomProxy.getHost() + ":" + randomProxy.getPort())
                             .setUsername(randomProxy.getUsername())
                             .setPassword(randomProxy.getPassword())
                     )
