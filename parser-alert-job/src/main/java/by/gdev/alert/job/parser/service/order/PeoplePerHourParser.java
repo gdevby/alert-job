@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -51,9 +52,14 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
     private final ParserSourceRepository parserSourceRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper mapper;
+    
+    @Value("${parser.work.peopleperhour.com}")
+	private boolean active;
 
     @Override
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+		if (!active)
+			return new ArrayList<>();
 
         String uri = url;
         if (urlMapping.containsKey(category.getNativeLocName())) {

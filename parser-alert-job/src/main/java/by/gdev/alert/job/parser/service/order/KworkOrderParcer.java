@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -51,10 +52,16 @@ public class KworkOrderParcer extends AbsctractSiteParser {
 
 
     private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    
+    @Value("${parser.work.kwork.ru}")
+	private boolean active;
 
     @Override
     @SneakyThrows
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+    	
+		if (!active)
+			return new ArrayList<>();
 
         restTemplate = getRestTemplate(isNeedProxy);
 

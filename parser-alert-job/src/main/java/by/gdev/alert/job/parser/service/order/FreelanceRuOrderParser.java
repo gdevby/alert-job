@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -62,12 +63,16 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 
 	@Value("${freelanceRu.proxy.active}")
 	private boolean isNeedProxy;
+	@Value("${parser.work.freelance.ru}")
+	private boolean active;
 
 	@Override
 	@SneakyThrows
 	protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		if (Objects.isNull(link))
 			return Lists.newArrayList();
+		if (!active)
+			return new ArrayList<>();
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("user-agent", "Application");
 		headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));

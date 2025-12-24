@@ -18,11 +18,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -42,10 +44,14 @@ public class WorkspaceOrderParser extends AbsctractSiteParser {
     private final ParserSourceRepository parserSourceRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper mapper;
+    
+    @Value("${parser.work.workspace.ru}")
+	private boolean active;
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-
+		if (!active)
+			return new ArrayList<>();
         Document document = null;
         try {
             document = Jsoup.connect(link+statusParam).get();

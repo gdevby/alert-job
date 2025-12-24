@@ -16,6 +16,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -32,10 +33,13 @@ public class YouDoOrderParser extends AbsctractSiteParser {
 
     private final String baseUrl = "https://youdo.com";
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
+    @Value("${parser.work.youdo.com}")
+	private boolean active;
 
     @Override
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-
+		if (!active)
+			return new ArrayList<>();
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium().launch(

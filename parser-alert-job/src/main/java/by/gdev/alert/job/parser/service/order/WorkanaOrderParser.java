@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -55,10 +56,15 @@ public class WorkanaOrderParser extends AbsctractSiteParser {
     private final ParserSourceRepository parserSourceRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper mapper;
+    
+    @Value("${parser.work.workana.com}")
+	private boolean active;
 
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+		if (!active)
+			return new ArrayList<>();
         RestTemplate restTemplate = getRestTemplate(isProxyNeeded);
 
         ResponseEntity<WorkanaRoot> response = restTemplate.exchange(

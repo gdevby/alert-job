@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -46,11 +47,15 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
     private final ModelMapper mapper;
 
     private RestTemplate restTemplate;
+    @Value("${parser.work.freelancer.com}")
+	private boolean active;
 
 
     @Override
     @SneakyThrows
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+		if (!active)
+			return new ArrayList<>();
         if (Objects.isNull(link))
             return Lists.newArrayList();
         restTemplate = getRestTemplate(isNeedProxy);

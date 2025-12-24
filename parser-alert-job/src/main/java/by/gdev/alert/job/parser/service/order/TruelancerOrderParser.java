@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -43,9 +44,13 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
     private final OrderRepository orderRepository;
     private final ModelMapper mapper;
     private RestTemplate restTemplate;
+    @Value("${parser.work.truelancer.com}")
+	private boolean active;
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+		if (!active)
+			return new ArrayList<>();
         restTemplate = getRestTemplate(isNeedProxy);
 
         TrueLancerRoot root = restTemplate.postForObject(uri, Map.of("category", link), TrueLancerRoot.class);

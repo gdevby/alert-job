@@ -17,9 +17,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -38,10 +40,15 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
     private final ModelMapper mapper;
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy");
+    
+    @Value("${parser.work.weblancer.net}")
+	private boolean active;
 
     @Override
     @SneakyThrows
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+		if (!active)
+			return new ArrayList<>();
         if (Objects.isNull(link))
             return Lists.newArrayList();
 

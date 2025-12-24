@@ -22,10 +22,12 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,10 +48,14 @@ public class FLOrderParser extends AbsctractSiteParser {
     private Pattern currencyPatter = Pattern.compile("\\d.*&#8381;");
 
     private final ModelMapper mapper;
+    @Value("${parser.work.fl.ru}")
+	private boolean active;
 
     @Override
     @SneakyThrows
     protected List<OrderDTO> mapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
+		if (!active)
+			return new ArrayList<>();
         JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
