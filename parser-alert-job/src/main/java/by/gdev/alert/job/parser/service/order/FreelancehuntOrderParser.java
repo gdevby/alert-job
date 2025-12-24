@@ -140,15 +140,22 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
     }
 
     private Order parseOrder(Locator item, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        Order order = new Order();
 
         // Заголовок и ссылка
         Locator titleEl = item.locator("a.job-name.with-highlights");
+        String link = null;
+        String title = null;
         if (titleEl.count() > 0) {
-            order.setTitle(titleEl.textContent());
-            order.setLink(titleEl.getAttribute("href"));
+            link = titleEl.getAttribute("href");
+            title = titleEl.textContent();
+        }
+        else {
+            return null;
         }
 
+        Order order = orderRepository.findByLink(link).orElseGet(Order::new);
+        order.setTitle(title);
+        order.setLink(link);
         // Описание
         Locator descEl = item.locator("div.job-description.with-highlights");
         if (descEl.count() > 0) {

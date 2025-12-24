@@ -90,9 +90,9 @@ public class YouDoOrderParser extends AbsctractSiteParser {
             Document doc = Jsoup.parse(html);
 
             Elements elementsOrders = doc.select("li.TasksList_listItem__2Yurg");
-            System.out.println("Found YouDo orders: " + elementsOrders.size());
+            System.out.println("Found YouDo order elements: " + elementsOrders.size());
             if (elementsOrders.isEmpty()) {
-                log.warn("YouDo: no orders found");
+                log.warn("YouDo: no order elements found");
                 return List.of();
             }
 
@@ -159,9 +159,11 @@ public class YouDoOrderParser extends AbsctractSiteParser {
         if (titleEl == null)
             return null;
 
-        Order order = new Order();
+        String link = normalizeLink(baseUrl + titleEl.attr("href"));
+        Order order = orderRepository.findByLink(link).orElseGet(Order::new);
+
         order.setTitle(titleEl.text());
-        order.setLink(baseUrl + titleEl.attr("href"));
+        order.setLink(link);
 
         Element descEl = e.selectFirst("div.TasksList_textBlock___jgKH");
         order.setMessage(descEl != null ? descEl.text() : "");
@@ -216,6 +218,11 @@ public class YouDoOrderParser extends AbsctractSiteParser {
         dto.setSourceSite(source);
 
         return dto;
+    }
+
+    private String normalizeLink(String link) {
+        int idx = link.indexOf("?searchRequestId=");
+        return idx > 0 ? link.substring(0, idx) : link;
     }
 
     @Override
