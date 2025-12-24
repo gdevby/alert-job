@@ -31,7 +31,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FreelancehuntOrderParcer extends AbsctractSiteParser {
+public class FreelancehuntOrderParser extends AbsctractSiteParser {
 
     private final ParserService service;
     private final OrderRepository orderRepository;
@@ -55,7 +55,6 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
     }
 
     private List<OrderDTO> mapItemsInternalCloudflare(Long siteSourceJobId, Category category, Subcategory subCategory){
-        List<OrderDTO> orders = new ArrayList<>();
         try (Playwright playwright = Playwright.create()) {
             ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
 
@@ -96,108 +95,123 @@ public class FreelancehuntOrderParcer extends AbsctractSiteParser {
             Page page = context.newPage();
             page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
 
-            /*System.out.println("TITLE: " + page.title());
-            page.waitForSelector("div.job-list-item"); // ждём появления вакансий
-
-            String html = page.content();
-            if (html.contains("job-list-item")) {
-                System.out.println("Нашёл блок!!!!!");
-            } else {
-                System.out.println("Элемента нет в контенте >>>>");
-            }*/
-
-// выбираем все блоки заказов
-            Locator items = page.locator("div.job-list-item");
-            System.out.println("Found items: " + items.count());
-            // удаляем существующий ParserSource по сайту категории и субкатегории
-            parserSourceRepository.deleteBySourceAndCategoryAndSubCategory(siteSourceJobId, category.getId(), subCategory.getId());
-            for (Locator item : items.all()) {
-                Order order = new Order();
-
-                // Заголовок и ссылка
-                Locator titleEl = item.locator("a.job-name.with-highlights");
-                if (titleEl.count() > 0) {
-                    order.setTitle(titleEl.textContent());
-                    order.setLink(titleEl.getAttribute("href"));
-                }
-
-                // Описание
-                Locator descEl = item.locator("div.job-description.with-highlights");
-                if (descEl.count() > 0) {
-                    order.setMessage(descEl.textContent());
-                }
-
-                // Компания
-                Locator companyEl = item.locator("div.company a.company-name");
-                if (companyEl.count() > 0) {
-                    // order.setCompany(companyEl.textContent());
-                }
-
-                // Дата публикации (относительное время)
-                Locator dateEl = item.locator("div.job-publication-time > span");
-                if (dateEl.count() > 0) {
-                    String relative = dateEl.textContent();
-                    order.setDateTime(parseRelativeDate(relative));
-                } else {
-                    order.setDateTime(new Date());
-                }
-
-                // Цена
-                Locator priceEl = item.locator("div.job-price");
-                if (priceEl.count() > 0) {
-                    String priceText = priceEl.textContent();
-                    CurrencyEntity ce = currencyRepository.findByCurrencyCode(
-                            priceText.contains("USD") ? Currency.USD.name() : Currency.UAH.name()
-                    ).orElse(null);
-
-                    if (ce != null) {
-                        String cleaned = priceText.replace("\u202F", "").replace("от ", "");
-                        String[] parts = cleaned.replaceAll("[^0-9]", " ").trim().split("\\s+");
-                        if (parts.length > 0) {
-                            int nominalAmount = Integer.parseInt(parts[0]);
-                            double priceValue = (nominalAmount / ce.getNominal()) * ce.getCurrencyValue();
-                            order.setPrice(new Price(priceText, (int) priceValue));
-                        }
-                    }
-                }
-
-                // Источник
-                ParserSource parserSource = new ParserSource();
-                parserSource.setSource(siteSourceJobId);
-                parserSource.setCategory(category.getId());
-                parserSource.setSubCategory(subCategory != null ? subCategory.getId() : null);
-                order.setSourceSite(parserSource);
-
-                // фильтры и сохранение
-                if (order.isValidOrder()) {
-                    log.debug("found new order {} {}", order.getTitle(), order.getLink());
-                    service.saveOrderLinks(category, subCategory, order.getLink());
-
-                    ParserSource ps = order.getSourceSite();
-                    Optional<ParserSource> optionalSource = parserSourceRepository
-                            .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory());
-                    if (optionalSource.isPresent()) {
-                        ps = optionalSource.get();
-                    } else {
-                        ps = parserSourceRepository.save(ps);
-                    }
-                    order.setSourceSite(ps);
-                    order = orderRepository.save(order);
-
-                    OrderDTO dto = mapper.map(order, OrderDTO.class);
-                    SourceSiteDTO source = dto.getSourceSite();
-                    source.setCategoryName(category.getNativeLocName());
-                    if (Objects.nonNull(subCategory)) {
-                        source.setSubCategoryName(subCategory.getNativeLocName());
-                    }
-                    dto.setSourceSite(source);
-                    orders.add(dto);
-                }
-            }
+            // выбираем все блоки заказов
+            Locator elementsOrders = page.locator("div.job-list-item");
+            System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
+            List<OrderDTO> orders = elementsOrders.all().stream()
+                    .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
+                    .filter(Objects::nonNull)
+                    .filter(Order::isValidOrder)
+                    .filter(order -> !orderRepository.existsByLink(order.getLink()))
+                    .map(order -> saveOrder(order, category, subCategory))
+                    .toList();
 
             browser.close();
             return orders;
+        }catch (Exception e) {
+            log.error("Playwright error: FreelancehuntOrderParser", e);
+            return List.of();
         }
+    }
+
+    private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
+        service.saveOrderLinks(category, subCategory, e.getLink());
+
+        ParserSource ps = e.getSourceSite();
+        ParserSource existing = parserSourceRepository
+                .findBySourceAndCategoryAndSubCategory(
+                        ps.getSource(),
+                        ps.getCategory(),
+                        ps.getSubCategory()
+                )
+                .orElseGet(() -> parserSourceRepository.save(ps));
+
+        e.setSourceSite(existing);
+        e = orderRepository.save(e);
+
+        OrderDTO dto = mapper.map(e, OrderDTO.class);
+        SourceSiteDTO source = dto.getSourceSite();
+        source.setCategoryName(category.getNativeLocName());
+        if (subCategory != null)
+            source.setSubCategoryName(subCategory.getNativeLocName());
+        dto.setSourceSite(source);
+
+        return dto;
+    }
+
+    private Order parseOrder(Locator item, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        Order order = new Order();
+
+        // Заголовок и ссылка
+        Locator titleEl = item.locator("a.job-name.with-highlights");
+        if (titleEl.count() > 0) {
+            order.setTitle(titleEl.textContent());
+            order.setLink(titleEl.getAttribute("href"));
+        }
+
+        // Описание
+        Locator descEl = item.locator("div.job-description.with-highlights");
+        if (descEl.count() > 0) {
+            order.setMessage(descEl.textContent());
+        }
+
+        // Компания
+        Locator companyEl = item.locator("div.company a.company-name");
+        if (companyEl.count() > 0) {
+            // order.setCompany(companyEl.textContent());
+        }
+
+        // Дата публикации (относительное время)
+        Locator dateEl = item.locator("div.job-publication-time > span");
+        if (dateEl.count() > 0) {
+            String relative = dateEl.textContent();
+            order.setDateTime(parseRelativeDate(relative));
+        } else {
+            order.setDateTime(new Date());
+        }
+
+        // Цена
+        Locator priceEl = item.locator("div.job-price");
+        if (priceEl.count() > 0) {
+            String priceText = priceEl.textContent();
+            CurrencyEntity ce = currencyRepository.findByCurrencyCode(
+                    priceText.contains("USD") ? Currency.USD.name() : Currency.UAH.name()
+            ).orElse(null);
+
+            if (ce != null) {
+                String cleaned = priceText.replace("\u202F", "").replace("от ", "");
+                String[] parts = cleaned.replaceAll("[^0-9]", " ").trim().split("\\s+");
+                if (parts.length > 0) {
+                    int nominalAmount = Integer.parseInt(parts[0]);
+                    double priceValue = (nominalAmount / ce.getNominal()) * ce.getCurrencyValue();
+                    order.setPrice(new Price(priceText, (int) priceValue));
+                }
+            }
+        }
+
+        // Источник
+        ParserSource parserSource = new ParserSource();
+        parserSource.setSource(siteSourceJobId);
+        parserSource.setCategory(category.getId());
+        parserSource.setSubCategory(subCategory != null ? subCategory.getId() : null);
+        order.setSourceSite(parserSource);
+
+        // фильтры и сохранение
+        if (order.isValidOrder()) {
+            log.debug("found new order {} {}", order.getTitle(), order.getLink());
+            service.saveOrderLinks(category, subCategory, order.getLink());
+
+            ParserSource ps = order.getSourceSite();
+            Optional<ParserSource> optionalSource = parserSourceRepository
+                    .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory());
+            if (optionalSource.isPresent()) {
+                ps = optionalSource.get();
+            } else {
+                ps = parserSourceRepository.save(ps);
+            }
+            order.setSourceSite(ps);
+        }
+        return order;
     }
 
     private Date parseRelativeDate(String text) {

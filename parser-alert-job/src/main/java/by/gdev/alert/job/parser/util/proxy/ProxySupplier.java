@@ -25,7 +25,9 @@ public class ProxySupplier {
     private void parse(List<String> proxiesLines) {
         for (String proxiesLine : proxiesLines) {
             ProxyCredentials proxyCredentials = proxyParser.parse(proxiesLine);
-            proxies.add(proxyCredentials);
+            if (proxyCredentials != null){
+                proxies.add(proxyCredentials);
+            }
         }
     }
 

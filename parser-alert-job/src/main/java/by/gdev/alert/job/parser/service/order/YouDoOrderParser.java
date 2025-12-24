@@ -25,7 +25,7 @@ import java.util.*;
 @Slf4j
 public class YouDoOrderParser extends AbsctractSiteParser {
 
-    private final ParserService service;
+    private final ParserService parserService;
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
     private final ModelMapper mapper;
@@ -89,36 +89,26 @@ public class YouDoOrderParser extends AbsctractSiteParser {
             String html = page.content();
             Document doc = Jsoup.parse(html);
 
-            Elements orders = doc.select("li.TasksList_listItem__2Yurg");
-
-            if (orders.isEmpty()) {
+            Elements elementsOrders = doc.select("li.TasksList_listItem__2Yurg");
+            System.out.println("Found YouDo orders: " + elementsOrders.size());
+            if (elementsOrders.isEmpty()) {
                 log.warn("YouDo: no orders found");
                 return List.of();
             }
 
-            List<OrderDTO> result = new ArrayList<>();
-
-            for (Element e : orders) {
-                Order order = parseOrder(e, siteSourceJobId, category, subCategory);
-
-                if (order == null)
-                    continue;
-
-                if (!order.isValidOrder())
-                    continue;
-
-                if (!service.isExistsOrder(category, subCategory, order.getLink()))
-                    continue;
-
-                OrderDTO dto = saveOrder(order, category, subCategory);
-                result.add(dto);
-            }
+            List<OrderDTO> orders = elementsOrders.stream()
+                    .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
+                    .filter(Objects::nonNull)
+                    .filter(Order::isValidOrder)
+                    .filter(order -> !orderRepository.existsByLink(order.getLink()))
+                    .map(order -> saveOrder(order, category, subCategory))
+                    .toList();
 
             browser.close();
-            return result;
+            return orders;
 
         } catch (Exception e) {
-            log.error("Playwright error", e);
+            log.error("Playwright error: YouDoOrderParser", e);
             return List.of();
         }
     }
@@ -198,23 +188,18 @@ public class YouDoOrderParser extends AbsctractSiteParser {
     }
 
     private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
-
-        service.saveOrderLinks(category, subCategory, e.getLink());
+        parserService.saveOrderLinks(category, subCategory, e.getLink());
 
         ParserSource ps = e.getSourceSite();
-        Optional<ParserSource> existing = parserSourceRepository
+        ParserSource existing = parserSourceRepository
                 .findBySourceAndCategoryAndSubCategory(
                         ps.getSource(),
                         ps.getCategory(),
                         ps.getSubCategory()
-                );
+                )
+                .orElseGet(() -> parserSourceRepository.save(ps));
 
-        if (existing.isPresent()) {
-            e.setSourceSite(existing.get());
-        } else {
-            e.setSourceSite(parserSourceRepository.save(ps));
-        }
-
+        e.setSourceSite(existing);
         e = orderRepository.save(e);
 
         OrderDTO dto = mapper.map(e, OrderDTO.class);
