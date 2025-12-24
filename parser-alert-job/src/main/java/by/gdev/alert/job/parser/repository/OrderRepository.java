@@ -1,6 +1,7 @@
 package by.gdev.alert.job.parser.repository;
 
 import java.util.Date;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.data.jpa.repository.Query;
@@ -17,4 +18,8 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
     @Query("select o from parser_order o left join fetch o.sourceSite s "
 	    + "where s.source = :source and s.category = :category and s.subCategory is null and o.dateTime >= :date")
     Set<Order> findAllBySourceSubCategoryIsNullOneEager(Long source, Long category, Date date);
+
+    Optional<Order> findByLink(String link);
+
+    boolean existsByLink(String link);
 }
