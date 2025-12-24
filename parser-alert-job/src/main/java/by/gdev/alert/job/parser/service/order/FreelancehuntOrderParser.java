@@ -190,27 +190,18 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
         }
 
         // Источник
-        ParserSource parserSource = new ParserSource();
-        parserSource.setSource(siteSourceJobId);
-        parserSource.setCategory(category.getId());
-        parserSource.setSubCategory(subCategory != null ? subCategory.getId() : null);
+        ParserSource parserSource = parserSourceRepository
+                .findBySourceAndCategoryAndSubCategory(siteSourceJobId, category.getId(),
+                        subCategory != null ? subCategory.getId() : null)
+                .orElseGet(() -> {
+                    ParserSource ps = new ParserSource();
+                    ps.setSource(siteSourceJobId);
+                    ps.setCategory(category.getId());
+                    ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
+                    return parserSourceRepository.save(ps);
+                });
         order.setSourceSite(parserSource);
 
-        // фильтры и сохранение
-        if (order.isValidOrder()) {
-            log.debug("found new order {} {}", order.getTitle(), order.getLink());
-            service.saveOrderLinks(category, subCategory, order.getLink());
-
-            ParserSource ps = order.getSourceSite();
-            Optional<ParserSource> optionalSource = parserSourceRepository
-                    .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory());
-            if (optionalSource.isPresent()) {
-                ps = optionalSource.get();
-            } else {
-                ps = parserSourceRepository.save(ps);
-            }
-            order.setSourceSite(ps);
-        }
         return order;
     }
 

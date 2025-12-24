@@ -25,7 +25,7 @@ import java.util.*;
 @Slf4j
 public class YouDoOrderParser extends AbsctractSiteParser {
 
-    private final ParserService parserService;
+    private final ParserService service;
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
     private final ModelMapper mapper;
@@ -178,17 +178,23 @@ public class YouDoOrderParser extends AbsctractSiteParser {
 
         order.setDateTime(new Date());
 
-        ParserSource ps = new ParserSource();
-        ps.setSource(siteSourceJobId);
-        ps.setCategory(category.getId());
-        ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
-
-        order.setSourceSite(ps);
+        // Источник
+        ParserSource parserSource = parserSourceRepository
+                .findBySourceAndCategoryAndSubCategory(siteSourceJobId, category.getId(),
+                        subCategory != null ? subCategory.getId() : null)
+                .orElseGet(() -> {
+                    ParserSource ps = new ParserSource();
+                    ps.setSource(siteSourceJobId);
+                    ps.setCategory(category.getId());
+                    ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
+                    return parserSourceRepository.save(ps);
+                });
+        order.setSourceSite(parserSource);
         return order;
     }
 
     private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
-        parserService.saveOrderLinks(category, subCategory, e.getLink());
+        service.saveOrderLinks(category, subCategory, e.getLink());
 
         ParserSource ps = e.getSourceSite();
         ParserSource existing = parserSourceRepository
