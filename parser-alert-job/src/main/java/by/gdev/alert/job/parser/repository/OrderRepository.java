@@ -22,4 +22,6 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
     Optional<Order> findByLink(String link);
 
     boolean existsByLink(String link);
+
+    long deleteByDateTimeBefore(Date cutoff);
 }
