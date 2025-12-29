@@ -1,30 +1,19 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.factory.RestTemplateFactory;
+import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.util.SiteName;
-import com.google.common.collect.Lists;
+import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.Proxy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import com.microsoft.playwright.options.LoadState;
 
-import java.util.AbstractMap;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 
 @Service
@@ -32,43 +21,74 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FreelancehuntCategoryParser implements CategoryParser {
 
-    @Value("${freelancehunt.proxy.active}")
-    private boolean freelancehuntProxyActive;
-    private final RestTemplateFactory restTemplateFactory;
+    private final ProxyService proxyService;
+    private Browser browser;
+
+    @PostConstruct
+    public void initBrowser() {
+        Playwright playwright = Playwright.create();
+        ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
+        BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true)
+                .setProxy(new Proxy("http://" + randomProxy.getHost() + ":" + randomProxy.getPort())
+                        .setUsername(randomProxy.getUsername()).setPassword(randomProxy.getPassword()))
+                .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--no-sandbox",
+                        "--disable-dev-shm-usage", "--window-size=1920,1080"));
+        this.browser = playwright.chromium().launch(launchOptions);
+    }
+
+    @PreDestroy
+    public void shutdownBrowser() {
+        if (browser != null) {
+            browser.close();
+        }
+    }
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("user-agent", "Application");
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
 
-        RestTemplate restTemplate = restTemplateFactory.getRestTemplate(freelancehuntProxyActive);
+        try (Page page = browser.newPage()) {
+            page.navigate("https://freelancehunt.com/jobs");
+            page.waitForLoadState(LoadState.NETWORKIDLE);
 
-        ResponseEntity<String> res = restTemplate.exchange(siteSourceJob.getParsedURI(), HttpMethod.GET, entity,
-                String.class);
-        Document doc = Jsoup.parse(res.getBody());
-        Element allCategories = doc.getElementById("skill-group-selector");
-        Elements el = allCategories.children().select("div.panel.panel-default");
-        return el.stream().map(e -> {
-            Element elemCategory = e.selectFirst("div.panel-heading");
-            ParsedCategory category = new ParsedCategory(null, elemCategory.text(), null, null);
-            Element elemSubCategory = e.selectFirst("ul.panel-body.collapse");
-            List<ParsedCategory> subCategory = elemSubCategory.children().select("li.accordion-inner.clearfix").stream()
-                    .map(sub -> {
-                        // remove first element (orders count)
-                        List<String> listText = Lists.newArrayList(sub.text().split(" "));
-                        listText.remove(0);
-                        String text = listText.stream().collect(Collectors.joining(" "));
-                        String link = sub.select("a").get(0).attr("href");
-                        log.debug("		found subcategory {}, {}", text, link);
-                        return new ParsedCategory(null, text, null, link);
-                    }).toList();
-            return new AbstractMap.SimpleEntry<>(category, subCategory);
-        }).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (k, v) -> {
-            throw new IllegalStateException(String.format("Duplicate key %s", k));
-        }, LinkedHashMap::new));
+            Locator topItems = page.locator("ul.tree > li.tree-item");
+            int topCount = topItems.count();
+
+            for (int i = 0; i < topCount; i++) {
+                Locator li = topItems.nth(i);
+                Locator link = li.locator("a.tree-item-header").first();
+                Locator title = link.locator("span.tree-item-title").first();
+
+                String catName = title.count() > 0 ? title.innerText().trim() : null;
+                String catValue = link.count() > 0 ? link.getAttribute("href") : "";
+
+                if (catName == null || catName.isEmpty()) continue;
+
+                ParsedCategory top = new ParsedCategory(null, catName, null, catValue);
+
+                List<ParsedCategory> subs = new ArrayList<>();
+                Locator subLis = li.locator("ul > li");
+                int subCount = subLis.count();
+                for (int j = 0; j < subCount; j++) {
+                    Locator subLi = subLis.nth(j);
+                    Locator subLink = subLi.locator("a").first();
+                    String subName = subLink.count() > 0 ? subLink.innerText().trim() : "";
+                    String subValue = subLink.count() > 0 ? subLink.getAttribute("href") : "";
+
+                    if (!subName.isEmpty()) {
+                        subs.add(new ParsedCategory(null, subName, null, subValue));
+                    }
+                }
+
+                result.put(top, subs);
+            }
+
+            page.close();
+        } catch (Exception e) {
+            log.error("Ошибка парсинга категорий Freelancehunt", e);
+        }
+
+        return result;
     }
 
     @Override
