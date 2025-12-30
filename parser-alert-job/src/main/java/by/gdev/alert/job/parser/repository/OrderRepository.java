@@ -4,10 +4,12 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.parser.domain.db.Order;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface OrderRepository extends CrudRepository<Order, Long> {
 
@@ -23,5 +25,7 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
 
     boolean existsByLink(String link);
 
+    @Modifying
+    @Transactional
     long deleteByDateTimeBefore(Date cutoff);
 }

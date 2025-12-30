@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.jobs;
+package by.gdev.alert.job.parser.scheduller;
 
 import by.gdev.alert.job.parser.proxy.service.planner.ProxyCheckerService;
 import lombok.RequiredArgsConstructor;
@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ProxyCheckerJob {
+public class ProxyCheckerScheduler {
 
     private final ProxyCheckerService proxyCheckerService;
 
     // Запускаем каждые 15 минут
     @Scheduled(cron = "0 */15 * * * *")
     public void run() {
-        log.info("Запуск проверки прокси...");
+        log.debug("Запуск проверки прокси...");
         proxyCheckerService.checkAllProxies();
     }
 }

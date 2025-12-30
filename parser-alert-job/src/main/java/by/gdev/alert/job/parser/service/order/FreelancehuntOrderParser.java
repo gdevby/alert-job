@@ -103,8 +103,10 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
 
             clickCategory(page, category);
 
-			// выбираем все блоки заказов
+            page.waitForSelector("div.job-list-item", new Page.WaitForSelectorOptions().setTimeout(15000));
+
 			Locator elementsOrders = page.locator("div.job-list-item");
+
 			//System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
 			List<OrderDTO> orders = elementsOrders.all().stream()
 					.map(e -> parseOrder(e, siteSourceJobId, category, subCategory)).filter(Objects::nonNull)
@@ -113,28 +115,32 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
 
             page.close();
             context.close();
-			//browser.close();
 			return orders;
 		} catch (Exception e) {
-			log.error("Playwright error: FreelancehuntOrderParser", e);
+			log.error("Error: FreelancehuntOrderParser", e);
 			return List.of();
 		}
 	}
 
     public void clickCategory(Page page, Category category) {
         String categoryName = category.getNativeLocName();
-        Locator categoryLink = page.locator("ul.tree li.tree-item a.tree-item-header")
+
+        // ищем span с нужным текстом
+        Locator categorySpan = page.locator("ul.tree li.tree-item span.tree-item-title")
                 .filter(new Locator.FilterOptions().setHasText(categoryName));
 
-        if (categoryLink.count() == 0) {
-            log.warn("Категория '{}' не найдена на странице: FreelancehuntOrderParser", categoryName);
+        if (categorySpan.count() == 0) {
+            log.warn("Категория '{}' не найдена на странице FreelancehuntOrderParser", categoryName);
             return;
         }
 
-        categoryLink.first().click(new Locator.ClickOptions().setTimeout(5000));
+        // поднимаемся к родительскому <a> и кликаем
+        Locator categoryLink = categorySpan.first().locator("xpath=..");
+        categoryLink.click(new Locator.ClickOptions().setTimeout(5000));
+
+        // ждём загрузки страницы после клика
         page.waitForLoadState(LoadState.NETWORKIDLE);
     }
-
 
     private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
 		service.saveOrderLinks(category, subCategory, e.getLink());

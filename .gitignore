@@ -33,3 +33,7 @@ dist
 front/package-lock.json
 /public/
 .vscode
+
+# IntelliJ IDEA
+.idea/
+*.iml
