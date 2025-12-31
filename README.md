@@ -72,7 +72,7 @@ build-prod-example.sh
 After that returning to the parent directory, getting all images and running them
 ```
 cd ..
-docker compose pull grafana elasticsearch prometheus nginx-proxy
+docker compose pull grafana prometheus nginx-proxy
 docker compose create
 docker compose start keycloak
 
@@ -95,8 +95,6 @@ Test account:
 You may encounter next problems:
 1) After running `mvn clean install` project's build may fail. For that check java version (`java --version`) it's should be 17. And if necessary install appropriate java version via command `sudo apt install openjdk-17-jdk`
 2) Access being denied for creating containers. Follow docker setup [instruction](#docker-setup-instruction).
-3) Cannot start ElasticSearch. For that change access right to public directory `sudo chmod 777 public`. Also problem may encounter due to high memory consumption. For that in `docker-compose.yml` in elasticsearch settings either increase parameter `mem_limit`, or decrease heap size (ES_JAVA_OPTS=-Xms512m -Xmx512m)
-   (heap min size, heap max size)
 
 ### Docker setup instruction
 

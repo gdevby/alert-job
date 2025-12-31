@@ -75,7 +75,7 @@ build-prod-example.sh
 После снова переходим в родительский каталог и получаем все образы проекта, и запускаем их
 ```
 cd ..
-docker compose pull grafana elasticsearch prometheus nginx-proxy
+docker compose pull grafana prometheus nginx-proxy
 docker compose create
 docker compose start keycloak
 
@@ -99,8 +99,6 @@ docker compose ps -a
 Возможные проблемы:
 1) При запуске `mvn clean install` сборка проекта может упасть. Для этого проверьте версию Java (`java --version`). При необходимости установите Java 17 с помощью команды `sudo apt install openjdk-17-jdk`
 2) Так же возможна проблема с запретом доступа на создание контейнеров. Следуйте инструкции по установке [Docker](#инструкция-по-установке-docker).
-3) Не запускается ElasticSearch. Для этого измените права к директории public `sudo chmod 777 public`. Также проблема может возникнуть из-за большого потребления памяти. Для этого в `docker-compose.yml` в настройках ElasticSearch либо увеличьте параметр `mem_limit`, либо уменьшите размер кучи (ES_JAVA_OPTS=-Xms512m -Xmx512m)
-(heap min size, heap max size)
 
 ### Инструкция по установке Docker
 Следующая команда удалит все предыдущие версии Docker

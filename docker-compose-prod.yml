@@ -15,6 +15,13 @@ services:
       - ./config/nginx-conf-d:/etc/nginx/conf.d
     environment:
       TZ: Europe/Moscow
+      HTTPS_METHOD: noredirect
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:80/ | grep -q nginx || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   nginx-proxy-acme:
     restart: always
     image: nginxproxy/acme-companion
@@ -28,9 +35,11 @@ services:
       DEFAULT_EMAIL: $acme_email
       NGINX_PROXY_CONTAINER: nginx-proxy
       TZ: Europe/Moscow
-     # - HTTPS_METHOD=redirect
+      HTTPS_METHOD: noredirect
+    #  - HTTPS_METHOD=redirect
     depends_on:
-      - "nginx-proxy"
+      nginx-proxy:
+       condition: service_healthy
   db:
     restart: always
     image: mariadb:11.1.2-jammy
@@ -92,7 +101,6 @@ services:
       config:
         condition: service_healthy
     mem_limit: 512m
-  #set directory rules sudo chmod 777 files_prod/elasticsearc
   loki:
     image: grafana/loki:latest
     container_name: loki
@@ -129,6 +137,17 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  front:
+    restart: always
+    image: rg.gdev.by/alert-job/front:$alert_job_version
+    environment:
+      VIRTUAL_HOST: $domain
+      VIRTUAL_PATH: /front
+      LETSENCRYPT_HOST: $domain
+      LETSENCRYPT_EMAIL: $acme_email
+      TZ: Europe/Moscow
+    mem_limit: 256m
   gateway:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-gateway:$alert_job_version
@@ -173,7 +192,7 @@ services:
         condition: service_healthy
       db:
         condition: service_started
-    mem_limit: 2g
+    mem_limit: 5g
   core:
     restart: always
     image: rg.gdev.by/alert-job/core-alert-job:$alert_job_version
@@ -212,6 +231,18 @@ services:
       GF_SERVER_ROOT_URL: "https://$grafana_domain"
       GF_SERVER_DOMAIN: $grafana_domain
       TZ: Europe/Moscow
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
   adminer:
     image: adminer
     restart: always
@@ -220,6 +251,11 @@ services:
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /db
       LETSENCRYPT_HOST: $domain
+  # blackbox_exporter:
+  #   image: prom/blackbox-exporter
+  #   container_name: blackbox
+  #   restart: always
+
 volumes:
   database-volume: {}
   grafana-volume: {}
