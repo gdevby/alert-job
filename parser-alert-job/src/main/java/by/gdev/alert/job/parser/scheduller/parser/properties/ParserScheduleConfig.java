@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ParserScheduleConfig {
 
+    private static final long INITIAL_DELAY_DEFAULT =300;
+    private static final long FIXED_DELAY_DEFAULT = 600;
+
     private final String PARSER_DELAY_PREFIX = "parser.schedule.sites";
     private final String INITIAL_DELAY_TOKEN = "initial-delay-seconds";
     private final String FIXED_DELAY_TOKEN = "fixed-delay-seconds";
@@ -26,13 +29,15 @@ public class ParserScheduleConfig {
     }
 
     private long getPropertyValue(String propertyName){
-        return Long.parseLong(env.getProperty(propertyName, "0"));
+        return env.getProperty(propertyName, Long.class, -1L);
     }
 
     private ParserScheduleProperties getParserScheduleProperties(SiteName siteName){
-        long initialDelay = getPropertyValue(getPropertyInitialDelayName(siteName));
-        long fixedDelay = getPropertyValue(getPropertyFixedDelayName(siteName));
-        return initialDelay > 0 && fixedDelay > 0 ? new ParserScheduleProperties(initialDelay, fixedDelay) : null;
+        long initialDelay = getPropertyValue(getPropertyInitialDelayName(siteName)) > 0
+                ? getPropertyValue(getPropertyInitialDelayName(siteName)) : INITIAL_DELAY_DEFAULT;
+        long fixedDelay = getPropertyValue(getPropertyFixedDelayName(siteName)) > 0
+                ? getPropertyValue(getPropertyFixedDelayName(siteName)) : FIXED_DELAY_DEFAULT;
+        return new ParserScheduleProperties(initialDelay, fixedDelay);
     }
 
 
