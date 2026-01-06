@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -52,11 +53,19 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
         if (Objects.isNull(link))
             return Lists.newArrayList();
 
-        Document doc = Jsoup.connect(link)
-                .userAgent("Mozilla/5.0")
-                .referrer("https://google.com")
-                .timeout(10000)
-                .get();
+        Connection.Response resp =
+                Jsoup.connect(link)
+                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                        .referrer("https://www.google.com")
+                        .timeout(10000)
+                        .ignoreContentType(true)
+                        .followRedirects(true) .execute();
+
+        if (resp.statusCode() >= 400 || resp.bodyAsBytes().length == 0) {
+            log.warn("Weblancer returned {} or empty body for {}", resp.statusCode(), link);
+            return Lists.newArrayList(); }
+
+        Document doc = resp.parse();
 
         // Контейнер заказа — article.bg-white
         Elements orders = doc.select("article.bg-white");
