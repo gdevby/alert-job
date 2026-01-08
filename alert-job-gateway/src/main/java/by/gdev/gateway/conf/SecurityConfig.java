@@ -27,6 +27,8 @@ public class SecurityConfig {
                                         "/core-alert-job/api/user/test",
                                         "/parser/api/orders/statistics")
                                 .permitAll()
+                                .pathMatchers("/core-alert-job/api/orders")
+                                .denyAll()
                                 .anyExchange()
                                 .authenticated()
                 )

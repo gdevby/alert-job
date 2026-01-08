@@ -18,8 +18,11 @@ import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.Proxy;
 import com.microsoft.playwright.options.WaitUntilState;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -40,12 +43,32 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
 	private final CurrencyRepository currencyRepository;
 	private final ProxyService proxyService;
 	private final ModelMapper mapper;
+    private Browser browser;
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 	@Value("${parser.work.freelancehunt.com}")
 	private boolean active;
 
-	@Override
+    @PostConstruct
+    public void initBrowser() {
+        Playwright playwright = Playwright.create();
+        ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
+        BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true)
+                .setProxy(new Proxy("http://" + randomProxy.getHost() + ":" + randomProxy.getPort())
+                        .setUsername(randomProxy.getUsername()).setPassword(randomProxy.getPassword()))
+                .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--no-sandbox",
+                        "--disable-dev-shm-usage", "--window-size=1920,1080"));
+        this.browser = playwright.chromium().launch(launchOptions);
+    }
+
+    @PreDestroy
+    public void shutdownBrowser() {
+        if (browser != null) {
+            browser.close();
+        }
+    }
+
+    @Override
 	@SneakyThrows
 	public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		if (!active)
@@ -60,19 +83,7 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
 
 	private List<OrderDTO> mapItemsInternalCloudflare(Long siteSourceJobId, Category category,
 			Subcategory subCategory) {
-		try (Playwright playwright = Playwright.create()) {
-			ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
-
-			BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true) // в докере
-																										// всегда
-																										// headless
-					.setProxy(new Proxy("http://" + randomProxy.getHost() + ":" + randomProxy.getPort())
-							.setUsername(randomProxy.getUsername()).setPassword(randomProxy.getPassword()))
-					.setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--no-sandbox",
-							"--disable-dev-shm-usage", "--window-size=1920,1080"));
-
-			Browser browser = playwright.chromium().launch(launchOptions);
-
+		try {
 			// создаём контекст с «человечным» профилем
 			Browser.NewContextOptions contextOptions = new Browser.NewContextOptions().setViewportSize(1920, 1080)
 					.setLocale("ru-RU").setTimezoneId("Europe/Minsk")
@@ -90,23 +101,48 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
 			Page page = context.newPage();
 			page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
 
-			// выбираем все блоки заказов
+            clickCategory(page, category);
+
+            page.waitForSelector("div.job-list-item", new Page.WaitForSelectorOptions().setTimeout(15000));
+
 			Locator elementsOrders = page.locator("div.job-list-item");
-			System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
+
+			//System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
 			List<OrderDTO> orders = elementsOrders.all().stream()
 					.map(e -> parseOrder(e, siteSourceJobId, category, subCategory)).filter(Objects::nonNull)
 					.filter(Order::isValidOrder).filter(order -> !orderRepository.existsByLink(order.getLink()))
 					.map(order -> saveOrder(order, category, subCategory)).toList();
 
-			browser.close();
+            page.close();
+            context.close();
 			return orders;
 		} catch (Exception e) {
-			log.error("Playwright error: FreelancehuntOrderParser", e);
+			log.error("Error: FreelancehuntOrderParser", e);
 			return List.of();
 		}
 	}
 
-	private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
+    public void clickCategory(Page page, Category category) {
+        String categoryName = category.getNativeLocName();
+
+        // ищем span с нужным текстом
+        Locator categorySpan = page.locator("ul.tree li.tree-item span.tree-item-title")
+                .filter(new Locator.FilterOptions().setHasText(categoryName));
+
+        if (categorySpan.count() == 0) {
+            log.warn("Категория '{}' не найдена на странице FreelancehuntOrderParser", categoryName);
+            return;
+        }
+
+        // поднимаемся к родительскому <a> и кликаем
+        Locator categoryLink = categorySpan.first().locator("xpath=..");
+        categoryLink.click(new Locator.ClickOptions().setTimeout(5000));
+
+        // ждём загрузки страницы после клика
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+    }
+
+    private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
 		service.saveOrderLinks(category, subCategory, e.getLink());
 
 		ParserSource ps = e.getSourceSite();

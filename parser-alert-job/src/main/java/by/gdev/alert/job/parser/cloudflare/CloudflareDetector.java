@@ -38,10 +38,4 @@ public class CloudflareDetector {
             return false;
         }
     }
-
-    public static void main(String[] args) {
-        String testUrl = "https://freelancehunt.com/projects/skill/animatsiya/91.html";
-        boolean protectedByCloudflare = hasCloudflareProtection(testUrl);
-        System.out.println("Cloudflare защита " + testUrl + ": " + protectedByCloudflare);
-    }
 }

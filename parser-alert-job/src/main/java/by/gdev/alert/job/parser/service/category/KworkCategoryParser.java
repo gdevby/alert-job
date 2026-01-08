@@ -1,67 +1,101 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.factory.RestTemplateFactory;
 import by.gdev.alert.job.parser.util.SiteName;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.AbstractMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class KworkCategoryParser implements CategoryParser{
+public class KworkCategoryParser implements CategoryParser {
 
-    @Value("${kwork.proxy.active}")
-    private boolean kworkProxyActive;
+    private Browser browser;
+    private Page page;
 
-    private final RestTemplateFactory restTemplateFactory;
-
+    @PostConstruct
+    public void initBrowser() {
+        Playwright playwright = Playwright.create();
+        browser = playwright.chromium().launch(
+                new BrowserType.LaunchOptions().setHeadless(true)
+        );
+    }
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        RestTemplate restTemplate = restTemplateFactory.getRestTemplate(kworkProxyActive);
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        try {
+            page = browser.newPage();
+            page.navigate(siteSourceJob.getParsedURI());
+            page.waitForSelector("li.js-cat-menu-thin-item");
 
-        ResponseEntity<String> response = restTemplate.getForEntity(siteSourceJob.getParsedURI(), String.class);
-        String regex = "\\{\"CATID\":\"([0-9]{1,3})\",\"name\":\"([А-Яа-я\\w\\s\\,]*)\",\"lang\":\"[\\w]{1,2}\",\"short_name\":\"[А-Яа-я\\w\\s\\,]*\","
-                + "\"h1\":\"[А-Яа-я\\w\\s\\,]*\",\"seo\":\"[\\-\\w]*\",\"parent\":\"%s\"";
-        String body = response.getBody();
-        String link = "https://kwork.ru/projects?c=%s";
-        Pattern categoryPattern = Pattern.compile(String.format(regex, 0));
-        Matcher categoryMatcer = categoryPattern.matcher(body);
-        return categoryMatcer.results().map(m -> {
-            String cName = m.group(2);
-            String cLink = String.format(link, m.group(1));
-            log.debug("found category {}, {}", cName, cLink);
-            ParsedCategory category = new ParsedCategory(null, cName, null, cLink);
-            Pattern subCategoryPattern = Pattern.compile(String.format(regex, m.group(1)));
-            Matcher subCategoryMatcher = subCategoryPattern.matcher(body);
-            List<ParsedCategory> subList = subCategoryMatcher.results().map(m1 -> {
-                String sName = m1.group(2);
-                String sLink = String.format(link, m1.group(1));
-                log.debug("		found subcategory {}, {}", sName, sLink);
-                return new ParsedCategory(null, sName, null, sLink);
-            }).toList();
-            return new AbstractMap.SimpleEntry<>(category, subList);
-        }).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (existing, replacement) -> {
-            return existing;
-        }, LinkedHashMap::new));
+            String html = page.content();
+            Document doc = Jsoup.parse(html, siteSourceJob.getParsedURI());
+
+            List<ParsedCategory> tops = parseTopCategories(doc);
+            Elements topItems = doc.select("li.js-cat-menu-thin-item");
+
+            for (int i = 0; i < tops.size(); i++) {
+                ParsedCategory top = tops.get(i);
+                Element li = topItems.get(i);
+                List<ParsedCategory> subs = parseSubCategories(li);
+                result.put(top, subs);
+            }
+
+        } catch (Exception e) {
+            log.error("Ошибка парсинга категорий Kwork", e);
+        }
+        return result;
+    }
+
+    private List<ParsedCategory> parseTopCategories(Document doc) {
+        List<ParsedCategory> tops = new ArrayList<>();
+        Elements topItems = doc.select("li.js-cat-menu-thin-item");
+        for (Element li : topItems) {
+            Element topLink = li.selectFirst("a.js-category-menu-item");
+            if (topLink != null) {
+                tops.add(new ParsedCategory(null, topLink.text().trim(), null, topLink.attr("href").trim()));
+            }
+        }
+        return tops;
+    }
+
+    private List<ParsedCategory> parseSubCategories(Element topLi) {
+        List<ParsedCategory> subs = new ArrayList<>();
+        for (Element sub : topLi.select("a.submenu-item")) {
+            Element text = sub.selectFirst("span.submenu-item__text");
+            String name = (text != null ? text.text() : sub.text()).trim();
+            String href = sub.attr("href").trim();
+            if (!name.isEmpty() && !href.isEmpty()) {
+                subs.add(new ParsedCategory(null, name, null, href));
+            }
+        }
+        return subs;
+    }
+
+    @PreDestroy
+    public void shutdownBrowser() {
+        if (browser != null) {
+            browser.close();
+        }
     }
 
     @Override
     public SiteName getSiteName() {
         return SiteName.KWORK;
     }
-
 }
+

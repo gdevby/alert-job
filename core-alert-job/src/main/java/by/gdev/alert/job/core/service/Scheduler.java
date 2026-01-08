@@ -26,9 +26,9 @@ public class Scheduler {
     private static final int period = 300;  //период обновления в секундах
     private static final int millsCoeff = 1000;
 
-	@Scheduled(fixedDelay = period * millsCoeff)
+	//@Scheduled(fixedDelay = period * millsCoeff)
 	public void sseConnection() {
-		log.trace("send request for parsing");
+		/*log.trace("send request for parsing");
 		ParameterizedTypeReference<List<OrderDTO>> type = new ParameterizedTypeReference<List<OrderDTO>>() {
 		};
 		List<OrderDTO> sseConection = webClient.get().uri("http://parser:8017/api/stream-orders").retrieve()
@@ -40,7 +40,7 @@ public class Scheduler {
 			log.trace("finished process elements {}", sseConection.size());
 		} catch (Throwable ex) {
 			log.error("problem with subscribe", ex);
-		}
+		}*/
 	}
 
 }

@@ -9,6 +9,8 @@ import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitForSelectorState;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -30,32 +32,43 @@ public class YouDoOrderParser extends AbsctractSiteParser {
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
     private final ModelMapper mapper;
+    private Browser browser;
 
     private final String baseUrl = "https://youdo.com";
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
     @Value("${parser.work.youdo.com}")
 	private boolean active;
 
+    @PostConstruct
+    public void initBrowser() {
+        Playwright playwright = Playwright.create();
+        this.browser = playwright.chromium().launch(
+                new BrowserType.LaunchOptions()
+                        .setHeadless(true) // Запуск браузера БЕЗ окна (невидимый режим)
+                        .setArgs(List.of(
+                                "--headless=new", // Новый headless‑движок Chrome (перекрывает setHeadless)
+                                "--use-gl=swiftshader", // Использовать программный рендеринг (без GPU)
+                                "--disable-gpu", // Полностью отключить GPU (важно для серверов/докера)
+                                "--disable-dev-shm-usage", // Не использовать /dev/shm (в докере мало памяти)
+                                "--no-sandbox", // Отключить sandbox (обязательно в Docker/CI)
+                                "--disable-blink-features=AutomationControlled", // Скрыть факт автоматизации (anti‑bot)
+                                "--disable-infobars" // Убрать баннер "Chrome is being controlled by automated test software"
+                        ))
+        );
+    }
+
+    @PreDestroy
+    public void shutdownBrowser() {
+        if (browser != null) {
+            browser.close();
+        }
+    }
+
     @Override
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		if (!active)
 			return new ArrayList<>();
-        try (Playwright playwright = Playwright.create()) {
-
-            Browser browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions()
-                            .setHeadless(true) // Запуск браузера БЕЗ окна (невидимый режим)
-                            .setArgs(List.of(
-                                    "--headless=new", // Новый headless‑движок Chrome (перекрывает setHeadless)
-                                    "--use-gl=swiftshader", // Использовать программный рендеринг (без GPU)
-                                    "--disable-gpu", // Полностью отключить GPU (важно для серверов/докера)
-                                    "--disable-dev-shm-usage", // Не использовать /dev/shm (в докере мало памяти)
-                                    "--no-sandbox", // Отключить sandbox (обязательно в Docker/CI)
-                                    "--disable-blink-features=AutomationControlled", // Скрыть факт автоматизации (anti‑bot)
-                                    "--disable-infobars" // Убрать баннер "Chrome is being controlled by automated test software"
-                            ))
-            );
-
+        try {
             BrowserContext context = browser.newContext(
                     new Browser.NewContextOptions()
                             .setViewportSize(1920, 1080) // Эмулируем размер экрана браузера (виртуальный монитор 1920×1080)
@@ -67,7 +80,6 @@ public class YouDoOrderParser extends AbsctractSiteParser {
             context.addInitScript(
                     "Object.defineProperty(navigator, 'webdriver', { get: () => undefined })"
             ); // Убираем признак автоматизации: navigator.webdriver → undefined (антибот‑маскировка)
-
 
             Page page = context.newPage();
             page.navigate(tasksUrl);
@@ -94,9 +106,9 @@ public class YouDoOrderParser extends AbsctractSiteParser {
             Document doc = Jsoup.parse(html);
 
             Elements elementsOrders = doc.select("li.TasksList_listItem__2Yurg");
-            System.out.println("Found YouDo order elements: " + elementsOrders.size());
+            //System.out.println("Found YouDo order elements: " + elementsOrders.size());
             if (elementsOrders.isEmpty()) {
-                log.warn("YouDo: no order elements found");
+                //log.warn("YouDo: no order elements found");
                 return List.of();
             }
 
@@ -108,7 +120,9 @@ public class YouDoOrderParser extends AbsctractSiteParser {
                     .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
-            browser.close();
+            context.close();
+            page.close();
+            //browser.close();
             return orders;
 
         } catch (Exception e) {
