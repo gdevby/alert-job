@@ -25,9 +25,10 @@ public class SecurityConfig {
                                         "/favicon.ico",
                                         "/actuator/**",
                                         "/core-alert-job/api/user/test",
-                                        "/core-alert-job/api/orders",
                                         "/parser/api/orders/statistics")
                                 .permitAll()
+                                .pathMatchers("/core-alert-job/api/orders")
+                                .denyAll()
                                 .anyExchange()
                                 .authenticated()
                 )
