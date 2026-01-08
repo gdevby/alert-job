@@ -23,8 +23,15 @@ RUN apt-get update && apt-get install -y \
     libxcb1 \
     libxkbcommon0 \
     libpango-1.0-0 \
-    libcairo2\
-    libasound2t64
+    libcairo2 \
+    libasound2t64 \
+    libx11-xcb1 \
+    libxcursor1 \
+    libgtk-3-0 \
+    libpangocairo-1.0-0 \
+    libcairo-gobject2 \
+    libgdk-pixbuf-2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
 ARG JAR_FILE
 ADD target/${JAR_FILE} /usr/share/myservice/myservice.jar
