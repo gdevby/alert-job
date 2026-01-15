@@ -9,7 +9,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.List;
 
@@ -21,7 +21,6 @@ public class SchedulerFactory {
     private final List<SiteParser> parsers;
     private final OrderDispatcher dispatcher;
     private final ParserScheduleConfig scheduleConfig;
-    private final TaskScheduler taskScheduler;
     private final SiteParserSchedulerBeanRegistrar siteParserSchedulerBeanRegistrar;
 
     private SiteParser getParserBySiteName(SiteName siteName) {
@@ -41,19 +40,26 @@ public class SchedulerFactory {
             SiteName siteName = parser.getSiteName();
             ParserScheduleProperties parserScheduleProperties = scheduleConfig.getForSite(siteName);
             if (parserScheduleProperties != null){
+
+                // СОЗДАЁМ TaskScheduler прямо здесь
+                ThreadPoolTaskScheduler individualScheduler = new ThreadPoolTaskScheduler();
+                individualScheduler.setPoolSize(1);
+                individualScheduler.setThreadNamePrefix("parser-" + parser.getSiteName() + "-");
+                individualScheduler.initialize();
+
                 SiteParserScheduler scheduler = new SiteParserScheduler(
                         parser,
                         dispatcher,
                         parserScheduleProperties,
-                        taskScheduler
+                        individualScheduler
                 );
 
                 String beanName = siteName.name().toLowerCase() + SiteParserScheduler.class.getSimpleName();
                 siteParserSchedulerBeanRegistrar.registerScheduler(scheduler, beanName);
                 log.debug("Зарегистрирован бин '{}' для парсера {}", beanName, siteName);
+                log.info("Создан ThreadPoolTaskScheduler для {} с потоком {}",
+                        siteName, individualScheduler.getThreadNamePrefix());
             }
         });
     }
 }
-
-
