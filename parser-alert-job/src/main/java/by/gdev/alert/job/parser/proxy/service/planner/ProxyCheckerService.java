@@ -27,7 +27,7 @@ public class ProxyCheckerService {
                 // не трогаем
             }
         }
-        //log.info("Proxy {}:{} -> {}", proxy.getHost(), proxy.getPort(), proxy.getState());
+        log.debug("Proxy {}:{} -> {}", proxy.getHost(), proxy.getPort(), proxy.getState());
     }
 
     private boolean isProxyAvailable(ProxyCredentials proxy) {

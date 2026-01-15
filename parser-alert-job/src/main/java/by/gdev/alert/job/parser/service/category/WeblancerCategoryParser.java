@@ -6,52 +6,60 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.AbstractMap;
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-//@Service
-//@Slf4j
+@Service
+@Slf4j
 public class WeblancerCategoryParser implements CategoryParser{
+
     @Override
-    public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {    	
-        Document doc = null;
+    public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
+
+        Document doc;
         try {
             doc = Jsoup.connect(siteSourceJob.getParsedURI()).get();
         } catch (IOException e) {
-        	throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
-            
-        Element allCategories = doc.getElementsByClass("category_tree list-unstyled list-wide").get(0);
-        return allCategories.children().stream().filter(f -> !f.children().get(0).tagName().equals("b")).map(e -> {
-            Elements elements = e.children();
-            Element element = elements.get(0);
-            ParsedCategory category = new ParsedCategory(null, element.text(), null, null);
-            //log.debug("found category {},{}, {}", element.text());
-            Element subElements = elements.get(2).getElementsByClass("collapse").get(0);
-            Elements subElement = subElements.children();
-            List<ParsedCategory> subCategory = subElement.stream().map(sub -> {
-                Element n = sub.children().get(0);
-                String link = siteSourceJob.getParsedURI() + n.attr("href").replaceAll("/jobs", "");
-                //log.debug("		found subcategory {}, {}", n.text(), link);
-                return new ParsedCategory(null, n.text(), null, link);
-            }).toList();
-            return new AbstractMap.SimpleEntry<>(category, subCategory);
-        }).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (k, v) -> {
-            throw new IllegalStateException(String.format("Duplicate key %s", k));
-        }, LinkedHashMap::new));
-               
+
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+
+        for (Element h3 : doc.select("h3.mb-4.text-xl.font-semibold")) {
+
+            String title = h3.text().trim();
+            //log.info("Root category: site name -  {}, category name - {}", getSiteName().name(), title);
+            Element container = h3.parent().selectFirst("div.flex.flex-wrap.gap-2");
+            if (container == null) continue;
+
+            List<ParsedCategory> subcategories = container.select("a").stream()
+                    .map(a -> {
+                        String link = resolveLink(siteSourceJob, a.attr("href"));
+                        //log.info("Parsing category: site name -  {}, category name - {}, link - {}", getSiteName().name(), a.text(), link);
+                        return new ParsedCategory(null, a.text(), null, link);
+                    })
+                    .toList();
+
+            ParsedCategory root = new ParsedCategory(null, title, null, null);
+            result.put(root, subcategories);
+        }
+
+        return result;
+    }
+
+    private String resolveLink(SiteSourceJob job, String href) {
+        URI base = URI.create(job.getParsedURI());
+        URI resolved = base.resolve(href);
+        return resolved.toString();
     }
 
     @Override
     public SiteName getSiteName() {
         return SiteName.WEBLANCER;
     }
-
 }

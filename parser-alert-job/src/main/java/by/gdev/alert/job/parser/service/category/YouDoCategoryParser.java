@@ -61,7 +61,7 @@ public class YouDoCategoryParser implements CategoryParser {
 
             page.navigate(tasksUrl);
             page.waitForLoadState(LoadState.NETWORKIDLE);
-            page.waitForTimeout(1000);
+            page.waitForTimeout(10000);
 
             List<ParsedCategory> tops = parseTopCategories(page);
 
