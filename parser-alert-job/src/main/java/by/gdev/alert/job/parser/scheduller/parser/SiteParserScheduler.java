@@ -35,7 +35,7 @@ public class SiteParserScheduler {
     }
 
     private void runParser() {
-        log.debug("Запуск парсера {}", parser.getSiteName());
+        log.debug("Запуск парсера {} в потоке {}", parser.getSiteName(), Thread.currentThread().getName());
         try {
             List<OrderDTO> orders = parser.parse();
             dispatcher.dispatch(orders, parser.getSiteName());
@@ -45,4 +45,3 @@ public class SiteParserScheduler {
         }
     }
 }
-
