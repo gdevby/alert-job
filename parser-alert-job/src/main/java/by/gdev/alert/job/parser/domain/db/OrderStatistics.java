@@ -16,12 +16,18 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(uniqueConstraints = @UniqueConstraint(name = "unique_date_and_source_site", columnNames = {"date", "sourceSite"}))
-public class OrderStatistics extends BasicId{
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "unique_date_and_source_site",
+        columnNames = {"date", "site_source_job_id"}
+))
+public class OrderStatistics extends BasicId {
+
     @Column(nullable = false)
     private int numberOfOrders;
+
     @Column(nullable = false)
     private LocalDate date;
+
     @ManyToOne
     @JoinColumn(name = "site_source_job_id", nullable = false)
     private SiteSourceJob sourceSite;

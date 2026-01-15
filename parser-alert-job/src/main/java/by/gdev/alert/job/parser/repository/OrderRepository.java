@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.parser.domain.db.Order;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface OrderRepository extends CrudRepository<Order, Long> {
@@ -24,6 +25,21 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
     Optional<Order> findByLink(String link);
 
     boolean existsByLink(String link);
+
+    /**
+     * Проверяет существование заказа по link, category и subCategory
+     */
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN TRUE ELSE FALSE END " +
+            "FROM parser_order o " +
+            "JOIN o.sourceSite s " +
+            "WHERE o.link = :link " +
+            "AND s.category = :category " +
+            "AND (:subCategory IS NULL AND s.subCategory IS NULL " +
+            "     OR s.subCategory = :subCategory)")
+    boolean existsByLinkCategoryAndSubCategory(
+            @Param("link") String link,
+            @Param("category") Long category,
+            @Param("subCategory") Long subCategory);
 
     @Modifying
     @Transactional

@@ -89,7 +89,7 @@ public class YouDoOrderParser extends AbsctractSiteParser {
             page.waitForSelector("ul.Categories_container__9z_KX");
             // Сброс всех категорий
             page.locator("label.Checkbox_label__uNY3B:has-text(\"Все категории\")").click();
-            page.waitForTimeout(300);
+            page.waitForTimeout(30000);
 
             // Кликаем категорию
             if (subCategory != null) {
@@ -116,7 +116,11 @@ public class YouDoOrderParser extends AbsctractSiteParser {
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
-                    .filter(order -> !orderRepository.existsByLink(order.getLink()))
+                    .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                            order.getLink(),
+                            category.getId(),
+                            subCategory != null ? subCategory.getId() : null
+                    ))
                     .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
@@ -166,7 +170,7 @@ public class YouDoOrderParser extends AbsctractSiteParser {
                 .filter(new Locator.FilterOptions().setHasText(subCategoryName));
         sub.waitFor(new Locator.WaitForOptions()
                 .setState(WaitForSelectorState.VISIBLE)
-                .setTimeout(5000));
+                .setTimeout(30000));
 
         sub.click();
     }

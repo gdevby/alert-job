@@ -60,7 +60,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
                     Jsoup.connect(link)
                             .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
                             .referrer("https://www.google.com")
-                            .timeout(10000)
+                            .timeout(30000)
                             .ignoreContentType(true)
                             .followRedirects(true) .execute();
 
@@ -82,7 +82,11 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
-                    .filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
+                    .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                            order.getLink(),
+                            category.getId(),
+                            subCategory != null ? subCategory.getId() : null
+                    ))
                     .map(e -> saveOrder(e, category, subCategory))
                     .toList();
         } catch (SocketTimeoutException e) {
