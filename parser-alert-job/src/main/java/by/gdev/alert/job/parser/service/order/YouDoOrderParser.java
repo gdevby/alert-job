@@ -20,8 +20,12 @@ import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,29 +36,44 @@ public class YouDoOrderParser extends AbsctractSiteParser {
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
     private final ModelMapper mapper;
+    private final PlatformTransactionManager transactionManager;
     private Browser browser;
 
     private final String baseUrl = "https://youdo.com";
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
+
     @Value("${parser.work.youdo.com}")
-	private boolean active;
+    private boolean active;
+
+    @Value("${parser.youdo.batch-size:5}")
+    private int batchSize;
+
+    @Value("${parser.youdo.transaction-timeout:300}")
+    private int transactionTimeout;
+
+    private TransactionTemplate transactionTemplate;
 
     @PostConstruct
-    public void initBrowser() {
+    public void init() {
         Playwright playwright = Playwright.create();
         this.browser = playwright.chromium().launch(
                 new BrowserType.LaunchOptions()
-                        .setHeadless(true) // Запуск браузера БЕЗ окна (невидимый режим)
+                        .setHeadless(true)
                         .setArgs(List.of(
-                                "--headless=new", // Новый headless‑движок Chrome (перекрывает setHeadless)
-                                "--use-gl=swiftshader", // Использовать программный рендеринг (без GPU)
-                                "--disable-gpu", // Полностью отключить GPU (важно для серверов/докера)
-                                "--disable-dev-shm-usage", // Не использовать /dev/shm (в докере мало памяти)
-                                "--no-sandbox", // Отключить sandbox (обязательно в Docker/CI)
-                                "--disable-blink-features=AutomationControlled", // Скрыть факт автоматизации (anti‑bot)
-                                "--disable-infobars" // Убрать баннер "Chrome is being controlled by automated test software"
+                                "--headless=new",
+                                "--use-gl=swiftshader",
+                                "--disable-gpu",
+                                "--disable-dev-shm-usage",
+                                "--no-sandbox",
+                                "--disable-blink-features=AutomationControlled",
+                                "--disable-infobars"
                         ))
         );
+
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.transactionTemplate.setTimeout(transactionTimeout);
+        this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.transactionTemplate.setReadOnly(false);
     }
 
     @PreDestroy
@@ -66,24 +85,24 @@ public class YouDoOrderParser extends AbsctractSiteParser {
 
     @Override
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-		if (!active)
-			return new ArrayList<>();
+        if (!active)
+            return new ArrayList<>();
+
         try {
             BrowserContext context = browser.newContext(
                     new Browser.NewContextOptions()
-                            .setViewportSize(1920, 1080) // Эмулируем размер экрана браузера (виртуальный монитор 1920×1080)
+                            .setViewportSize(1920, 1080)
                             .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                    "Chrome/120.0.0.0 Safari/537.36") // Подменяем User-Agent, чтобы выглядеть как обычный Chrome
+                                    "Chrome/120.0.0.0 Safari/537.36")
             );
 
             context.addInitScript(
                     "Object.defineProperty(navigator, 'webdriver', { get: () => undefined })"
-            ); // Убираем признак автоматизации: navigator.webdriver → undefined (антибот‑маскировка)
+            );
 
             Page page = context.newPage();
             page.navigate(tasksUrl);
-            //log.info("PAGE HTML:\n{}", page.content());
 
             // Ждём появления списка категорий
             page.waitForSelector("ul.Categories_container__9z_KX");
@@ -106,28 +125,45 @@ public class YouDoOrderParser extends AbsctractSiteParser {
             Document doc = Jsoup.parse(html);
 
             Elements elementsOrders = doc.select("li.TasksList_listItem__2Yurg");
-            //System.out.println("Found YouDo order elements: " + elementsOrders.size());
             if (elementsOrders.isEmpty()) {
-                //log.warn("YouDo: no order elements found");
+                log.debug("YouDo: no order elements found");
+                context.close();
                 return List.of();
             }
 
-            List<OrderDTO> orders = elementsOrders.stream()
+            log.info("YouDo: найдено {} заказов", elementsOrders.size());
+
+            // Парсим все заказы (без сохранения в БД)
+            List<Order> parsedOrders = elementsOrders.stream()
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
-                    .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
-                            order.getLink(),
-                            category.getId(),
-                            subCategory != null ? subCategory.getId() : null
-                    ))
-                    .map(order -> saveOrder(order, category, subCategory))
-                    .toList();
+                    .collect(Collectors.toList());
+
+            log.info("YouDo: успешно распаршено {} заказов", parsedOrders.size());
+
+            // BATCH обработка
+            List<OrderDTO> result = new ArrayList<>();
+            int totalBatches = (int) Math.ceil((double) parsedOrders.size() / batchSize);
+
+            for (int batchNum = 0; batchNum < totalBatches; batchNum++) {
+                int start = batchNum * batchSize;
+                int end = Math.min(start + batchSize, parsedOrders.size());
+                List<Order> batch = parsedOrders.subList(start, end);
+
+                log.debug("YouDo: обработка batch {}/{}, заказы {}-{}",
+                        batchNum + 1, totalBatches, start, end);
+
+                List<OrderDTO> batchResult = processBatch(batch, category, subCategory);
+                result.addAll(batchResult);
+
+                log.debug("YouDo: batch {}/{} обработан, сохранено {} заказов",
+                        batchNum + 1, totalBatches, batchResult.size());
+            }
 
             context.close();
-            page.close();
-            //browser.close();
-            return orders;
+            log.info("YouDo: обработка завершена, всего сохранено {} новых заказов", result.size());
+            return result;
 
         } catch (Exception e) {
             log.error("Playwright error: YouDoOrderParser", e);
@@ -135,33 +171,81 @@ public class YouDoOrderParser extends AbsctractSiteParser {
         }
     }
 
+    public List<OrderDTO> processBatch(List<Order> batch, Category category, Subcategory subCategory) {
+        return transactionTemplate.execute(status -> {
+            if (batch.isEmpty()) {
+                return List.of();
+            }
+
+            // 1. Batch проверка существующих заказов
+            List<String> links = batch.stream()
+                    .map(Order::getLink)
+                    .collect(Collectors.toList());
+
+            Set<String> existingLinks = orderRepository.findExistingLinks(
+                    links,
+                    category.getId(),
+                    subCategory != null ? subCategory.getId() : null
+            );
+
+            log.debug("YouDo batch: найдено {} существующих заказов из {}",
+                    existingLinks.size(), batch.size());
+
+            // 2. Фильтруем и сохраняем только новые
+            return batch.stream()
+                    .filter(order -> !existingLinks.contains(order.getLink()))
+                    .map(order -> saveOrderInTransaction(order, category, subCategory))
+                    .collect(Collectors.toList());
+        });
+    }
+
+    private OrderDTO saveOrderInTransaction(Order order, Category category, Subcategory subCategory) {
+        // Сохранение в рамках транзакции
+        service.saveOrderLinks(category, subCategory, order.getLink());
+
+        ParserSource ps = order.getSourceSite();
+        ParserSource existing = parserSourceRepository
+                .findBySourceAndCategoryAndSubCategory(
+                        ps.getSource(),
+                        ps.getCategory(),
+                        ps.getSubCategory()
+                )
+                .orElseGet(() -> parserSourceRepository.save(ps));
+
+        order.setSourceSite(existing);
+        Order savedOrder = orderRepository.save(order);
+
+        OrderDTO dto = mapper.map(savedOrder, OrderDTO.class);
+        SourceSiteDTO source = dto.getSourceSite();
+        source.setCategoryName(category.getNativeLocName());
+        if (subCategory != null)
+            source.setSubCategoryName(subCategory.getNativeLocName());
+        dto.setSourceSite(source);
+
+        return dto;
+    }
+
     private void clickCategory(Page page, String categoryName) {
-        // Ждём контейнер категорий
         page.waitForSelector("ul[class*='Categories_container']",
                 new Page.WaitForSelectorOptions().setTimeout(10000));
 
-        // Ищем КЛИКАБЕЛЬНЫЙ элемент категории — label
         Locator category = page.locator(
                 "//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]"
         );
-        // Ждём, пока label станет видимым
         category.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
-        // Кликаем по label
         category.click();
     }
 
     private void clickSubCategory(Page page, String categoryName, String subCategoryName) {
-        // 1. Находим блок категории по тексту label
         Locator categoryBlock = page.locator(
                 "//li[.//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]]"
         );
-        // 2. Находим стрелку через CSS (XPath внутри locator запрещён)
+
         Locator arrow = categoryBlock.locator("span[class*='Categories_arrow']");
-        // 3. Кликаем по стрелке (если список скрыт)
         if (categoryBlock.locator("ul.Categories_subList__iasnn.hidden").count() > 0) {
             arrow.click();
         }
-        // 4. Ждём, пока список раскроется
+
         categoryBlock.locator("ul.Categories_subList__iasnn:not(.hidden)")
                 .waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
 
@@ -176,13 +260,12 @@ public class YouDoOrderParser extends AbsctractSiteParser {
     }
 
     private Order parseOrder(Element e, Long siteSourceJobId, Category category, Subcategory subCategory) {
-
         Element titleEl = e.selectFirst("a.TasksList_title__OaAXd");
         if (titleEl == null)
             return null;
 
         String link = normalizeLink(baseUrl + titleEl.attr("href"));
-        Order order = orderRepository.findByLink(link).orElseGet(Order::new);
+        Order order = new Order();
 
         order.setTitle(titleEl.text());
         order.setLink(link);
@@ -202,44 +285,14 @@ public class YouDoOrderParser extends AbsctractSiteParser {
 
         order.setDateTime(new Date());
 
-        // Источник
-        ParserSource parserSource = parserSourceRepository
-                .findBySourceAndCategoryAndSubCategory(siteSourceJobId, category.getId(),
-                        subCategory != null ? subCategory.getId() : null)
-                .orElseGet(() -> {
-                    ParserSource ps = new ParserSource();
-                    ps.setSource(siteSourceJobId);
-                    ps.setCategory(category.getId());
-                    ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
-                    return parserSourceRepository.save(ps);
-                });
+        // Создаём ParserSource
+        ParserSource parserSource = new ParserSource();
+        parserSource.setSource(siteSourceJobId);
+        parserSource.setCategory(category.getId());
+        parserSource.setSubCategory(subCategory != null ? subCategory.getId() : null);
         order.setSourceSite(parserSource);
+
         return order;
-    }
-
-    private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
-        service.saveOrderLinks(category, subCategory, e.getLink());
-
-        ParserSource ps = e.getSourceSite();
-        ParserSource existing = parserSourceRepository
-                .findBySourceAndCategoryAndSubCategory(
-                        ps.getSource(),
-                        ps.getCategory(),
-                        ps.getSubCategory()
-                )
-                .orElseGet(() -> parserSourceRepository.save(ps));
-
-        e.setSourceSite(existing);
-        e = orderRepository.save(e);
-
-        OrderDTO dto = mapper.map(e, OrderDTO.class);
-        SourceSiteDTO source = dto.getSourceSite();
-        source.setCategoryName(category.getNativeLocName());
-        if (subCategory != null)
-            source.setSubCategoryName(subCategory.getNativeLocName());
-        dto.setSourceSite(source);
-
-        return dto;
     }
 
     private String normalizeLink(String link) {

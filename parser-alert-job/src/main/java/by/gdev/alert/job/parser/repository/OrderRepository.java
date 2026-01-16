@@ -1,6 +1,7 @@
 package by.gdev.alert.job.parser.repository;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -40,6 +41,15 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
             @Param("link") String link,
             @Param("category") Long category,
             @Param("subCategory") Long subCategory);
+
+
+    @Query("SELECT o.link FROM parser_order o WHERE o.link IN :links " +
+            "AND o.sourceSite.category = :categoryId " +
+            "AND (:subCategoryId IS NULL AND o.sourceSite.subCategory IS NULL " +
+            "     OR o.sourceSite.subCategory = :subCategoryId)")
+    Set<String> findExistingLinks(@Param("links") List<String> links,
+                                  @Param("categoryId") Long categoryId,
+                                  @Param("subCategoryId") Long subCategoryId);
 
     @Modifying
     @Transactional
