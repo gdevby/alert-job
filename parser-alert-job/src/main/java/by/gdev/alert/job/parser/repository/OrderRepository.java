@@ -10,21 +10,20 @@ import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.parser.domain.db.Order;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface OrderRepository extends CrudRepository<Order, Long> {
 
     @Query("select o from parser_order o left join fetch o.sourceSite s "
-	    + "where s.source = :source and s.category = :category and s.subCategory = :subCategory and o.dateTime >= :date")
+            + "where s.source = :source and s.category = :category and s.subCategory = :subCategory and o.dateTime >= :date")
     Set<Order> findAllBySourceOneEager(Long source, Long category, Long subCategory, Date date);
 
     @Query("select o from parser_order o left join fetch o.sourceSite s "
-	    + "where s.source = :source and s.category = :category and s.subCategory is null and o.dateTime >= :date")
+            + "where s.source = :source and s.category = :category and s.subCategory is null and o.dateTime >= :date")
     Set<Order> findAllBySourceSubCategoryIsNullOneEager(Long source, Long category, Date date);
 
     Optional<Order> findByLink(String link);
-
-    boolean existsByLink(String link);
 
     /**
      * Проверяет существование заказа по link, category и subCategory
@@ -42,6 +41,13 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
             @Param("subCategory") Long subCategory);
 
     @Modifying
-    @Transactional
-    long deleteByDateTimeBefore(Date cutoff);
+    @Transactional(timeout = 3, isolation = Isolation.READ_COMMITTED)
+    @Query(value = "DELETE FROM parser_order WHERE date_time < :cutoff LIMIT :batchSize",
+            nativeQuery = true)
+    int deleteBatchByDateTimeBeforeSimple(@Param("cutoff") Date cutoff,
+                                          @Param("batchSize") int batchSize);
+
+    // Подсчет записей для удаления
+    @Query(value = "SELECT COUNT(*) FROM parser_order WHERE date_time < :cutoff", nativeQuery = true)
+    long countByDateTimeBefore(@Param("cutoff") Date cutoff);
 }
