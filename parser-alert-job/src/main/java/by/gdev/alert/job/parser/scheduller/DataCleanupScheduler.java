@@ -53,8 +53,7 @@ public class DataCleanupScheduler {
         }
     }
 
-    // Каждое второе воскресенье месяца в 03:00
-    @Scheduled(cron = "0 0 3 ? * SUN#2")
+    @Scheduled(cron = "0 0 3 * * *")  // Каждый день в 03:00:00
     public void run() {
         log.debug("Запуск задачи очистки старых заказов...");
         try {
@@ -74,4 +73,3 @@ public class DataCleanupScheduler {
         log.debug("Задача очистки завершена");
     }
 }
-
