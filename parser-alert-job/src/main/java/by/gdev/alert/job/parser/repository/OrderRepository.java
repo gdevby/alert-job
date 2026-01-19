@@ -41,13 +41,7 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
             @Param("subCategory") Long subCategory);
 
     @Modifying
-    @Transactional(timeout = 3, isolation = Isolation.READ_COMMITTED)
-    @Query(value = "DELETE FROM parser_order WHERE date_time < :cutoff LIMIT :batchSize",
-            nativeQuery = true)
-    int deleteBatchByDateTimeBeforeSimple(@Param("cutoff") Date cutoff,
-                                          @Param("batchSize") int batchSize);
+    @Transactional(timeout = 500)
+    long deleteByDateTimeBefore(Date cutoff);
 
-    // Подсчет записей для удаления
-    @Query(value = "SELECT COUNT(*) FROM parser_order WHERE date_time < :cutoff", nativeQuery = true)
-    long countByDateTimeBefore(@Param("cutoff") Date cutoff);
 }

@@ -2,11 +2,7 @@ package by.gdev.alert.job.parser.domain.db;
 
 import java.util.Date;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.AttributeOverrides;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,6 +11,13 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity(name = "parser_order")
+@Table(
+        name = "parser_order",
+        indexes = {
+                @Index(name = "idx_order_link", columnList = "link"),
+                @Index(name = "idx_order_link_source", columnList = "link, source_site_id")
+        }
+)
 @Data
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
