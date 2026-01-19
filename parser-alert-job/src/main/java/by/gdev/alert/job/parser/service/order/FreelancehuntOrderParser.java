@@ -47,7 +47,9 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 	@Value("${parser.work.freelancehunt.com}")
-	private boolean active;
+	private void setActive(boolean active) {
+		this.active = active;
+	}
 
     @PostConstruct
     public void initBrowser() {

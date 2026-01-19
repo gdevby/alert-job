@@ -64,7 +64,9 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 	@Value("${freelanceRu.proxy.active}")
 	private boolean isNeedProxy;
 	@Value("${parser.work.freelance.ru}")
-	private boolean active;
+	private void setActive(boolean active) {
+		this.active = active;
+	}
 
 	@Override
 	@SneakyThrows

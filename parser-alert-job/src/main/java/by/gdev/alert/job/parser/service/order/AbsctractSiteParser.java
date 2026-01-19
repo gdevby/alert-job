@@ -31,6 +31,8 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
 
+	protected boolean active;
+
 	@Transactional(timeout = 2000)
 	public List<OrderDTO> parse(){
 		return getOrders(getSiteName().getId());
@@ -98,4 +100,8 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	}
 
 	protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
+
+	public boolean isActive() {
+		return active;
+	}
 }

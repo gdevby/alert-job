@@ -24,14 +24,17 @@ public class SiteParserScheduler {
         this.dispatcher = dispatcher;
 
         // регистрируем задачу прямо в конструкторе
-        taskScheduler.scheduleWithFixedDelay(
-                this::runParser,
-                new Date(System.currentTimeMillis() + props.getInitialDelayMillis()),
-                props.getFixedDelayMillis()
-        );
+        if (parser.isActive()){
+            taskScheduler.scheduleWithFixedDelay(
+                    this::runParser,
+                    new Date(System.currentTimeMillis() + props.getInitialDelayMillis()),
+                    props.getFixedDelayMillis());
 
-        log.debug("Шедулер для {} запущен: initialDelay={}s, fixedDelay={}s",
-                parser.getSiteName(), props.getInitialDelaySeconds(), props.getFixedDelaySeconds());
+            log.debug("Шедулер для {} запущен: initialDelay={}s, fixedDelay={}s",
+                    parser.getSiteName(), props.getInitialDelaySeconds(), props.getFixedDelaySeconds());
+        }
+        else log.debug("Парсер для {} ВЫКЛЮЧЕН..", parser.getSiteName());
+
     }
 
     private void runParser() {

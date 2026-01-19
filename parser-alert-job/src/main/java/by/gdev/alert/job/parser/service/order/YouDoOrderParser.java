@@ -37,7 +37,9 @@ public class YouDoOrderParser extends AbsctractSiteParser {
     private final String baseUrl = "https://youdo.com";
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
     @Value("${parser.work.youdo.com}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
     @PostConstruct
     public void initBrowser() {
