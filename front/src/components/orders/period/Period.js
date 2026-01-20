@@ -18,9 +18,9 @@ const Period = ({updatePeriod}) => {
 			changePeriod(1)
 			return
 		}
-		if (period > 30) {
-			setPeriod(30)
-			changePeriod(30)
+		if (period > 120) {
+			setPeriod(120)
+			changePeriod(120)
 			return 
 		}
 		changePeriod(period)
@@ -42,7 +42,7 @@ const Period = ({updatePeriod}) => {
 
 	return (
 		<div className='orders__period'>
-			<p>Выберите период, за который вам будут показовать заказы ниже. От 1 дня до 30. С временем оно накапливает для вашего источника заказы, поэтому иногда старые не будут доступны.</p>
+			<p>Выберите период, за который вам будут показовать заказы ниже. От 1 дня до 120. С временем оно накапливает для вашего источника заказы, поэтому иногда старые не будут доступны.</p>
 			<Field type={'number'} defaultValue={currentPeriod} cb={handlerPeriod} onBlur={(e) => validatePeriod(+e.target.value)} />
 		</div>
 	)
