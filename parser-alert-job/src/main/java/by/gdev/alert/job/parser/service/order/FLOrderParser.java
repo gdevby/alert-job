@@ -65,7 +65,7 @@ public class FLOrderParser extends AbsctractSiteParser {
                 : rss.getChannel().getItem().stream()
                 .filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
                 .map(m -> {
-                    log.debug("found new order {} {}", m.getTitle(), m.getLink());
+                    //log.debug("found new order {} {}", m.getTitle(), m.getLink());
                     service.saveOrderLinks(category, subCategory, m.getLink());
                     Order order = new Order();
                     order.setTitle(m.getTitle());
@@ -103,7 +103,7 @@ public class FLOrderParser extends AbsctractSiteParser {
                     dto.setSourceSite(source);
                     return dto;
                 })
-                .peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink()))
+                //.peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink()))
                 .collect(Collectors.toList());
     }
 

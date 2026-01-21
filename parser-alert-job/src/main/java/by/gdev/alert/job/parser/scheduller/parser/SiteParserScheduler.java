@@ -40,11 +40,27 @@ public class SiteParserScheduler {
     private void runParser() {
         log.debug("Запуск парсера {} в потоке {}", parser.getSiteName(), Thread.currentThread().getName());
         try {
+            long startTime = System.currentTimeMillis();
             List<OrderDTO> orders = parser.parse();
+            long duration = System.currentTimeMillis() - startTime;
+            String formattedDuration = formatDuration(duration);
             dispatcher.dispatch(orders, parser.getSiteName());
-            log.debug("Парсер {} завершил работу, найдено {} заказов", parser.getSiteName(), orders.size());
+            log.debug("Парсер {} завершил работу за {}, найдено {} заказов",
+                    parser.getSiteName(), formattedDuration, orders.size());
         } catch (Exception e) {
             log.error("Ошибка парсера {}: {}", parser.getSiteName(), e.getMessage(), e);
+        }
+    }
+
+    private String formatDuration(long millis) {
+        if (millis < 1000) {
+            return millis + " мс";
+        } else if (millis < 60000) {
+            return String.format("%.2f сек", millis / 1000.0);
+        } else {
+            long minutes = millis / 60000;
+            long seconds = (millis % 60000) / 1000;
+            return String.format("%d мин %d сек", minutes, seconds);
         }
     }
 }

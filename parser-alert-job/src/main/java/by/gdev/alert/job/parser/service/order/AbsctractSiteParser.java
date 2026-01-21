@@ -33,7 +33,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 
 	protected boolean active;
 
-	@Transactional(timeout = 2000)
+	@Transactional(timeout = 3600)
 	public List<OrderDTO> parse(){
 		return getOrders(getSiteName().getId());
 	};
@@ -44,7 +44,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		for (int i = 0; i < ATTEMPTS_COUNT; i++) {
 			try {
 				SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
-				log.trace("parsed {}", siteSourceJob.getName());
+				//log.trace("parsed {}", siteSourceJob.getName());
 				siteSourceJob.getCategories().stream()
 						// parse only categories that can parse=true
 						// iterate over each category from this collection
@@ -55,8 +55,8 @@ public abstract class AbsctractSiteParser implements SiteParser{
 							// category does't have a subcategory
 							if (category.isParse()) {
 								orders.addAll(mapItems(category.getLink(), siteSourceJob.getId(), category, null));
-								log.trace("getting order by category {} rss link {}", category.getNativeLocName(),
-										category.getLink());
+								//log.trace("getting order by category {} rss link {}", category.getNativeLocName(),
+								//		category.getLink());
 							}
 							// category have a subcategory
 							siteSubCategories.stream()
@@ -64,9 +64,9 @@ public abstract class AbsctractSiteParser implements SiteParser{
 									.filter(Subcategory::isParse)
 									// Iterate all sub category
 									.forEach(subCategory -> {
-										log.trace("getting order by category {} and subcategory  {} {}",
-												category.getNativeLocName(), subCategory.getNativeLocName(),
-												subCategory.getLink());
+										//log.trace("getting order by category {} and subcategory  {} {}",
+										//		category.getNativeLocName(), subCategory.getNativeLocName(),
+										//		subCategory.getLink());
 										List<OrderDTO> list1 = mapItems(subCategory.getLink(), siteSourceJob.getId(),
 												category, subCategory);
 										orders.addAll(list1);

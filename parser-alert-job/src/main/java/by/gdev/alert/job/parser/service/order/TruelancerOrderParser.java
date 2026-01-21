@@ -87,7 +87,7 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
                 .filter(Order::isValidOrder)
                 .filter(order -> parserService.isExistsOrder(category, subCategory, order.getLink()))
                 .map(order -> {
-                    log.debug("found new order {} {}", order.getTitle(), order.getLink());
+                    //log.debug("found new order {} {}", order.getTitle(), order.getLink());
                     parserService.saveOrderLinks(category, subCategory, order.getLink());
                     ParserSource parserSource = order.getSourceSite();
                     Optional<ParserSource> source = parserSourceRepository.findBySourceAndCategoryAndSubCategory(

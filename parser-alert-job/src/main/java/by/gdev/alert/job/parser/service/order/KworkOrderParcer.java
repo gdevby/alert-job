@@ -90,7 +90,7 @@ public class KworkOrderParcer extends AbsctractSiteParser {
                 .filter(Order::isValidOrder)
                 .filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
                 .map(e -> {
-                    log.debug("found new order {} {}", e.getTitle(), e.getLink());
+                    //log.debug("found new order {} {}", e.getTitle(), e.getLink());
                     service.saveOrderLinks(category, subCategory, e.getLink());
                     ParserSource parserSource = e.getSourceSite();
                     Optional<ParserSource> optionalSource = parserSourceRepository.findBySourceAndCategoryAndSubCategory(

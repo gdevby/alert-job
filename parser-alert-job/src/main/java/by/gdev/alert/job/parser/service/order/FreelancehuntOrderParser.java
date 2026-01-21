@@ -137,7 +137,7 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
                 .filter(new Locator.FilterOptions().setHasText(categoryName));
 
         if (categorySpan.count() == 0) {
-            log.warn("Категория '{}' не найдена на странице FreelancehuntOrderParser", categoryName);
+            //log.warn("Категория '{}' не найдена на странице FreelancehuntOrderParser", categoryName);
             return;
         }
 
