@@ -1,5 +1,6 @@
 package by.gdev.alert.job.parser.factory;
 
+import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -31,6 +32,9 @@ public class RestTemplateFactory {
     @Autowired
     private ProxySupplier proxySupplier;
 
+    @Autowired
+    private ProxyService proxyService;
+
     private RestTemplate restTemplate;
 
     public RestTemplate getRestTemplate(boolean proxy) {
@@ -38,7 +42,7 @@ public class RestTemplateFactory {
     }
 
     private RestTemplate getRestTemplateWithProxy() {
-        ProxyCredentials proxyCredentials = proxySupplier.get();
+        ProxyCredentials proxyCredentials = proxyService.getRandomActiveProxy();
 
         HttpHost myProxy = new HttpHost(proxyCredentials.getHost(), proxyCredentials.getPort());
         CredentialsProvider credsProvider = getCredentialsProvider(proxyCredentials);

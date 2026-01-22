@@ -1,13 +1,16 @@
 package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.*;
+import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.Proxy;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -30,6 +33,7 @@ public class YouDoOrderParser extends AbsctractSiteParser {
 
     private final ParserService service;
     private final OrderRepository orderRepository;
+    private final ProxyService proxyService;
     private final ParserSourceRepository parserSourceRepository;
     private final ModelMapper mapper;
     private Browser browser;
@@ -44,19 +48,13 @@ public class YouDoOrderParser extends AbsctractSiteParser {
     @PostConstruct
     public void initBrowser() {
         Playwright playwright = Playwright.create();
-        this.browser = playwright.chromium().launch(
-                new BrowserType.LaunchOptions()
-                        .setHeadless(true) // Запуск браузера БЕЗ окна (невидимый режим)
-                        .setArgs(List.of(
-                                "--headless=new", // Новый headless‑движок Chrome (перекрывает setHeadless)
-                                "--use-gl=swiftshader", // Использовать программный рендеринг (без GPU)
-                                "--disable-gpu", // Полностью отключить GPU (важно для серверов/докера)
-                                "--disable-dev-shm-usage", // Не использовать /dev/shm (в докере мало памяти)
-                                "--no-sandbox", // Отключить sandbox (обязательно в Docker/CI)
-                                "--disable-blink-features=AutomationControlled", // Скрыть факт автоматизации (anti‑bot)
-                                "--disable-infobars" // Убрать баннер "Chrome is being controlled by automated test software"
-                        ))
-        );
+        ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
+        BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true)
+                .setProxy(new Proxy("http://" + randomProxy.getHost() + ":" + randomProxy.getPort())
+                        .setUsername(randomProxy.getUsername()).setPassword(randomProxy.getPassword()))
+                .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--no-sandbox",
+                        "--disable-dev-shm-usage", "--window-size=1920,1080"));
+        this.browser = playwright.chromium().launch(launchOptions);
     }
 
     @PreDestroy

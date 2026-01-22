@@ -24,7 +24,7 @@ import java.util.*;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class KworkCategoryParser implements CategoryParser {
+public class KworkComCategoryParser implements CategoryParser {
 
     private Browser browser;
     private Page page;
@@ -103,7 +103,7 @@ public class KworkCategoryParser implements CategoryParser {
 
     @Override
     public SiteName getSiteName() {
-        return SiteName.KWORK;
+        return SiteName.KWORKCOM;
     }
 }
 
