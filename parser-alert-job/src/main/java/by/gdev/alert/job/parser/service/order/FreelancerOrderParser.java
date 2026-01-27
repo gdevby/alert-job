@@ -48,7 +48,9 @@ public class FreelancerOrderParser extends AbsctractSiteParser {
 
     private RestTemplate restTemplate;
     @Value("${parser.work.freelancer.com}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
 
     @Override

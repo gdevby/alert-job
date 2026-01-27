@@ -36,7 +36,7 @@ public class SchedulerFactory {
     }
 
     public void registerSchedulers() {
-        parsers.forEach(parser -> {
+        parsers.stream().filter(SiteParser::isActive).forEach(parser -> {
             SiteName siteName = parser.getSiteName();
             ParserScheduleProperties parserScheduleProperties = scheduleConfig.getForSite(siteName);
             if (parserScheduleProperties != null){

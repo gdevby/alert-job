@@ -4,13 +4,13 @@ import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
 import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitForSelectorState;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -19,6 +19,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,64 +27,45 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class YouDoOrderParser extends AbsctractSiteParser {
+@DependsOn("proxyCheckerService")
+public class YouDoOrderParser extends PlaywrightSiteParser {
 
     private final ParserService service;
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
     private final ModelMapper mapper;
-    private Browser browser;
 
     private final String baseUrl = "https://youdo.com";
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
+
+    @Value("${youdo.proxy.active}")
+    private boolean youdoProxyActive;
+
     @Value("${parser.work.youdo.com}")
-	private boolean active;
-
-    @PostConstruct
-    public void initBrowser() {
-        Playwright playwright = Playwright.create();
-        this.browser = playwright.chromium().launch(
-                new BrowserType.LaunchOptions()
-                        .setHeadless(true) // Запуск браузера БЕЗ окна (невидимый режим)
-                        .setArgs(List.of(
-                                "--headless=new", // Новый headless‑движок Chrome (перекрывает setHeadless)
-                                "--use-gl=swiftshader", // Использовать программный рендеринг (без GPU)
-                                "--disable-gpu", // Полностью отключить GPU (важно для серверов/докера)
-                                "--disable-dev-shm-usage", // Не использовать /dev/shm (в докере мало памяти)
-                                "--no-sandbox", // Отключить sandbox (обязательно в Docker/CI)
-                                "--disable-blink-features=AutomationControlled", // Скрыть факт автоматизации (anti‑bot)
-                                "--disable-infobars" // Убрать баннер "Chrome is being controlled by automated test software"
-                        ))
-        );
-    }
-
-    @PreDestroy
-    public void shutdownBrowser() {
-        if (browser != null) {
-            browser.close();
-        }
+    private void setActive(boolean active) {
+        this.active = active;
     }
 
     @Override
-    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-		if (!active)
-			return new ArrayList<>();
+    public List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        if (!active)
+            return new ArrayList<>();
+
+        Playwright playwright = null;
+        Browser browser = null;
+        BrowserContext context = null;
+        Page page = null;
+
         try {
-            BrowserContext context = browser.newContext(
-                    new Browser.NewContextOptions()
-                            .setViewportSize(1920, 1080) // Эмулируем размер экрана браузера (виртуальный монитор 1920×1080)
-                            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                    "Chrome/120.0.0.0 Safari/537.36") // Подменяем User-Agent, чтобы выглядеть как обычный Chrome
-            );
+            playwright = createPlaywright();
+            ProxyCredentials proxy = getProxyWithRetry(5, 2000);
+            browser = createBrowser(playwright, proxy, youdoProxyActive);
+            context = createBrowserContext(browser, null, false);
 
-            context.addInitScript(
-                    "Object.defineProperty(navigator, 'webdriver', { get: () => undefined })"
-            ); // Убираем признак автоматизации: navigator.webdriver → undefined (антибот‑маскировка)
-
-            Page page = context.newPage();
+            page = context.newPage();
+            long start = System.currentTimeMillis();
             page.navigate(tasksUrl);
-            //log.info("PAGE HTML:\n{}", page.content());
+            log.debug("YOUDO загрузился за {} ms", System.currentTimeMillis() - start);
 
             // Ждём появления списка категорий
             page.waitForSelector("ul.Categories_container__9z_KX");
@@ -106,9 +88,8 @@ public class YouDoOrderParser extends AbsctractSiteParser {
             Document doc = Jsoup.parse(html);
 
             Elements elementsOrders = doc.select("li.TasksList_listItem__2Yurg");
-            //System.out.println("Found YouDo order elements: " + elementsOrders.size());
             if (elementsOrders.isEmpty()) {
-                //log.warn("YouDo: no order elements found");
+                closePageResources(page, context, playwright, browser);
                 return List.of();
             }
 
@@ -124,15 +105,27 @@ public class YouDoOrderParser extends AbsctractSiteParser {
                     .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
-            context.close();
-            page.close();
-            //browser.close();
+            closePageResources(page, context, playwright, browser);
             return orders;
-
+        } catch (PlaywrightException e) {
+            log.error("Playwright error in YouDo parser for category {}: {}",
+                    category.getNativeLocName(), e.getMessage(), e);
+            closePageResources(page, context, playwright, browser);
+            return List.of();
         } catch (Exception e) {
-            log.error("Playwright error: YouDoOrderParser", e);
+            log.error("Unexpected error in YouDo parser for category {}: {}",
+                    category.getNativeLocName(), e.getMessage(), e);
+            closePageResources(page, context, playwright, browser);
             return List.of();
         }
+    }
+
+
+    @Override
+    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        if (!active)
+            return new ArrayList<>();
+        return mapItemsWithRetry(link, getSiteName(), youdoProxyActive, siteSourceJobId , category, subCategory);
     }
 
     private void clickCategory(Page page, String categoryName) {

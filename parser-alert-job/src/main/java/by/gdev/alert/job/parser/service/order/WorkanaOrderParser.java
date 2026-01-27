@@ -58,7 +58,9 @@ public class WorkanaOrderParser extends AbsctractSiteParser {
     private final ModelMapper mapper;
     
     @Value("${parser.work.workana.com}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
 
     @Override

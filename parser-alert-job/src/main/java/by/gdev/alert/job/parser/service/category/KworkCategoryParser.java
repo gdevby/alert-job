@@ -1,19 +1,20 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -21,24 +22,24 @@ import java.util.*;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class KworkCategoryParser implements CategoryParser {
+public class KworkCategoryParser extends PlaywrightCategoryParser implements CategoryParser {
 
-    private Browser browser;
-    private Page page;
-
-    @PostConstruct
-    public void initBrowser() {
-        Playwright playwright = Playwright.create();
-        browser = playwright.chromium().launch(
-                new BrowserType.LaunchOptions().setHeadless(true)
-        );
-    }
+    @Value("${kwork.proxy.active}")
+    private boolean kworkProxyActive;
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
         Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        Playwright playwright = null;
+        Browser browser = null;
+        BrowserContext context = null;
+        Page page = null;
         try {
-            page = browser.newPage();
+            playwright = createPlaywright();
+            ProxyCredentials proxy = kworkProxyActive ? getProxyWithRetry(5, 2000) : null;
+            browser = createBrowser(playwright, proxy, kworkProxyActive);
+            context = createBrowserContext(browser, proxy, kworkProxyActive);
+            page = context.newPage();
             page.navigate(siteSourceJob.getParsedURI());
             page.waitForSelector("li.js-cat-menu-thin-item");
 
@@ -57,6 +58,10 @@ public class KworkCategoryParser implements CategoryParser {
 
         } catch (Exception e) {
             log.error("Ошибка парсинга категорий Kwork", e);
+            closePageResources(page, context, browser, playwright);
+        }
+        finally {
+            closePageResources(page, context, browser, playwright);
         }
         return result;
     }
@@ -67,6 +72,7 @@ public class KworkCategoryParser implements CategoryParser {
         for (Element li : topItems) {
             Element topLink = li.selectFirst("a.js-category-menu-item");
             if (topLink != null) {
+                log.debug("found category {}", topLink.text().trim());
                 tops.add(new ParsedCategory(null, topLink.text().trim(), null, topLink.attr("href").trim()));
             }
         }
@@ -80,17 +86,11 @@ public class KworkCategoryParser implements CategoryParser {
             String name = (text != null ? text.text() : sub.text()).trim();
             String href = sub.attr("href").trim();
             if (!name.isEmpty() && !href.isEmpty()) {
+                log.debug("found subcategory {}", name);
                 subs.add(new ParsedCategory(null, name, null, href));
             }
         }
         return subs;
-    }
-
-    @PreDestroy
-    public void shutdownBrowser() {
-        if (browser != null) {
-            browser.close();
-        }
     }
 
     @Override

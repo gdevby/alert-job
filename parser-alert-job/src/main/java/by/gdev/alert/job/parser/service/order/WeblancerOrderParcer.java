@@ -45,7 +45,9 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy");
     
     @Value("${parser.work.weblancer.net}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
     @Override
     @SneakyThrows
