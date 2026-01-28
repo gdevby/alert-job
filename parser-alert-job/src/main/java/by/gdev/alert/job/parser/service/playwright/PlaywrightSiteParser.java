@@ -8,13 +8,17 @@ import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import com.microsoft.playwright.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 
 @Slf4j
+@Component
+@RequiredArgsConstructor
 public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     @Autowired
@@ -35,23 +39,23 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return null;
     }
 
-    protected void closePageResources(Page page, BrowserContext context, Playwright playwright, Browser browser) {
-        playwrightManager.closePageResources(page, context , browser, playwright,  getSiteName());
+    public Playwright createPlaywright() {
+        return playwrightManager.createPlaywright();
+    }
+
+    protected void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
+        playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
         return playwrightManager.createBrowserContext(browser, proxy, useProxy);
     }
 
-    protected Playwright createPlaywright(){
-        return playwrightManager.createPlaywright();
-    }
-
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean isActiveProxy){
         return playwrightManager.createBrowser(playwright, proxy, isActiveProxy, getSiteName());
     }
 
-    public List<OrderDTO> mapItemsWithRetry(String link, SiteName site, boolean proxyActive,
+    public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
                                             Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)
             return List.of();
@@ -61,7 +65,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
             try {
                 log.info("Попытка {}/3 парсинга {}: категория '{}', подкатегория '{}', прокси {}",
                         attempt,
-                        site,
+                        getSiteName(),
                         category.getNativeLocName(),
                         subCategory != null ? subCategory.getNativeLocName() : "нет",
                         proxyActive ? "включен" : "выключен");
@@ -71,17 +75,27 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 if (!result.isEmpty()) {
                     return result;
                 }
-
-                log.warn("Попытка {}: пустой результат, пробуем снова", attempt);
-
-            } catch (Exception e) {
+                //log.warn("Попытка {}: пустой результат, пробуем снова", attempt);
+            }catch (PlaywrightException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
+                continue;
+            }
+            lastError = e;
+            log.error("Playwright ошибка на попытке {} для {}: {}", attempt, getSiteName(), e.getMessage());
+            }
+            catch (Exception e) {
                 lastError = e;
-                log.warn("Попытка {}: ошибка парсинга сайта {}: {}", attempt, site, e.getMessage());
+                log.error("Неожиданная ошибка на попытке {} для {}: {}", attempt, getSiteName(), e.getMessage());
             }
         }
+        if (lastError == null) {
+            log.warn("Все 3 попытки парсинга {} дали пустой результат", getSiteName());
+            return List.of();
+        }
 
-        log.error("Все 3 попытки парсинга {} провалились. Последняя ошибка: {}", site,
-                lastError != null ? lastError.getMessage() : "неизвестно");
+        log.error("Все 3 попытки парсинга {} провалились. Последняя ошибка: {}",
+                getSiteName(),
+                lastError.getMessage());
         return List.of();
     }
 

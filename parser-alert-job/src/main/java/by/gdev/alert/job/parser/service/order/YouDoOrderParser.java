@@ -10,6 +10,7 @@ import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,9 +49,9 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
     @Override
     public List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        List<OrderDTO> orders = new ArrayList<>();
         if (!active)
-            return new ArrayList<>();
-
+            return orders;
         Playwright playwright = null;
         Browser browser = null;
         BrowserContext context = null;
@@ -65,13 +66,14 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             page = context.newPage();
             long start = System.currentTimeMillis();
             page.navigate(tasksUrl);
-            log.debug("YOUDO загрузился за {} ms", System.currentTimeMillis() - start);
+            log.debug("{} загрузился за {} ms", getSiteName(), System.currentTimeMillis() - start);
 
             // Ждём появления списка категорий
             page.waitForSelector("ul.Categories_container__9z_KX");
             // Сброс всех категорий
             page.locator("label.Checkbox_label__uNY3B:has-text(\"Все категории\")").click();
-            page.waitForTimeout(30000);
+            //page.waitForTimeout(30000);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
 
             // Кликаем категорию
             if (subCategory != null) {
@@ -89,11 +91,10 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
             Elements elementsOrders = doc.select("li.TasksList_listItem__2Yurg");
             if (elementsOrders.isEmpty()) {
-                closePageResources(page, context, playwright, browser);
                 return List.of();
             }
 
-            List<OrderDTO> orders = elementsOrders.stream()
+            orders = elementsOrders.stream()
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
@@ -105,19 +106,11 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                     .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
-            closePageResources(page, context, playwright, browser);
-            return orders;
-        } catch (PlaywrightException e) {
-            log.error("Playwright error in YouDo parser for category {}: {}",
-                    category.getNativeLocName(), e.getMessage(), e);
-            closePageResources(page, context, playwright, browser);
-            return List.of();
-        } catch (Exception e) {
-            log.error("Unexpected error in YouDo parser for category {}: {}",
-                    category.getNativeLocName(), e.getMessage(), e);
-            closePageResources(page, context, playwright, browser);
-            return List.of();
         }
+        finally {
+            closeResources(page, context, browser, playwright);
+        }
+        return orders;
     }
 
 
@@ -125,7 +118,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)
             return new ArrayList<>();
-        return mapItemsWithRetry(link, getSiteName(), youdoProxyActive, siteSourceJobId , category, subCategory);
+        return mapItemsWithRetry(link, youdoProxyActive, siteSourceJobId , category, subCategory);
     }
 
     private void clickCategory(Page page, String categoryName) {

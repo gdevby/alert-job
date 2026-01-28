@@ -54,7 +54,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)
             return new ArrayList<>();
-        return mapItemsWithRetry(link, getSiteName(), freelancehuntProxyActive, siteSourceJobId , category, subCategory);
+        return mapItemsWithRetry(link, freelancehuntProxyActive, siteSourceJobId , category, subCategory);
     }
 
     public void clickCategory(Page page, Category category) {
@@ -231,16 +231,10 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
                     ))
                     .map(order -> saveOrder(order, category, subCategory)).toList();
 
-            closePageResources(page, context, playwright,  browser);
             return orders;
-        }catch (PlaywrightException e) {
-            log.error("Playwright error in {} parser for category {}: {}", getSiteName(), category.getNativeLocName(), e.getMessage());
-            closePageResources(page, context, playwright,  browser);
-            return List.of();
-        }catch (Exception e) {
-            log.error("Unexpected error in {} parser for category {}: {}", getSiteName(), category.getNativeLocName(), e.getMessage());
-            closePageResources(page, context, playwright,  browser);
-            return List.of();
+        }
+        finally {
+            closeResources(page, context, browser, playwright);
         }
     }
 }

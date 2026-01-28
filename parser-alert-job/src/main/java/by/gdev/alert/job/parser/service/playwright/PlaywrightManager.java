@@ -4,6 +4,7 @@ import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.Proxy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class PlaywrightManager {
         return playwright;
     }
 
-    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean useProxy, SiteName site){
+    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean useProxy,  SiteName site){
         BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                 .setHeadless(true)
                 .setArgs(Arrays.asList(
@@ -69,7 +70,6 @@ public class PlaywrightManager {
             try {
                 ProxyCredentials proxy = proxyService.getRandomActiveProxy();
                 if (proxy != null) {
-                    //log.debug("Прокси получено с {} попытки", attempt);
                     return proxy;
                 }
 
@@ -95,44 +95,43 @@ public class PlaywrightManager {
         return null;
     }
 
-    public void closePageResources(Page page, BrowserContext context, Browser browser, Playwright playwright, SiteName site) {
-        if (page != null && !page.isClosed()) {
+    public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright, SiteName site) {
+        if (page != null) {
             try {
-                page.close();
-            } catch (PlaywrightException e) {
-                log.warn("Playwright page close error in {} parser", site, e);
+                if (!page.isClosed()) {
+                    try {
+                        page.waitForLoadState(LoadState.NETWORKIDLE,
+                                new Page.WaitForLoadStateOptions().setTimeout(1200));
+                    } catch (Exception ignored) {}
+                    page.close();
+                }
             } catch (Exception e) {
-                log.warn("Unexpected error closing page in {} parser", site, e);
+                log.warn("Ошибка закрытия page в {}: {}", site, e.getMessage());
             }
         }
 
         if (context != null) {
             try {
                 context.close();
-            } catch (PlaywrightException e) {
-                log.warn("Playwright context close error in {} parser", site, e);
             } catch (Exception e) {
-                log.warn("Unexpected error closing context in {} parser", site, e);
+                log.warn("Ошибка закрытия context в {}: {}", site, e.getMessage());
             }
         }
 
         if (browser != null) {
             try {
-                browser.close();
-                log.debug("Playwright browser closed for {}", site);
-            } catch (PlaywrightException e) {
-                log.warn("Playwright browser close for {} error", site, e);
+                if (browser.isConnected()) {
+                    browser.close();
+                    log.debug("Browser закрыт для {}", site);
+                }
             } catch (Exception e) {
-                log.warn("Unexpected error closing Playwright browser for {}", site, e);
-            } finally {
-                browser = null;
+                log.warn("Ошибка закрытия browser в {}: {}", site, e.getMessage());
             }
         }
 
         if (playwright != null) {
             try {
                 playwright.close();
-                log.debug("Playwright instance closed");
             } catch (PlaywrightException e) {
                 log.warn("Playwright instance close error", e);
             } catch (Exception e) {
@@ -142,6 +141,7 @@ public class PlaywrightManager {
             }
         }
     }
+
 
     public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
         BrowserContext context;

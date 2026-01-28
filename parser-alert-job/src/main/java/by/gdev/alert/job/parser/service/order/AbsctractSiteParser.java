@@ -44,7 +44,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		for (int i = 0; i < ATTEMPTS_COUNT; i++) {
 			try {
 				SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
-				log.trace("parsed {}", siteSourceJob.getName());
+				//log.trace("parsed {}", siteSourceJob.getName());
 				siteSourceJob.getCategories().stream()
 						// parse only categories that can parse=true
 						// iterate over each category from this collection

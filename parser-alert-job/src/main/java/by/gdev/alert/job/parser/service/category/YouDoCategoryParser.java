@@ -23,6 +23,11 @@ public class YouDoCategoryParser extends PlaywrightCategoryParser implements Cat
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
+        return parseWithRetry(siteSourceJob);
+    }
+
+    @Override
+    protected Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob job) {
         Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
         Playwright playwright = null;
         Browser browser = null;
@@ -50,19 +55,12 @@ public class YouDoCategoryParser extends PlaywrightCategoryParser implements Cat
                 List<ParsedCategory> subs = parseSubCategories(li);
                 result.put(top, subs);
             }
-
-        } catch (Exception e) {
-            log.error("Ошибка парсинга категорий YouDo", e);
-            closePageResources(page, context, browser, playwright);
         }
         finally {
-            closePageResources(page, context, browser, playwright);
+            closeResources(page, context, browser, playwright);
         }
-
         return result;
     }
-
-
 
     private List<ParsedCategory> parseTopCategories(Page page) {
         List<ParsedCategory> tops = new ArrayList<>();

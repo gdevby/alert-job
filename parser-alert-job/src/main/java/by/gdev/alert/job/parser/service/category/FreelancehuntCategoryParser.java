@@ -5,11 +5,11 @@ import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import com.microsoft.playwright.options.LoadState;
 
 import java.util.*;
 
@@ -19,13 +19,19 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implements CategoryParser {
 
+    private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
+
     @Value("${freelancehunt.proxy.active}")
     private boolean freelancehuntProxyActive;
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        return parseWithRetry(siteSourceJob);
+    }
 
+    @Override
+    protected Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob job) {
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
         Playwright playwright = null;
         Browser browser = null;
         BrowserContext context = null;
@@ -37,9 +43,7 @@ public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implem
             browser = createBrowser(playwright, proxy, freelancehuntProxyActive);
             context = createBrowserContext(browser, proxy, freelancehuntProxyActive);
             page = context.newPage();
-
-            page.navigate("https://freelancehunt.com/jobs");
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
 
             Locator topItems = page.locator("ul.tree > li.tree-item");
             int topCount = topItems.count();
@@ -53,9 +57,8 @@ public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implem
                 String catValue = link.count() > 0 ? link.getAttribute("href") : "";
 
                 if (catName == null || catName.isEmpty()) continue;
-
                 ParsedCategory top = new ParsedCategory(null, catName, null, catValue);
-
+                log.debug("found category {}", catName);
                 List<ParsedCategory> subs = new ArrayList<>();
                 Locator subLis = li.locator("ul > li");
                 int subCount = subLis.count();
@@ -66,20 +69,15 @@ public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implem
                     String subValue = subLink.count() > 0 ? subLink.getAttribute("href") : "";
 
                     if (!subName.isEmpty()) {
-                        log.debug("found category {}", subName);
+                        log.debug("found subcategory {}", subName);
                         subs.add(new ParsedCategory(null, subName, null, subValue));
                     }
                 }
-
                 result.put(top, subs);
             }
-
-            closePageResources(page, context, browser, playwright);
-        } catch (Exception e) {
-            log.error("Ошибка парсинга категорий Freelancehunt", e);
         }
         finally {
-            closePageResources(page, context, browser, playwright);
+            closeResources(page, context, browser ,playwright);
         }
         return result;
     }
@@ -88,5 +86,4 @@ public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implem
     public SiteName getSiteName() {
         return SiteName.FREELANCEHUNT;
     }
-
 }
