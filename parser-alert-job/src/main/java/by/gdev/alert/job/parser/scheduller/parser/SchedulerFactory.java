@@ -8,7 +8,9 @@ import by.gdev.alert.job.parser.util.SiteName;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.List;
@@ -23,6 +25,12 @@ public class SchedulerFactory {
     private final ParserScheduleConfig scheduleConfig;
     private final SiteParserSchedulerBeanRegistrar siteParserSchedulerBeanRegistrar;
 
+    @Value("${parsers.singlethread:false}")
+    private boolean singlethread;
+
+    private final TaskScheduler taskScheduler;
+
+
     private SiteParser getParserBySiteName(SiteName siteName) {
         return parsers.stream()
                 .filter(p -> p.getSiteName() == siteName)
@@ -32,16 +40,21 @@ public class SchedulerFactory {
 
     @PostConstruct
     public void init() {
-        registerSchedulers();
+
+        if (singlethread) {
+            log.info("Режим работы парсеров: ОДНОПОТОЧНЫЙ (один общий шедулер)");
+            registerSchedulersSingleThread();
+        } else {
+            log.info("Режим работы парсеров: МНОГОПОТОЧНЫЙ (отдельный шедулер на каждый парсер)");
+            registerSchedulersMultiThread();
+        }
     }
 
-    public void registerSchedulers() {
+    private void registerSchedulersMultiThread() {
         parsers.stream().filter(SiteParser::isActive).forEach(parser -> {
             SiteName siteName = parser.getSiteName();
             ParserScheduleProperties parserScheduleProperties = scheduleConfig.getForSite(siteName);
             if (parserScheduleProperties != null){
-
-                // СОЗДАЁМ TaskScheduler прямо здесь
                 ThreadPoolTaskScheduler individualScheduler = new ThreadPoolTaskScheduler();
                 individualScheduler.setPoolSize(1);
                 individualScheduler.setThreadNamePrefix("parser-" + parser.getSiteName() + "-");
@@ -59,6 +72,25 @@ public class SchedulerFactory {
                 log.debug("Зарегистрирован бин '{}' для парсера {}", beanName, siteName);
                 log.info("Создан ThreadPoolTaskScheduler для {} с потоком {}",
                         siteName, individualScheduler.getThreadNamePrefix());
+            }
+        });
+    }
+
+    private void registerSchedulersSingleThread() {
+        parsers.stream().filter(SiteParser::isActive).forEach(parser -> {
+            SiteName siteName = parser.getSiteName();
+            ParserScheduleProperties parserScheduleProperties = scheduleConfig.getForSite(siteName);
+            if (parserScheduleProperties != null){
+                SiteParserScheduler scheduler = new SiteParserScheduler(
+                        parser,
+                        dispatcher,
+                        parserScheduleProperties,
+                        taskScheduler
+                );
+
+                String beanName = siteName.name().toLowerCase() + SiteParserScheduler.class.getSimpleName();
+                siteParserSchedulerBeanRegistrar.registerScheduler(scheduler, beanName);
+                log.debug("Зарегистрирован бин '{}' для парсера {}", beanName, siteName);
             }
         });
     }
