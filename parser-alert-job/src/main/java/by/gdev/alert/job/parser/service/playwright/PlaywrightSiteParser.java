@@ -11,6 +11,7 @@ import com.microsoft.playwright.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,6 +24,13 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     @Autowired
     private PlaywrightManager playwrightManager;
+
+    @Value("${parser.retry.attempts:3}")
+    private int retryAttempts;
+
+    @Value("${parser.retry.delay:2000}")
+    private long retryDelayMs;
+
 
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -61,10 +69,11 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
             return List.of();
 
         Exception lastError = null;
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= retryAttempts; attempt++) {
             try {
-                log.info("Попытка {}/3 парсинга {}: категория '{}', подкатегория '{}', прокси {}",
+                log.info("Попытка {}/{} парсинга {}: категория '{}', подкатегория '{}', прокси {}",
                         attempt,
+                        retryAttempts,
                         getSiteName(),
                         category.getNativeLocName(),
                         subCategory != null ? subCategory.getNativeLocName() : "нет",
@@ -89,20 +98,21 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
             }
 
             //Задержка между попытками
-            if (attempt < 3) {
+            if (attempt < retryAttempts) {
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(retryDelayMs);
                 }
                 catch (InterruptedException ignored) {
                 }
             }
         }
         if (lastError == null) {
-            log.warn("Все 3 попытки парсинга {} дали пустой результат", getSiteName());
+            //log.warn("Все {} попытки парсинга {} дали пустой результат", retryAttempts, getSiteName());
             return List.of();
         }
 
-        log.error("Все 3 попытки парсинга {} провалились. Последняя ошибка: {}",
+        log.error("Все {} попытки парсинга {} провалились. Последняя ошибка: {}",
+                retryAttempts,
                 getSiteName(),
                 lastError.getMessage());
         return List.of();
