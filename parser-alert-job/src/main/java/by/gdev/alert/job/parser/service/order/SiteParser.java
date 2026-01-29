@@ -8,4 +8,5 @@ import java.util.List;
 public interface SiteParser {
     List<OrderDTO> parse();
     SiteName getSiteName();
+    boolean isActive();
 }

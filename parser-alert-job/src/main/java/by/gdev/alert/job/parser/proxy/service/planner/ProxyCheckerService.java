@@ -3,6 +3,7 @@ package by.gdev.alert.job.parser.proxy.service.planner;
 import by.gdev.alert.job.parser.proxy.db.ProxyState;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,14 @@ public class ProxyCheckerService {
 
     private final ProxySupplier proxySupplier;
 
+
+    @PostConstruct
+    public void initializeProxiesOnStartup() {
+        log.info("Initializing proxies states BEFORE parsers creation...");
+        checkAllProxies();
+    }
+
+
     public void checkAndUpdateProxy(ProxyCredentials proxy) {
         boolean available = isProxyAvailable(proxy);
         switch (proxy.getState()) {
@@ -27,7 +36,7 @@ public class ProxyCheckerService {
                 // не трогаем
             }
         }
-        log.debug("Proxy {}:{} -> {}", proxy.getHost(), proxy.getPort(), proxy.getState());
+        //log.debug("Proxy {}:{} -> {}", proxy.getHost(), proxy.getPort(), proxy.getState());
     }
 
     private boolean isProxyAvailable(ProxyCredentials proxy) {
@@ -50,10 +59,21 @@ public class ProxyCheckerService {
         return false; // все 3 попытки провалились
     }
 
-
     public void checkAllProxies() {
-        proxySupplier.getProxies().forEach(this::checkAndUpdateProxy);
+        var proxies = proxySupplier.getProxies();
+        int working = 0;
+        int notWorking = 0;
+        for (ProxyCredentials proxy : proxies) {
+            checkAndUpdateProxy(proxy);
+
+            switch (proxy.getState()) {
+                case ACTIVE, WARMING_UP -> working++;
+                default -> notWorking++;
+            }
+        }
+        log.debug("Проверка прокси завершена. Статистика: РАБОЧИЕ = {}, НЕ РАБОЧИЕ = {}", working, notWorking);
     }
+
 }
 
 

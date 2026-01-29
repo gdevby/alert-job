@@ -49,7 +49,9 @@ public class FLOrderParser extends AbsctractSiteParser {
 
     private final ModelMapper mapper;
     @Value("${parser.work.fl.ru}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
     @Override
     @SneakyThrows

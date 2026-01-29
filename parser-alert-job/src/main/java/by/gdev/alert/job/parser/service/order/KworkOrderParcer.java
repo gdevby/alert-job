@@ -54,7 +54,9 @@ public class KworkOrderParcer extends AbsctractSiteParser {
     private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     
     @Value("${parser.work.kwork.ru}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
     @Override
     @SneakyThrows

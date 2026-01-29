@@ -23,6 +23,8 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	@Value("${delay.reply.request}")
 	private long delayReplyRequest;
 
+    protected boolean active;
+
 	private static final int ATTEMPTS_COUNT = 3;
 
 	@Autowired
@@ -42,7 +44,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		for (int i = 0; i < ATTEMPTS_COUNT; i++) {
 			try {
 				SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
-				log.trace("parsed {}", siteSourceJob.getName());
+				//log.trace("parsed {}", siteSourceJob.getName());
 				siteSourceJob.getCategories().stream()
 						// parse only categories that can parse=true
 						// iterate over each category from this collection
@@ -96,6 +98,10 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	protected RestTemplate getRestTemplate(boolean isProxyNeeded){
 		return restTemplateFactory.getRestTemplate(isProxyNeeded);
 	}
+
+    public boolean isActive() {
+        return active;
+    }
 
 	protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
 }

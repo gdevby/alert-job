@@ -54,7 +54,9 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
     private final ModelMapper mapper;
     
     @Value("${parser.work.peopleperhour.com}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
     @Override
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {

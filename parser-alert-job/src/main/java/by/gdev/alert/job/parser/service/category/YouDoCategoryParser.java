@@ -1,63 +1,45 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 @Service
 @Slf4j
-public class YouDoCategoryParser implements CategoryParser {
-
-    private Playwright playwright;
-    private Browser browser;
+public class YouDoCategoryParser extends PlaywrightCategoryParser implements CategoryParser {
 
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
 
-
-    @PostConstruct
-    public void initBrowser() {
-        playwright = Playwright.create();
-        this.browser = playwright.chromium().launch(
-                new BrowserType.LaunchOptions()
-                        .setHeadless(true) // Запуск браузера БЕЗ окна (невидимый режим)
-                        .setArgs(List.of(
-                                "--headless=new", // Новый headless‑движок Chrome (перекрывает setHeadless)
-                                "--use-gl=swiftshader", // Использовать программный рендеринг (без GPU)
-                                "--disable-gpu", // Полностью отключить GPU (важно для серверов/докера)
-                                "--disable-dev-shm-usage", // Не использовать /dev/shm (в докере мало памяти)
-                                "--no-sandbox", // Отключить sandbox (обязательно в Docker/CI)
-                                "--disable-blink-features=AutomationControlled", // Скрыть факт автоматизации (anti‑bot)
-                                "--disable-infobars" // Убрать баннер "Chrome is being controlled by automated test software"
-                        ))
-        );
-    }
-
-    @PreDestroy
-    public void shutdownBrowser() {
-        if (browser != null) browser.close();
-        if (playwright != null) playwright.close();
-    }
+    @Value("${youdo.proxy.active}")
+    private boolean youdoProxyActive;
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        return parseWithRetry(siteSourceJob);
+    }
 
-        try (BrowserContext context = browser.newContext(
-                new Browser.NewContextOptions()
-                        .setViewportSize(1920, 1080)
-                        .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                "Chrome/120.0.0.0 Safari/537.36")
-        )) {
-            context.addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => undefined })");
-            Page page = context.newPage();
+    @Override
+    protected Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob job) {
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        Playwright playwright = null;
+        Browser browser = null;
+        BrowserContext context = null;
+        Page page = null;
+
+        try {
+            playwright = createPlaywright();
+            ProxyCredentials proxy = youdoProxyActive ? getProxyWithRetry(5, 2000) : null;
+            browser = createBrowser(playwright, proxy, youdoProxyActive);
+            context = createBrowserContext(browser, proxy, youdoProxyActive);
+            page = context.newPage();
 
             page.navigate(tasksUrl);
             page.waitForLoadState(LoadState.NETWORKIDLE);
@@ -73,17 +55,12 @@ public class YouDoCategoryParser implements CategoryParser {
                 List<ParsedCategory> subs = parseSubCategories(li);
                 result.put(top, subs);
             }
-
-            page.close();
-            context.close();
-        } catch (Exception e) {
-            log.error("Ошибка парсинга категорий YouDo", e);
         }
-
+        finally {
+            closeResources(page, context, browser, playwright);
+        }
         return result;
     }
-
-
 
     private List<ParsedCategory> parseTopCategories(Page page) {
         List<ParsedCategory> tops = new ArrayList<>();
@@ -100,6 +77,7 @@ public class YouDoCategoryParser implements CategoryParser {
             String catValue = catInput.count() > 0 ? catInput.getAttribute("value") : "";
 
             if (catName != null && !catName.isEmpty()) {
+                log.debug("found category {}", catName);
                 tops.add(new ParsedCategory(null, catName, null, catValue));
             }
         }
@@ -119,6 +97,7 @@ public class YouDoCategoryParser implements CategoryParser {
             String subValue = subInput.count() > 0 ? subInput.getAttribute("value") : "";
 
             if (!subName.isEmpty()) {
+                log.debug("found subcategory {}", subName);
                 subs.add(new ParsedCategory(null, subName, null, subValue));
             }
         }

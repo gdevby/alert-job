@@ -1,17 +1,15 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.proxy.service.ProxyService;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.Proxy;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import com.microsoft.playwright.options.LoadState;
 
 import java.util.*;
 
@@ -19,37 +17,33 @@ import java.util.*;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class FreelancehuntCategoryParser implements CategoryParser {
+public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implements CategoryParser {
 
-    private final ProxyService proxyService;
-    private Browser browser;
+    private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 
-    @PostConstruct
-    public void initBrowser() {
-        Playwright playwright = Playwright.create();
-        ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
-        BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true)
-                .setProxy(new Proxy("http://" + randomProxy.getHost() + ":" + randomProxy.getPort())
-                        .setUsername(randomProxy.getUsername()).setPassword(randomProxy.getPassword()))
-                .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--no-sandbox",
-                        "--disable-dev-shm-usage", "--window-size=1920,1080"));
-        this.browser = playwright.chromium().launch(launchOptions);
-    }
-
-    @PreDestroy
-    public void shutdownBrowser() {
-        if (browser != null) {
-            browser.close();
-        }
-    }
+    @Value("${freelancehunt.proxy.active}")
+    private boolean freelancehuntProxyActive;
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
-        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        return parseWithRetry(siteSourceJob);
+    }
 
-        try (Page page = browser.newPage()) {
-            page.navigate("https://freelancehunt.com/jobs");
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+    @Override
+    protected Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob job) {
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        Playwright playwright = null;
+        Browser browser = null;
+        BrowserContext context = null;
+        Page page = null;
+
+        try {
+            playwright = createPlaywright();
+            ProxyCredentials proxy = freelancehuntProxyActive ? getProxyWithRetry(5, 2000) : null;
+            browser = createBrowser(playwright, proxy, freelancehuntProxyActive);
+            context = createBrowserContext(browser, proxy, freelancehuntProxyActive);
+            page = context.newPage();
+            page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
 
             Locator topItems = page.locator("ul.tree > li.tree-item");
             int topCount = topItems.count();
@@ -63,9 +57,8 @@ public class FreelancehuntCategoryParser implements CategoryParser {
                 String catValue = link.count() > 0 ? link.getAttribute("href") : "";
 
                 if (catName == null || catName.isEmpty()) continue;
-
                 ParsedCategory top = new ParsedCategory(null, catName, null, catValue);
-
+                log.debug("found category {}", catName);
                 List<ParsedCategory> subs = new ArrayList<>();
                 Locator subLis = li.locator("ul > li");
                 int subCount = subLis.count();
@@ -76,18 +69,16 @@ public class FreelancehuntCategoryParser implements CategoryParser {
                     String subValue = subLink.count() > 0 ? subLink.getAttribute("href") : "";
 
                     if (!subName.isEmpty()) {
+                        log.debug("found subcategory {}", subName);
                         subs.add(new ParsedCategory(null, subName, null, subValue));
                     }
                 }
-
                 result.put(top, subs);
             }
-
-            page.close();
-        } catch (Exception e) {
-            log.error("Ошибка парсинга категорий Freelancehunt", e);
         }
-
+        finally {
+            closeResources(page, context, browser ,playwright);
+        }
         return result;
     }
 
@@ -95,5 +86,4 @@ public class FreelancehuntCategoryParser implements CategoryParser {
     public SiteName getSiteName() {
         return SiteName.FREELANCEHUNT;
     }
-
 }

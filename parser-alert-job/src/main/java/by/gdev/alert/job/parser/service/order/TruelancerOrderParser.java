@@ -45,7 +45,9 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
     private final ModelMapper mapper;
     private RestTemplate restTemplate;
     @Value("${parser.work.truelancer.com}")
-	private boolean active;
+    private void setActive(boolean active) {
+        this.active = active;
+    }
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
