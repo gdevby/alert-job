@@ -64,9 +64,9 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             context = createBrowserContext(browser, null, false);
 
             page = context.newPage();
-            long start = System.currentTimeMillis();
+            //long start = System.currentTimeMillis();
             page.navigate(tasksUrl);
-            log.debug("{} загрузился за {} ms", getSiteName(), System.currentTimeMillis() - start);
+            //log.debug("{} загрузился за {} ms", getSiteName(), System.currentTimeMillis() - start);
 
             // Ждём появления списка категорий
             page.waitForSelector("ul.Categories_container__9z_KX");

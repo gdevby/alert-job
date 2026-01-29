@@ -87,6 +87,15 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 lastError = e;
                 log.error("Неожиданная ошибка на попытке {} для {}: {}", attempt, getSiteName(), e.getMessage());
             }
+
+            //Задержка между попытками
+            if (attempt < 3) {
+                try {
+                    Thread.sleep(2000);
+                }
+                catch (InterruptedException ignored) {
+                }
+            }
         }
         if (lastError == null) {
             log.warn("Все 3 попытки парсинга {} дали пустой результат", getSiteName());

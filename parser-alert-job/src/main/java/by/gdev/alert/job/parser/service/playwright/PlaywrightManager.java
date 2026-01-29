@@ -56,11 +56,12 @@ public class PlaywrightManager {
 
         Browser browser = playwright.chromium().launch(launchOptions);
         if (useProxy && usedProxy != null){
-            log.debug("Браузер для {} запущен с прокси: {}:{} (user: {})",
+            /*log.debug("Браузер для {} запущен с прокси: {}:{} (user: {})",
                     site,
                     usedProxy.getHost(),
                     usedProxy.getPort(),
                     usedProxy.getUsername());
+             */
         }
         return browser;
     }
@@ -122,7 +123,7 @@ public class PlaywrightManager {
             try {
                 if (browser.isConnected()) {
                     browser.close();
-                    log.debug("Browser закрыт для {}", site);
+                    //log.debug("Browser закрыт для {}", site);
                 }
             } catch (Exception e) {
                 log.warn("Ошибка закрытия browser в {}: {}", site, e.getMessage());
