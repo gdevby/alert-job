@@ -25,10 +25,10 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     @Autowired
     private PlaywrightManager playwrightManager;
 
-    @Value("${parser.retry.attempts:3}")
+    @Value("${parser.site.retry.attempts:3}")
     private int retryAttempts;
 
-    @Value("${parser.retry.delay:2000}")
+    @Value("${parser.site.retry.delay:2000}")
     private long retryDelayMs;
 
 

@@ -7,6 +7,7 @@ import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,12 @@ public abstract class PlaywrightCategoryParser implements Parser {
 
     @Autowired
     private PlaywrightManager playwrightManager;
+
+    @Value("${parser.category.retry.attempts:3}")
+    private int retryAttempts;
+
+    @Value("${parser.category.retry.delay:2000}")
+    private long retryDelayMs;
 
     public ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         return playwrightManager.getProxyWithRetry(maxRetries, retryDelayMs);
@@ -40,9 +47,9 @@ public abstract class PlaywrightCategoryParser implements Parser {
     public Map<ParsedCategory, List<ParsedCategory>> parseWithRetry(SiteSourceJob job) {
         Exception lastError = null;
 
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= retryAttempts; attempt++) {
             try {
-                log.info("Попытка {}/3 парсинга категорий {}", attempt, getSiteName());
+                log.info("Попытка {}/{} парсинга категорий {}", attempt, retryAttempts, getSiteName());
                 return parsePlaywright(job);
             } catch (PlaywrightException e) {
                 if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
@@ -61,7 +68,8 @@ public abstract class PlaywrightCategoryParser implements Parser {
             return Map.of();
         }
 
-        log.error("Все 3 попытки парсинга категорий {} провалились. Последняя ошибка: {}",
+        log.error("Все {} попытки парсинга категорий {} провалились. Последняя ошибка: {}",
+                retryAttempts,
                 getSiteName(),
                 lastError.getMessage());
 
