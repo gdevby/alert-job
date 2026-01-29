@@ -1,6 +1,5 @@
 package by.gdev.alert.job.parser.service.order;
 
-import by.gdev.alert.job.parser.cloudflare.CloudflareDetector;
 import by.gdev.alert.job.parser.domain.currency.Currency;
 import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
@@ -8,26 +7,23 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
-import com.microsoft.playwright.options.Proxy;
 import com.microsoft.playwright.options.WaitUntilState;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -35,97 +31,31 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FreelancehuntOrderParser extends AbsctractSiteParser {
+@DependsOn("proxyCheckerService")
+public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
+    private final OrderRepository orderRepository;
 	private final ParserService service;
-	private final OrderRepository orderRepository;
 	private final ParserSourceRepository parserSourceRepository;
 	private final CurrencyRepository currencyRepository;
-	private final ProxyService proxyService;
 	private final ModelMapper mapper;
-    private Browser browser;
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
+
+    @Value("${freelancehunt.proxy.active}")
+    private boolean freelancehuntProxyActive;
+
 	@Value("${parser.work.freelancehunt.com}")
-	private boolean active;
-
-    @PostConstruct
-    public void initBrowser() {
-        Playwright playwright = Playwright.create();
-        ProxyCredentials randomProxy = proxyService.getRandomActiveProxy();
-        BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(true)
-                .setProxy(new Proxy("http://" + randomProxy.getHost() + ":" + randomProxy.getPort())
-                        .setUsername(randomProxy.getUsername()).setPassword(randomProxy.getPassword()))
-                .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--no-sandbox",
-                        "--disable-dev-shm-usage", "--window-size=1920,1080"));
-        this.browser = playwright.chromium().launch(launchOptions);
-    }
-
-    @PreDestroy
-    public void shutdownBrowser() {
-        if (browser != null) {
-            browser.close();
-        }
+    private void setActive(boolean active) {
+        this.active = active;
     }
 
     @Override
-	@SneakyThrows
-	public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-		if (!active)
-			return new ArrayList<>();
-		boolean isCloudflareProtection = CloudflareDetector.hasCloudflareProtection(JOBS_LINK);
-		// если страница не отдается и включена cloudflare на сайте
-		if (isCloudflareProtection) {
-			return mapItemsInternalCloudflare(siteSourceJobId, category, subCategory);
-		}
-		return new ArrayList<>();
-	}
-
-	private List<OrderDTO> mapItemsInternalCloudflare(Long siteSourceJobId, Category category,
-			Subcategory subCategory) {
-		try {
-			// создаём контекст с «человечным» профилем
-			Browser.NewContextOptions contextOptions = new Browser.NewContextOptions().setViewportSize(1920, 1080)
-					.setLocale("ru-RU").setTimezoneId("Europe/Minsk")
-					.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-							+ "AppleWebKit/537.36 (KHTML, like Gecko) " + "Chrome/120.0.0.0 Safari/537.36");
-
-			BrowserContext context = browser.newContext(contextOptions);
-
-			// убираем маркеры автоматизации
-			context.addInitScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-					+ "window.chrome = { runtime: {} };"
-					+ "Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3]});"
-					+ "Object.defineProperty(navigator, 'languages', {get: () => ['ru-RU','ru','en-US','en']});");
-
-			Page page = context.newPage();
-			page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
-
-            clickCategory(page, category);
-
-            page.waitForSelector("div.job-list-item", new Page.WaitForSelectorOptions().setTimeout(30000));
-
-			Locator elementsOrders = page.locator("div.job-list-item");
-
-			//System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
-			List<OrderDTO> orders = elementsOrders.all().stream()
-					.map(e -> parseOrder(e, siteSourceJobId, category, subCategory)).filter(Objects::nonNull)
-					.filter(Order::isValidOrder)
-					.filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
-							order.getLink(),
-							category.getId(),
-							subCategory != null ? subCategory.getId() : null
-					))
-					.map(order -> saveOrder(order, category, subCategory)).toList();
-
-            page.close();
-            context.close();
-			return orders;
-		} catch (Exception e) {
-			log.error("Error: FreelancehuntOrderParser", e);
-			return List.of();
-		}
-	}
+    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        if (!active)
+            return new ArrayList<>();
+        return mapItemsWithRetry(link, freelancehuntProxyActive, siteSourceJobId , category, subCategory);
+    }
 
     public void clickCategory(Page page, Category category) {
         String categoryName = category.getNativeLocName();
@@ -268,4 +198,43 @@ public class FreelancehuntOrderParser extends AbsctractSiteParser {
 	public SiteName getSiteName() {
 		return SiteName.FREELANCEHUNT;
 	}
+
+    @Override
+    protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        Playwright playwright = null;
+        Browser browser = null;
+        BrowserContext context = null;
+        Page page = null;
+
+        try {
+            playwright = createPlaywright();
+            ProxyCredentials proxy = getProxyWithRetry(5, 2000);
+            browser = createBrowser(playwright, proxy, freelancehuntProxyActive);
+            context = createBrowserContext(browser, null, false);
+            page = context.newPage();
+            page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+
+            clickCategory(page, category);
+
+            page.waitForSelector("div.job-list-item", new Page.WaitForSelectorOptions().setTimeout(30000));
+
+            Locator elementsOrders = page.locator("div.job-list-item");
+
+            //System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
+            List<OrderDTO> orders = elementsOrders.all().stream()
+                    .map(e -> parseOrder(e, siteSourceJobId, category, subCategory)).filter(Objects::nonNull)
+                    .filter(Order::isValidOrder)
+                    .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                            order.getLink(),
+                            category.getId(),
+                            subCategory != null ? subCategory.getId() : null
+                    ))
+                    .map(order -> saveOrder(order, category, subCategory)).toList();
+
+            return orders;
+        }
+        finally {
+            closeResources(page, context, browser, playwright);
+        }
+    }
 }
