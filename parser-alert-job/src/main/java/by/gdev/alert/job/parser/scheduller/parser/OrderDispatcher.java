@@ -22,7 +22,8 @@ public class OrderDispatcher {
         }
 
         try {
-            coreApiService.sendOrders(orders, siteName);
+            //coreApiService.sendOrders(orders, siteName);
+            coreApiService.sendOrdersInBatches(orders, siteName);
             log.debug("Отправлено {} заказов от {}", orders.size(), siteName);
         } catch (Exception e) {
             log.error("Ошибка при отправке заказов от {}: {}", siteName, e.getMessage(), e);

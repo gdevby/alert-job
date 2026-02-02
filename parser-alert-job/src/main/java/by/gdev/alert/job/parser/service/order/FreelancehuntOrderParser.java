@@ -7,21 +7,15 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.repository.CurrencyRepository;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
@@ -33,12 +27,6 @@ import java.util.*;
 @Slf4j
 @DependsOn("proxyCheckerService")
 public class FreelancehuntOrderParser extends PlaywrightSiteParser {
-
-    private final OrderRepository orderRepository;
-	private final ParserService service;
-	private final ParserSourceRepository parserSourceRepository;
-	private final CurrencyRepository currencyRepository;
-	private final ModelMapper mapper;
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 
@@ -77,27 +65,6 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
-    private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
-		service.saveOrderLinks(category, subCategory, e.getLink());
-
-		ParserSource ps = e.getSourceSite();
-		ParserSource existing = parserSourceRepository
-				.findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
-				.orElseGet(() -> parserSourceRepository.save(ps));
-
-		e.setSourceSite(existing);
-		e = orderRepository.save(e);
-
-		OrderDTO dto = mapper.map(e, OrderDTO.class);
-		SourceSiteDTO source = dto.getSourceSite();
-		source.setCategoryName(category.getNativeLocName());
-		if (subCategory != null)
-			source.setSubCategoryName(subCategory.getNativeLocName());
-		dto.setSourceSite(source);
-
-		return dto;
-	}
-
 	private Order parseOrder(Locator item, Long siteSourceJobId, Category category, Subcategory subCategory) {
 
 		// Заголовок и ссылка
@@ -111,7 +78,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 			return null;
 		}
 
-		Order order = orderRepository.findByLink(link).orElseGet(Order::new);
+		Order order = getOrderRepository().findByLink(link).orElseGet(Order::new);
 		order.setTitle(title);
 		order.setLink(link);
 		// Описание
@@ -139,7 +106,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 		Locator priceEl = item.locator("div.job-price");
 		if (priceEl.count() > 0) {
 			String priceText = priceEl.textContent();
-			CurrencyEntity ce = currencyRepository
+			CurrencyEntity ce = getCurrencyRepository()
 					.findByCurrencyCode(priceText.contains("USD") ? Currency.USD.name() : Currency.UAH.name())
 					.orElse(null);
 
@@ -155,13 +122,13 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 		}
 
 		// Источник
-		ParserSource parserSource = parserSourceRepository.findBySourceAndCategoryAndSubCategory(siteSourceJobId,
+		ParserSource parserSource = getParserSourceRepository().findBySourceAndCategoryAndSubCategory(siteSourceJobId,
 				category.getId(), subCategory != null ? subCategory.getId() : null).orElseGet(() -> {
 					ParserSource ps = new ParserSource();
 					ps.setSource(siteSourceJobId);
 					ps.setCategory(category.getId());
 					ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
-					return parserSourceRepository.save(ps);
+					return getParserSourceRepository().save(ps);
 				});
 		order.setSourceSite(parserSource);
 
@@ -224,7 +191,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
             List<OrderDTO> orders = elementsOrders.all().stream()
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory)).filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
-                    .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                    .filter(order -> !getOrderRepository().existsByLinkCategoryAndSubCategory(
                             order.getLink(),
                             category.getId(),
                             subCategory != null ? subCategory.getId() : null

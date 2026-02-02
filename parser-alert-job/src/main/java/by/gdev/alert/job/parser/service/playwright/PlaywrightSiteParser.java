@@ -2,14 +2,22 @@ package by.gdev.alert.job.parser.service.playwright;
 
 
 import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.Order;
+import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.repository.CurrencyRepository;
+import by.gdev.alert.job.parser.repository.OrderRepository;
+import by.gdev.alert.job.parser.repository.ParserSourceRepository;
+import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -31,6 +39,24 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     @Value("${parser.site.retry.delay:2000}")
     private long retryDelayMs;
 
+    @Getter
+    @Autowired
+    private ParserSourceRepository parserSourceRepository;
+
+    @Getter
+    @Autowired
+    private ParserService parserService;
+
+    @Getter
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Getter
+    @Autowired
+    private CurrencyRepository currencyRepository;
+
+    @Autowired
+    private ModelMapper mapper;
 
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -116,6 +142,26 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 getSiteName(),
                 lastError.getMessage());
         return List.of();
+    }
+
+    protected final OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
+        parserService.saveOrderLinks(category, subCategory, e.getLink());
+
+        ParserSource ps = e.getSourceSite();
+        ParserSource existing = parserSourceRepository
+                .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
+                .orElseGet(() -> parserSourceRepository.save(ps));
+
+        e.setSourceSite(existing);
+        e = orderRepository.save(e);
+
+        OrderDTO dto = mapper.map(e, OrderDTO.class);
+        SourceSiteDTO source = dto.getSourceSite();
+        source.setCategoryName(category.getNativeLocName());
+        if (subCategory != null)
+            source.setSubCategoryName(subCategory.getNativeLocName());
+        dto.setSourceSite(source);
+        return dto;
     }
 
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
