@@ -32,3 +32,4 @@ INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(9, 'TR
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(10, 'PEOPLEPERHOUR.COM', 'https://www.peopleperhour.com', TRUE, TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(11, 'WORKSPACE.RU', 'https://workspace.ru/tenders', TRUE, TRUE);
 INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(12, 'WORKANA.COM', 'https://www.workana.com/jobs', TRUE, TRUE);
+INSERT IGNORE INTO site_source_job(id,name,parseduri,parse,active) VALUES(13, 'KWORK.COM', 'https://kwork.com/categories', TRUE, TRUE);
