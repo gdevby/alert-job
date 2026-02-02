@@ -35,9 +35,7 @@ public class CoreApiService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-
             HttpEntity<List<OrderDTO>> request = new HttpEntity<>(orders, headers);
-
             String urlWithParam = coreApiUrl + "?site=" + siteName.name();
             metricsService.save(siteName, orders.size());
             statisticsService.save(siteName, orders.size());
@@ -62,6 +60,8 @@ public class CoreApiService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<List<OrderDTO>> request = new HttpEntity<>(batch, headers);
             String urlWithParam = coreApiUrl + "?site=" + siteName.name();
+            metricsService.save(siteName, batch.size());
+            statisticsService.save(siteName, batch.size());
             restTemplate.exchange(urlWithParam, HttpMethod.POST, request, Void.class);
             log.debug("Отправлено {} заказов в core для {}", batch.size(), siteName);
         } catch (Exception e) {
