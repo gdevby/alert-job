@@ -84,6 +84,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
+                    .filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
                     .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
                             order.getLink(),
                             category.getId(),
