@@ -41,6 +41,9 @@ public class OrderProcessor {
 	private final ApplicationProperty property;
 	private final UserFilterRepository filterRepository;
 
+    String SEND_MESSAGE_URL_TELEGRAM = "http://notification:8019/telegram";
+    String SEND_MESSAGE_URL_MAIL = "http://notification:8019/mail";
+
 	public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
 		Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
@@ -98,6 +101,72 @@ public class OrderProcessor {
 		}
 	}
 
+    private void sendMessageToUser2(AppUser user, List<String> messages) {
+        String uri = SEND_MESSAGE_URL_MAIL;
+        if (!user.isDefaultSendType()){
+            uri = SEND_MESSAGE_URL_TELEGRAM;
+        }
+        int telegramFailCount = user.getTelegramFailCount();
+        //отправка
+        StringBuilder sb = new StringBuilder();
+        for (String s : messages) {
+            if (!user.isDefaultSendType()) {
+                if (telegramFailCount >= 3) {
+                    uri = SEND_MESSAGE_URL_MAIL;
+                }
+            }
+
+            sb.append(s).append("\n");
+            if (sb.length() > 3000) {
+                boolean result = sendMessageBlock(user, uri, sb.substring(0, sb.length() - 1));
+                sb.setLength(0);
+                if (!result){
+                    if (!user.isDefaultSendType()) {
+                        telegramFailCount++;
+                    }
+                }
+                else {
+                    if (!user.isDefaultSendType()) {
+                        if (telegramFailCount != 0) {
+                            telegramFailCount = 0;
+                            user.setTelegramFailCount(telegramFailCount);
+                            userRepository.save(user);
+                            uri = SEND_MESSAGE_URL_TELEGRAM;
+                        }
+                    }
+
+                }
+            }
+        }
+
+        if (!sb.isEmpty()) {
+            if (!user.isDefaultSendType()) {
+                if (telegramFailCount >= 3){
+                    uri = SEND_MESSAGE_URL_MAIL;
+                }
+            }
+
+            boolean result = sendMessageBlock(user, uri, sb.substring(0, sb.length() - 1));
+            if (!result){
+                if (!user.isDefaultSendType()) {
+                    if (telegramFailCount >= 3){
+                        uri = SEND_MESSAGE_URL_MAIL;
+                    }
+                }
+            }
+            else {
+                if (!user.isDefaultSendType()) {
+                    if (telegramFailCount != 0) {
+                        telegramFailCount = 0;
+                        user.setTelegramFailCount(telegramFailCount);
+                        userRepository.save(user);
+                    }
+                }
+            }
+        }
+    }
+
+
 	private void sendMessageToUser(AppUser user, List<String> list) {
 		String sendMessage = user.isDefaultSendType() ? "http://notification:8019/mail"
 				: "http://notification:8019/telegram";
@@ -114,17 +183,40 @@ public class OrderProcessor {
 		}
 	}
 
-	private void sendMessage(AppUser user, String sendMessage, String message) {
-		UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), message)
-				: new UserNotification(String.valueOf(user.getTelegram()), message);
-		Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
-		mono.subscribe(
-				e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(), un.getToMail()),
-				e -> log.debug("failed to sent user's message by mail: {}, to {} {}", user.isDefaultSendType(),
-						un.getToMail(), user.getUuid()));
-	}
+    private void sendMessage(AppUser user, String sendMessage, String message) {
+        UserNotification un = user.isDefaultSendType() ? new UserNotification(user.getEmail(), message)
+                : new UserNotification(String.valueOf(user.getTelegram()), message);
+        Mono<Void> mono = webClient.post().uri(sendMessage).bodyValue(un).retrieve().bodyToMono(Void.class);
+        mono.subscribe(
+                e -> log.debug("sent new order for user by mail: {}, to {}", user.isDefaultSendType(), un.getToMail()),
+                e -> log.debug("failed to sent user's message by mail: {}, to {} {}", user.isDefaultSendType(),
+                        un.getToMail(), user.getUuid()));
+    }
 
-	private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
+    private boolean sendMessageBlock(AppUser user, String uri, String message) {
+        UserNotification un = user.isDefaultSendType()
+                ? new UserNotification(user.getEmail(), message)
+                : new UserNotification(String.valueOf(user.getTelegram()), message);
+
+        try {
+            webClient.post().uri(uri).bodyValue(un).retrieve()
+                    .bodyToMono(Void.class)
+                    .block();
+            log.debug("sent new order for user: {}, to {}", user.isDefaultSendType(), un.getToMail());
+            return true;
+
+        } catch (Exception ex) {
+            log.warn("failed to send user's message: {}, to {} {}. Error: {}",
+                    user.isDefaultSendType(),
+                    un.getToMail(),
+                    user.getUuid(),
+                    ex.getMessage());
+            return false;
+        }
+    }
+
+
+    private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
 		return userSource.getSiteSource().equals(orderSource.getSource())
 				&& userSource.getSiteCategory().equals(orderSource.getCategory())
 				&& Objects.equals(userSource.getSiteSubCategory(), orderSource.getSubCategory());
@@ -209,7 +301,7 @@ public class OrderProcessor {
 							orderList.get(0).getSubCategoryName());			
 				}).toList();
 				if (!resultOrdersString.isEmpty()) {
-					sendMessageToUser(user, resultOrdersString);
+					sendMessageToUser2(user, resultOrdersString);
 					delayOrderRepository.deleteAll(user.getDelayOrderNotifications());
 				}
 			}
