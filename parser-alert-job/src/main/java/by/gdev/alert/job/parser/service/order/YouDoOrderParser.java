@@ -88,11 +88,12 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
-                    .filter(order -> !getOrderRepository().existsByLinkCategoryAndSubCategory(
+                    /*.filter(order -> !getOrderRepository().existsByLinkCategoryAndSubCategory(
                             order.getLink(),
                             category.getId(),
                             subCategory != null ? subCategory.getId() : null
-                    ))
+                    ))*/
+                    .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
                     .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
