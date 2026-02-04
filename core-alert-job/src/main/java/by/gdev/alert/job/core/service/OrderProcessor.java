@@ -10,6 +10,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -41,8 +42,15 @@ public class OrderProcessor {
 	private final ApplicationProperty property;
 	private final UserFilterRepository filterRepository;
 
-    String SEND_MESSAGE_URL_TELEGRAM = "http://notification:8019/telegram";
-    String SEND_MESSAGE_URL_MAIL = "http://notification:8019/mail";
+    @Value("${mail.sender.talegram.attempts:5}")
+    private int attemtsCount;
+
+    private static final String NEW_LINE = "\n";
+
+    private static final String SEND_MESSAGE_URL_TELEGRAM = "http://notification:8019/telegram";
+    private static final String SEND_MESSAGE_URL_MAIL = "http://notification:8019/mail";
+
+    private static final String NOT_RESPONDING = "Здравствуйте, не смогли отправить заказы в телеграмм, поэтому уведомления для вашего пользователя отключим. Так как считаем, что телеграмм бот заблокирован. Если это не так, то попробуйте разобраться самостоятельно в настройках уведомлений.";
 
 	public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 		orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
@@ -101,7 +109,7 @@ public class OrderProcessor {
 		}
 	}
 
-    private void sendMessageToUser2(AppUser user, List<String> messages) {
+    /*private void sendMessageToUser2(AppUser user, List<String> messages) {
         String uri = SEND_MESSAGE_URL_MAIL;
         if (!user.isDefaultSendType()){
             uri = SEND_MESSAGE_URL_TELEGRAM;
@@ -134,7 +142,6 @@ public class OrderProcessor {
                             uri = SEND_MESSAGE_URL_TELEGRAM;
                         }
                     }
-
                 }
             }
         }
@@ -164,7 +171,80 @@ public class OrderProcessor {
                 }
             }
         }
+    }*/
+
+    private void sendMessagesToUser(AppUser user, List<String> messages) {
+
+        boolean isTelegram = !user.isDefaultSendType();
+        int failCount = user.getTelegramFailCount();
+
+        String uri = isTelegram ? SEND_MESSAGE_URL_TELEGRAM : SEND_MESSAGE_URL_MAIL;
+
+        StringBuilder sb = new StringBuilder();
+
+        for (String msg : messages) {
+
+            // если Telegram выбран, но уже 5 ошибок — переключаемся на почту
+            if (isTelegram && failCount >= attemtsCount) {
+                uri = SEND_MESSAGE_URL_MAIL;
+            }
+
+            sb.append(msg).append(NEW_LINE);
+
+            if (sb.length() > 3000) {
+                boolean ok = sendMessageBlock(user, uri, sb.substring(0, sb.length() - 1));
+                sb.setLength(0);
+
+                if (!ok && isTelegram) {
+                    failCount++;
+                } else if (ok && isTelegram && failCount != 0) {
+                    failCount = 0;
+                    user.setTelegramFailCount(0);
+                    userRepository.save(user);
+                    uri = SEND_MESSAGE_URL_TELEGRAM;
+                }
+            }
+        }
+
+        // отправка хвоста
+        if (sb.length() > 0) {
+
+            if (isTelegram && failCount >= attemtsCount) {
+                uri = SEND_MESSAGE_URL_MAIL;
+            }
+
+            boolean ok = sendMessageBlock(user, uri, sb.substring(0, sb.length() - 1));
+
+            if (!ok && isTelegram) {
+                failCount++;
+            } else if (ok && isTelegram && failCount != 0) {
+                failCount = 0;
+                user.setTelegramFailCount(0);
+                userRepository.save(user);
+            }
+        }
+
+        // если Telegram окончательно упал
+        if (isTelegram && failCount >= attemtsCount) {
+
+            // переключаем пользователя на почту
+            user.setDefaultSendType(true);
+            user.setTelegramFailCount(failCount);
+            userRepository.save(user);
+
+            // отправляем уведомление 1 раз
+            sendMessageBlock(user, SEND_MESSAGE_URL_MAIL, NOT_RESPONDING);
+
+            log.warn("Telegram отключён для {} после {} ошибок. Переключено на email.",
+                    user.getUuid(), failCount);
+        } else {
+            // просто сохраняем счётчик
+            user.setTelegramFailCount(failCount);
+            userRepository.save(user);
+        }
     }
+
+
 
 
 	private void sendMessageToUser(AppUser user, List<String> list) {
@@ -193,7 +273,7 @@ public class OrderProcessor {
                         un.getToMail(), user.getUuid()));
     }
 
-    private boolean sendMessageBlock(AppUser user, String uri, String message) {
+    /*private boolean sendMessageBlock(AppUser user, String uri, String message) {
         UserNotification un = user.isDefaultSendType()
                 ? new UserNotification(user.getEmail(), message)
                 : new UserNotification(String.valueOf(user.getTelegram()), message);
@@ -211,6 +291,31 @@ public class OrderProcessor {
                     un.getToMail(),
                     user.getUuid(),
                     ex.getMessage());
+            return false;
+        }
+    }*/
+
+    private boolean sendMessageBlock(AppUser user, String uri, String message) {
+
+        UserNotification un;
+
+        if (uri.equals(SEND_MESSAGE_URL_MAIL)) {
+            un = new UserNotification(user.getEmail(), message);
+        } else {
+            un = new UserNotification(String.valueOf(user.getTelegram()), message);
+        }
+
+        try {
+            webClient.post()
+                    .uri(uri)
+                    .bodyValue(un)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .block();
+
+            return true;
+
+        } catch (Exception ex) {
             return false;
         }
     }
@@ -301,7 +406,8 @@ public class OrderProcessor {
 							orderList.get(0).getSubCategoryName());			
 				}).toList();
 				if (!resultOrdersString.isEmpty()) {
-					sendMessageToUser2(user, resultOrdersString);
+					//sendMessageToUser2(user, resultOrdersString);
+                    sendMessagesToUser(user, resultOrdersString);
 					delayOrderRepository.deleteAll(user.getDelayOrderNotifications());
 				}
 			}
