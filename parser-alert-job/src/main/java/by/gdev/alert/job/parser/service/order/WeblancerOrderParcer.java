@@ -84,11 +84,12 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .filter(Objects::nonNull)
                     .filter(Order::isValidOrder)
-                    .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                    /*.filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
                             order.getLink(),
                             category.getId(),
                             subCategory != null ? subCategory.getId() : null
-                    ))
+                    ))*/
+                    .filter(order -> service.isExistsOrder(category, subCategory, order.getLink()))
                     .map(e -> saveOrder(e, category, subCategory))
                     .toList();
         } catch (SocketTimeoutException e) {
