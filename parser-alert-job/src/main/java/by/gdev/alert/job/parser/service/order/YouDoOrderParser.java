@@ -84,19 +84,12 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 return List.of();
             }
 
-            orders = elementsOrders.stream()
+            List<Order> parsedOrders = elementsOrders
+                    .stream()
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
-                    .filter(Objects::nonNull)
-                    .filter(Order::isValidOrder)
-                    /*.filter(order -> !getOrderRepository().existsByLinkCategoryAndSubCategory(
-                            order.getLink(),
-                            category.getId(),
-                            subCategory != null ? subCategory.getId() : null
-                    ))*/
-                    .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                    .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
+            orders = getOrdersData(parsedOrders, category, subCategory);
         }
         finally {
             closeResources(page, context, browser, playwright);
@@ -115,14 +108,16 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private void clickCategory(Page page, String categoryName) {
         // Ждём контейнер категорий
         page.waitForSelector("ul[class*='Categories_container']",
-                new Page.WaitForSelectorOptions().setTimeout(10000));
+                new Page.WaitForSelectorOptions().setTimeout(15000));
 
         // Ищем КЛИКАБЕЛЬНЫЙ элемент категории — label
         Locator category = page.locator(
                 "//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]"
         );
         // Ждём, пока label станет видимым
-        category.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
+        category.waitFor(new Locator.WaitForOptions()
+                .setState(WaitForSelectorState.VISIBLE)
+                .setTimeout(15000));
         // Кликаем по label
         category.click();
     }
@@ -137,6 +132,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         // 3. Кликаем по стрелке (если список скрыт)
         if (categoryBlock.locator("ul.Categories_subList__iasnn.hidden").count() > 0) {
             arrow.click();
+            page.waitForTimeout(300);
         }
         // 4. Ждём, пока список раскроется
         categoryBlock.locator("ul.Categories_subList__iasnn:not(.hidden)")
@@ -147,7 +143,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 .filter(new Locator.FilterOptions().setHasText(subCategoryName));
         sub.waitFor(new Locator.WaitForOptions()
                 .setState(WaitForSelectorState.VISIBLE)
-                .setTimeout(30000));
+                .setTimeout(15000));
 
         sub.click();
     }

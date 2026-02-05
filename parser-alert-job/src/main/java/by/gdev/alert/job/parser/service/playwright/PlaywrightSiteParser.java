@@ -17,12 +17,14 @@ import com.microsoft.playwright.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @Slf4j
@@ -144,24 +146,39 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return List.of();
     }
 
-    protected final OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
-        parserService.saveOrderLinks(category, subCategory, e.getLink());
-
-        ParserSource ps = e.getSourceSite();
+    protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
+        parserService.saveOrderLinks(category, subCategory, order.getLink());
+        ParserSource ps = order.getSourceSite();
         ParserSource existing = parserSourceRepository
                 .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
                 .orElseGet(() -> parserSourceRepository.save(ps));
+        order.setSourceSite(existing);
+        return orderRepository.save(order);
+    }
 
-        e.setSourceSite(existing);
-        e = orderRepository.save(e);
-
-        OrderDTO dto = mapper.map(e, OrderDTO.class);
+    private OrderDTO getOrderData(Order order, Category category, Subcategory subCategory){
+        OrderDTO dto = mapper.map(order, OrderDTO.class);
         SourceSiteDTO source = dto.getSourceSite();
         source.setCategoryName(category.getNativeLocName());
         if (subCategory != null)
             source.setSubCategoryName(subCategory.getNativeLocName());
         dto.setSourceSite(source);
         return dto;
+    }
+
+    protected List<OrderDTO> getOrdersData(List<Order> orders, Category category, Subcategory subCategory){
+        return orders.stream()
+                .filter(Objects::nonNull)
+                .filter(Order::isValidOrder)
+                .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
+                .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                        order.getLink(),
+                        category.getId(),
+                        subCategory != null ? subCategory.getId() : null
+                ))
+                .map(order -> saveOrder(order, category, subCategory))
+                .map(order -> getOrderData(order, category, subCategory))
+                .toList();
     }
 
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category c, Subcategory sub);

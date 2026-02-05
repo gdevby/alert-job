@@ -71,22 +71,12 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
 
             Locator elementsOrders = page.locator("div.kwork-card-item");
 
-            List<OrderDTO> orders = elementsOrders.all().stream()
+            List<Order> parsedOrders = elementsOrders.all()
+                    .stream()
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
-                    .filter(Objects::nonNull)
-                    .filter(Order::isValidOrder)
-                    /*.peek(order -> log.info(">>>>>>>> KWORKCOM PARSED ORDER → title='{}', link='{}', price={}",
-                            order.getTitle(), order.getLink(), order.getPrice()))
-                    .filter(order -> !getOrderRepository().existsByLinkCategoryAndSubCategory(
-                            order.getLink(),
-                            category.getId(),
-                            subCategory != null ? subCategory.getId() : null
-                    ))*/
-                    .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                    .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
-
+            List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
             return orders;
         }
         finally {
