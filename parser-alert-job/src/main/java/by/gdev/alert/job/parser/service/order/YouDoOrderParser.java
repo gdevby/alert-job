@@ -50,7 +50,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, youdoProxyActive);
+            browser = createBrowser(playwright, proxy, false, youdoProxyActive);
             context = createBrowserContext(browser, null, false);
 
             page = context.newPage();
@@ -120,6 +120,10 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 .setTimeout(15000));
         // Кликаем по label
         category.click();
+
+        // ждём обновления списка задач
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForSelector("li.TasksList_listItem__2Yurg");
     }
 
     private void clickSubCategory(Page page, String categoryName, String subCategoryName) {
@@ -146,6 +150,24 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 .setTimeout(15000));
 
         sub.click();
+
+        // ждём обновления списка задач
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForSelector("li.TasksList_listItem__2Yurg");
+    }
+
+    private void resetAllCategories(Page page) {
+        Locator allChecks = page.locator("label.Checkbox_label__uNY3B input[type='checkbox']");
+        int count = allChecks.count();
+
+        for (int i = 0; i < count; i++) {
+            Locator checkbox = allChecks.nth(i);
+            boolean checked = checkbox.isChecked();
+            if (checked) {
+                checkbox.click();
+                page.waitForLoadState(LoadState.NETWORKIDLE);
+            }
+        }
     }
 
     private Order parseOrder(Element e, Long siteSourceJobId, Category category, Subcategory subCategory) {

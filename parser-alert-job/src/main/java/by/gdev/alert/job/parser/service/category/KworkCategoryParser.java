@@ -42,7 +42,7 @@ public class KworkCategoryParser extends PlaywrightCategoryParser implements Cat
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = kworkProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, kworkProxyActive);
+            browser = createBrowser(playwright, proxy, true, kworkProxyActive);
             context = createBrowserContext(browser, proxy, kworkProxyActive);
             page = context.newPage();
             page.navigate(siteSourceJob.getParsedURI());

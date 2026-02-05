@@ -72,7 +72,7 @@ public class KworkComCategoryParser extends PlaywrightCategoryParser implements 
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = kworkcomProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, kworkcomProxyActive);
+            browser = createBrowser(playwright, proxy, true, kworkcomProxyActive);
             context = createBrowserContext(browser, proxy, kworkcomProxyActive);
             page = context.newPage();
             page.navigate(siteSourceJob.getParsedURI());

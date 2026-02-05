@@ -176,7 +176,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, freelancehuntProxyActive);
+            browser = createBrowser(playwright, proxy, true, freelancehuntProxyActive);
             context = createBrowserContext(browser, null, false);
             page = context.newPage();
             page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));

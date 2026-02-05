@@ -52,7 +52,7 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, kworkcomProxyActive);
+            browser = createBrowser(playwright, proxy, true, kworkcomProxyActive);
             context = browser.newContext(new Browser.NewContextOptions()
                     .setJavaScriptEnabled(true)
                     .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")

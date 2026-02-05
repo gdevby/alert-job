@@ -87,8 +87,8 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return playwrightManager.createBrowserContext(browser, proxy, useProxy);
     }
 
-    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, isActiveProxy, getSiteName());
+    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
+        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
     }
 
     public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
