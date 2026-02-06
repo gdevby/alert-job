@@ -78,8 +78,6 @@ public class MailService {
                     log.warn("Could not send Telegram to {}: {}",
                             userMail.getToMail(), ex.getMessage());
                     negativeTelegramCounter.increment();
-                    // ТИХОЕ логирование - только счетчик, без логов
-                    // log.debug("Telegram failed for {}: {}", userMail.getToMail(), ex.getMessage());
                     return Mono.empty(); //возвращаем пустой Mono
                 });
     }

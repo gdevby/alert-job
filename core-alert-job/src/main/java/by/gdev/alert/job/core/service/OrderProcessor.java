@@ -29,7 +29,6 @@ import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
@@ -209,7 +208,7 @@ public class OrderProcessor {
 
     private void sendTelegramIssueNotification(AppUser user) {
         UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE);
-        
+
         webClient.post()
                 .uri(SEND_MESSAGE_URL_MAIL)
                 .bodyValue(notification)
@@ -220,51 +219,6 @@ public class OrderProcessor {
                         error -> log.error("Failed to send Telegram issue notification to user {}", user.getUuid(), error)
                 );
     }
-
-
-    /*private boolean sendSingleMessage(AppUser user, String uri, String message) {
-        UserNotification un;
-
-        if (uri.equals(SEND_MESSAGE_URL_MAIL)) {
-            un = new UserNotification(user.getEmail(), message);
-        } else {
-            un = new UserNotification(String.valueOf(user.getTelegram()), message);
-        }
-
-        try {
-            webClient.post()
-                    .uri(uri)
-                    .bodyValue(un)
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .block();
-
-            log.debug("Message sent successfully to user {} via {}",
-                    user.getUuid(), uri.contains("telegram") ? "Telegram" : "Email");
-            return true;
-        } catch (Exception ex) {
-            log.debug("Failed to send message to user {} via {}: {}",
-                    user.getUuid(), uri.contains("telegram") ? "Telegram" : "Email", ex.getMessage());
-            return false;
-        }
-    }
-
-    private void sendTelegramIssueNotification(AppUser user) {
-        UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE);
-
-        try {
-            webClient.post()
-                    .uri(SEND_MESSAGE_URL_MAIL)
-                    .bodyValue(notification)
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .block();
-
-            log.info("Sent Telegram issue notification to user {}", user.getUuid());
-        } catch (Exception e) {
-            log.error("Failed to send Telegram issue notification to user {}", user.getUuid(), e);
-        }
-    }*/
 
     private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
         return userSource.getSiteSource().equals(orderSource.getSource())

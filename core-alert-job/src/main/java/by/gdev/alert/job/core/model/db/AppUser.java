@@ -1,6 +1,5 @@
 package by.gdev.alert.job.core.model.db;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 
 import jakarta.persistence.Entity;
