@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.model.db;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 import jakarta.persistence.Entity;
@@ -27,5 +28,5 @@ public class AppUser extends BasicId {
     private boolean defaultSendType = true;
     @OneToMany(mappedBy = "user")
     private Set<DelayOrderNotification> delayOrderNotifications;
-    private int telegramFailCount = 0;
+    private Integer telegramFailCount = 0;
 }
