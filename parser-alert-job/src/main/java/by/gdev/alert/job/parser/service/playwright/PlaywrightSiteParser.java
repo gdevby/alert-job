@@ -60,6 +60,8 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     @Autowired
     private ModelMapper mapper;
 
+    protected boolean debug;
+
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -109,12 +111,16 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
                 List<OrderDTO> result = mapPlaywrightItems(link, siteSourceJobId, category, subCategory);
 
-                if (!result.isEmpty()) {
+                /*if (!result.isEmpty()) {
                     return result;
                 }
-                //log.warn("Попытка {}: пустой результат, пробуем снова", attempt);
+                log.warn("Попытка {}: пустой результат, пробуем снова", attempt);*/
+                return result;
             }catch (PlaywrightException e) {
             if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
+                if (debug){
+                    log.warn("Timeout playright {} {}", getSiteName(), e.getMessage());
+                }
                 continue;
             }
             lastError = e;
@@ -170,12 +176,19 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return orders.stream()
                 .filter(Objects::nonNull)
                 .filter(Order::isValidOrder)
+                .peek(order -> {
+                    if (debug) {
+                        log.info("*** order: {} , result {}",
+                                order.getTitle(),
+                                getParserService().isExistsOrder(category, subCategory, order.getLink()));
+                    }
+                })
                 .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                /*.filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
                         order.getLink(),
                         category.getId(),
                         subCategory != null ? subCategory.getId() : null
-                ))
+                ))*/
                 .map(order -> saveOrder(order, category, subCategory))
                 .map(order -> getOrderData(order, category, subCategory))
                 .toList();
