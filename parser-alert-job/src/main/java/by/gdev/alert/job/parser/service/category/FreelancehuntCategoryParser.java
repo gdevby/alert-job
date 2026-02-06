@@ -40,7 +40,7 @@ public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implem
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = freelancehuntProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, freelancehuntProxyActive);
+            browser = createBrowser(playwright, proxy, true, freelancehuntProxyActive);
             context = createBrowserContext(browser, proxy, freelancehuntProxyActive);
             page = context.newPage();
             page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));

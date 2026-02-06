@@ -176,7 +176,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, freelancehuntProxyActive);
+            browser = createBrowser(playwright, proxy, true, freelancehuntProxyActive);
             context = createBrowserContext(browser, null, false);
             page = context.newPage();
             page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
@@ -188,17 +188,12 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
             Locator elementsOrders = page.locator("div.job-list-item");
 
             //System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
-            List<OrderDTO> orders = elementsOrders.all().stream()
-                    .map(e -> parseOrder(e, siteSourceJobId, category, subCategory)).filter(Objects::nonNull)
-                    .filter(Order::isValidOrder)
-                    /*.filter(order -> !getOrderRepository().existsByLinkCategoryAndSubCategory(
-                            order.getLink(),
-                            category.getId(),
-                            subCategory != null ? subCategory.getId() : null
-                    ))*/
-                    .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                    .map(order -> saveOrder(order, category, subCategory)).toList();
+            List<Order> parsedOrders = elementsOrders.all()
+                    .stream()
+                    .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
+                    .toList();
 
+            List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
             return orders;
         }
         finally {

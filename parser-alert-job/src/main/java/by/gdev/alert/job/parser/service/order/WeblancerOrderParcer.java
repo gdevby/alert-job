@@ -36,7 +36,7 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
 
     private final String sourceLink = "https://www.weblancer.net";
 
-    private final ParserService service;
+    private final ParserService parserService;
     private final OrderRepository orderRepository;
     private final ParserSourceRepository parserSourceRepository;
     private final CurrencyRepository currencyRepository;
@@ -80,24 +80,33 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
                 return Lists.newArrayList();
             }
 
-            return orders.stream()
+            List<Order> parsedOrders = orders
+                    .stream()
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
-                    .filter(Objects::nonNull)
-                    .filter(Order::isValidOrder)
-                    /*.filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
-                            order.getLink(),
-                            category.getId(),
-                            subCategory != null ? subCategory.getId() : null
-                    ))*/
-                    .filter(order -> service.isExistsOrder(category, subCategory, order.getLink()))
-                    .map(e -> saveOrder(e, category, subCategory))
                     .toList();
+
+            return getOrdersData(parsedOrders, category, subCategory);
         } catch (SocketTimeoutException e) {
             log.warn("Timeout while fetching {}: {}", link, e.getMessage()); return List.of();
         } catch (IOException e) {
             log.warn("IO error while fetching {}: {}", link, e.getMessage()); return List.of();
         }
 
+    }
+
+    protected List<OrderDTO> getOrdersData(List<Order> orders, Category category, Subcategory subCategory){
+        return orders.stream()
+                .filter(Objects::nonNull)
+                .filter(Order::isValidOrder)
+                .filter(order -> parserService.isExistsOrder(category, subCategory, order.getLink()))
+                .filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                        order.getLink(),
+                        category.getId(),
+                        subCategory != null ? subCategory.getId() : null
+                ))
+                .map(order -> saveOrder(order, category, subCategory))
+                .map(order -> getOrderData(order, category, subCategory))
+                .toList();
     }
 
     private Order parseOrder(Element e, Long siteSourceJobId, Category category, Subcategory subCategory) {
@@ -157,28 +166,23 @@ public class WeblancerOrderParcer extends AbsctractSiteParser {
         }
     }
 
-    private OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
-        service.saveOrderLinks(category, subCategory, e.getLink());
-
-        ParserSource ps = e.getSourceSite();
+    protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
+        parserService.saveOrderLinks(category, subCategory, order.getLink());
+        ParserSource ps = order.getSourceSite();
         ParserSource existing = parserSourceRepository
-                .findBySourceAndCategoryAndSubCategory(
-                        ps.getSource(),
-                        ps.getCategory(),
-                        ps.getSubCategory()
-                )
+                .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
                 .orElseGet(() -> parserSourceRepository.save(ps));
+        order.setSourceSite(existing);
+        return orderRepository.save(order);
+    }
 
-        e.setSourceSite(existing);
-        e = orderRepository.save(e);
-
-        OrderDTO dto = mapper.map(e, OrderDTO.class);
+    private OrderDTO getOrderData(Order order, Category category, Subcategory subCategory){
+        OrderDTO dto = mapper.map(order, OrderDTO.class);
         SourceSiteDTO source = dto.getSourceSite();
         source.setCategoryName(category.getNativeLocName());
         if (subCategory != null)
             source.setSubCategoryName(subCategory.getNativeLocName());
         dto.setSourceSite(source);
-
         return dto;
     }
 

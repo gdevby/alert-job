@@ -17,12 +17,14 @@ import com.microsoft.playwright.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @Slf4j
@@ -58,6 +60,8 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     @Autowired
     private ModelMapper mapper;
 
+    protected boolean debug;
+
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -85,8 +89,8 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return playwrightManager.createBrowserContext(browser, proxy, useProxy);
     }
 
-    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, isActiveProxy, getSiteName());
+    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
+        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
     }
 
     public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
@@ -107,12 +111,16 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
                 List<OrderDTO> result = mapPlaywrightItems(link, siteSourceJobId, category, subCategory);
 
-                if (!result.isEmpty()) {
+                /*if (!result.isEmpty()) {
                     return result;
                 }
-                //log.warn("Попытка {}: пустой результат, пробуем снова", attempt);
+                log.warn("Попытка {}: пустой результат, пробуем снова", attempt);*/
+                return result;
             }catch (PlaywrightException e) {
             if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
+                if (debug){
+                    log.warn("Timeout playright {} {}", getSiteName(), e.getMessage());
+                }
                 continue;
             }
             lastError = e;
@@ -144,24 +152,46 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return List.of();
     }
 
-    protected final OrderDTO saveOrder(Order e, Category category, Subcategory subCategory) {
-        parserService.saveOrderLinks(category, subCategory, e.getLink());
-
-        ParserSource ps = e.getSourceSite();
+    protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
+        parserService.saveOrderLinks(category, subCategory, order.getLink());
+        ParserSource ps = order.getSourceSite();
         ParserSource existing = parserSourceRepository
                 .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
                 .orElseGet(() -> parserSourceRepository.save(ps));
+        order.setSourceSite(existing);
+        return orderRepository.save(order);
+    }
 
-        e.setSourceSite(existing);
-        e = orderRepository.save(e);
-
-        OrderDTO dto = mapper.map(e, OrderDTO.class);
+    private OrderDTO getOrderData(Order order, Category category, Subcategory subCategory){
+        OrderDTO dto = mapper.map(order, OrderDTO.class);
         SourceSiteDTO source = dto.getSourceSite();
         source.setCategoryName(category.getNativeLocName());
         if (subCategory != null)
             source.setSubCategoryName(subCategory.getNativeLocName());
         dto.setSourceSite(source);
         return dto;
+    }
+
+    protected List<OrderDTO> getOrdersData(List<Order> orders, Category category, Subcategory subCategory){
+        return orders.stream()
+                .filter(Objects::nonNull)
+                .filter(Order::isValidOrder)
+                .peek(order -> {
+                    if (debug) {
+                        log.info("*** order: {} , result {}",
+                                order.getTitle(),
+                                getParserService().isExistsOrder(category, subCategory, order.getLink()));
+                    }
+                })
+                .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
+                /*.filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
+                        order.getLink(),
+                        category.getId(),
+                        subCategory != null ? subCategory.getId() : null
+                ))*/
+                .map(order -> saveOrder(order, category, subCategory))
+                .map(order -> getOrderData(order, category, subCategory))
+                .toList();
     }
 
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category c, Subcategory sub);

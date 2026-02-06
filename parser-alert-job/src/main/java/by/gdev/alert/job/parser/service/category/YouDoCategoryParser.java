@@ -37,7 +37,7 @@ public class YouDoCategoryParser extends PlaywrightCategoryParser implements Cat
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = youdoProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, youdoProxyActive);
+            browser = createBrowser(playwright, proxy, true, youdoProxyActive);
             context = createBrowserContext(browser, proxy, youdoProxyActive);
             page = context.newPage();
 

@@ -34,9 +34,9 @@ public class PlaywrightManager {
         return playwright;
     }
 
-    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean useProxy,  SiteName site){
+    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy,  SiteName site){
         BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
-                .setHeadless(true)
+                .setHeadless(headless)
                 .setArgs(Arrays.asList(
                         "--disable-blink-features=AutomationControlled",
                         "--no-sandbox",

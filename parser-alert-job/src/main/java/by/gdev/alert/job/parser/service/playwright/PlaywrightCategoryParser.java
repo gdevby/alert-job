@@ -28,8 +28,8 @@ public abstract class PlaywrightCategoryParser implements Parser {
         return playwrightManager.getProxyWithRetry(maxRetries, retryDelayMs);
     }
 
-    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, isActiveProxy, getSiteName());
+    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
+        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
     }
 
     public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
