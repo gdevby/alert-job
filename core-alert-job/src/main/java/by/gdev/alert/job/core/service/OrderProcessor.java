@@ -187,10 +187,6 @@ public class OrderProcessor {
         }
 
         try {
-            // Убираем .block() и используем синхронный подход
-            // В WebFlux нельзя использовать .block() в реактивных потоках
-
-            // Вариант 1: Просто отправляем без ожидания результата
             webClient.post()
                     .uri(uri)
                     .bodyValue(un)
@@ -203,7 +199,7 @@ public class OrderProcessor {
                                     user.getUuid(), uri.contains("telegram") ? "Telegram" : "Email", error.getMessage())
                     );
 
-            return true; // Предполагаем успех
+            return true;
         } catch (Exception ex) {
             log.debug("Failed to send message to user {} via {}: {}",
                     user.getUuid(), uri.contains("telegram") ? "Telegram" : "Email", ex.getMessage());
@@ -213,8 +209,7 @@ public class OrderProcessor {
 
     private void sendTelegramIssueNotification(AppUser user) {
         UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE);
-
-        // Убираем .block() - отправляем асинхронно
+        
         webClient.post()
                 .uri(SEND_MESSAGE_URL_MAIL)
                 .bodyValue(notification)
