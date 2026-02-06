@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,8 @@ public class OrderProcessor {
     private static final String SEND_MESSAGE_URL_MAIL = "http://notification:8019/mail";
     private static final String TELEGRAM_WARNING_MESSAGE = "Здравствуйте! Обнаружены проблемы с отправкой уведомлений в Telegram. "
             + "Проверьте, не заблокирован ли бот. Временные уведомления будут приходить на email.";
+
+    private final Map<Long, Boolean> telegramIssueNotificationsSent = new ConcurrentHashMap<>();
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
@@ -110,6 +113,8 @@ public class OrderProcessor {
     private void sendMessagesToUser(AppUser user, List<String> messages) {
         // Проверяем, нужно ли использовать email из-за ошибок Telegram
         boolean useEmail = false;
+        //Блокируем любую передачу уведомлений при достижении 5ти ошибок тг
+        boolean shouldBlock = false;
 
         if (!user.isDefaultSendType()) {
             Integer failCount = user.getTelegramFailCount();
@@ -117,10 +122,18 @@ public class OrderProcessor {
                 log.info("User {} has {} Telegram failures, using email",
                         user.getUuid(), failCount);
                 useEmail = true;
+                shouldBlock = true;
 
                 // Отправляем уведомление о проблеме (только если еще не отправляли в этой сессии)
-                sendTelegramIssueNotification(user);
+                if (!telegramIssueNotificationsSent.getOrDefault(user.getId(), false)) {
+                    sendTelegramIssueNotification(user);
+                    telegramIssueNotificationsSent.put(user.getId(), true);
+                }
             }
+        }
+
+        if (shouldBlock) {
+            return;
         }
 
         // Выбираем способ отправки
@@ -298,9 +311,9 @@ public class OrderProcessor {
                 List<String> resultOrdersString = byLink.entrySet().stream().map(entry -> {
                     List<DelayOrderNotification> orderList = entry.getValue();
 
-                    String modulesString = orderList.stream().map(order -> {
-                        return order.getOrderName();
-                    }).distinct().collect(Collectors.joining(", "));
+                    String modulesString = orderList.stream().map(DelayOrderNotification::getOrderName)
+                            .distinct()
+                            .collect(Collectors.joining(", "));
                     return createOrdersMessage(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), orderList.get(0).getCategoryName(),
                             orderList.get(0).getSubCategoryName());
                 }).toList();
