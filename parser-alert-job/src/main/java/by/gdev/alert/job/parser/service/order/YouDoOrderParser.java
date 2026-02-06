@@ -29,12 +29,19 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private final String baseUrl = "https://youdo.com";
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
 
+    private static final String ALL_CATEGORIES_TOKEN = "Все категории";
+
     @Value("${youdo.proxy.active}")
     private boolean youdoProxyActive;
 
     @Value("${parser.work.youdo.com}")
     private void setActive(boolean active) {
         this.active = active;
+    }
+
+    @Value("${youdo.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     @Override
@@ -50,7 +57,12 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, youdoProxyActive);
+            if(debug){
+                browser = createBrowser(playwright, proxy, false, youdoProxyActive);
+            }
+            else{
+                browser = createBrowser(playwright, proxy, true, youdoProxyActive);
+            }
             context = createBrowserContext(browser, null, false);
 
             page = context.newPage();
@@ -67,9 +79,18 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
             // Кликаем категорию
             if (subCategory != null) {
+                //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
+                clickCategory(page, ALL_CATEGORIES_TOKEN);
+                //А затем кликаем нужную субкатегорию
                 clickSubCategory(page, category.getNativeLocName(), subCategory.getNativeLocName());
             } else {
-                clickCategory(page, category.getNativeLocName());
+                //Если выбраны Все категории - ничего кликать не нужно
+                if (!category.getNativeLocName().equals(ALL_CATEGORIES_TOKEN)){
+                    //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
+                    clickCategory(page, ALL_CATEGORIES_TOKEN);
+                    //А затем кликаем нужную категорию
+                    clickCategory(page, category.getNativeLocName());
+                }
             }
 
             // Ждём загрузку задач
@@ -84,19 +105,12 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 return List.of();
             }
 
-            orders = elementsOrders.stream()
+            List<Order> parsedOrders = elementsOrders
+                    .stream()
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
-                    .filter(Objects::nonNull)
-                    .filter(Order::isValidOrder)
-                    /*.filter(order -> !getOrderRepository().existsByLinkCategoryAndSubCategory(
-                            order.getLink(),
-                            category.getId(),
-                            subCategory != null ? subCategory.getId() : null
-                    ))*/
-                    .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                    .map(order -> saveOrder(order, category, subCategory))
                     .toList();
 
+            orders = getOrdersData(parsedOrders, category, subCategory);
         }
         finally {
             closeResources(page, context, browser, playwright);
@@ -115,16 +129,37 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private void clickCategory(Page page, String categoryName) {
         // Ждём контейнер категорий
         page.waitForSelector("ul[class*='Categories_container']",
-                new Page.WaitForSelectorOptions().setTimeout(10000));
+                new Page.WaitForSelectorOptions().setTimeout(15000));
 
         // Ищем КЛИКАБЕЛЬНЫЙ элемент категории — label
         Locator category = page.locator(
                 "//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]"
         );
+        Locator categoryInput = category.locator("..").locator("input[type='checkbox']");
         // Ждём, пока label станет видимым
-        category.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
-        // Кликаем по label
+        category.waitFor(new Locator.WaitForOptions()
+                .setState(WaitForSelectorState.VISIBLE)
+                .setTimeout(15000));
+        boolean before = categoryInput.isChecked();
         category.click();
+        page.waitForTimeout(300);
+        if (before) {
+            page.waitForCondition(() -> !categoryInput.isChecked());
+        } else {
+            page.waitForCondition(categoryInput::isChecked);
+        }
+
+        // ждём обновления списка задач
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForSelector("li.TasksList_listItem__2Yurg");
+        if (debug){
+            // ждём, пока появятся реальные задачи
+            page.waitForTimeout(1000);
+        }
+        else {
+            // ждём, пока появятся реальные задачи
+            page.waitForTimeout(1000);
+        }
     }
 
     private void clickSubCategory(Page page, String categoryName, String subCategoryName) {
@@ -133,23 +168,56 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 "//li[.//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]]"
         );
         // 2. Находим стрелку через CSS (XPath внутри locator запрещён)
-        Locator arrow = categoryBlock.locator("span[class*='Categories_arrow']");
+            Locator arrow = categoryBlock.locator("span[class*='Categories_arrow']");
         // 3. Кликаем по стрелке (если список скрыт)
         if (categoryBlock.locator("ul.Categories_subList__iasnn.hidden").count() > 0) {
             arrow.click();
+            if (debug){
+                page.waitForTimeout(1000); //визуальная пауза
+            }
         }
         // 4. Ждём, пока список раскроется
         categoryBlock.locator("ul.Categories_subList__iasnn:not(.hidden)")
-                .waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
+                .waitFor(new Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.VISIBLE)
+                        .setTimeout(5000));
+
+        if (debug){
+            page.waitForTimeout(500); //как раскрывается
+        }
 
         Locator sub = categoryBlock
                 .locator("label.Checkbox_label__uNY3B")
                 .filter(new Locator.FilterOptions().setHasText(subCategoryName));
         sub.waitFor(new Locator.WaitForOptions()
                 .setState(WaitForSelectorState.VISIBLE)
-                .setTimeout(30000));
+                .setTimeout(15000));
+        if (debug){
+            log.error("Subcategory before click: check state {}",  sub.isChecked());
+        }
 
+        sub.scrollIntoViewIfNeeded();
+        if (debug){
+            page.waitForTimeout(500); //как скролит
+        }
         sub.click();
+        page.waitForTimeout(500);
+        if (debug) {
+            log.error("Subcategory after click: check state {}",  sub.isChecked());
+        }
+        page.waitForCondition(sub::isChecked);
+
+        // ждём, пока React обновит DOM
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        if(debug) {
+            // ждём, пока появятся реальные задачи
+            page.waitForTimeout(5000);
+        }
+        else {
+            //В проде секунда задержки чтобы сформировался DOM
+            page.waitForTimeout(1000);
+        }
     }
 
     private Order parseOrder(Element e, Long siteSourceJobId, Category category, Subcategory subCategory) {
