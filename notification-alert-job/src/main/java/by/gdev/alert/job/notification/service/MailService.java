@@ -80,7 +80,7 @@ public class MailService {
                     negativeTelegramCounter.increment();
                     // ТИХОЕ логирование - только счетчик, без логов
                     // log.debug("Telegram failed for {}: {}", userMail.getToMail(), ex.getMessage());
-                    return Mono.empty(); // ВАЖНО: возвращаем пустой Mono
+                    return Mono.empty(); //возвращаем пустой Mono
                 });
     }
 }

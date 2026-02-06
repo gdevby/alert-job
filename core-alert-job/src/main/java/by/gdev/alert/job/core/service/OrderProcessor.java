@@ -176,7 +176,58 @@ public class OrderProcessor {
         }
     }
 
+
     private boolean sendSingleMessage(AppUser user, String uri, String message) {
+        UserNotification un;
+
+        if (uri.equals(SEND_MESSAGE_URL_MAIL)) {
+            un = new UserNotification(user.getEmail(), message);
+        } else {
+            un = new UserNotification(String.valueOf(user.getTelegram()), message);
+        }
+
+        try {
+            // Убираем .block() и используем синхронный подход
+            // В WebFlux нельзя использовать .block() в реактивных потоках
+
+            // Вариант 1: Просто отправляем без ожидания результата
+            webClient.post()
+                    .uri(uri)
+                    .bodyValue(un)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .subscribe(
+                            success -> log.debug("Message sent successfully to user {} via {}",
+                                    user.getUuid(), uri.contains("telegram") ? "Telegram" : "Email"),
+                            error -> log.debug("Failed to send message to user {} via {}: {}",
+                                    user.getUuid(), uri.contains("telegram") ? "Telegram" : "Email", error.getMessage())
+                    );
+
+            return true; // Предполагаем успех
+        } catch (Exception ex) {
+            log.debug("Failed to send message to user {} via {}: {}",
+                    user.getUuid(), uri.contains("telegram") ? "Telegram" : "Email", ex.getMessage());
+            return false;
+        }
+    }
+
+    private void sendTelegramIssueNotification(AppUser user) {
+        UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE);
+
+        // Убираем .block() - отправляем асинхронно
+        webClient.post()
+                .uri(SEND_MESSAGE_URL_MAIL)
+                .bodyValue(notification)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .subscribe(
+                        success -> log.info("Sent Telegram issue notification to user {}", user.getUuid()),
+                        error -> log.error("Failed to send Telegram issue notification to user {}", user.getUuid(), error)
+                );
+    }
+
+
+    /*private boolean sendSingleMessage(AppUser user, String uri, String message) {
         UserNotification un;
 
         if (uri.equals(SEND_MESSAGE_URL_MAIL)) {
@@ -218,7 +269,7 @@ public class OrderProcessor {
         } catch (Exception e) {
             log.error("Failed to send Telegram issue notification to user {}", user.getUuid(), e);
         }
-    }
+    }*/
 
     private boolean compareSiteSources(SourceSiteDTO orderSource, SourceSite userSource) {
         return userSource.getSiteSource().equals(orderSource.getSource())
