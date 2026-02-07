@@ -2,10 +2,7 @@ package by.gdev.alert.job.core.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,7 +51,7 @@ public class OrderProcessor {
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
-        users.stream().forEach(user -> {
+        users.stream().filter(AppUser::isSwitchOffAlerts).forEach(user -> {
             List<OrderDTO> orderListToSend = user.getOrderModules().stream().filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
                     .map(orderModule -> {
                         UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
@@ -68,8 +65,8 @@ public class OrderProcessor {
                                         return order;
                                     }).collect(Collectors.toList());
                             return list;
-                        }).flatMap(list -> list.stream()).toList();
-                    }).flatMap(list -> list.stream()).toList();
+                        }).flatMap(Collection::stream).toList();
+                    }).flatMap(Collection::stream).toList();
             if (!orderListToSend.isEmpty()) {
                 sendOrderToUser(user, orderListToSend);
             }
