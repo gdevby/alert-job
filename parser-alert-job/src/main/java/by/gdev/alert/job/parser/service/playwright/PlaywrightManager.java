@@ -54,15 +54,15 @@ public class PlaywrightManager {
                     .setPassword(usedProxy.getPassword()));
         }
 
-        Browser browser = playwright.chromium().launch(launchOptions);
-        if (useProxy && usedProxy != null){
-            /*log.debug("Браузер для {} запущен с прокси: {}:{} (user: {})",
-                    site,
-                    usedProxy.getHost(),
-                    usedProxy.getPort(),
-                    usedProxy.getUsername());
-             */
+        Browser browser = null;
+        try {
+            browser = playwright.chromium().launch(launchOptions);
+            log.debug("Браузер для {} успешно запущен (прокси: {})", site, useProxy ? "включен" : "выключен");
+        } catch (Exception e) {
+            log.error("Ошибка запуска браузера для {}: {}", site, e.getMessage(), e);
+            throw e;
         }
+        
         return browser;
     }
 
@@ -97,52 +97,94 @@ public class PlaywrightManager {
     }
 
     public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright, SiteName site) {
+        // Закрываем Page
         if (page != null) {
             try {
                 if (!page.isClosed()) {
                     try {
                         page.waitForLoadState(LoadState.NETWORKIDLE,
                                 new Page.WaitForLoadStateOptions().setTimeout(1200));
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                        // Игнорируем ошибки ожидания загрузки
+                    }
                     page.close();
+                    log.debug("Page закрыт для {}", site);
                 }
             } catch (Exception e) {
-                log.warn("Ошибка закрытия page в {}: {}", site, e.getMessage());
+                log.error("Ошибка закрытия page в {}: {}", site, e.getMessage(), e);
             }
         }
 
+        // Закрываем BrowserContext
         if (context != null) {
             try {
+                if (!context.pages().isEmpty()) {
+                    log.warn("Context для {} содержит {} незакрытых страниц, закрываем принудительно",
+                            site, context.pages().size());
+                    for (Page p : context.pages()) {
+                        try {
+                            if (!p.isClosed()) {
+                                p.close();
+                            }
+                        } catch (Exception e) {
+                            log.error("Ошибка закрытия страницы в context: {}", e.getMessage());
+                        }
+                    }
+                }
                 context.close();
+                log.debug("Context закрыт для {}", site);
             } catch (Exception e) {
-                log.warn("Ошибка закрытия context в {}: {}", site, e.getMessage());
+                log.error("Ошибка закрытия context в {}: {}", site, e.getMessage(), e);
             }
         }
 
+        // Закрываем Browser - КРИТИЧЕСКИ ВАЖНО
         if (browser != null) {
             try {
                 if (browser.isConnected()) {
+                    // Принудительно закрываем все контексты
+                    if (!browser.contexts().isEmpty()) {
+                        log.warn("Browser для {} содержит {} незакрытых контекстов, закрываем принудительно",
+                                site, browser.contexts().size());
+                        for (BrowserContext ctx : browser.contexts()) {
+                            try {
+                                ctx.close();
+                            } catch (Exception e) {
+                                log.error("Ошибка закрытия контекста в browser: {}", e.getMessage());
+                            }
+                        }
+                    }
                     browser.close();
-                    //log.debug("Browser закрыт для {}", site);
+                    log.debug("Browser закрыт для {}", site);
+                } else {
+                    log.debug("Browser для {} уже отключен", site);
                 }
             } catch (Exception e) {
-                log.warn("Ошибка закрытия browser в {}: {}", site, e.getMessage());
+                log.error("Ошибка закрытия browser в {}: {}", site, e.getMessage(), e);
+                // Пытаемся принудительно завершить процесс браузера
+                try {
+                    if (browser.isConnected()) {
+                        log.warn("Попытка принудительного закрытия browser для {}", site);
+                        browser.close();
+                    }
+                } catch (Exception ex) {
+                    log.error("Не удалось принудительно закрыть browser: {}", ex.getMessage());
+                }
             }
         }
 
+        // Закрываем Playwright - КРИТИЧЕСКИ ВАЖНО
         if (playwright != null) {
             try {
                 playwright.close();
+                log.debug("Playwright закрыт для {}", site);
             } catch (PlaywrightException e) {
-                log.warn("Playwright instance close error", e);
+                log.error("Playwright instance close error для {}: {}", site, e.getMessage(), e);
             } catch (Exception e) {
-                log.warn("Unexpected error closing Playwright instance", e);
-            } finally {
-                playwright = null;
+                log.error("Unexpected error closing Playwright instance для {}: {}", site, e.getMessage(), e);
             }
         }
     }
-
 
     public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
         BrowserContext context;
