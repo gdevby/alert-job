@@ -59,8 +59,8 @@ public class MailService {
         Counter positiveTelegramCounter = context.getBean(MetricsConfig.COUNTER_TELEGRAM_POSITIVE, Counter.class);
         Counter negativeTelegramCounter = context.getBean(MetricsConfig.COUNTER_TELEGRAM_NEGATIVE, Counter.class);
 
-
         MessageData messageData = new MessageData(Long.valueOf(userMail.getToMail()), userMail.getMessage());
+
         return webClient.post()
                 .uri("https://api.telegram.org",
                         uriBuilder -> uriBuilder
@@ -75,8 +75,10 @@ public class MailService {
                     positiveTelegramCounter.increment();
                 })
                 .onErrorResume(ex -> {
+                    log.warn("Could not send Telegram to {}: {}",
+                            userMail.getToMail(), ex.getMessage());
                     negativeTelegramCounter.increment();
-                    return Mono.error(ex);
+                    return Mono.empty(); //возвращаем пустой Mono
                 });
     }
 }

@@ -27,4 +27,5 @@ public class AppUser extends BasicId {
     private boolean defaultSendType = true;
     @OneToMany(mappedBy = "user")
     private Set<DelayOrderNotification> delayOrderNotifications;
+    private Integer telegramFailCount = 0;
 }
