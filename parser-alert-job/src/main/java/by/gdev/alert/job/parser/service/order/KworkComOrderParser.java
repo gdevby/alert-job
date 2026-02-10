@@ -2,6 +2,7 @@ package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
+import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
@@ -40,6 +41,16 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
         if (!active)
             return new ArrayList<>();
         return mapItemsWithRetry(link, kworkcomProxyActive, siteSourceJobId , category, subCategory);
+    }
+
+    @Override
+    protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList) {
+        return List.of();
+    }
+
+    @Override
+    protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
+        return List.of();
     }
 
     @Override

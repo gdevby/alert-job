@@ -7,6 +7,7 @@ import by.gdev.alert.job.parser.factory.RestTemplateFactory;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.common.model.OrderDTO;
 import jakarta.xml.bind.UnmarshalException;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +28,8 @@ public abstract class AbsctractSiteParser implements SiteParser{
 
 	private static final int ATTEMPTS_COUNT = 3;
 
-	@Autowired
+	@Getter
+    @Autowired
 	private SiteSourceJobRepository siteSourceJobRepository;
 
 	@Autowired
@@ -38,7 +40,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		return getOrders(getSiteName().getId());
 	};
 
-	public List<OrderDTO> getOrders(Long siteId) {
+    public List<OrderDTO> getOrders(Long siteId) {
 		Exception ex = null;
 		List<OrderDTO> orders = new ArrayList<>();
 		for (int i = 0; i < ATTEMPTS_COUNT; i++) {

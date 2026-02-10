@@ -8,6 +8,7 @@ import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
+import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
@@ -165,6 +166,16 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 	public SiteName getSiteName() {
 		return SiteName.FREELANCEHUNT;
 	}
+
+    @Override
+    protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList) {
+        return List.of();
+    }
+
+    @Override
+    protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
+        return List.of();
+    }
 
     @Override
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {

@@ -2,8 +2,8 @@ package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
+import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
@@ -30,6 +30,8 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
 
     private static final String ALL_CATEGORIES_TOKEN = "Все категории";
+    private static final String TASKS_SELECTOR = "li.TasksList_listItem__2Yurg";
+    private static final String CATEGORIES_SELECTOR = "ul.Categories_container__9z_KX";
 
     @Value("${youdo.proxy.active}")
     private boolean youdoProxyActive;
@@ -45,6 +47,118 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     }
 
     @Override
+    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        if (!active)
+            return new ArrayList<>();
+        return mapItemsWithRetry(link, youdoProxyActive, siteSourceJobId , category, subCategory);
+    }
+
+    @Override
+    protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList){
+        List<OrderDTO> orders = new ArrayList<>();
+        if (!active)
+            return orders;
+
+        PlaywrightSession session = null;
+        try {
+            session = createSession(false, youdoProxyActive);
+            Page page = session.getPage();
+            firstLoad(page);
+            for(Pair<Category, Subcategory> pair: categoriesPairList){
+                List<OrderDTO> categoryOrders = mapItemsWithRetry(link, youdoProxyActive, siteSourceJobId , pair, page);
+                orders.addAll(categoryOrders);
+            }
+        }
+        finally {
+            closeResources(session.getPage(), session.getContext(), session.getBrowser(), session.getPlaywright());
+        }
+        return orders;
+    }
+
+    @Override
+    protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
+        Category category = pair.getLeft();
+        Subcategory subcategory = pair.getRight();
+        clickCategory(page, pair.getLeft(), pair.getRight());
+        tasksLoading(page);
+        List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subcategory);
+        clickCategory(page, ALL_CATEGORIES_TOKEN);
+        return orders;
+    }
+
+    @Override
+    public List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        List<OrderDTO> orders = new ArrayList<>();
+        if (!active)
+            return orders;
+        PlaywrightSession session = null;
+        try {
+            session = createSession(true, youdoProxyActive);
+            Page page = session.getPage();
+            firstLoad(page);
+            clickCategory(page, category, subCategory);
+            tasksLoading(page);
+            orders = tasksParsing(page, siteSourceJobId, category, subCategory);
+        }
+        finally {
+            closeResources(session.getPage(), session.getContext(), session.getBrowser(), session.getPlaywright());
+        }
+        return orders;
+    }
+
+    private void firstLoad(Page page){
+        page.navigate(tasksUrl);
+        // Ждём появления списка категорий
+        page.waitForSelector("ul.Categories_container__9z_KX");
+        // Сброс всех категорий
+        clickCategory(page, ALL_CATEGORIES_TOKEN);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+    }
+
+    private void tasksLoading(Page page){
+        // Ждём загрузку задач
+        page.waitForSelector(TASKS_SELECTOR);
+    }
+
+    private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
+        // Парсим HTML
+        String html = page.content();
+        Document doc = Jsoup.parse(html);
+
+        Elements elementsOrders = doc.select(TASKS_SELECTOR);
+        if (elementsOrders.isEmpty()) {
+            return List.of();
+        }
+
+        List<Order> parsedOrders = elementsOrders
+                .stream()
+                .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
+                .toList();
+
+        return getOrdersData(parsedOrders, category, subCategory);
+    }
+
+    private void clickCategory(Page page, Category category, Subcategory subCategory){
+
+        // Кликаем категорию
+        if (subCategory != null) {
+            //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
+            clickCategory(page, ALL_CATEGORIES_TOKEN);
+            //А затем кликаем нужную субкатегорию
+            clickSubCategory(page, category.getNativeLocName(), subCategory.getNativeLocName());
+        } else {
+            //Если выбраны Все категории - ничего кликать не нужно
+            if (!category.getNativeLocName().equals(ALL_CATEGORIES_TOKEN)){
+                //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
+                clickCategory(page, ALL_CATEGORIES_TOKEN);
+                //А затем кликаем нужную категорию
+                clickCategory(page, category.getNativeLocName());
+            }
+        }
+    }
+
+
+    /*@Override
     public List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         List<OrderDTO> orders = new ArrayList<>();
         if (!active)
@@ -94,13 +208,13 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             }
 
             // Ждём загрузку задач
-            page.waitForSelector("li.TasksList_listItem__2Yurg");
+            page.waitForSelector(TASKS_SELECTOR);
 
             // Парсим HTML
             String html = page.content();
             Document doc = Jsoup.parse(html);
 
-            Elements elementsOrders = doc.select("li.TasksList_listItem__2Yurg");
+            Elements elementsOrders = doc.select(TASKS_SELECTOR);
             if (elementsOrders.isEmpty()) {
                 return List.of();
             }
@@ -116,15 +230,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             closeResources(page, context, browser, playwright);
         }
         return orders;
-    }
-
-
-    @Override
-    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        if (!active)
-            return new ArrayList<>();
-        return mapItemsWithRetry(link, youdoProxyActive, siteSourceJobId , category, subCategory);
-    }
+    }*/
 
     private void clickCategory(Page page, String categoryName) {
         // Ждём контейнер категорий
@@ -151,7 +257,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
         // ждём обновления списка задач
         page.waitForLoadState(LoadState.NETWORKIDLE);
-        page.waitForSelector("li.TasksList_listItem__2Yurg");
+        page.waitForSelector(TASKS_SELECTOR);
         if (debug){
             // ждём, пока появятся реальные задачи
             page.waitForTimeout(1000);

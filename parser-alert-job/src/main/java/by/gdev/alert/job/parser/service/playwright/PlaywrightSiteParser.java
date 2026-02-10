@@ -1,30 +1,31 @@
 package by.gdev.alert.job.parser.service.playwright;
 
 
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.Order;
-import by.gdev.alert.job.parser.domain.db.ParserSource;
-import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
+import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 
 @Slf4j
@@ -93,7 +94,150 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
     }
 
+    /**
+     * Класс для хранения сессии Playwright
+     */
+    @Getter
+    @AllArgsConstructor
+    protected static class PlaywrightSession {
+        private final Playwright playwright;
+        private final Browser browser;
+        private final BrowserContext context;
+        private final Page page;
+        private final ProxyCredentials proxy;
+    }
+
+    /**
+     * Создает и возвращает сессию Playwright
+     */
+    protected PlaywrightSession createSession(boolean headless, boolean useProxy) {
+        Playwright playwright = createPlaywright();
+        ProxyCredentials proxy = useProxy ? getProxyWithRetry(5, 2000) : null;
+
+        Browser browser = createBrowser(playwright, proxy, headless, useProxy);
+        BrowserContext context = createBrowserContext(browser, proxy, useProxy);
+        Page page = context.newPage();
+        return new PlaywrightSession(playwright, browser, context, page, proxy);
+    }
+
+    @Transactional(timeout = 2000)
+    @Override
+    public List<OrderDTO> parse() {
+        Long siteId = getSiteName().getId();
+        SiteSourceJob siteSourceJob = getSiteSourceJobRepository().findById(siteId).orElse(null);
+        if (siteSourceJob != null) {
+            return getOrdersForPlayright(siteSourceJob);
+        }
+        return List.of();
+    }
+
+    public List<OrderDTO> getOrdersForPlayright(SiteSourceJob siteSourceJob) {
+        List<Pair<Category, Subcategory>>  categoriesPairList = getCategoriesPairListForJob(siteSourceJob);
+        return mapItems(siteSourceJob.getParsedURI(), siteSourceJob.getId(), categoriesPairList);
+    }
+
+    List<Pair<Category, Subcategory>> getCategoriesPairListForJob(SiteSourceJob siteSourceJob){
+        List<Pair<Category, Subcategory>> categoriesPairList = new ArrayList<>();
+        siteSourceJob.getCategories().forEach(category -> {
+            List<Subcategory> siteSubCategories = category.getSubCategories();
+            if (category.isParse()) {
+                Pair<Category, Subcategory> categoryPair = new Pair<>(category, null);
+                categoriesPairList.add(categoryPair);
+            }
+            siteSubCategories.stream()
+                    .filter(Subcategory::isParse)
+                    .forEach(subCategory -> {
+                        Pair<Category, Subcategory> subCategoryPair = new Pair<>(category, subCategory);
+                        categoriesPairList.add(subCategoryPair);
+                    });
+        });
+        return categoriesPairList;
+    }
+
+    private List<OrderDTO> executeWithRetry(Supplier<List<OrderDTO>> operation,
+                                            String operationDescription) {
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= retryAttempts; attempt++) {
+            try {
+                log.info("Попытка {}/{} {}",
+                        attempt, retryAttempts, operationDescription);
+
+                List<OrderDTO> result = operation.get();
+                return result;
+
+            } catch (PlaywrightException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
+                    if (debug){
+                        log.warn("Timeout playwright {} {}", getSiteName(), e.getMessage());
+                    }
+                    continue;
+                }
+                lastError = e;
+                log.error("Playwright ошибка на попытке {} для {}: {}",
+                        attempt, getSiteName(), e.getMessage());
+            } catch (Exception e) {
+                lastError = e;
+                log.error("Неожиданная ошибка на попытке {} для {}: {}",
+                        attempt, getSiteName(), e.getMessage());
+            }
+
+            // Задержка между попытками
+            if (attempt < retryAttempts) {
+                try {
+                    Thread.sleep(retryDelayMs);
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+
+        if (lastError == null) {
+            return List.of();
+        }
+
+        log.error("Все {} попытки {} провалились. Последняя ошибка: {}",
+                retryAttempts, operationDescription, lastError.getMessage());
+        return List.of();
+    }
+
+    // Теперь создаем две версии метода
     public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
+                                            Long siteSourceJobId, Category category, Subcategory subCategory) {
+
+        if (!active) return List.of();
+
+        String description = String.format("парсинга %s: категория '%s', подкатегория '%s', прокси %s",
+                getSiteName(),
+                category.getNativeLocName(),
+                subCategory != null ? subCategory.getNativeLocName() : "нет",
+                proxyActive ? "включен" : "выключен");
+
+        return executeWithRetry(
+                () -> mapPlaywrightItems(link, siteSourceJobId, category, subCategory),
+                description
+        );
+    }
+
+    public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
+                                            Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
+
+        if (!active) return List.of();
+
+        Category category = pair.getLeft();
+        Subcategory subCategory = pair.getRight();
+
+        String description = String.format("парсинга %s: категория '%s', подкатегория '%s', прокси %s",
+                getSiteName(),
+                category.getNativeLocName(),
+                subCategory != null ? subCategory.getNativeLocName() : "нет",
+                proxyActive ? "включен" : "выключен");
+
+        return executeWithRetry(
+                () -> mapPlaywrightItems(link, siteSourceJobId, pair, page),
+                description
+        );
+    }
+
+    /*public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
                                             Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)
             return List.of();
@@ -110,11 +254,6 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                         proxyActive ? "включен" : "выключен");
 
                 List<OrderDTO> result = mapPlaywrightItems(link, siteSourceJobId, category, subCategory);
-
-                /*if (!result.isEmpty()) {
-                    return result;
-                }
-                log.warn("Попытка {}: пустой результат, пробуем снова", attempt);*/
                 return result;
             }catch (PlaywrightException e) {
             if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
@@ -150,7 +289,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 getSiteName(),
                 lastError.getMessage());
         return List.of();
-    }
+    }*/
 
     protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
         parserService.saveOrderLinks(category, subCategory, order.getLink());
@@ -193,6 +332,11 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 .map(order -> getOrderData(order, category, subCategory))
                 .toList();
     }
+
+
+    protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList);
+
+    protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page);
 
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
 }
