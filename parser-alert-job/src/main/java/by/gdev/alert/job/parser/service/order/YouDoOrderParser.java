@@ -8,6 +8,7 @@ import by.gdev.common.model.OrderDTO;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitForSelectorState;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -114,8 +115,24 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         return orders;
     }
 
+    private void safeNavigate(Page page, String url) {
+        for (int i = 1; i <= 5; i++) {
+            try {
+                page.navigate(url, new Page.NavigateOptions()
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                return;
+            } catch (PlaywrightException e) {
+                log.warn("Навигация не удалась (попытка {}): {}", i, e.getMessage());
+                page.waitForTimeout(1500);
+            }
+        }
+        throw new RuntimeException("Не удалось открыть страницу после 5 попыток: " + url);
+    }
+
+
     private void firstLoad(Page page){
-        page.navigate(tasksUrl);
+        //page.navigate(tasksUrl);
+        safeNavigate(page, tasksUrl);
         // Ждём появления списка категорий
         page.waitForSelector(CATEGORIES_SELECTOR);
         // Сброс всех категорий
