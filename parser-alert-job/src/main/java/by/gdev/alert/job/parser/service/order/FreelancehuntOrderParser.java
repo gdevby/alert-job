@@ -31,19 +31,14 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 
+    private static boolean HEADLESS = true;
+
     @Value("${freelancehunt.proxy.active}")
     private boolean freelancehuntProxyActive;
 
 	@Value("${parser.work.freelancehunt.com}")
     private void setActive(boolean active) {
         this.active = active;
-    }
-
-    @Override
-    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        if (!active)
-            return new ArrayList<>();
-        return mapItemsWithRetry(link, freelancehuntProxyActive, siteSourceJobId , category, subCategory);
     }
 
     public void clickCategory(Page page, Category category) {
@@ -168,16 +163,99 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 	}
 
     @Override
-    protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList) {
-        return List.of();
+    public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        if (!active)
+            return new ArrayList<>();
+        return mapItemsWithRetry(link, freelancehuntProxyActive, siteSourceJobId , category, subCategory);
+    }
+
+    @Override
+    protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList){
+        List<OrderDTO> orders = new ArrayList<>();
+        if (!active)
+            return orders;
+
+        PlaywrightSession session = null;
+        try {
+            session = createSession(HEADLESS, freelancehuntProxyActive);
+            Page page = session.getPage();
+            firstLoad(page);
+            for(Pair<Category, Subcategory> pair: categoriesPairList){
+                List<OrderDTO> categoryOrders = mapItemsWithRetry(link, freelancehuntProxyActive, siteSourceJobId , pair, page);
+                orders.addAll(categoryOrders);
+            }
+        }
+        finally {
+            closeResources(session.getPage(), session.getContext(), session.getBrowser(), session.getPlaywright());
+        }
+        return orders;
+    }
+
+    private void firstLoad(Page page){
+        page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+    }
+
+    private void tasksLoading(Page page){
+        page.waitForSelector("div.job-list-item", new Page.WaitForSelectorOptions().setTimeout(30000));
+    }
+
+    private void resetFilter(Page page) {
+        firstLoad(page);
+        tasksLoading(page);
+    }
+
+    private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
+        Locator elementsOrders = page.locator("div.job-list-item");
+        List<Order> parsedOrders = elementsOrders.all()
+                .stream()
+                .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
+                .toList();
+
+        return getOrdersData(parsedOrders, category, subCategory);
     }
 
     @Override
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
-        return List.of();
+        Category category = pair.getLeft();
+        Subcategory subcategory = pair.getRight();
+        clickCategory(page, pair.getLeft());
+        // Задержка
+        page.waitForTimeout(500);
+        tasksLoading(page);
+        // Задержка
+        page.waitForTimeout(500);
+        List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subcategory);
+        // Задержка
+        page.waitForTimeout(500);
+        resetFilter(page);
+        return orders;
     }
 
     @Override
+    protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        Playwright playwright = null;
+        Browser browser = null;
+        BrowserContext context = null;
+        Page page = null;
+        try {
+            playwright = createPlaywright();
+            ProxyCredentials proxy = getProxyWithRetry(5, 2000);
+            browser = createBrowser(playwright, proxy, HEADLESS, freelancehuntProxyActive);
+            context = createBrowserContext(browser, null, false);
+            page = context.newPage();
+            firstLoad(page);
+            clickCategory(page, category);
+            tasksLoading(page);
+            List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subCategory);
+            resetFilter(page);
+            return orders;
+        }
+        finally {
+            closeResources(page, context, browser, playwright);
+        }
+    }
+
+    /*@Override
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         Playwright playwright = null;
         Browser browser = null;
@@ -187,7 +265,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, true, freelancehuntProxyActive);
+            browser = createBrowser(playwright, proxy, HEADLESS, freelancehuntProxyActive);
             context = createBrowserContext(browser, null, false);
             page = context.newPage();
             page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
@@ -210,5 +288,5 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         finally {
             closeResources(page, context, browser, playwright);
         }
-    }
+    }*/
 }

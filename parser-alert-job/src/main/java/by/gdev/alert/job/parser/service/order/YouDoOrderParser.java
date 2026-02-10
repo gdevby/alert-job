@@ -41,6 +41,8 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         this.active = active;
     }
 
+    private static boolean HEADLESS = true;
+
     @Value("${youdo.debug:false}")
     private void setDebug(boolean debug) {
         this.debug = debug;
@@ -61,7 +63,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
         PlaywrightSession session = null;
         try {
-            session = createSession(false, youdoProxyActive);
+            session = createSession(HEADLESS, youdoProxyActive);
             Page page = session.getPage();
             firstLoad(page);
             for(Pair<Category, Subcategory> pair: categoriesPairList){
@@ -79,10 +81,16 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subcategory = pair.getRight();
+        // Задержка
+        page.waitForTimeout(1000);
         clickCategory(page, pair.getLeft(), pair.getRight());
+        // Задержка
+        page.waitForTimeout(1000);
         tasksLoading(page);
         List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subcategory);
         clickCategory(page, ALL_CATEGORIES_TOKEN);
+        // Задержка
+        page.waitForTimeout(1000);
         return orders;
     }
 
@@ -93,7 +101,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             return orders;
         PlaywrightSession session = null;
         try {
-            session = createSession(true, youdoProxyActive);
+            session = createSession(HEADLESS, youdoProxyActive);
             Page page = session.getPage();
             firstLoad(page);
             clickCategory(page, category, subCategory);
@@ -109,7 +117,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private void firstLoad(Page page){
         page.navigate(tasksUrl);
         // Ждём появления списка категорий
-        page.waitForSelector("ul.Categories_container__9z_KX");
+        page.waitForSelector(CATEGORIES_SELECTOR);
         // Сброс всех категорий
         clickCategory(page, ALL_CATEGORIES_TOKEN);
         page.waitForLoadState(LoadState.NETWORKIDLE);
