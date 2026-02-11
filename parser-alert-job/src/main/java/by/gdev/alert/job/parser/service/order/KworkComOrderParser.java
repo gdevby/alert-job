@@ -2,6 +2,7 @@ package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
+import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
@@ -23,6 +24,8 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
     @Value("${kworkcom.proxy.active}")
     private boolean kworkcomProxyActive;
 
+    private static boolean HEADLESS = true;
+
     private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
     @Value("${parser.work.kworkcom.com}")
@@ -40,6 +43,71 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
         if (!active)
             return new ArrayList<>();
         return mapItemsWithRetry(link, kworkcomProxyActive, siteSourceJobId , category, subCategory);
+    }
+
+    @Override
+    protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList) {
+        List<OrderDTO> orders = new ArrayList<>();
+        if (!active)
+            return orders;
+
+        PlaywrightSession session = null;
+        try {
+            session = createSession(HEADLESS, kworkcomProxyActive);
+            Page page = session.getPage();
+            for(Pair<Category, Subcategory> pair: categoriesPairList){
+                List<OrderDTO> categoryOrders = mapItemsWithRetry(link, kworkcomProxyActive, siteSourceJobId , pair, page);
+                orders.addAll(categoryOrders);
+            }
+        }
+        finally {
+            closeResources(session.getPage(), session.getContext(), session.getBrowser(), session.getPlaywright());
+        }
+        return orders;
+    }
+
+    private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
+        page.waitForSelector("div.kwork-card-item", new Page.WaitForSelectorOptions().setTimeout(30000));
+
+        Locator elementsOrders = page.locator("div.kwork-card-item");
+
+        List<Order> parsedOrders = elementsOrders.all()
+                .stream()
+                .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
+                .toList();
+
+        List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
+        orders.stream()
+                .peek(order -> {
+                        log.info("*** order: {} , result {}",
+                                order.getTitle(),
+                                getParserService().isExistsOrder(category, subCategory, order.getLink()));
+                });
+        return orders;
+    }
+
+    public void clickCategory(Page page, Category category, Subcategory subCategory) {
+        String url;
+        if (subCategory != null){
+            url = subCategory.getLink();
+        }
+        else {
+            url = category.getLink();
+        }
+
+        page.navigate(url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+    }
+
+    @Override
+    protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
+        Category category = pair.getLeft();
+        Subcategory subCategory = pair.getRight();
+        clickCategory(page, pair.getLeft(), pair.getRight());
+        // Задержка
+        page.waitForTimeout(500);
+        // Задержка
+        page.waitForTimeout(500);
+        return tasksParsing(page, siteSourceJobId, category, subCategory);
     }
 
     @Override
