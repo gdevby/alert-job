@@ -3,6 +3,7 @@ package by.gdev.alert.job.parser.scheduller.parser;
 import by.gdev.alert.job.parser.scheduller.parser.properties.ParserScheduleProperties;
 import by.gdev.alert.job.parser.service.order.SiteParser;
 import by.gdev.common.model.OrderDTO;
+import com.microsoft.playwright.PlaywrightException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
 
@@ -47,7 +48,15 @@ public class SiteParserScheduler {
             dispatcher.dispatch(orders, parser.getSiteName());
             log.debug("Парсер {} завершил работу за {}, найдено {} заказов",
                     parser.getSiteName(), formattedDuration, orders.size());
-        } catch (Exception e) {
+        }
+        catch (PlaywrightException e) {
+            if (e.getMessage() != null && (e.getMessage().contains("Timeout") || e.getMessage().contains("TimeoutError"))) {
+                    log.debug("Timeout playwright для парсера {} : {}", parser.getSiteName(), e.getMessage());
+                    return;
+                }
+            log.error("Playwright ошибка парсера {} : {}", parser.getSiteName(),  e.getMessage());
+        }
+        catch (Exception e) {
             log.error("Ошибка парсера {}: {}", parser.getSiteName(), e.getMessage(), e);
         }
     }

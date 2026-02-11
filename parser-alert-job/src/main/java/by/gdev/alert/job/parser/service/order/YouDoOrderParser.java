@@ -6,7 +6,6 @@ import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
@@ -85,13 +84,26 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         // Задержка
         page.waitForTimeout(1000);
         clickCategory(page, pair.getLeft(), pair.getRight());
+        if (debug){
+            log.info("mapPlaywrightItems: After click category {}, {}, {}", getSiteName(), category.getNativeLocName(), subcategory.getNativeLocName());
+        }
         // Задержка
         page.waitForTimeout(1000);
         tasksLoading(page);
+        if (debug){
+            log.info("mapPlaywrightItems: After task loading {}", getSiteName());
+        }
         List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subcategory);
-        clickCategory(page, ALL_CATEGORIES_TOKEN);
+        if (debug){
+            log.info("mapPlaywrightItems: After task parsing {}, {}", getSiteName(), orders.size());
+        }
+        //clickCategory(page, ALL_CATEGORIES_TOKEN);
+        resetCategories(page);
         // Задержка
         page.waitForTimeout(1000);
+        if (debug){
+            log.info("mapPlaywrightItems: reset categories {}", getSiteName());
+        }
         return orders;
     }
 
@@ -133,16 +145,25 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private void firstLoad(Page page){
         //page.navigate(tasksUrl);
         safeNavigate(page, tasksUrl);
+        if (debug){
+            log.info("firstLoad: After navigate {}", getSiteName());
+        }
         // Ждём появления списка категорий
         page.waitForSelector(CATEGORIES_SELECTOR);
+        if (debug){
+            log.info("firstLoad: After wait for Categories {}", getSiteName());
+        }
         // Сброс всех категорий
         clickCategory(page, ALL_CATEGORIES_TOKEN);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        if (debug){
+            log.info("firstLoad: After click All categories {}", getSiteName());
+        }
     }
 
     private void tasksLoading(Page page){
         // Ждём загрузку задач
         page.waitForSelector(TASKS_SELECTOR);
+        page.waitForTimeout(300);
     }
 
     private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
@@ -168,14 +189,16 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         // Кликаем категорию
         if (subCategory != null) {
             //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
-            clickCategory(page, ALL_CATEGORIES_TOKEN);
+            //clickCategory(page, ALL_CATEGORIES_TOKEN);
+            resetCategories(page);
             //А затем кликаем нужную субкатегорию
             clickSubCategory(page, category.getNativeLocName(), subCategory.getNativeLocName());
         } else {
             //Если выбраны Все категории - ничего кликать не нужно
             if (!category.getNativeLocName().equals(ALL_CATEGORIES_TOKEN)){
                 //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
-                clickCategory(page, ALL_CATEGORIES_TOKEN);
+                //clickCategory(page, ALL_CATEGORIES_TOKEN);
+                resetCategories(page);
                 //А затем кликаем нужную категорию
                 clickCategory(page, category.getNativeLocName());
             }
@@ -257,20 +280,88 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         return orders;
     }*/
 
+    private void resetCategories(Page page) {
+        // 1. Кликаем "Все категории"
+        clickCategory(page, ALL_CATEGORIES_TOKEN);
+
+        // 2. Ждём, пока React обновит DOM
+        page.waitForTimeout(300);
+
+        // 3. Проверяем, что всё снято
+        if (!areAllCategoriesUnchecked(page)) {
+            if(debug){
+                log.warn("React не снял все категории — выполняю ручной сброс");
+            }
+            forceUncheckAllCategories(page);
+        }
+
+        // 4. Финальная проверка
+        if (!areAllCategoriesUnchecked(page)) {
+            if(debug) {
+                log.error("После ручного сброса всё ещё остались выбранные категории!");
+            }
+        }
+    }
+
+    private void forceUncheckAllCategories(Page page) {
+        Locator inputs = page.locator("ul.Categories_container__9z_KX input[type='checkbox']");
+        int count = inputs.count();
+
+        for (int i = 0; i < count; i++) {
+            Locator input = inputs.nth(i);
+
+            if (input.isChecked()) {
+                // label находится на уровне выше
+                Locator label = input.locator("..").locator("label.Checkbox_label__uNY3B");
+                label.click();
+                page.waitForTimeout(200);
+            }
+        }
+
+        page.waitForTimeout(300);
+    }
+
+
+    private boolean areAllCategoriesUnchecked(Page page) {
+        Locator inputs = page.locator("ul.Categories_container__9z_KX input[type='checkbox']");
+        int count = inputs.count();
+
+        for (int i = 0; i < count; i++) {
+            if (inputs.nth(i).isChecked()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     private void clickCategory(Page page, String categoryName) {
         // Ждём контейнер категорий
         page.waitForSelector("ul[class*='Categories_container']",
                 new Page.WaitForSelectorOptions().setTimeout(15000));
+        if (debug){
+            log.info("clickCategory: After waitForSelector Categories_container {}", getSiteName());
+        }
 
         // Ищем КЛИКАБЕЛЬНЫЙ элемент категории — label
         Locator category = page.locator(
                 "//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]"
         );
         Locator categoryInput = category.locator("..").locator("input[type='checkbox']");
+
+        if (debug){
+            log.info("clickCategory: After find Checkbox_label {}", getSiteName());
+        }
+
         // Ждём, пока label станет видимым
         category.waitFor(new Locator.WaitForOptions()
                 .setState(WaitForSelectorState.VISIBLE)
                 .setTimeout(15000));
+
+        if (debug){
+            log.info("clickCategory: After visible category {}", getSiteName());
+        }
+
         boolean before = categoryInput.isChecked();
         category.click();
         page.waitForTimeout(300);
@@ -280,9 +371,15 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             page.waitForCondition(categoryInput::isChecked);
         }
 
-        // ждём обновления списка задач
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        if (debug){
+            log.info("clickCategory: After click {}", getSiteName());
+        }
+
         page.waitForSelector(TASKS_SELECTOR);
+
+        if (debug){
+            log.info("clickCategory: After waitForSelector TASKS_SELECTOR after click {}", getSiteName());
+        }
         if (debug){
             // ждём, пока появятся реальные задачи
             page.waitForTimeout(1000);
@@ -338,12 +435,9 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         }
         page.waitForCondition(sub::isChecked);
 
-        // ждём, пока React обновит DOM
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-
         if(debug) {
             // ждём, пока появятся реальные задачи
-            page.waitForTimeout(5000);
+            page.waitForTimeout(1000);
         }
         else {
             //В проде секунда задержки чтобы сформировался DOM
