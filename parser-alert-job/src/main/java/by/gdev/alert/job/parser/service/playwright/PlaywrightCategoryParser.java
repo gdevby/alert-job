@@ -1,10 +1,12 @@
 package by.gdev.alert.job.parser.service.playwright;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.service.Parser;
 import by.gdev.alert.job.parser.service.category.ParsedCategory;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,10 @@ public abstract class PlaywrightCategoryParser implements Parser {
 
     @Autowired
     private PlaywrightManager playwrightManager;
+
+    @Autowired
+    @Getter
+    private CategoryRepository categoryRepository;
 
     @Value("${parser.category.retry.attempts:3}")
     private int retryAttempts;
