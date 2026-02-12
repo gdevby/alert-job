@@ -2,6 +2,8 @@ package by.gdev.common.model;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class CategoryDTO {
 
@@ -10,5 +12,7 @@ public class CategoryDTO {
 	private String nativeLocName;
 	private String link;
 	private boolean parse;
+
+    private List<SubCategoryDTO> subCategories;
 
 }
