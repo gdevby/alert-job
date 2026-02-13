@@ -2,8 +2,6 @@ package by.gdev.common.model;
 
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 public class CategoryDTO {
 
