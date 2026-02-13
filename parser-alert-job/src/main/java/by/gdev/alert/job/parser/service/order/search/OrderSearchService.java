@@ -1,13 +1,12 @@
 package by.gdev.alert.job.parser.service.order.search;
 
-import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.repository.OrderSearchRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.order.search.converter.Converter;
 import by.gdev.alert.job.parser.service.order.search.dto.OrderSearchRequest;
-import by.gdev.alert.job.parser.service.order.search.dto.PageResponse;
-import by.gdev.common.model.OrderDTO;
+import by.gdev.alert.job.parser.service.order.search.dto.PageSearchResponse;
+import by.gdev.common.model.OrderSearchDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,24 +24,22 @@ public class OrderSearchService {
 
     private final OrderSearchRepository orderSearchRepository;
     private final SiteSourceJobRepository siteSourceJobRepository;
-    private final Converter<Order, OrderDTO> orderDtoConverter;
+    private final Converter<Object[], OrderSearchDTO> orderConverter;
 
-    public PageResponse<OrderDTO> search(OrderSearchRequest req) {
+    public PageSearchResponse<OrderSearchDTO> search(OrderSearchRequest req) {
         // Сайты
         List<String> sites = req.getSites();
         List<Long> siteIds = null;
 
         if (sites != null && !sites.isEmpty()) {
-
             // Убираем дубликаты строк
             Set<String> uniqueSites = sites.stream()
                     .map(String::toLowerCase)
                     .collect(Collectors.toCollection(HashSet::new));
 
-
             siteIds = uniqueSites.stream()
                     .map(String::toLowerCase)
-                    .map(siteSourceJobRepository::findByName) // <-- твой метод
+                    .map(siteSourceJobRepository::findByName)
                     .filter(Objects::nonNull)
                     .map(SiteSourceJob::getId)
                     .toList();
@@ -54,7 +51,7 @@ public class OrderSearchService {
         String likeQuery = extractLikeQuery(req.getKeywords());
 
         long start = System.nanoTime();
-        List<Order> orders = orderSearchRepository.searchOrders(
+        List<Object[]> orders = orderSearchRepository.searchOrders(
                 siteIds,
                 req.getMode(),
                 booleanQuery,
@@ -85,7 +82,7 @@ public class OrderSearchService {
                 executionTimeMs
         );
 
-        return new PageResponse<>(orderDtoConverter.convertAll(orders),
+        return new PageSearchResponse<>(orderConverter.convertAll(orders),
                 req.getPage(),
                 req.getSize(),
                 total,

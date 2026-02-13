@@ -10,11 +10,18 @@ import java.util.List;
 public interface OrderSearchRepository extends CrudRepository<Order, Long> {
 
     @Query(value = """
-SELECT o.*
-FROM parser_order o
-JOIN parser_order_source ps ON ps.id = o.source_site_id
-WHERE ps.source IN (:sites)
-  AND (
+    SELECT o.id,
+    o.title,
+    o.message,
+    o.link,
+    o.date_time,
+    o.order_price,
+    ps.category,
+    ps.sub_category
+    FROM parser_order o
+    JOIN parser_order_source ps ON ps.id = o.source_site_id
+    WHERE ps.source IN (:sites)
+    AND (
         (:booleanQuery IS NULL AND :likeQuery IS NULL)
         OR (
             :booleanQuery IS NOT NULL AND (
@@ -32,10 +39,10 @@ WHERE ps.source IN (:sites)
             )
         )
       )
-ORDER BY o.date_time DESC
-LIMIT :offset, :size
+      ORDER BY o.date_time DESC
+      LIMIT :offset, :size
 """, nativeQuery = true)
-    List<Order> searchOrders(
+    List<Object[]> searchOrders(
             @Param("sites") List<Long> siteIds,
             @Param("mode") String mode,
             @Param("booleanQuery") String booleanQuery,

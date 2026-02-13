@@ -2,8 +2,8 @@ package by.gdev.alert.job.parser.controller;
 
 import by.gdev.alert.job.parser.service.order.search.dto.OrderSearchRequest;
 import by.gdev.alert.job.parser.service.order.search.OrderSearchService;
-import by.gdev.alert.job.parser.service.order.search.dto.PageResponse;
-import by.gdev.common.model.OrderDTO;
+import by.gdev.alert.job.parser.service.order.search.dto.PageSearchResponse;
+import by.gdev.common.model.OrderSearchDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
@@ -17,7 +17,7 @@ public class OrderSearchController {
     private final OrderSearchService orderSearchService;
 
     @PostMapping("/search")
-    public PageResponse<OrderDTO> search(@RequestBody OrderSearchRequest request) {
+    public PageSearchResponse<OrderSearchDTO> search(@RequestBody OrderSearchRequest request) {
 
         if (!"TITLE".equalsIgnoreCase(request.getMode())
                 && !"DESCRIPTION".equalsIgnoreCase(request.getMode())) {

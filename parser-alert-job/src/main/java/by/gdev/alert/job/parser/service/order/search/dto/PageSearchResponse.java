@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class PageResponse<T> {
+public class PageSearchResponse<T> {
     private List<T> content;
     private int page;
     private int size;
