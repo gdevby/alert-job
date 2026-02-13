@@ -12,7 +12,4 @@ public class CategoryDTO {
 	private String nativeLocName;
 	private String link;
 	private boolean parse;
-
-    private List<SubCategoryDTO> subCategories;
-
 }
