@@ -2,6 +2,7 @@ package by.gdev.alert.job.parser.service.order.search;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.repository.OrderSearchRepository;
+import by.gdev.alert.job.parser.repository.OrderSearchRepositoryCustom;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.order.search.converter.Converter;
 import by.gdev.alert.job.parser.service.order.search.dto.OrderSearchRequest;
@@ -22,74 +23,53 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OrderSearchService {
 
-    private final OrderSearchRepository orderSearchRepository;
+    //private final OrderSearchRepository orderSearchRepository;
+    private final OrderSearchRepositoryCustom orderSearchRepository;
     private final SiteSourceJobRepository siteSourceJobRepository;
     private final Converter<Object[], OrderSearchDTO> orderConverter;
 
     public PageSearchResponse<OrderSearchDTO> search(OrderSearchRequest req) {
-        // Сайты
-        List<String> sites = req.getSites();
-        List<Long> siteIds = null;
 
-        if (sites != null && !sites.isEmpty()) {
-            // Убираем дубликаты строк
-            Set<String> uniqueSites = sites.stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toCollection(HashSet::new));
-
-            siteIds = uniqueSites.stream()
-                    .map(String::toLowerCase)
-                    .map(siteSourceJobRepository::findByName)
-                    .filter(Objects::nonNull)
-                    .map(SiteSourceJob::getId)
-                    .toList();
-        }
+        List<Long> siteIds = req.getSites().stream()
+                .map(String::toLowerCase)
+                .map(siteSourceJobRepository::findByName)
+                .filter(Objects::nonNull)
+                .map(SiteSourceJob::getId)
+                .toList();
 
         int offset = req.getPage() * req.getSize();
 
-        String booleanQuery = buildBooleanQueryOr(req.getKeywords());
-        String likeQuery = extractLikeQuery(req.getKeywords());
+        List<String> likeWords = extractLikeWords(req.getKeywords());
 
         long start = System.nanoTime();
-        List<Object[]> orders = orderSearchRepository.searchOrders(
+        List<Object[]> orders = orderSearchRepository.searchOrdersDynamic(
                 siteIds,
                 req.getMode(),
-                booleanQuery,
-                likeQuery,
+                likeWords,
                 offset,
                 req.getSize()
         );
         long executionTimeMs = (System.nanoTime() - start) / 1_000_000;
 
-        long total = orderSearchRepository.countOrders(siteIds, req.getMode(), booleanQuery , likeQuery);
-        int totalPages = (int) Math.ceil((double) total / req.getSize());
-
-        String modeDescription;
-        switch (req.getMode()) {
-            case "TITLE" -> modeDescription = "по заголовку";
-            case "DESCRIPTION" -> modeDescription = "по описанию";
-            default -> modeDescription = "по заголовку и описанию";
-        }
-
-        log.debug(
-                "Поиск заказов {}: sites='{}', keywords='{}', page={}, size={}, booleanQuery='{}', executionTimeMs={} мс",
-                modeDescription,
-                sites,
-                req.getKeywords(),
-                req.getPage(),
-                req.getSize(),
-                booleanQuery,
-                executionTimeMs
+        long total = orderSearchRepository.countOrdersDynamic(
+                siteIds,
+                req.getMode(),
+                likeWords
         );
 
-        return new PageSearchResponse<>(orderConverter.convertAll(orders),
+        int totalPages = (int) Math.ceil((double) total / req.getSize());
+
+        return new PageSearchResponse<>(
+                orderConverter.convertAll(orders),
                 req.getPage(),
                 req.getSize(),
                 total,
                 totalPages,
                 req.getPage() == 0,
-                req.getPage() + 1 >= totalPages);
+                req.getPage() + 1 >= totalPages
+        );
     }
+
 
     private String buildBooleanQueryOr(List<String> keywords) {
         // Если ключевых слов нет → MATCH выполнять нельзя
@@ -115,14 +95,18 @@ public class OrderSearchService {
                 .orElse(null);
     }
 
-    private String extractLikeQuery(List<String> keywords) {
-        if (keywords == null || keywords.isEmpty()) return null;
-        // первое слово, которое содержит + или -
+    private List<String> extractLikeWords(List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) return List.of();
+
         return keywords.stream()
-                .filter(k -> !isBooleanSafe(k))
-                .findFirst()
-                .orElse(null);
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(k -> !k.isBlank())
+                .toList();
     }
+
+
+
 
     private boolean isBooleanSafe(String word) {
         // слова с + или - НЕ подходят для BOOLEAN MODE

@@ -53,7 +53,9 @@ public class SearchRowToOrderDTOConverter implements Converter<Object[], OrderSe
         dto.setMessage(asString(row[OrderColumn.MESSAGE.idx()]));
         dto.setLink(asString(row[OrderColumn.LINK.idx()]));
         dto.setDateTime(asDate(row[OrderColumn.DATE_TIME.idx()]));
-        dto.setPrice(priceConverter.convert(parsePrice((asString(row[5])))));
+        if (parsePrice((asString(row[5]))) != null){
+            dto.setPrice(priceConverter.convert(parsePrice((asString(row[5])))));
+        }
 
         // ---- CATEGORY ----
         Long categoryId = asLong(row[OrderColumn.CATEGORY_ID.idx()]);
@@ -80,7 +82,13 @@ public class SearchRowToOrderDTOConverter implements Converter<Object[], OrderSe
             return null;
         }
 
-        int value = Integer.parseInt(numberOnly);
+        int value;
+        try {
+            value = Integer.parseInt(numberOnly);
+        }
+        catch (NumberFormatException ex){
+            return null;
+        }
         return new Price(trimmed, value);
     }
 
