@@ -22,7 +22,7 @@ const modes = [
 const orderHistoryPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sites, setSites] = useState([]);
-  const [currentSites, setCurrentSites] = useState([]);
+  const [selectedSites, setCurrentSites] = useState([]);
   const [selectedMode, setSelectedMode] = useState();
   const [keywords, setKeywords] = useState('');
   const [orders, setOrders] = useState();
@@ -41,7 +41,7 @@ const orderHistoryPage = () => {
     setCurrentSites(typeof value === 'string' ? value.split(',') : value);
   };
 
-  const isFieldsValid = currentSites.length !== 0 && selectedMode !== undefined && keywords !== '';
+  const isFieldsValid = selectedSites.length !== 0 && selectedMode !== undefined && keywords !== '';
 
   const handleSubmitButton = () => {
     if (!isFieldsValid) {
@@ -53,7 +53,7 @@ const orderHistoryPage = () => {
 
     parserService
       .getOrders(
-        sites.map(({ name }) => name),
+        selectedSites,
         selectedMode.value,
         keywords.split(' '),
         0,
@@ -74,7 +74,7 @@ const orderHistoryPage = () => {
 
     parserService
       .getOrders(
-        sites.map(({ name }) => name),
+        selectedSites,
         selectedMode.value,
         keywords.split(' '),
         value - 1,
@@ -114,7 +114,7 @@ const orderHistoryPage = () => {
             <InputLabel id="demo-simple-select-label">Выберите сайт</InputLabel>
             <Select
               className="order-history__sites"
-              value={currentSites}
+              value={selectedSites}
               multiple
               label="Выберите сайт"
               onChange={handleChange}
