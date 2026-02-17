@@ -3,18 +3,14 @@ import { Routes, Route } from "react-router-dom";
 import { useAuth } from '../../../hooks/useAuth';
 
 import CircularProgress from '@mui/material/CircularProgress';
-//import HomePage from '../../../pages/homePage/HomePage'
-//import FiltersPage from '../../../pages/filtersPage/FiltersPage'
-//import NotificationsPage from '../../../pages/notificationsPage/NotificationsPage'
-//import AddFilterPage from '../../../pages/addFilterPage/AddFilterPage'
-//import ModulesPage from '../../../pages/modulesPage/ModulesPage';
-
 
 const FiltersPage = lazy(() => import('../../../pages/filtersPage/FiltersPage') )
 const HomePage = lazy(() => import('../../../pages/homePage/HomePage') )
 const NotificationsPage = lazy(() => import('../../../pages/notificationsPage/NotificationsPage') )
 const AddFilterPage = lazy(() => import('../../../pages/addFilterPage/AddFilterPage') )
+const OrderHistoryPage = lazy(() => import('../../../pages/orderHistoryPage/orderHistoryPage') )
 const ModulesPage = lazy(() => import('../../../pages/modulesPage/ModulesPage') )
+
 const Router = () => {
 	const { isAuth } = useAuth()
 
@@ -22,6 +18,7 @@ const Router = () => {
 		
 		{isAuth && <>
 			<Route path="/page/filters/:id" element={<Suspense fallback={<CircularProgress />}><FiltersPage /></Suspense>} />
+			<Route path="/page/order-history" element={<Suspense fallback={<CircularProgress />}><OrderHistoryPage /></Suspense>} />
 			<Route path="/page/modules" element={<Suspense fallback={<CircularProgress />}><ModulesPage /></Suspense>} />
 			<Route path="/page/notifications" element={<Suspense fallback={<CircularProgress />}><NotificationsPage /></Suspense>} />
 			<Route path="/page/adding-filter/:module_id" element={<Suspense fallback={<CircularProgress />}><AddFilterPage /></Suspense>} />
