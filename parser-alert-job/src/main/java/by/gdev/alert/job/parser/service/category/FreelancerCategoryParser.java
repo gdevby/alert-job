@@ -1,6 +1,5 @@
 package by.gdev.alert.job.parser.service.category;
 
-import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
@@ -11,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -30,15 +28,9 @@ public class FreelancerCategoryParser extends PlaywrightCategoryParser implement
         return parseWithRetry(siteSourceJob);
     }
 
-    @Transactional
-    public void clearFreelancerCategories(Long siteId) {
-        List<Category> cats = getCategoryRepository().findAllBySourceId(siteId);
-        getCategoryRepository().deleteAll(cats);
-    }
     @Override
     protected Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob job) {
         Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
-        clearFreelancerCategories(job.getId());
         Playwright playwright = null;
         Browser browser = null;
         BrowserContext context = null;

@@ -5,6 +5,7 @@ import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.repository.CurrencyRepository;
 import by.gdev.alert.job.parser.repository.OrderRepository;
 import by.gdev.alert.job.parser.repository.ParserSourceRepository;
+import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
 import by.gdev.alert.job.parser.util.Pair;
@@ -45,6 +46,10 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     @Getter
     @Autowired
     private ParserSourceRepository parserSourceRepository;
+
+    @Getter
+    @Autowired
+    private SiteSourceJobRepository siteSourceJobRepository;
 
     @Getter
     @Autowired

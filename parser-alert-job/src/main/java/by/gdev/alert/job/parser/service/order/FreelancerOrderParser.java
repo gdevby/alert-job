@@ -3,6 +3,7 @@ package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.currency.Currency;
 import by.gdev.alert.job.parser.domain.db.*;
+import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
 import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
@@ -17,10 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 
 @Service
@@ -31,7 +29,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
     @Value("${freelancer.proxy.active}")
     private boolean freelancerProxyActive;
 
-    private static boolean HEADLESS = false;
+    private static boolean HEADLESS = true;
 
     @Value("${parser.work.freelancer.com}")
     private void setActive(boolean active) {
@@ -94,7 +92,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
     }
 
 
-    public void clickCategory(Page page, Category category, Subcategory subCategory) {
+    public void clickCategory(Page page, String siteUrl, Category category, Subcategory subCategory) {
         String url;
         if (subCategory != null){
             url = subCategory.getLink();
@@ -102,20 +100,60 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         else {
             url = category.getLink();
         }
+        page.navigate(siteUrl + url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+    }
 
-        page.navigate(url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+    private int getResultsCount(Page page) {
+        try {
+            // Ждём появления блока с количеством результатов
+            page.waitForSelector("#total-results",
+                    new Page.WaitForSelectorOptions().setTimeout(5000));
+
+            Locator total = page.locator("#total-results");
+
+            if (total.count() == 0) {
+                log.warn("{}: #total-results not found after wait", getSiteName());
+                return 0;
+            }
+
+            String text = total.innerText().trim();
+
+            if (text.isEmpty()) {
+                log.warn("{}: #total-results empty", getSiteName());
+                return 0;
+            }
+
+            return Integer.parseInt(text);
+
+        } catch (TimeoutError e) {
+            log.warn("{}: timeout waiting for #total-results", getSiteName());
+            return 0;
+
+        } catch (Exception e) {
+            log.error("{}: failed to read total-results", getSiteName(), e);
+            return 0;
+        }
+    }
+
+    private boolean hasZeroResults(Page page) {
+        int count = getResultsCount(page);
+        return count == 0;
     }
 
     @Override
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
+        List<OrderDTO> orders = new ArrayList<>();
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-        clickCategory(page, pair.getLeft(), pair.getRight());
+        if(category == null || subCategory == null) return orders;
+        final Optional<SiteSourceJob> siteJobOptional = getSiteSourceJobRepository().findById(siteSourceJobId);
+        String siteUrl = siteJobOptional.map(SiteSourceJob::getParsedURI).orElse(null);
+        clickCategory(page, siteUrl, pair.getLeft(), pair.getRight());
         // Задержка
         page.waitForTimeout(500);
-        // Задержка
-        page.waitForTimeout(500);
-        return tasksParsing(page, siteSourceJobId, category, subCategory);
+        if (hasZeroResults(page)) return orders;
+        orders =tasksParsing(page, siteSourceJobId, category, subCategory);
+        return orders;
     }
 
     @Override
@@ -152,8 +190,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
                     .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                     .toList();
 
-            List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-            return orders;
+            return getOrdersData(parsedOrders, category, subCategory);
         }
         finally {
             closeResources(page, context, browser, playwright);
@@ -254,8 +291,6 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
 
         } catch (Exception ignored) {}
     }
-
-
 
     @Override
     public SiteName getSiteName() {
