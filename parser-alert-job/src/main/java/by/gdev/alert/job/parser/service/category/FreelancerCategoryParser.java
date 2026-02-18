@@ -50,7 +50,7 @@ public class FreelancerCategoryParser extends PlaywrightCategoryParser implement
 
             Locator titles = page.locator("h3.PageJob-category-title");
             int titleCount = titles.count();
-            log.error("FOUND TITLES: {}", titleCount);
+            log.debug("Found {} top level categories: {} for site", titleCount, getSiteName());
 
             for (int i = 0; i < titleCount; i++) {
                 Locator titleEl = titles.nth(i);
@@ -58,8 +58,8 @@ public class FreelancerCategoryParser extends PlaywrightCategoryParser implement
                 String catName = titleEl.innerText().trim();
                 catName = catName.replaceAll("\\(.*?\\)", "").trim();
 
-                ParsedCategory top = new ParsedCategory(null, catName, null, null);
-                log.debug("Freelancer: category {}", catName);
+                ParsedCategory top = new ParsedCategory(catName, catName, null, null);
+                log.debug("{}: category {}", getSiteName(), catName);
 
                 List<ParsedCategory> subs = new ArrayList<>();
 
@@ -74,7 +74,7 @@ public class FreelancerCategoryParser extends PlaywrightCategoryParser implement
                         String subName = sub.innerText().trim();
                         subName = subName.replaceAll("\\(.*?\\)", "").trim();
                         String subHref = sub.getAttribute("href");
-                        //log.error("SUB HREF PARSED = {}", subHref);
+                        log.debug("Found subcategory {} for category {} in site {}", subName, top.translatedName(), getSiteName());
                         subs.add(new ParsedCategory(null, subName, null, subHref));
                     }
                 }
