@@ -11,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,18 +24,19 @@ public class OrderSearchService {
     private final Converter<Object[], OrderSearchDTO> orderConverter;
 
     public PageSearchResponse<OrderSearchDTO> search(OrderSearchRequest req) {
-        // Сайты
+
+        // -----------------------------
+        // Сайты по которым ищем
+        // -----------------------------
         List<String> sites = req.getSites();
         List<Long> siteIds = null;
 
         if (sites != null && !sites.isEmpty()) {
-            // Убираем дубликаты строк
             Set<String> uniqueSites = sites.stream()
                     .map(String::toLowerCase)
                     .collect(Collectors.toCollection(HashSet::new));
 
             siteIds = uniqueSites.stream()
-                    .map(String::toLowerCase)
                     .map(siteSourceJobRepository::findByName)
                     .filter(Objects::nonNull)
                     .map(SiteSourceJob::getId)
@@ -47,10 +45,15 @@ public class OrderSearchService {
 
         int offset = req.getPage() * req.getSize();
 
-        String booleanQuery = buildBooleanQueryOr(req.getKeywords());
-        String likeQuery = extractLikeQuery(req.getKeywords());
+        // -----------------------------
+        // Построение поисковых строк
+        // -----------------------------
+        List<String> keywords = req.getKeywords();
+        String booleanQuery = null;//buildBooleanQueryOr(keywords);
+        String likeQuery = extractLikeQuery(keywords); //ФРАЗОВЫЙ ПОИСК
 
         long start = System.nanoTime();
+
         List<Object[]> orders = orderSearchRepository.searchOrders(
                 siteIds,
                 req.getMode(),
@@ -59,73 +62,89 @@ public class OrderSearchService {
                 offset,
                 req.getSize()
         );
+
         long executionTimeMs = (System.nanoTime() - start) / 1_000_000;
 
-        long total = orderSearchRepository.countOrders(siteIds, req.getMode(), booleanQuery , likeQuery);
+        long total = orderSearchRepository.countOrders(
+                siteIds,
+                req.getMode(),
+                booleanQuery,
+                likeQuery
+        );
+
         int totalPages = (int) Math.ceil((double) total / req.getSize());
 
-        String modeDescription;
-        switch (req.getMode()) {
-            case "TITLE" -> modeDescription = "по заголовку";
-            case "DESCRIPTION" -> modeDescription = "по описанию";
-            default -> modeDescription = "по заголовку и описанию";
-        }
+        String modeDescription = switch (req.getMode()) {
+            case "TITLE" -> "по заголовку";
+            case "DESCRIPTION" -> "по описанию";
+            default -> "по заголовку и описанию";
+        };
 
         log.debug(
-                "Поиск заказов {}: sites='{}', keywords='{}', page={}, size={}, booleanQuery='{}', executionTimeMs={} мс",
+                "Поиск {}: sites='{}', keywords='{}', boolean='{}', like='{}', time={} мс",
                 modeDescription,
                 sites,
                 req.getKeywords(),
-                req.getPage(),
-                req.getSize(),
                 booleanQuery,
+                likeQuery,
                 executionTimeMs
         );
 
-        return new PageSearchResponse<>(orderConverter.convertAll(orders),
+        return new PageSearchResponse<>(
+                orderConverter.convertAll(orders),
                 req.getPage(),
                 req.getSize(),
                 total,
                 totalPages,
                 req.getPage() == 0,
-                req.getPage() + 1 >= totalPages);
+                req.getPage() + 1 >= totalPages
+        );
     }
 
+    // ---------------------------------------------------------
+    // BOOLEAN QUERY (MATCH AGAINST)
+    // ---------------------------------------------------------
     private String buildBooleanQueryOr(List<String> keywords) {
-        // Если ключевых слов нет → MATCH выполнять нельзя
         if (keywords == null || keywords.isEmpty()) return null;
 
-        // Фильтруем только безопасные слова, которые можно передавать в MATCH AGAINST
-        // isBooleanSafe — проверяет отсутствие опасных символов (+, -, >, <, ~ и т.д.)
         List<String> safe = keywords.stream()
                 .filter(this::isBooleanSafe)
                 .toList();
 
-        // Если после фильтрации ничего не осталось → MATCH не выполняем
         if (safe.isEmpty()) return null;
 
-        // Собираем строку для OR‑поиска:
-        // каждое слово → trim → проверка на пустоту → добавляем '*' для префиксного поиска
-        // итог: "word1* word2* word3*"
         return safe.stream()
                 .map(String::trim)
                 .filter(k -> !k.isBlank())
-                .map(k -> k + "*") //для AND сделать .map(k -> "+" + k + "*")
-                .reduce((a, b) -> a + " " + b) // объединяем через пробел
-                .orElse(null);
+                .map(k -> k + "*")
+                .collect(Collectors.joining(" "));
     }
 
+    // ---------------------------------------------------------
+    // LIKE : ФРАЗОВЫЙ ПОИСК
+    // ---------------------------------------------------------
     private String extractLikeQuery(List<String> keywords) {
         if (keywords == null || keywords.isEmpty()) return null;
-        // первое слово, которое содержит + или -
-        return keywords.stream()
+
+        // Если есть спецсимволы → вернуть первое такое слово
+        Optional<String> special = keywords.stream()
                 .filter(k -> !isBooleanSafe(k))
-                .findFirst()
-                .orElse(null);
+                .findFirst();
+
+        if (special.isPresent()) {
+            return special.get(); // "%c++%"
+        }
+
+        // Если несколько слов → вернуть фразу
+        if (keywords.size() > 1) {
+            return String.join(" ", keywords); // "%spring boot%"
+        }
+
+        // Если одно слово → вернуть его
+        return keywords.get(0); // "%spring%"
     }
 
     private boolean isBooleanSafe(String word) {
-        // слова с + или - НЕ подходят для BOOLEAN MODE
         return !word.contains("+") && !word.contains("-");
     }
 }
