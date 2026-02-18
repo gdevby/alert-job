@@ -126,7 +126,7 @@ public class OrderSearchService {
     private String extractLikeQuery(List<String> keywords) {
         if (keywords == null || keywords.isEmpty()) return null;
 
-        // Если есть спецсимволы → вернуть первое такое слово
+        // Если есть спецсимволы - вернуть первое такое слово
         Optional<String> special = keywords.stream()
                 .filter(k -> !isBooleanSafe(k))
                 .findFirst();
@@ -135,12 +135,12 @@ public class OrderSearchService {
             return special.get(); // "%c++%"
         }
 
-        // Если несколько слов → вернуть фразу
+        // Если несколько слов - вернуть фразу
         if (keywords.size() > 1) {
             return String.join(" ", keywords); // "%spring boot%"
         }
 
-        // Если одно слово → вернуть его
+        // Если одно слово - вернуть его
         return keywords.get(0); // "%spring%"
     }
 
