@@ -35,6 +35,7 @@ const Header = () => {
 			</Typography>
 			<Box sx={{ display: { xs: 'none', sm: 'block' } }}>
 				{isAuth ? <>
+				<Btn text={'История заказов'} onClick={() => navigate('/page/order-history')} styles={{ color: '#fff', marginRight: 5 }} />
 					<Btn text={'Модули'} onClick={() => navigate('/page/modules')} styles={{ color: '#fff' }} />
 					<Btn text={'Уведомления'} onClick={() => navigate('/page/notifications')} styles={{ color: '#fff' }} />
 					<Btn text={'Выйти'}

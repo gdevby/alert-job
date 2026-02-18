@@ -53,7 +53,7 @@ const HomePage = () => {
 			<Examples />
 			<p className='mt-1' style={{ fontWeight: 'bold' }}>
 				Весь функционал работает, поддержка и обсуждение здесь
-				<a href='https://t.me/robertmakrytski'>https://t.me/supp_aj_gdev_by</a>
+				<a href='https://t.me/supp_aj_gdev_by'>https://t.me/supp_aj_gdev_by</a>
 			</p>
 		</div>
 	</div>
