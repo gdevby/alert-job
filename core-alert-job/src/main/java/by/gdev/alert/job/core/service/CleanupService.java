@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @RequiredArgsConstructor
@@ -27,11 +28,16 @@ public class CleanupService {
             "Уважаемый пользователь! Мы обновили категории сайта %s. Вам необходимо заново настроить фильтры поиска Ваших заказов";
 
     public void cleanupParserSourceForSite(Long siteId, String siteName) {
+        //Получаем все настроенные источники для сайта, категории которого нужно удалить
         List<SourceSite> sources = sourceSiteRepository.findAllBySiteSource(siteId);
         log.debug("Found {} sources", sources.size());
         log.debug("Starting CORE cleanup for siteId={}", siteId);
+        //Получаем всех пользователей из источников, которым необходимо отправить уведомления
+        Set<AppUser> users = getUsersFromSources(sources);
+        //Удаляем связанные сущности
         deletePart(siteId, sources);
-        sendNotificationPart(sources, siteName);
+        //Отправляем уведомления
+        sendNotificationPart(users, siteName);
         log.debug("CORE cleanup completed for siteId={}", siteId);
     }
 
@@ -57,7 +63,7 @@ public class CleanupService {
     private int deleteSourceSite(Long siteId){
         return jdbc.update("""
             DELETE FROM source_site
-            WHERE id = ?
+            WHERE site_source = ?
         """, siteId);
     }
 
@@ -81,20 +87,23 @@ public class CleanupService {
 
     }
 
-    private void sendNotificationPart(List<SourceSite> sources, String siteName){
-        Set<AppUser> users = new HashSet<>();
-        for(int i = 0; i< sources.size(); i++){
-            List<OrderModules> orderModules = orderModulesRepository.findAllBySourceId(sources.get(i).getId());
-            for (int j=0; j < orderModules.size(); j++){
-                users.add(orderModules.get(j).getUser());
-            }
-        }
+    private Set<AppUser> getUsersFromSources(List<SourceSite> sources) {
+        return sources.stream()
+                .flatMap(source -> orderModulesRepository
+                        .findAllBySourceId(source.getId())
+                        .stream())
+                .map(OrderModules::getUser)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
 
-        for(AppUser user : users){
-            String msg = String.format(CATEGORY_REMOVE_MESSAGE, siteName);
-            List<String> message = new ArrayList<>(Collections.singleton(msg));
-            mailSenderService.sendMessagesToUser(user, message);
-        }
+    private void sendNotificationPart(Set<AppUser> users, String siteName) {
+        users.stream()
+                .map(user -> Map.entry(user, String.format(CATEGORY_REMOVE_MESSAGE, siteName)))
+                .forEach(entry -> mailSenderService.sendMessagesToUser(
+                        entry.getKey(),
+                        List.of(entry.getValue())
+                ));
     }
 
 }
