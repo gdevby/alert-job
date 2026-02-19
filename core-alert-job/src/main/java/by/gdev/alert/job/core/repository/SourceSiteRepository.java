@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,7 @@ public interface SourceSiteRepository extends CrudRepository<SourceSite, Long> {
 
     @Query("select s from SourceSite s where s.siteSource = :siteSource and s.siteCategory = :siteCategory and s.siteSubCategory is null")
     Optional<SourceSite> findBySourceSubCategoryIsNull(Long siteSource, Long siteCategory);
+
+    List<SourceSite> findAllBySiteSource(Long siteSource);
+
 }
