@@ -98,13 +98,21 @@ public class CleanupService {
     }
 
     private void sendNotificationPart(Set<AppUser> users, String siteName) {
-        users.stream()
-                .map(user -> Map.entry(user, String.format(CATEGORY_REMOVE_MESSAGE, siteName)))
-                .forEach(entry -> mailSenderService.sendMessagesToUser(
-                        entry.getKey(),
-                        List.of(entry.getValue())
-                ));
+        log.debug("Sending notifications for site={} to {} users", siteName, users.size());
+
+        String msg = String.format(CATEGORY_REMOVE_MESSAGE, siteName);
+        log.debug("Notification message: {}", msg);
+
+        users.forEach(user -> {
+            log.debug("Sending notification to user id={} email={} uuid={}",
+                    user.getId(),
+                    user.getEmail(),
+                    user.getUuid());
+            mailSenderService.sendMessagesToUser(user, List.of(msg));
+        });
+        log.debug("Finished sending notifications for site={}", siteName);
     }
+
 
 }
 
