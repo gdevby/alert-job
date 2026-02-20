@@ -25,8 +25,11 @@ public class CoreApiService {
     private final StatisticsService statisticsService;
     private final MetricsService metricsService;
 
-    @Value("${core.api.url}")
-    private String coreApiUrl;
+    @Value("${orders.api.url}")
+    private String ordersApiUrl;
+
+    @Value("${core.module.url}")
+    private String coreModuleUrl;
 
     @Value("${core.api.batch-size:100}")
     private int batchSize;
@@ -36,7 +39,7 @@ public class CoreApiService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<List<OrderDTO>> request = new HttpEntity<>(orders, headers);
-            String urlWithParam = coreApiUrl + "?site=" + siteName.name();
+            String urlWithParam = coreModuleUrl + ordersApiUrl + "?site=" + siteName.name();
             metricsService.save(siteName, orders.size());
             statisticsService.save(siteName, orders.size());
             log.debug("Отправка заказов в core... для {}", siteName);
@@ -59,7 +62,7 @@ public class CoreApiService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<List<OrderDTO>> request = new HttpEntity<>(batch, headers);
-            String urlWithParam = coreApiUrl + "?site=" + siteName.name();
+            String urlWithParam = coreModuleUrl + ordersApiUrl + "?site=" + siteName.name();
             metricsService.save(siteName, batch.size());
             statisticsService.save(siteName, batch.size());
             restTemplate.exchange(urlWithParam, HttpMethod.POST, request, Void.class);

@@ -29,4 +29,13 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 
 	@Query("select module from OrderModules module where module.id = :id and user.uuid = :uuid")
 	Optional<OrderModules> findByIdAndUserUuidOneEagerCurrentFilter(@Param("id")Long id, @Param("uuid")String uuid);
+
+    @Query("""
+    select m
+    from OrderModules m
+    join m.sources s
+    where s.id = :sourceId
+""")
+    List<OrderModules> findAllBySourceId(@Param("sourceId") Long sourceId);
+
 }
