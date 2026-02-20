@@ -67,29 +67,6 @@ public class WeblancerCategoryParser extends PlaywrightCategoryParser implements
         return result;
     }
 
-
-    private List<ParsedCategory> parseRootCategories(Page page) {
-        List<ParsedCategory> roots = new ArrayList<>();
-
-        Locator headers = page.locator("h2.text-xl.font-semibold.text-gray-900");
-        int count = headers.count();
-
-        log.debug("[WEBLANCER] Found {} root categories", count);
-
-        for (int i = 0; i < count; i++) {
-            Locator h2 = headers.nth(i);
-            String title = h2.innerText().trim();
-
-            log.debug("[WEBLANCER] Root category: {}", title);
-
-            roots.add(new ParsedCategory(null, title, null, null));
-        }
-
-        return roots;
-    }
-
-
-
     private List<ParsedCategory> parseSubcategories(Page page, Locator rootHeader, String baseUrl) {
         List<ParsedCategory> subs = new ArrayList<>();
 
