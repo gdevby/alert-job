@@ -59,7 +59,15 @@ public class MailService {
         Counter positiveTelegramCounter = context.getBean(MetricsConfig.COUNTER_TELEGRAM_POSITIVE, Counter.class);
         Counter negativeTelegramCounter = context.getBean(MetricsConfig.COUNTER_TELEGRAM_NEGATIVE, Counter.class);
 
-        MessageData messageData = new MessageData(Long.valueOf(userMail.getToMail()), userMail.getMessage());
+        Long chatId;
+        try {
+            chatId = Long.valueOf(userMail.getToMail());
+        } catch (NumberFormatException ex) {
+            log.warn("Invalid Telegram chat ID: {}", userMail.getToMail());
+            return Mono.empty();
+        }
+
+        MessageData messageData = new MessageData(chatId, userMail.getMessage());
 
         return webClient.post()
                 .uri("https://api.telegram.org",
