@@ -194,10 +194,51 @@ public class OrderProcessor {
         });
     }
 
-    private String createOrdersMessage(String name, String title, String link, String categoryName,
+    private String createOrdersMessage(String moduleName,
+                                       String title,
+                                       String link,
+                                       String categoryName,
                                        String subCategoryName) {
-        return StringUtils.isNotEmpty(subCategoryName)
-                ? String.format("%s, %s, %s новый заказ - %s %s", name, categoryName, subCategoryName, title, link)
-                : String.format("%s, %s, новый заказ - %s %s", name, categoryName, title, link);
+
+        String subCategoryBlock = "";
+        if (StringUtils.isNotEmpty(subCategoryName)) {
+            subCategoryBlock = String.format(
+                    "<p style=\"margin: 4px 0;\"><strong>Подкатегория:</strong> %s</p>",
+                    subCategoryName
+            );
+        }
+
+        return String.format("""
+            <div style="font-family: Arial, sans-serif; padding: 12px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa; margin-bottom: 12px;">
+                <h3 style="margin: 0 0 10px 0; color: #333;">Новый заказ</h3>
+
+                <p style="margin: 4px 0;">
+                    <strong>Модуль:</strong> %s
+                </p>
+
+                <p style="margin: 4px 0;">
+                    <strong>Категория:</strong> %s
+                </p>
+
+                %s
+
+                <p style="margin: 4px 0;">
+                    <strong>Название:</strong> %s
+                </p>
+
+                <p style="margin: 4px 0;">
+                    <strong>Ссылка:</strong>
+                    <a href="%s" style="color: #1a73e8;">%s</a>
+                </p>
+            </div>
+            """,
+                moduleName,
+                categoryName,
+                subCategoryBlock,
+                title,
+                link,
+                link
+        );
     }
+
 }
