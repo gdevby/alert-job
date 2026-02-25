@@ -152,7 +152,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         // Задержка
         page.waitForTimeout(500);
         if (hasZeroResults(page)) return orders;
-        orders =tasksParsing(page, siteSourceJobId, category, subCategory);
+        orders = tasksParsing(page, siteSourceJobId, category, subCategory);
         return orders;
     }
 

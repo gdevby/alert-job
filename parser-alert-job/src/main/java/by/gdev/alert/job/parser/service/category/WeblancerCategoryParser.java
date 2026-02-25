@@ -1,61 +1,113 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Slf4j
-public class WeblancerCategoryParser implements CategoryParser{
+public class WeblancerCategoryParser extends PlaywrightCategoryParser implements CategoryParser {
+
+    @Value("${weblancer.proxy.active:false}")
+    private boolean weblancerProxyActive;
 
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
+        return parseWithRetry(siteSourceJob);
+    }
 
-        Document doc;
-        try {
-            doc = Jsoup.connect(siteSourceJob.getParsedURI()).get();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+    @Override
+    protected Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob job) {
         Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
 
-        for (Element h3 : doc.select("h3.mb-4.text-xl.font-semibold")) {
+        Playwright playwright = null;
+        Browser browser = null;
+        BrowserContext context = null;
+        Page page = null;
 
-            String title = h3.text().trim();
-            //log.info("Root category: site name -  {}, category name - {}", getSiteName().name(), title);
-            Element container = h3.parent().selectFirst("div.flex.flex-wrap.gap-2");
-            if (container == null) continue;
+        try {
+            playwright = createPlaywright();
+            ProxyCredentials proxy = weblancerProxyActive ? getProxyWithRetry(5, 2000) : null;
+            browser = createBrowser(playwright, proxy, true, weblancerProxyActive);
+            context = createBrowserContext(browser, proxy, weblancerProxyActive);
+            page = context.newPage();
 
-            List<ParsedCategory> subcategories = container.select("a").stream()
-                    .map(a -> {
-                        String link = resolveLink(siteSourceJob, a.attr("href"));
-                        //log.info("Parsing category: site name -  {}, category name - {}, link - {}", getSiteName().name(), a.text(), link);
-                        return new ParsedCategory(null, a.text(), null, link);
-                    })
-                    .toList();
+            String url = "https://www.weblancer.net/tags/";
+            log.debug("[{}] Navigating to {}", getSiteName(), url);
 
-            ParsedCategory root = new ParsedCategory(null, title, null, null);
-            result.put(root, subcategories);
+            page.navigate(url);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+
+            // Ждём появления корневых категорий
+            page.waitForSelector("h2.text-xl.font-semibold.text-gray-900",
+                    new Page.WaitForSelectorOptions().setTimeout(15000));
+
+            Locator headers = page.locator("h2.text-xl.font-semibold.text-gray-900");
+
+            for (int i = 0; i < headers.count(); i++) {
+                Locator h2 = headers.nth(i);
+                String title = h2.innerText().trim();
+                ParsedCategory root = new ParsedCategory(null, title, null, null);
+                List<ParsedCategory> subs = parseSubcategories(page, h2, job.getParsedURI());
+
+                result.put(root, subs);
+            }
+        } finally {
+            closeResources(page, context, browser, playwright);
         }
 
         return result;
     }
 
-    private String resolveLink(SiteSourceJob job, String href) {
-        URI base = URI.create(job.getParsedURI());
-        URI resolved = base.resolve(href);
-        return resolved.toString();
+    private List<ParsedCategory> parseSubcategories(Page page, Locator rootHeader, String baseUrl) {
+        List<ParsedCategory> subs = new ArrayList<>();
+
+        // Находим следующий div.grid после h2
+        Locator container = rootHeader.locator(
+                "xpath=following-sibling::div[contains(@class,'grid')][1]"
+        );
+
+        if (container.count() == 0) {
+            log.warn("[WEBLANCER] No subcategory container found for {}", rootHeader.innerText().trim());
+            return subs;
+        }
+
+        Locator links = container.locator("a.link-style");
+        int count = links.count();
+
+        log.debug("[WEBLANCER] Found {} subcategories for {}", count, rootHeader.innerText().trim());
+
+        for (int i = 0; i < count; i++) {
+            Locator a = links.nth(i);
+
+            String name = a.innerText().trim();
+            String href = a.getAttribute("href");
+
+            if (href == null || href.isBlank()) {
+                log.warn("[WEBLANCER] Empty href for subcategory {}", name);
+                continue;
+            }
+
+            String resolved = java.net.URI.create(baseUrl).resolve(href).toString();
+
+            log.debug("[WEBLANCER] Subcategory: {} -> {}", name, resolved);
+
+            subs.add(new ParsedCategory(null, name, null, resolved));
+        }
+
+        return subs;
+    }
+
+    private String resolveLink(String baseUrl, String href) {
+        return java.net.URI.create(baseUrl).resolve(href).toString();
     }
 
     @Override
