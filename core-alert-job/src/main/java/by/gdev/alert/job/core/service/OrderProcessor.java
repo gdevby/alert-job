@@ -194,6 +194,13 @@ public class OrderProcessor {
         });
     }
 
+    /*private String createOrdersMessage(String name, String title, String link, String categoryName,
+                                       String subCategoryName) {
+        return StringUtils.isNotEmpty(subCategoryName)
+                ? String.format("%s, %s, %s новый заказ - %s %s", name, categoryName, subCategoryName, title, link)
+                : String.format("%s, %s, новый заказ - %s %s", name, categoryName, title, link);
+    }*/
+
     private String createOrdersMessage(String moduleName,
                                        String title,
                                        String link,
@@ -240,5 +247,4 @@ public class OrderProcessor {
                 link
         );
     }
-
 }
