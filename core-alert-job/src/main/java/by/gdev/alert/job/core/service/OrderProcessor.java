@@ -71,7 +71,8 @@ public class OrderProcessor {
                     return order.getModuleName();
                 }).distinct().collect(Collectors.joining(", "));
                 SourceSiteDTO s = orderList.get(0).getSourceSite();
-                return createOrdersMessage(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), s.getCategoryName(),
+                return user.isDefaultSendType() ? createOrdersMessageEmail(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), s.getCategoryName(),
+                        s.getSubCategoryName()) : createOrdersMessageTelegram(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), s.getCategoryName(),
                         s.getSubCategoryName());
             }).toList();
             mailSenderService.sendMessagesToUser(user, resultOrdersString);
@@ -173,7 +174,8 @@ public class OrderProcessor {
                     String modulesString = orderList.stream().map(DelayOrderNotification::getOrderName)
                             .distinct()
                             .collect(Collectors.joining(", "));
-                    return createOrdersMessage(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), orderList.get(0).getCategoryName(),
+                    return user.isDefaultSendType() ? createOrdersMessageEmail(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), orderList.get(0).getCategoryName(),
+                            orderList.get(0).getSubCategoryName()) : createOrdersMessageTelegram(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), orderList.get(0).getCategoryName(),
                             orderList.get(0).getSubCategoryName());
                 }).toList();
                 if (!resultOrdersString.isEmpty()) {
@@ -194,14 +196,14 @@ public class OrderProcessor {
         });
     }
 
-    /*private String createOrdersMessage(String name, String title, String link, String categoryName,
+    private String createOrdersMessageTelegram(String name, String title, String link, String categoryName,
                                        String subCategoryName) {
         return StringUtils.isNotEmpty(subCategoryName)
                 ? String.format("%s, %s, %s новый заказ - %s %s", name, categoryName, subCategoryName, title, link)
                 : String.format("%s, %s, новый заказ - %s %s", name, categoryName, title, link);
-    }*/
+    }
 
-    private String createOrdersMessage(String moduleName,
+    private String createOrdersMessageEmail(String moduleName,
                                        String title,
                                        String link,
                                        String categoryName,
