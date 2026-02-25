@@ -21,7 +21,7 @@ import java.util.*;
 @Slf4j
 public class WeblancerOrderParser extends PlaywrightSiteParser {
 
-    @Value("${weblancer.proxy.active}")
+    @Value("${weblancer.proxy.active:false}")
     private boolean weblancerProxyActive;
 
     private static final boolean HEADLESS = true;
