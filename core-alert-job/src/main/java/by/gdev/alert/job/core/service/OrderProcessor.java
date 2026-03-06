@@ -34,6 +34,7 @@ public class OrderProcessor {
     private final ApplicationProperty property;
     private final UserFilterRepository filterRepository;
     private final MailSenderService mailSenderService;
+    private final AiOrdersClient aiOrdersClient;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
@@ -56,6 +57,7 @@ public class OrderProcessor {
                         }).flatMap(Collection::stream).toList();
                     }).flatMap(Collection::stream).toList();
             if (!orderListToSend.isEmpty()) {
+                aiOrdersClient.sendOrders(orderListToSend);
                 sendOrderToUser(user, orderListToSend);
             }
         });
