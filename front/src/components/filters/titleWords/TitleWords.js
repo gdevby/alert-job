@@ -127,7 +127,7 @@ const TitleWords = ({ filter_id, type, setIsLimit }) => {
 
 	useEffect(() => {
 		if (titleWords && !isNew) {
-			setWords((prev) => [...prev, ...titleWords])
+			setWords(titleWords)
 		}
 	}, [titleWords])
 
