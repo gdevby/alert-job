@@ -135,9 +135,9 @@ const DescriptionWords = ({ filter_id, type, setIsLimit }) => {
 
 	useEffect(() => {
 		if (descriptionWords && !isNew) {
-			setWords((prev) => [...prev, ...descriptionWords])
+			setWords(descriptionWords)
 		}
-	}, [])
+	}, [descriptionWords])
 
 	useEffect(() => {
 		if (!isFetching) {
