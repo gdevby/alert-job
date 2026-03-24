@@ -19,10 +19,10 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class KworkComOrderParser extends PlaywrightSiteParser {
+public class KworkRuOrderParser extends PlaywrightSiteParser {
 
-    @Value("${kworkcom.proxy.active}")
-    private boolean kworkcomProxyActive;
+    @Value("${kwork.proxy.active}")
+    private boolean kworkruProxyActive;
 
     private static boolean HEADLESS = true;
 
@@ -35,14 +35,14 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
 
     @Override
     public SiteName getSiteName() {
-        return SiteName.KWORKCOM;
+        return SiteName.KWORK;
     }
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)
             return new ArrayList<>();
-        return mapItemsWithRetry(link, kworkcomProxyActive, siteSourceJobId , category, subCategory);
+        return mapItemsWithRetry(link, kworkruProxyActive, siteSourceJobId , category, subCategory);
     }
 
     @Override
@@ -53,10 +53,10 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
 
         PlaywrightSession session = null;
         try {
-            session = createSession(HEADLESS, kworkcomProxyActive);
+            session = createSession(HEADLESS, kworkruProxyActive);
             Page page = session.getPage();
             for(Pair<Category, Subcategory> pair: categoriesPairList){
-                List<OrderDTO> categoryOrders = mapItemsWithRetry(link, kworkcomProxyActive, siteSourceJobId , pair, page);
+                List<OrderDTO> categoryOrders = mapItemsWithRetry(link, kworkruProxyActive, siteSourceJobId , pair, page);
                 orders.addAll(categoryOrders);
             }
         }
@@ -123,7 +123,7 @@ public class KworkComOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, true, kworkcomProxyActive);
+            browser = createBrowser(playwright, proxy, true, kworkruProxyActive);
             context = browser.newContext(new Browser.NewContextOptions()
                     .setJavaScriptEnabled(true)
                     .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
