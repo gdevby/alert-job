@@ -1,6 +1,7 @@
 package by.gdev.alert.job.llm.service.aiautoreply;
 
 import by.gdev.alert.job.llm.domain.dto.AiDecision;
+import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TimeRateLimiter;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TokenBucket;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,9 +13,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -97,7 +95,6 @@ public class AiOrderAnalysisService {
     }
 
 
-
     private String selectPromptFile(String categoryName, String subcategoryName) {
 
         String cat = categoryName == null ? "" : categoryName.toLowerCase();
@@ -130,11 +127,17 @@ public class AiOrderAnalysisService {
     }
 
 
-    public AiDecision analyze(String orderTitle,
-                              String orderContent,
-                              String siteName,
-                              String categoryName,
-                              String subcategoryName) {
+    public AiDecision analyze(OrderDTO order){
+
+        String orderTitle = order.getTitle();
+        String orderContent = order.getMessage();
+        String orderLink = order.getLink();
+        String priceText = order.getPrice() != null ? order.getPrice().getPrice() : "не указана";
+        int priceValue = order.getPrice() != null ? order.getPrice().getValue() : 0;
+        String siteName = order.getSourceSite() != null ? order.getSourceSite().getSourceName() : null;
+        String categoryName = order.getSourceSite() != null ? order.getSourceSite().getCategoryName() : null;
+        String subcategoryName = order.getSourceSite() != null ? order.getSourceSite().getSubCategoryName() : null;
+        String orderDate = order.getDateTime() != null ? order.getDateTime().toString() : "не указана";
 
         List<String> keywords = List.of();
 
@@ -150,9 +153,14 @@ public class AiOrderAnalysisService {
         String replyTemplate;
         replyTemplate = loadTemplate(type, siteName);
 
+        // 5. Формируем prompt
         String prompt = promptTemplate.formatted(
                 orderTitle,
                 orderContent,
+                priceText,
+                priceValue,
+                orderLink,
+                orderDate,
                 siteName,
                 categoryName,
                 subcategoryName,
@@ -195,7 +203,6 @@ public class AiOrderAnalysisService {
                 );
 
             } catch (Exception e) {
-                // Любая другая ошибка внутри executor-потока
                 log.error("Unexpected LLM error", e);
 
                 return new AiDecision(
@@ -211,7 +218,6 @@ public class AiOrderAnalysisService {
             return future.get();
 
         } catch (Exception e) {
-            // Ошибка executor'а, InterruptedException, ExecutionException
             log.error("Executor error", e);
 
             return new AiDecision(

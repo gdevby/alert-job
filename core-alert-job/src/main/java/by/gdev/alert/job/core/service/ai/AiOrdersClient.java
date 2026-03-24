@@ -1,4 +1,4 @@
-package by.gdev.alert.job.core.service;
+package by.gdev.alert.job.core.service.ai;
 
 import by.gdev.common.model.OrderDTO;
 import lombok.extern.slf4j.Slf4j;

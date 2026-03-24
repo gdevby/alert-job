@@ -16,8 +16,7 @@ public class AutoReplyPipeline {
 
     public void process(OrderDTO orderDTO) {
 
-        AiDecision decision = analysisService.analyze(orderDTO.getTitle(), orderDTO.getMessage(),
-                orderDTO.getSourceSite().getSourceName(), orderDTO.getSourceSite().getCategoryName(), orderDTO.getSourceSite().getSubCategoryName());
+        AiDecision decision = analysisService.analyze(orderDTO);
 
         /*if (!decision.shouldReply()) {
             return;

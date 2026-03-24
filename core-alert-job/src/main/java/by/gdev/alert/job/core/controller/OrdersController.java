@@ -3,6 +3,7 @@ package by.gdev.alert.job.core.controller;
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.service.OrderProcessor;
+import by.gdev.alert.job.core.service.ai.AiStatisticsService;
 import by.gdev.common.model.OrderDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class OrdersController {
 
     @Autowired
     private OrderProcessor orderProcessor;
+
+    @Autowired
+    private AiStatisticsService statisticsService;
 
     @PostMapping(produces = "application/json")
     public ResponseEntity<Map<String, String>> createOrders(

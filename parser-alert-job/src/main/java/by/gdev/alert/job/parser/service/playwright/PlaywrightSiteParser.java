@@ -310,9 +310,9 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         OrderDTO dto = mapper.map(order, OrderDTO.class);
         SourceSiteDTO source = dto.getSourceSite();
         source.setCategoryName(category.getNativeLocName());
+        source.setSourceName(getSiteName().name());
         if (subCategory != null)
             source.setSubCategoryName(subCategory.getNativeLocName());
-        dto.setSourceSite(source);
         return dto;
     }
 
