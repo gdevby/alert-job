@@ -146,16 +146,17 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
         List<OrderDTO> result = tasksParsing(page, siteSourceJobId, category, subCategory);
         long parsingTime = System.currentTimeMillis() - startParsing;
 
-        log.debug(
-                "[{}] Категория {} / {}: navigate={} ms, parsing={} ms, total={} ms",
-                getSiteName(),
-                category.getNativeLocName(),
-                subCategory != null ? subCategory.getNativeLocName() : "без подкатегории",
-                navigateTime,
-                parsingTime,
-                navigateTime + parsingTime
-        );
-
+        if (debug){
+            log.debug(
+                    "[{}] Категория {} / {}: navigate={} ms, parsing={} ms, total={} ms",
+                    getSiteName(),
+                    category.getNativeLocName(),
+                    subCategory != null ? subCategory.getNativeLocName() : "без подкатегории",
+                    navigateTime,
+                    parsingTime,
+                    navigateTime + parsingTime
+            );
+        }
         return result;
     }
 

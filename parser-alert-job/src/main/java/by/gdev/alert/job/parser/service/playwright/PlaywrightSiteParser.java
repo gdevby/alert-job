@@ -125,7 +125,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return new PlaywrightSession(playwright, browser, context, page, proxy);
     }
 
-    @Transactional(timeout = 2000)
+    @Transactional(timeout = 3600)
     @Override
     public List<OrderDTO> parse() {
         Long siteId = getSiteName().getId();
