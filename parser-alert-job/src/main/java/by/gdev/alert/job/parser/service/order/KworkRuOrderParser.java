@@ -33,11 +33,6 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
         this.active = active;
     }
 
-    @Value("${kwork.debug:true}")
-    private void setDebug(boolean debug) {
-        this.debug = debug;
-    }
-
     @Override
     public SiteName getSiteName() {
         return SiteName.KWORK;
@@ -61,19 +56,7 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
             session = createSession(HEADLESS, kworkruProxyActive);
             Page page = session.getPage();
             for(Pair<Category, Subcategory> pair: categoriesPairList){
-                long start = System.currentTimeMillis();
                 List<OrderDTO> categoryOrders = mapItemsWithRetry(link, kworkruProxyActive, siteSourceJobId , pair, page);
-                long duration = System.currentTimeMillis() - start;
-                if (debug){
-                    log.debug(
-                            "[{}] Время парсинга категории {} / {}: {} ms ({} сек)",
-                            getSiteName(),
-                            pair.getLeft().getNativeLocName(),
-                            pair.getRight() != null ? pair.getRight().getNativeLocName() : "без подкатегории",
-                            duration,
-                            duration / 1000.0
-                    );
-                }
                 orders.addAll(categoryOrders);
             }
         }
@@ -84,42 +67,27 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
     }
 
     private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
-        long startWait = System.currentTimeMillis();
         page.waitForSelector("div.kwork-card-item", new Page.WaitForSelectorOptions().setTimeout(30000));
-        long waitTime = System.currentTimeMillis() - startWait;
 
-        long startLocate = System.currentTimeMillis();
         Locator elementsOrders = page.locator("div.kwork-card-item");
-        List<Locator> items = elementsOrders.all();
-        long locateTime = System.currentTimeMillis() - startLocate;
 
-        long startParse = System.currentTimeMillis();
-        List<Order> parsedOrders = items.stream()
+        List<Order> parsedOrders = elementsOrders.all()
+                .stream()
                 .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                 .toList();
-        long parseTime = System.currentTimeMillis() - startParse;
 
-        long startSave = System.currentTimeMillis();
         List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-        long saveTime = System.currentTimeMillis() - startSave;
-
-        if (debug){
-            log.debug(
-                    "[{}] Детали парсинга {} / {}: wait={} ms, locate={} ms, parse={} ms, save={} ms, total={} ms",
-                    getSiteName(),
-                    category.getNativeLocName(),
-                    subCategory != null ? subCategory.getNativeLocName() : "без подкатегории",
-                    waitTime,
-                    locateTime,
-                    parseTime,
-                    saveTime,
-                    waitTime + locateTime + parseTime + saveTime
-            );
-        }
+        orders.stream()
+                .peek(order -> {
+                    log.debug("*** {} order: {} , result {}",
+                            getSiteName(),
+                            order.getTitle(),
+                            getParserService().isExistsOrder(category, subCategory, order.getLink()));
+                })
+                .forEach(o -> {});
 
         return orders;
     }
-
 
     public void clickCategory(Page page, Category category, Subcategory subCategory) {
         String url;
@@ -137,29 +105,13 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-
-        long startNavigate = System.currentTimeMillis();
-        clickCategory(page, category, subCategory);
-        long navigateTime = System.currentTimeMillis() - startNavigate;
+        clickCategory(page, pair.getLeft(), pair.getRight());
+        // Задержка
         page.waitForTimeout(500);
-        long startParsing = System.currentTimeMillis();
-        List<OrderDTO> result = tasksParsing(page, siteSourceJobId, category, subCategory);
-        long parsingTime = System.currentTimeMillis() - startParsing;
-
-        if (debug){
-            log.debug(
-                    "[{}] Категория {} / {}: navigate={} ms, parsing={} ms, total={} ms",
-                    getSiteName(),
-                    category.getNativeLocName(),
-                    subCategory != null ? subCategory.getNativeLocName() : "без подкатегории",
-                    navigateTime,
-                    parsingTime,
-                    navigateTime + parsingTime
-            );
-        }
-        return result;
+        // Задержка
+        page.waitForTimeout(500);
+        return tasksParsing(page, siteSourceJobId, category, subCategory);
     }
-
 
     @Override
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
