@@ -56,7 +56,17 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
             session = createSession(HEADLESS, kworkruProxyActive);
             Page page = session.getPage();
             for(Pair<Category, Subcategory> pair: categoriesPairList){
+                long start = System.currentTimeMillis();
                 List<OrderDTO> categoryOrders = mapItemsWithRetry(link, kworkruProxyActive, siteSourceJobId , pair, page);
+                long duration = System.currentTimeMillis() - start;
+                log.debug(
+                        "[{}] Время парсинга категории {} / {}: {} ms ({} сек)",
+                        getSiteName(),
+                        pair.getLeft().getNativeLocName(),
+                        pair.getRight() != null ? pair.getRight().getNativeLocName() : "без подкатегории",
+                        duration,
+                        duration / 1000.0
+                );
                 orders.addAll(categoryOrders);
             }
         }
