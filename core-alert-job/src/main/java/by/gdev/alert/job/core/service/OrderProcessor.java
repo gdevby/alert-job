@@ -6,6 +6,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import by.gdev.alert.job.core.model.ai.AiAppUserDTO;
+import by.gdev.alert.job.core.model.ai.AiOrderModulesDTO;
+import by.gdev.alert.job.core.model.ai.AiOrderRequest;
 import by.gdev.alert.job.core.service.ai.AiOrdersClient;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -54,11 +57,31 @@ public class OrderProcessor {
                                         order.setModuleName(orderModule.getName());
                                         return order;
                                     }).collect(Collectors.toList());
+                            
+                            if (!list.isEmpty() && orderModule.isAutoReplyEnabled()){
+                                AiOrderRequest aiOrderRequest = new AiOrderRequest();
+                                AiAppUserDTO aiAppUserDTO = new AiAppUserDTO();
+                                //Пользователь
+                                aiAppUserDTO.setEmail(user.getEmail());
+                                aiAppUserDTO.setTelegram(user.getTelegram());
+                                aiAppUserDTO.setSwitchOffAlerts(user.isSwitchOffAlerts());
+                                aiAppUserDTO.setDefaultSendType(user.isDefaultSendType());
+                                aiOrderRequest.setUser(aiAppUserDTO);
+                                //Модуль
+                                AiOrderModulesDTO aiOrderModulesDTO = new AiOrderModulesDTO();
+                                aiOrderModulesDTO.setId(orderModule.getId());
+                                aiOrderModulesDTO.setName(orderModule.getName());
+                                aiOrderRequest.setModule(aiOrderModulesDTO);
+                                //Заказы
+                                aiOrderRequest.setOrders(list);
+                                aiOrdersClient.sendAiOrderRequest(aiOrderRequest);
+                            }
+                            
                             return list;
                         }).flatMap(Collection::stream).toList();
                     }).flatMap(Collection::stream).toList();
             if (!orderListToSend.isEmpty()) {
-                aiOrdersClient.sendOrders(orderListToSend);
+                //aiOrdersClient.sendOrders(orderListToSend);
                 sendOrderToUser(user, orderListToSend);
             }
         });

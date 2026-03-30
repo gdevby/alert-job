@@ -1,6 +1,8 @@
 package by.gdev.alert.job.llm.service.aiautoreply.sender;
 
 import by.gdev.alert.job.llm.domain.dto.AiDecision;
+import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
+import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -51,6 +53,11 @@ public class DummyReplySender implements ReplySender {
         sb.append("===================================================\n\n\n");
 
         log.info(sb.toString());
+    }
+
+    @Override
+    public void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision) {
+
     }
 
     private void appendIfNotNull(StringBuilder sb, String label, Object value) {

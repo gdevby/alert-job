@@ -185,6 +185,48 @@ public class AiOrderAnalysisService {
                         .call()
                         .content();
 
+                //НЕ РАБОТАЕТ - StringTemplate v4- подходит для мелких шаблонов типа
+                /*
+                Hello <name>
+                <if(condition)> ... <endif>
+                 <list:{x|...}>*/
+                /*2026-03-30T12:31:45.903+03:00 ERROR 25588 --- [llm] [pool-3-thread-1] b.g.a.j.l.s.a.AiOrderAnalysisService     : Unexpected LLM error
+                java.lang.IllegalArgumentException: The template string is not valid.
+                at org.springframework.ai.chat.prompt.PromptTemplate.<init>(PromptTemplate.java:86)
+                at org.springframework.ai.chat.client.advisor.api.AdvisedRequest.toPrompt(AdvisedRequest.java:171)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultChatClientRequestSpec$1.aroundCall(DefaultChatClient.java:680)
+                at org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain.lambda$nextAroundCall$1(DefaultAroundAdvisorChain.java:98)
+                at io.micrometer.observation.Observation.observe(Observation.java:565)
+                at org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain.nextAroundCall(DefaultAroundAdvisorChain.java:98)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.doGetChatResponse(DefaultChatClient.java:493)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.lambda$doGetObservableChatResponse$1(DefaultChatClient.java:482)
+                at io.micrometer.observation.Observation.observe(Observation.java:565)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.doGetObservableChatResponse(DefaultChatClient.java:482)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.doSingleWithBeanOutputConverter(DefaultChatClient.java:456)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.entity(DefaultChatClient.java:451)
+                at by.gdev.alert.job.llm.service.aiautoreply.AiOrderAnalysisService.lambda$analyze$0(AiOrderAnalysisService.java:186)
+                at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+                at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+                at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+                at java.base/java.lang.Thread.run(Thread.java:1583)
+                Caused by: org.stringtemplate.v4.compiler.STException: null
+                at org.stringtemplate.v4.compiler.Compiler.reportMessageAndThrowSTException(Compiler.java:224)
+                at org.stringtemplate.v4.compiler.Compiler.compile(Compiler.java:154)
+                at org.stringtemplate.v4.STGroup.compile(STGroup.java:514)
+                at org.stringtemplate.v4.ST.<init>(ST.java:162)
+                at org.stringtemplate.v4.ST.<init>(ST.java:156)
+                at org.springframework.ai.chat.prompt.PromptTemplate.<init>(PromptTemplate.java:80)
+	... 16 common frames omitted
+
+                2026-03-30T12:31:45.905+03:00  INFO 25588 --- [llm] [nio-8033-exec-8] b.g.a.j.l.s.a.AiOrderAnalysisService     : AI ANALYSIS PROMPT FILE: prompts/analysis_default.txt
+                2026-03-30T12:31:45.906+03:00  INFO 25588 --- [llm] [nio-8033-exec-8] b.g.a.j.l.s.a.AiOrderAnalysisService     : AI ANALYSIS PROMPT FILE: prompts/analysis_default.txt, estimatedTokens: 1253
+                106:17: 'true' came as a complete surprise to me*/
+                /*AiDecision decision = chatClient.prompt()
+                        .user(prompt)
+                        .call()
+                        .entity(AiDecision.class);
+                 */
+
                 raw = raw.replace("```json", "")
                         .replace("```", "")
                         .trim();

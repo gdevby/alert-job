@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.service.ai;
 
+import by.gdev.alert.job.core.model.ai.AiOrderRequest;
 import by.gdev.common.model.OrderDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,9 @@ public class AiOrdersClient {
     @Value("${ai.api.orders}")
     private String aiOrdersApi;
 
+    @Value("${ai.api.orders.context}")
+    private String aiOrdersContextApi;
+
     public void sendOrders(List<OrderDTO> orders) {
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -39,4 +43,29 @@ public class AiOrdersClient {
             log.error("Ошибка при отправке заказов в AI: {}", e.getMessage(), e);
         }
     }
+
+    public void sendAiOrderRequest(AiOrderRequest request) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<AiOrderRequest> entity = new HttpEntity<>(request, headers);
+
+            String url = aiModuleUrl + aiOrdersContextApi;
+
+            log.info("Отправляю {} заказов в AI для пользователя {} / модуля {}",
+                    request.getOrders().size(),
+                    request.getUser().getEmail(),
+                    request.getModule().getName()
+            );
+
+            restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
+
+            log.info("AI успешно принял заказы");
+        } catch (Exception e) {
+            log.error("Ошибка при отправке AiOrderRequest в AI: {}", e.getMessage(), e);
+        }
+    }
+
+
 }
