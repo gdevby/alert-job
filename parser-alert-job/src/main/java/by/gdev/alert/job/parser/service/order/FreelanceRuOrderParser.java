@@ -89,32 +89,32 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 
                     Element title = project.selectFirst("div.box-title");
                     if (title == null) {
-                        log.warn("NO TITLE BLOCK: {}", project);
+                        log.debug("NO TITLE BLOCK: {}", project);
                         return null;
                     }
                     Element h2 = title.selectFirst("h2.title");
                     if (h2 == null) {
-                        log.warn("NO H2 TITLE: {}", project);
+                        log.debug("NO H2 TITLE: {}", project);
                         return null;
                     }
 
                     // CHECK TITLE FOR EMOJI
                     String titleText = h2.attr("title");
                     if (containsEmoji(titleText)) {
-                        log.warn("SKIP EMOJI ORDER (TITLE): {}", titleText);
+                        log.debug("SKIP EMOJI ORDER (TITLE): {}", titleText);
                         return null;
                     }
                     order.setTitle(titleText);
 
                     Element description = title.selectFirst("a.description");
                     if (description == null) {
-                        log.warn("NO DESCRIPTION: {}", project);
+                        log.debug("NO DESCRIPTION: {}", project);
                         return null;
                     }
 
                     String href = description.attr("href");
                     if (href == null || href.isBlank()) {
-                        log.warn("EMPTY HREF: {}", project);
+                        log.debug("EMPTY HREF: {}", project);
                         return null;
                     }
                     order.setLink(baseURI + href);
@@ -122,7 +122,7 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
                     // CHECK MESSAGE FOR EMOJI
                     String msg = description.text();
                     if (containsEmoji(msg)) {
-                        log.warn("SKIP EMOJI ORDER (MESSAGE): {}", msg);
+                        log.debug("SKIP EMOJI ORDER (MESSAGE): {}", msg);
                         return null;
                     }
                     order.setMessage(msg);
@@ -130,14 +130,14 @@ public class FreelanceRuOrderParser extends AbsctractSiteParser {
 
                     Element priceElement = project.selectFirst("div.cost");
                     if (priceElement == null) {
-                        log.warn("NO PRICE: {}", project);
+                        log.debug("NO PRICE: {}", project);
                         return null;
                     }
 
-                    // 🔥 CHECK PRICE FOR EMOJI
+                    // CHECK PRICE FOR EMOJI
                     String rawPrice = priceElement.text();
                     if (containsEmoji(rawPrice)) {
-                        log.warn("SKIP EMOJI ORDER (PRICE): {}", rawPrice);
+                        log.debug("SKIP EMOJI ORDER (PRICE): {}", rawPrice);
                         return null;
                     }
 
