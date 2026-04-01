@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.service;
 
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.repository.AppUserRepository;
+import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class MailSenderService {
 
 
     public void sendTelegramIssueNotification(AppUser user) {
-        UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE);
+        UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE, NotificationType.ORDER);
 
         webClient.post()
                 .uri(SEND_MESSAGE_URL_MAIL)
@@ -124,9 +125,9 @@ public class MailSenderService {
         UserNotification un;
 
         if (uri.equals(SEND_MESSAGE_URL_MAIL)) {
-            un = new UserNotification(user.getEmail(), message);
+            un = new UserNotification(user.getEmail(), message, NotificationType.ORDER);
         } else {
-            un = new UserNotification(String.valueOf(user.getTelegram()), message);
+            un = new UserNotification(String.valueOf(user.getTelegram()), message, NotificationType.ORDER);
         }
 
         try {

@@ -13,12 +13,8 @@ public class AiFilterService {
     private final OrderModulesRepository orderModulesRepository;
 
     public boolean getAutoReplyStatus(String uuid, Long moduleId){
-        boolean status = false;
         Optional<OrderModules> orderModule = orderModulesRepository.findById(moduleId);
-        if (orderModule.isPresent()){
-            status = orderModule.get().isAutoReplyEnabled();
-        }
-        return status;
+        return orderModule.isPresent() && Boolean.TRUE.equals(orderModule.get().getAutoReplyEnabled());
     }
 
     public void setAutoReplyStatus(String uuid, Long moduleId, boolean status){

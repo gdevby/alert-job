@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.controller;
 import by.gdev.alert.job.notification.model.dto.AiAppUserDTO;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.service.MailService;
+import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class AiNotificationController {
 
             if (user.getEmail()!= null || user.getTelegram() != null){
                 UserNotification userNotification = new UserNotification();
+                userNotification.setType(NotificationType.AUTO_REPLY);
                 if (isDefaultSendType) {
                     // EMAIL → HTML шаблон
                     String html = buildAiReplyEmailTemplate(payload);

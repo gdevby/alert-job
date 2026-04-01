@@ -58,7 +58,7 @@ public class OrderProcessor {
                                         return order;
                                     }).collect(Collectors.toList());
                             
-                            if (!list.isEmpty() && orderModule.isAutoReplyEnabled()){
+                            if (!list.isEmpty() && Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
                                 AiOrderRequest aiOrderRequest = new AiOrderRequest();
                                 AiAppUserDTO aiAppUserDTO = new AiAppUserDTO();
                                 //Пользователь

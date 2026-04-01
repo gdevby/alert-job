@@ -17,7 +17,7 @@ public class OrderModules extends BasicId {
 	private String name;
 	private boolean available;
     @Column(name = "auto_reply_enabled")
-    private boolean autoReplyEnabled = true;
+    private Boolean autoReplyEnabled = true;
     @ManyToOne
 	private AppUser user;
 	@ManyToMany
