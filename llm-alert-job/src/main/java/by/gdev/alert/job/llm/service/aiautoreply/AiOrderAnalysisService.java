@@ -1,9 +1,13 @@
 package by.gdev.alert.job.llm.service.aiautoreply;
 
+import by.gdev.alert.job.llm.domain.AiReplyTemplate;
 import by.gdev.alert.job.llm.domain.dto.AiDecision;
+import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
+import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TimeRateLimiter;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TokenBucket;
+import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,16 +30,18 @@ public class AiOrderAnalysisService {
     private final TokenBucket tokenBucket;
     private final TimeRateLimiter timeRateLimiter;
     private final ExecutorService llmExecutor;
+    private final AiReplyTemplateService templateService;
 
     @Autowired
     public AiOrderAnalysisService(ChatClient.Builder builder, ObjectMapper mapper,
                                   TokenBucket tokenBucket, TimeRateLimiter timeRateLimiter,
-                                  ExecutorService llmExecutor) {
+                                  ExecutorService llmExecutor, AiReplyTemplateService templateService) {
         this.chatClient = builder.build();
         this.mapper = mapper;
         this.tokenBucket = tokenBucket;
         this.timeRateLimiter = timeRateLimiter;
         this.llmExecutor = llmExecutor;
+        this.templateService = templateService;
     }
 
     private int estimateTokens(String prompt) { // грубая оценка: 1 токен это 4 символа
@@ -52,6 +58,32 @@ public class AiOrderAnalysisService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to load prompt: " + path, e);
         }
+    }
+
+    public String loadTemplate(String userUuid, Long moduleId) {
+
+        // 1. Проверяем пользовательский шаблон
+        if (userUuid != null && moduleId != null) {
+            AiReplyTemplate userTemplate =
+                    templateService.getTemplateForUserAndModule(userUuid, moduleId);
+
+            if (userTemplate != null) {
+                log.info("Using USER template for user={}, module={}", userUuid, moduleId);
+                return userTemplate.getHtmlTemplate();
+            }
+        }
+
+        // 2. Если пользовательского нет — используем системный default
+        log.info("Using DEFAULT template");
+
+        String defaultPath = "prompts/templates/default.txt";
+        String defaultContent = loadFromClasspath(defaultPath);
+
+        if (defaultContent != null) {
+            return defaultContent;
+        }
+
+        throw new RuntimeException("Default template not found: " + defaultPath);
     }
 
     public String loadTemplate(String type, String site) {
@@ -127,7 +159,7 @@ public class AiOrderAnalysisService {
     }
 
 
-    public AiDecision analyze(OrderDTO order){
+    public AiDecision analyze(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule){
 
         String orderTitle = order.getTitle();
         String orderContent = order.getMessage();
@@ -151,7 +183,14 @@ public class AiOrderAnalysisService {
 
         // 4. Загружаем шаблон письма
         String replyTemplate;
-        replyTemplate = loadTemplate(type, siteName);
+        if (user == null || orderModule == null){
+            log.debug("Template source: DEFAULT (user or module is null)");
+            replyTemplate = loadTemplate(type, siteName);
+        }
+        else {
+            log.info("Template source: USER (user={}, module={})", user.getUuid(), orderModule.getName());
+            replyTemplate = loadTemplate(user.getUuid(), orderModule.getId());
+        }
 
         // 5. Формируем prompt
         String prompt = promptTemplate.formatted(

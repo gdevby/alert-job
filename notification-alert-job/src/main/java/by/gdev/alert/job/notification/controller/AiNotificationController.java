@@ -33,7 +33,7 @@ public class AiNotificationController {
                     userNotification.setMessage(html);
                     userNotification.setToMail(user.getEmail());
                     log.debug("AI нотификация по почте");
-                    service.sendMessage(userNotification);
+                    service.sendMessage(userNotification).subscribe();
                 }
                 else {
                     // TELEGRAM → обычный текст
@@ -49,6 +49,10 @@ public class AiNotificationController {
 
 
     private String buildAiReplyEmailTemplate(AiNotificationPayload payload) {
+
+        String replyHtml = payload.getDecision().reply()
+                .replace("\n", "<br>");
+
         return String.format("""
         <div style="font-family: Arial, sans-serif; padding: 12px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa; margin-bottom: 12px;">
             <h3 style="margin: 0 0 10px 0; color: #333;">Автоответ от AI</h3>
@@ -81,9 +85,7 @@ public class AiNotificationController {
                 payload.getOrder().getTitle(),
                 payload.getOrder().getLink(),
                 payload.getOrder().getLink(),
-                payload.getDecision().reply()
+                replyHtml
         );
     }
-
-
 }

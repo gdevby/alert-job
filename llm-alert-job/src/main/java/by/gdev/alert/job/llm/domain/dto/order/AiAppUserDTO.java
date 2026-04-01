@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class AiAppUserDTO {
+    private String uuid;
     private String email;
     private Long telegram;
     private boolean switchOffAlerts;
