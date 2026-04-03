@@ -5,6 +5,7 @@ import by.gdev.alert.job.llm.domain.dto.AiDecision;
 import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TimeRateLimiter;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TokenBucket;
 import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
@@ -31,33 +32,25 @@ public class AiOrderAnalysisService {
     private final TimeRateLimiter timeRateLimiter;
     private final ExecutorService llmExecutor;
     private final AiReplyTemplateService templateService;
+    private final AiPromptService aiPromptService;
 
     @Autowired
     public AiOrderAnalysisService(ChatClient.Builder builder, ObjectMapper mapper,
                                   TokenBucket tokenBucket, TimeRateLimiter timeRateLimiter,
-                                  ExecutorService llmExecutor, AiReplyTemplateService templateService) {
+                                  ExecutorService llmExecutor, AiReplyTemplateService templateService,
+                                  AiPromptService aiPromptService) {
         this.chatClient = builder.build();
         this.mapper = mapper;
         this.tokenBucket = tokenBucket;
         this.timeRateLimiter = timeRateLimiter;
         this.llmExecutor = llmExecutor;
         this.templateService = templateService;
+        this.aiPromptService = aiPromptService;
     }
 
     private int estimateTokens(String prompt) { // грубая оценка: 1 токен это 4 символа
         int length = prompt.length();
         return Math.max(1, length / 4);
-    }
-
-    private String loadPrompt(String path) {
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(path)) {
-            if (is == null) {
-                throw new IllegalStateException("Prompt file not found: " + path);
-            }
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load prompt: " + path, e);
-        }
     }
 
     public String loadTemplate(String userUuid, Long moduleId) {
@@ -126,39 +119,6 @@ public class AiOrderAnalysisService {
         return "default";
     }
 
-
-    private String selectPromptFile(String categoryName, String subcategoryName) {
-
-        String cat = categoryName == null ? "" : categoryName.toLowerCase();
-        String sub = subcategoryName == null ? "" : subcategoryName.toLowerCase();
-
-        // DESIGN
-        if (cat.contains("design") ||
-                sub.contains("design") ||
-                sub.contains("brand") ||
-                sub.contains("identity") ||
-                sub.contains("logo") ||
-                sub.contains("corporate") ||
-                sub.contains("letterhead") ||
-                sub.contains("business card")) {
-            return "prompts/analysis_design.txt";
-        }
-
-        // CHATBOTS
-        if (sub.contains("chatbot") || sub.contains("chatbots")) {
-            return "prompts/analysis_chatbots.txt";
-        }
-
-        // DEVELOPMENT & IT
-        if (cat.contains("development") || cat.contains("it")) {
-            return "prompts/analysis_dev.txt";
-        }
-
-        // DEFAULT
-        return "prompts/analysis_default.txt";
-    }
-
-
     public AiDecision analyze(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule){
 
         String orderTitle = order.getTitle();
@@ -170,13 +130,9 @@ public class AiOrderAnalysisService {
         String categoryName = order.getSourceSite() != null ? order.getSourceSite().getCategoryName() : null;
         String subcategoryName = order.getSourceSite() != null ? order.getSourceSite().getSubCategoryName() : null;
         String orderDate = order.getDateTime() != null ? order.getDateTime().toString() : "не указана";
-
         List<String> keywords = List.of();
 
-        String promptFile = selectPromptFile(categoryName, subcategoryName);
-        log.info("AI ANALYSIS PROMPT FILE: {}", promptFile);
-
-        String promptTemplate = loadPrompt(promptFile);
+        String promptTemplate = aiPromptService.getPrompt(categoryName, subcategoryName);
 
         // 3. Определяем тип проекта (front/back/dev/mobile)
         String type = detectType(categoryName, subcategoryName);
@@ -208,7 +164,7 @@ public class AiOrderAnalysisService {
         );
 
         int estimatedTokens = estimateTokens(prompt);
-        log.info("AI ANALYSIS PROMPT FILE: {}, estimatedTokens: {}", promptFile, estimatedTokens);
+        log.info("AI ANALYSIS PROMPT TYPE: {}, estimatedTokens: {}", type, estimatedTokens);
 
         Future<AiDecision> future = llmExecutor.submit(() -> {
             try {
@@ -309,8 +265,5 @@ public class AiOrderAnalysisService {
             );
         }
     }
-
-
-
 }
 
