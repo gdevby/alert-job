@@ -4,33 +4,43 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("groq")
-public class GroqStartupCheck implements ApplicationRunner {
+public class AiStartupCheck implements ApplicationRunner {
 
     private final ChatClient chatClientStartup;
+
     @Value("${spring.ai.openai.chat.options.model}")
     private String model;
 
-    public GroqStartupCheck(ChatClient chatClientStartup) {
+    @Value("${AI_BASE_URL}")
+    private String baseUrl;
+
+    public AiStartupCheck(ChatClient chatClientStartup) {
         this.chatClientStartup = chatClientStartup;
     }
 
     @Override
     public void run(ApplicationArguments args) {
+        String provider = detectProvider(baseUrl);
+
         try {
             chatClientStartup
-                    .prompt("ping")
+                    .prompt("Respond with OK only.")
                     .call()
                     .content();
 
-            System.out.println("Groq доступен");
+            System.out.println(provider + " доступен");
             System.out.println("Используемая модель: " + model);
         } catch (Exception e) {
-            System.err.println("Groq недоступен: " + e.getMessage());
+            System.err.println(provider + " недоступен: " + e.getMessage());
         }
+    }
+
+    private String detectProvider(String url) {
+        if (url.contains("groq")) return "Groq";
+        if (url.contains("openrouter")) return "OpenRouter";
+        return "AI провайдер";
     }
 }
