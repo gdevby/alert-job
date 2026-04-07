@@ -31,7 +31,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 
-    private static boolean HEADLESS = true;
+    private static boolean HEADLESS = false;
 
     @Value("${freelancehunt.proxy.active}")
     private boolean freelancehuntProxyActive;
@@ -58,7 +58,11 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         categoryLink.click(new Locator.ClickOptions().setTimeout(30000));
 
         // ждём загрузки страницы после клика
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        //page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+        page.locator("div.job-list-item").first().waitFor();
+
     }
 
 	private Order parseOrder(Locator item, Long siteSourceJobId, Category category, Subcategory subCategory) {
@@ -206,7 +210,9 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
     private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
         Locator elementsOrders = page.locator("div.job-list-item");
-        List<Order> parsedOrders = elementsOrders.all()
+        elementsOrders.first().waitFor();
+        List<Locator> items = elementsOrders.all();
+        List<Order> parsedOrders = items
                 .stream()
                 .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                 .toList();
