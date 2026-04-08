@@ -31,7 +31,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 
-    private static boolean HEADLESS = false;
+    private static boolean HEADLESS = true;
 
     @Value("${freelancehunt.proxy.active}")
     private boolean freelancehuntProxyActive;
