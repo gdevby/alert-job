@@ -171,7 +171,10 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 return result;
 
             } catch (PlaywrightException e) {
-                if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
+                if (e.getMessage() != null &&
+                        (e.getMessage().contains("Timeout")
+                                || e.getMessage().contains("Execution context was destroyed")
+                                || e.getMessage().contains("Most likely because of a navigation"))) {
                     if (debug){
                         log.warn("Timeout playwright {} {}", getSiteName(), e.getMessage());
                     }
@@ -242,60 +245,6 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         );
     }
 
-    /*public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
-                                            Long siteSourceJobId, Category category, Subcategory subCategory) {
-        if (!active)
-            return List.of();
-
-        Exception lastError = null;
-        for (int attempt = 1; attempt <= retryAttempts; attempt++) {
-            try {
-                log.info("Попытка {}/{} парсинга {}: категория '{}', подкатегория '{}', прокси {}",
-                        attempt,
-                        retryAttempts,
-                        getSiteName(),
-                        category.getNativeLocName(),
-                        subCategory != null ? subCategory.getNativeLocName() : "нет",
-                        proxyActive ? "включен" : "выключен");
-
-                List<OrderDTO> result = mapPlaywrightItems(link, siteSourceJobId, category, subCategory);
-                return result;
-            }catch (PlaywrightException e) {
-            if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
-                if (debug){
-                    log.warn("Timeout playright {} {}", getSiteName(), e.getMessage());
-                }
-                continue;
-            }
-            lastError = e;
-            log.error("Playwright ошибка на попытке {} для {}: {}", attempt, getSiteName(), e.getMessage());
-            }
-            catch (Exception e) {
-                lastError = e;
-                log.error("Неожиданная ошибка на попытке {} для {}: {}", attempt, getSiteName(), e.getMessage());
-            }
-
-            //Задержка между попытками
-            if (attempt < retryAttempts) {
-                try {
-                    Thread.sleep(retryDelayMs);
-                }
-                catch (InterruptedException ignored) {
-                }
-            }
-        }
-        if (lastError == null) {
-            //log.warn("Все {} попытки парсинга {} дали пустой результат", retryAttempts, getSiteName());
-            return List.of();
-        }
-
-        log.error("Все {} попытки парсинга {} провалились. Последняя ошибка: {}",
-                retryAttempts,
-                getSiteName(),
-                lastError.getMessage());
-        return List.of();
-    }*/
-
     protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
         parserService.saveOrderLinks(category, subCategory, order.getLink());
         ParserSource ps = order.getSourceSite();
@@ -328,11 +277,6 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                     }
                 })
                 .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                /*.filter(order -> !orderRepository.existsByLinkCategoryAndSubCategory(
-                        order.getLink(),
-                        category.getId(),
-                        subCategory != null ? subCategory.getId() : null
-                ))*/
                 .map(order -> saveOrder(order, category, subCategory))
                 .map(order -> getOrderData(order, category, subCategory))
                 .toList();

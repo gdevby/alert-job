@@ -37,13 +37,14 @@ public class PlaywrightManager {
     public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy,  SiteName site){
         BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                 .setHeadless(headless)
+                .setSlowMo(120)
                 .setArgs(Arrays.asList(
-                        "--disable-blink-features=AutomationControlled",
-                        "--no-sandbox",
-                        "--disable-dev-shm-usage",
-                        "--window-size=1920,1080",
-                        "--disable-gpu",
-                        "--disable-software-rasterizer"
+                        "--start-maximized",
+                        "--disable-infobars",
+                        "--disable-notifications",
+                        "--window-size=1366,768",
+                        "--no-default-browser-check",
+                        "--no-first-run"
                 ));
 
         ProxyCredentials usedProxy = null;
@@ -192,26 +193,68 @@ public class PlaywrightManager {
         if (useProxy){
             ProxyCredentials usedProxy = proxy != null ? proxy : proxyService.getRandomActiveProxy();
             options = new Browser.NewContextOptions()
-                    .setViewportSize(1920, 1080)
-                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                            "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                            "Chrome/120.0.0.0 Safari/537.36")
+                    .setViewportSize(1366, 768)
+                    .setUserAgent(
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                                    "Chrome/123.0.0.0 Safari/537.36"
+                    )
+                    .setLocale("ru-RU")
+                    .setTimezoneId("Europe/Berlin")
+                    .setDeviceScaleFactor(1.0)
+                    .setIsMobile(false)
+                    .setHasTouch(false)
                     .setProxy(new Proxy("http://" + usedProxy.getHost() + ":" + usedProxy.getPort())
                             .setUsername(usedProxy.getUsername())
                             .setPassword(usedProxy.getPassword()));
         }
         else {
             options = new Browser.NewContextOptions()
-                    .setViewportSize(1920, 1080)
-                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                    .setViewportSize(1366, 768)
+                    .setUserAgent(
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                    "Chrome/120.0.0.0 Safari/537.36");
+                                    "Chrome/123.0.0.0 Safari/537.36"
+                    )
+                    .setLocale("ru-RU")
+                    .setTimezoneId("Europe/Berlin")
+                    .setDeviceScaleFactor(1.0)
+                    .setIsMobile(false)
+                    .setHasTouch(false);
         }
         context = browser.newContext(options);
-        context.addInitScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-                + "window.chrome = { runtime: {} };"
-                + "Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3]});"
-                + "Object.defineProperty(navigator, 'languages', {get: () => ['ru-RU','ru','en-US','en']});");
+        context.addInitScript(
+                // webdriver = undefined
+                "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });" +
+
+                        // window.chrome — реалистичный объект
+                        "Object.defineProperty(window, 'chrome', {" +
+                        "  get: () => ({" +
+                        "    runtime: {}," +
+                        "    app: { isInstalled: false }," +
+                        "    webstore: { onInstallStageChanged: {}, onDownloadProgress: {} }" +
+                        "  })" +
+                        "});" +
+
+                        // Реалистичные плагины
+                        "Object.defineProperty(navigator, 'plugins', {" +
+                        "  get: () => [" +
+                        "    { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }," +
+                        "    { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' }," +
+                        "    { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' }" +
+                        "  ]" +
+                        "});" +
+
+                        // Локали
+                        "Object.defineProperty(navigator, 'languages', { get: () => ['en-US','ru-RU','en','ru'] });" +
+
+                        // CPU
+                        "Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });" +
+
+                        // RAM
+                        "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });"
+        );
+
         return context;
     }
 }
