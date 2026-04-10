@@ -187,7 +187,7 @@ public class PlaywrightManager {
         }
     }
 
-    public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
+    public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, SiteName site) {
         BrowserContext context;
         Browser.NewContextOptions options;
         if (useProxy){
@@ -200,7 +200,6 @@ public class PlaywrightManager {
                                     "Chrome/123.0.0.0 Safari/537.36"
                     )
                     .setLocale("ru-RU")
-                    .setTimezoneId("Europe/Berlin")
                     .setDeviceScaleFactor(1.0)
                     .setIsMobile(false)
                     .setHasTouch(false)
@@ -210,18 +209,22 @@ public class PlaywrightManager {
         }
         else {
             options = new Browser.NewContextOptions()
-                    .setViewportSize(1366, 768)
+                    .setViewportSize(1920, 1080)
                     .setUserAgent(
                             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
                                     "Chrome/123.0.0.0 Safari/537.36"
                     )
                     .setLocale("ru-RU")
-                    .setTimezoneId("Europe/Berlin")
                     .setDeviceScaleFactor(1.0)
                     .setIsMobile(false)
                     .setHasTouch(false);
         }
+
+        if (SiteName.FREELANCEHUNT.equals(site)){
+            options.setTimezoneId("Europe/Berlin");
+        }
+
         context = browser.newContext(options);
         context.addInitScript(
                 // webdriver = undefined
@@ -254,7 +257,6 @@ public class PlaywrightManager {
                         // RAM
                         "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });"
         );
-
         return context;
     }
 }
