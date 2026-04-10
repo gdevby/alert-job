@@ -53,7 +53,7 @@ public class AiOrdersClient {
 
             String url = aiModuleUrl + aiOrdersContextApi;
 
-            log.info("Отправляю {} заказов в AI для пользователя {} / модуля {}",
+            log.debug("Отправляю {} заказов в AI для пользователя {} / модуля {}",
                     request.getOrders().size(),
                     request.getUser().getEmail(),
                     request.getModule().getName()
@@ -61,7 +61,7 @@ public class AiOrdersClient {
 
             restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
 
-            log.info("AI успешно принял заказы");
+            log.debug("AI успешно принял заказы");
         } catch (Exception e) {
             log.error("Ошибка при отправке AiOrderRequest в AI: {}", e.getMessage(), e);
         }

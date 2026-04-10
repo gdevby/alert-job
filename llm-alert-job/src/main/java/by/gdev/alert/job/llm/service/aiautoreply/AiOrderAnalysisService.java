@@ -6,8 +6,8 @@ import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
-import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TimeRateLimiter;
-import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TokenBucket;
+//import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TimeRateLimiter;
+//import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TokenBucket;
 import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +28,13 @@ public class AiOrderAnalysisService {
 
     private final ChatClient chatClient;
     private final ObjectMapper mapper;
-    private final TokenBucket tokenBucket;
-    private final TimeRateLimiter timeRateLimiter;
+    //private final TokenBucket tokenBucket;
+    //private final TimeRateLimiter timeRateLimiter;
     private final ExecutorService llmExecutor;
     private final AiReplyTemplateService templateService;
     private final AiPromptService aiPromptService;
 
-    @Autowired
+    /*@Autowired
     public AiOrderAnalysisService(ChatClient.Builder builder, ObjectMapper mapper,
                                   TokenBucket tokenBucket, TimeRateLimiter timeRateLimiter,
                                   ExecutorService llmExecutor, AiReplyTemplateService templateService,
@@ -46,12 +46,23 @@ public class AiOrderAnalysisService {
         this.llmExecutor = llmExecutor;
         this.templateService = templateService;
         this.aiPromptService = aiPromptService;
+    }*/
+
+    @Autowired
+    public AiOrderAnalysisService(ChatClient.Builder builder, ObjectMapper mapper,
+                                  ExecutorService llmExecutor, AiReplyTemplateService templateService,
+                                  AiPromptService aiPromptService) {
+        this.chatClient = builder.build();
+        this.mapper = mapper;
+        this.llmExecutor = llmExecutor;
+        this.templateService = templateService;
+        this.aiPromptService = aiPromptService;
     }
 
-    private int estimateTokens(String prompt) { // грубая оценка: 1 токен это 4 символа
+    /*private int estimateTokens(String prompt) { // грубая оценка: 1 токен это 4 символа
         int length = prompt.length();
         return Math.max(1, length / 4);
-    }
+    }*/
 
     public String loadTemplate(String userUuid, Long moduleId) {
 
@@ -61,13 +72,13 @@ public class AiOrderAnalysisService {
                     templateService.getTemplateForUserAndModule(userUuid, moduleId);
 
             if (userTemplate != null) {
-                log.info("Using USER template for user={}, module={}", userUuid, moduleId);
+                log.debug("Using USER template for user={}, module={}", userUuid, moduleId);
                 return userTemplate.getHtmlTemplate();
             }
         }
 
         // 2. Если пользовательского нет — используем системный default
-        log.info("Using DEFAULT template");
+        log.debug("Using DEFAULT template");
 
         String defaultPath = "prompts/templates/default.txt";
         String defaultContent = loadFromClasspath(defaultPath);
@@ -144,7 +155,7 @@ public class AiOrderAnalysisService {
             replyTemplate = loadTemplate(type, siteName);
         }
         else {
-            log.info("Template source: USER (user={}, module={})", user.getUuid(), orderModule.getName());
+            log.debug("Template source: USER (user={}, module={})", user.getUuid(), orderModule.getName());
             replyTemplate = loadTemplate(user.getUuid(), orderModule.getId());
         }
 
@@ -163,16 +174,17 @@ public class AiOrderAnalysisService {
                 replyTemplate
         );
 
-        int estimatedTokens = estimateTokens(prompt);
-        log.info("AI ANALYSIS PROMPT TYPE: {}, estimatedTokens: {}", type, estimatedTokens);
+        //int estimatedTokens = estimateTokens(prompt);
+        int estimatedTokens = 0;
+        log.debug("AI ANALYSIS PROMPT TYPE: {}, estimatedTokens: {}", type, estimatedTokens);
 
         Future<AiDecision> future = llmExecutor.submit(() -> {
             try {
                 // Лимит по времени между запросами
-                timeRateLimiter.awaitSlot();
+                //timeRateLimiter.awaitSlot();
 
                 // Лимит по токенам в минуту
-                tokenBucket.consume(estimatedTokens);
+                //tokenBucket.consume(estimatedTokens);
 
                 // Вызов LLM
                 String raw = chatClient.prompt()

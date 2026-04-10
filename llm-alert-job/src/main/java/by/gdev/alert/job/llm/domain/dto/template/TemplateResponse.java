@@ -5,6 +5,5 @@ import lombok.Data;
 @Data
 public class TemplateResponse {
     private Long id;
-    private Long moduleId;
     private String htmlTemplate;
 }

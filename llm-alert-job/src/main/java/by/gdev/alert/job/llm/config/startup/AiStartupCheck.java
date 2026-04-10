@@ -1,5 +1,6 @@
 package by.gdev.alert.job.llm.config.startup;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -7,6 +8,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class AiStartupCheck implements ApplicationRunner {
 
     private final ChatClient chatClientStartup;
@@ -31,10 +33,10 @@ public class AiStartupCheck implements ApplicationRunner {
                     .call()
                     .content();
 
-            System.out.println(provider + " доступен");
-            System.out.println("Используемая модель: " + model);
+            log.debug("{} доступен", provider);
+            log.debug("Используемая модель: {}", model);
         } catch (Exception e) {
-            System.err.println(provider + " недоступен: " + e.getMessage());
+            log.error("{} недоступен: {}", provider, e.getMessage());
         }
     }
 

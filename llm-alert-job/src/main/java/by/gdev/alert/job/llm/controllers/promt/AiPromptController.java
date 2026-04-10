@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 @RestController
 @RequestMapping("/api/prompts")
 @RequiredArgsConstructor
-public class AiPromptAdminController {
+public class AiPromptController {
 
     private final AiPromptService promptService;
 
