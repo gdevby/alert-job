@@ -92,7 +92,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy);
+        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
     }
 
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
