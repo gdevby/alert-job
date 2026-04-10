@@ -47,7 +47,7 @@ public abstract class PlaywrightCategoryParser implements Parser {
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy);
+        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
     }
 
     public Map<ParsedCategory, List<ParsedCategory>> parseWithRetry(SiteSourceJob job) {
