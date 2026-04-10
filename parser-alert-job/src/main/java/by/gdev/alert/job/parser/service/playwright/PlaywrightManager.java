@@ -1,8 +1,8 @@
 package by.gdev.alert.job.parser.service.playwright;
 
-import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.util.SiteName;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.proxy.ProxyService;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.Proxy;
@@ -34,7 +34,7 @@ public class PlaywrightManager {
         return playwright;
     }
 
-    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy,  SiteName site){
+    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy, SiteName site){
         BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                 .setHeadless(headless)
                 .setArgs(Arrays.asList(

@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.util.proxy;
+package by.gdev.common.service.proxy.supplier;
 
 
 import lombok.extern.slf4j.Slf4j;

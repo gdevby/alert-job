@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.proxy.db;
+package by.gdev.common.model.proxy;
 
 public enum ProxyState {
     NEW,            // только что добавлен, ещё не проверен

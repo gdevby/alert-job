@@ -2,7 +2,9 @@ package by.gdev.alert.job.notification.controller;
 
 import by.gdev.alert.job.notification.model.dto.AiAppUserDTO;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
+import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.MailService;
+import by.gdev.alert.job.notification.service.ai.credential.UserCredentialService;
 import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AiNotificationController {
     private final MailService service;
+    private final UserCredentialService userCredentialService;
 
     @PostMapping("/decision")
     public ResponseEntity<Void> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
@@ -23,6 +26,7 @@ public class AiNotificationController {
         AiAppUserDTO user = payload.getUser();
         if (user != null){
             boolean isDefaultSendType = user.isDefaultSendType();
+            DecryptedCredential credential = userCredentialService.getUserCredentials(payload);
 
             if (user.getEmail()!= null || user.getTelegram() != null){
                 UserNotification userNotification = new UserNotification();

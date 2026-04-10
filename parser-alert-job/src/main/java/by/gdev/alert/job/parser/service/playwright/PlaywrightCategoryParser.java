@@ -4,7 +4,7 @@ import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.service.Parser;
 import by.gdev.alert.job.parser.service.category.ParsedCategory;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
+import by.gdev.common.model.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

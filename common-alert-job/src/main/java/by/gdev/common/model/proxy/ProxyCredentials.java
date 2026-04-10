@@ -1,6 +1,5 @@
-package by.gdev.alert.job.parser.util.proxy;
+package by.gdev.common.model.proxy;
 
-import by.gdev.alert.job.parser.proxy.db.ProxyState;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

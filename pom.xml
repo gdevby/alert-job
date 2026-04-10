@@ -13,7 +13,7 @@
 		<module>common-alert-job</module>
 		<module>notification-alert-job</module>
 		<module>llm-alert-job</module>
-	</modules>
+    </modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>

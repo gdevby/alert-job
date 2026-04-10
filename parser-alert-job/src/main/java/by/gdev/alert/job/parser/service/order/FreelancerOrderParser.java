@@ -3,13 +3,12 @@ package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.currency.Currency;
 import by.gdev.alert.job.parser.domain.db.*;
-import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
 import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
 
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;

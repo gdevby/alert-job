@@ -1,7 +1,7 @@
-package by.gdev.alert.job.parser.proxy.service;
+package by.gdev.common.service.proxy;
 
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
-import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

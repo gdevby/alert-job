@@ -3,7 +3,7 @@ package by.gdev.alert.job.parser.service.category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
+import by.gdev.common.model.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import lombok.extern.slf4j.Slf4j;

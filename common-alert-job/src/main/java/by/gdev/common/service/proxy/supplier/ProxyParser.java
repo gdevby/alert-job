@@ -1,6 +1,6 @@
-package by.gdev.alert.job.parser.util.proxy;
-
-import by.gdev.alert.job.parser.proxy.db.ProxyState;
+package by.gdev.common.service.proxy.supplier;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.model.proxy.ProxyState;
 
 public class ProxyParser {
     public ProxyCredentials parse(String proxyLine){
