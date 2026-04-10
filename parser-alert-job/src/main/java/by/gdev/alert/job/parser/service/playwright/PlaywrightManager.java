@@ -209,7 +209,7 @@ public class PlaywrightManager {
         }
         else {
             options = new Browser.NewContextOptions()
-                    .setViewportSize(1920, 1080)
+                    .setViewportSize(1366, 768)
                     .setUserAgent(
                             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
