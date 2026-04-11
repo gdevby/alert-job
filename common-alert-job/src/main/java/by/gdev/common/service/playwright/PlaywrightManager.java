@@ -1,6 +1,5 @@
-package by.gdev.alert.job.parser.service.playwright;
+package by.gdev.common.service.playwright;
 
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.proxy.ProxyService;
 import com.microsoft.playwright.*;
@@ -34,7 +33,7 @@ public class PlaywrightManager {
         return playwright;
     }
 
-    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy, SiteName site){
+    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy, String site){
         BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                 .setHeadless(headless)
                 .setSlowMo(120)
@@ -63,7 +62,7 @@ public class PlaywrightManager {
             log.error("Ошибка запуска браузера для {}: {}", site, e.getMessage(), e);
             throw e;
         }
-        
+
         return browser;
     }
 
@@ -97,7 +96,7 @@ public class PlaywrightManager {
         return null;
     }
 
-    public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright, SiteName site) {
+    public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright, String site) {
         // Закрываем Page
         if (page != null) {
             try {
@@ -187,7 +186,7 @@ public class PlaywrightManager {
         }
     }
 
-    public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, SiteName site) {
+    public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, String site) {
         BrowserContext context;
         Browser.NewContextOptions options;
         if (useProxy){
@@ -221,7 +220,7 @@ public class PlaywrightManager {
                     .setHasTouch(false);
         }
 
-        if (SiteName.FREELANCEHUNT.equals(site)){
+        if ("FREELANCEHUNT".equals(site)){
             options.setTimezoneId("Europe/Berlin");
         }
 

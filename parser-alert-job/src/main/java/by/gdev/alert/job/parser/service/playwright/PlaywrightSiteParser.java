@@ -12,6 +12,7 @@ import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -88,15 +89,15 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     }
 
     protected void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
+        playwrightManager.closeResources(page, context , browser, playwright, getSiteName().name());
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
+        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName().name());
     }
 
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
+        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName().name());
     }
 
     /**
