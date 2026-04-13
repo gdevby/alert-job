@@ -30,6 +30,8 @@ public abstract class PlaywrightCategoryParser implements Parser {
     @Value("${parser.category.retry.delay:2000}")
     private long retryDelayMs;
 
+    protected boolean headless;
+
     public ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         return playwrightManager.getProxyWithRetry(maxRetries, retryDelayMs);
     }

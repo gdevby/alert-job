@@ -29,11 +29,14 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
     @Value("${freelancer.proxy.active}")
     private boolean freelancerProxyActive;
 
-    private static boolean HEADLESS = true;
-
     @Value("${parser.work.freelancer.com}")
     private void setActive(boolean active) {
         this.active = active;
+    }
+
+    @Value("${parser.headless.freelancer.com}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
     }
 
     @Override
@@ -51,7 +54,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
 
         PlaywrightSession session = null;
         try {
-            session = createSession(HEADLESS, freelancerProxyActive);
+            session = createSession(headless, freelancerProxyActive);
             Page page = session.getPage();
             for(Pair<Category, Subcategory> pair: categoriesPairList){
                 List<OrderDTO> categoryOrders = mapItemsWithRetry(link, freelancerProxyActive, siteSourceJobId , pair, page);

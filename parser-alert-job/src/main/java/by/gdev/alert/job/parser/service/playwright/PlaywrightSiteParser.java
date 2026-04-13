@@ -68,6 +68,8 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     protected boolean debug;
 
+    protected boolean headless;
+
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {

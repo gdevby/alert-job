@@ -41,7 +41,10 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         this.active = active;
     }
 
-    private static boolean HEADLESS = true;
+    @Value("${parser.headless.youdo.com}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
+    }
 
     @Value("${youdo.debug:false}")
     private void setDebug(boolean debug) {
@@ -63,7 +66,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
         PlaywrightSession session = null;
         try {
-            session = createSession(HEADLESS, youdoProxyActive);
+            session = createSession(headless, youdoProxyActive);
             Page page = session.getPage();
             firstLoad(page);
             for(Pair<Category, Subcategory> pair: categoriesPairList){
@@ -114,7 +117,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             return orders;
         PlaywrightSession session = null;
         try {
-            session = createSession(HEADLESS, youdoProxyActive);
+            session = createSession(headless, youdoProxyActive);
             Page page = session.getPage();
             firstLoad(page);
             clickCategory(page, category, subCategory);
