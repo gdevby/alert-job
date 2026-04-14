@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.credential;
 import by.gdev.alert.job.notification.model.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -29,5 +30,22 @@ public class UserCredentialService {
                 encrypted.getLogin(),
                 decryptedPassword
         );
+    }
+
+
+    public Mono<DecryptedCredential> getMonoUserCredentials(AiNotificationPayload payload) {
+
+        String userUuid = payload.getUser().getUuid();
+        Long moduleId = payload.getModule().getId();
+        Long siteId = payload.getOrder().getSourceSite().getId();
+
+        return credentialClient.getMonoEncryptedCredentials(userUuid, siteId, moduleId)
+                .map(encrypted -> {
+                    String decryptedPassword = encryptionService.decrypt(encrypted.getPasswordEncrypted());
+                    return new DecryptedCredential(
+                            encrypted.getLogin(),
+                            decryptedPassword
+                    );
+                });
     }
 }
