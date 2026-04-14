@@ -12,8 +12,7 @@ public enum SiteName {
     TRUELANCER(9),
     PEOPLEPERHOUR(10),
     WORKSPACE(11),
-    WORKANA(12),
-    KWORKCOM(13);
+    WORKANA(12);
 
     private long id;
 
