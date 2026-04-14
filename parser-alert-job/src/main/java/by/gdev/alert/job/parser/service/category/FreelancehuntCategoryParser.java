@@ -24,6 +24,11 @@ public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implem
     @Value("${freelancehunt.proxy.active}")
     private boolean freelancehuntProxyActive;
 
+    @Value("${parser.headless.freelancehunt.com}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
+    }
+
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
         return parseWithRetry(siteSourceJob);
@@ -40,7 +45,7 @@ public class FreelancehuntCategoryParser extends PlaywrightCategoryParser implem
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = freelancehuntProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, true, freelancehuntProxyActive);
+            browser = createBrowser(playwright, proxy, headless, freelancehuntProxyActive);
             context = createBrowserContext(browser, proxy, freelancehuntProxyActive);
             page = context.newPage();
             page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));

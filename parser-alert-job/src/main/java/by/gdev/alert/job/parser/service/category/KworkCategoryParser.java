@@ -8,12 +8,10 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +25,13 @@ public class KworkCategoryParser extends PlaywrightCategoryParser implements Cat
     @Value("${kwork.proxy.active}")
     private boolean kworkProxyActive;
 
+    @Value("${parser.headless.kwork.ru}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
+    }
+
+    private final String KWORK_PROJECTS_LINK = "https://kwork.ru/projects";
+
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
         return parseWithRetry(siteSourceJob);
@@ -35,63 +40,75 @@ public class KworkCategoryParser extends PlaywrightCategoryParser implements Cat
     @Override
     protected Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob siteSourceJob) {
         Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+
         Playwright playwright = null;
         Browser browser = null;
         BrowserContext context = null;
         Page page = null;
+
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = kworkProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, true, kworkProxyActive);
+
+            browser = createBrowser(playwright, proxy, headless, kworkProxyActive);
             context = createBrowserContext(browser, proxy, kworkProxyActive);
+
             page = context.newPage();
-            page.navigate(siteSourceJob.getParsedURI());
-            page.waitForSelector("li.js-cat-menu-thin-item");
+            page.navigate(KWORK_PROJECTS_LINK,
+                    new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+            page.waitForSelector("div.projects-filter__rubrics-list");
 
-            String html = page.content();
-            Document doc = Jsoup.parse(html, siteSourceJob.getParsedURI());
+            // Собираем список названий категорий
+            List<String> topNames = page.locator("span.multilevel-list__label-title").allInnerTexts();
 
-            List<ParsedCategory> tops = parseTopCategories(doc);
-            Elements topItems = doc.select("li.js-cat-menu-thin-item");
+            for (String topName : topNames) {
 
-            for (int i = 0; i < tops.size(); i++) {
-                ParsedCategory top = tops.get(i);
-                Element li = topItems.get(i);
-                List<ParsedCategory> subs = parseSubCategories(li);
-                result.put(top, subs);
+                log.debug("TOP category: {}", topName);
+
+                // Находим категорию по тексту
+                Locator topLabel = page.locator("span.multilevel-list__label-title")
+                        .filter(new Locator.FilterOptions().setHasText(topName));
+
+                if (topLabel.count() == 0) {
+                    log.warn("Категория '{}' не найдена", topName);
+                    continue;
+                }
+
+                topLabel.first().click();
+
+                // ЖДЁМ появления подкатегорий
+                page.waitForSelector(
+                        "ul.multilevel-list__items.multilevel-list__items--child",
+                        new Page.WaitForSelectorOptions().setTimeout(5000)
+                );
+
+                // Собираем подкатегории
+                List<ParsedCategory> subs = new ArrayList<>();
+
+                Locator subLabels = page.locator(
+                        "ul.multilevel-list__items.multilevel-list__items--child span.multilevel-list__label-title"
+                );
+
+                int subCount = subLabels.count();
+                for (int j = 0; j < subCount; j++) {
+                    String subName = subLabels.nth(j).innerText().trim();
+                    log.debug("  SUB category: {}", subName);
+                    subs.add(new ParsedCategory(null, subName, null, null));
+                }
+
+                result.put(new ParsedCategory(null, topName, null, null), subs);
+
+                // Сбрасываем страницу
+                page.navigate(KWORK_PROJECTS_LINK,
+                        new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+                page.waitForSelector("div.projects-filter__rubrics-list");
             }
-        }
-        finally {
+
+        } finally {
             closeResources(page, context, browser, playwright);
         }
+
         return result;
-    }
-
-    private List<ParsedCategory> parseTopCategories(Document doc) {
-        List<ParsedCategory> tops = new ArrayList<>();
-        Elements topItems = doc.select("li.js-cat-menu-thin-item");
-        for (Element li : topItems) {
-            Element topLink = li.selectFirst("a.js-category-menu-item");
-            if (topLink != null) {
-                log.debug("found category {}", topLink.text().trim());
-                tops.add(new ParsedCategory(null, topLink.text().trim(), null, topLink.attr("href").trim()));
-            }
-        }
-        return tops;
-    }
-
-    private List<ParsedCategory> parseSubCategories(Element topLi) {
-        List<ParsedCategory> subs = new ArrayList<>();
-        for (Element sub : topLi.select("a.submenu-item")) {
-            Element text = sub.selectFirst("span.submenu-item__text");
-            String name = (text != null ? text.text() : sub.text()).trim();
-            String href = sub.attr("href").trim();
-            if (!name.isEmpty() && !href.isEmpty()) {
-                log.debug("found subcategory {}", name);
-                subs.add(new ParsedCategory(null, name, null, href));
-            }
-        }
-        return subs;
     }
 
     @Override
@@ -99,4 +116,3 @@ public class KworkCategoryParser extends PlaywrightCategoryParser implements Cat
         return SiteName.KWORK;
     }
 }
-

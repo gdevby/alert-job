@@ -21,6 +21,11 @@ public class YouDoCategoryParser extends PlaywrightCategoryParser implements Cat
     @Value("${youdo.proxy.active}")
     private boolean youdoProxyActive;
 
+    @Value("${parser.headless.youdo.com}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
+    }
+
     @Override
     public Map<ParsedCategory, List<ParsedCategory>> parse(SiteSourceJob siteSourceJob) {
         return parseWithRetry(siteSourceJob);
@@ -37,7 +42,7 @@ public class YouDoCategoryParser extends PlaywrightCategoryParser implements Cat
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = youdoProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, true, youdoProxyActive);
+            browser = createBrowser(playwright, proxy, headless, youdoProxyActive);
             context = createBrowserContext(browser, proxy, youdoProxyActive);
             page = context.newPage();
 

@@ -24,13 +24,17 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
     @Value("${weblancer.proxy.active:false}")
     private boolean weblancerProxyActive;
 
-    private static final boolean HEADLESS = true;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 
     @Value("${parser.work.weblancer.net}")
     private void setActive(boolean active) {
         this.active = active;
+    }
+
+    @Value("${parser.headless.weblancer.net}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
     }
 
     @Override
@@ -53,7 +57,7 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
 
         PlaywrightSession session = null;
         try {
-            session = createSession(HEADLESS, weblancerProxyActive);
+            session = createSession(headless, weblancerProxyActive);
             Page page = session.getPage();
 
             for (Pair<Category, Subcategory> pair : categoriesPairList) {
@@ -97,7 +101,7 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = weblancerProxyActive ? getProxyWithRetry(5, 2000) : null;
-            browser = createBrowser(playwright, proxy, HEADLESS, weblancerProxyActive);
+            browser = createBrowser(playwright, proxy, headless, weblancerProxyActive);
             context = createBrowserContext(browser, proxy, weblancerProxyActive);
 
             page = context.newPage();

@@ -31,14 +31,17 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
 	private static final String JOBS_LINK = "https://freelancehunt.com/jobs";
 
-    private static boolean HEADLESS = true;
-
     @Value("${freelancehunt.proxy.active}")
     private boolean freelancehuntProxyActive;
 
 	@Value("${parser.work.freelancehunt.com}")
     private void setActive(boolean active) {
         this.active = active;
+    }
+
+    @Value("${parser.headless.freelancehunt.com}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
     }
 
     public void clickCategory(Page page, Category category) {
@@ -181,7 +184,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
         PlaywrightSession session = null;
         try {
-            session = createSession(HEADLESS, freelancehuntProxyActive);
+            session = createSession(headless, freelancehuntProxyActive);
             Page page = session.getPage();
             firstLoad(page);
             for(Pair<Category, Subcategory> pair: categoriesPairList){
@@ -246,7 +249,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         try {
             playwright = createPlaywright();
             ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, HEADLESS, freelancehuntProxyActive);
+            browser = createBrowser(playwright, proxy, headless, freelancehuntProxyActive);
             context = createBrowserContext(browser, null, false);
             page = context.newPage();
             firstLoad(page);
