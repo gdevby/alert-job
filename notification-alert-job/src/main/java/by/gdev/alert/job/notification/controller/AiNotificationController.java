@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/notification/api/ai")
 @Slf4j
@@ -73,6 +75,19 @@ public class AiNotificationController {
         SourceSiteDTO site = new SourceSiteDTO();
         site.setId(4L);
         order.setSourceSite(site);
+        order.setLink("https://www.weblancer.net/freelance/sluzhba-podderzhki-56/administrator-onlain-platformi-udalyonno-1265808/");
+
+        AiDecision decision = new AiDecision(
+                true,
+                0.92,
+                "Совпадение по ключевым словам",
+                "Готов выполнить задачу!",
+                List.of("java", "spring"),
+                List.of("docker"),
+                "Категория совпала",
+                "Подкатегория совпала"
+        );
+        payload.setDecision(decision);
         payload.setOrder(order);
 
         return userCredentialService.getMonoUserCredentials(payload)

@@ -50,23 +50,12 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
             // Даем время увидеть, что логин успешный
             page.waitForTimeout(3000);
 
-            // Переходим на заказ
-            //page.navigate(payload.getOrder().getLink());
-            //page.waitForLoadState(LoadState.NETWORKIDLE);
-
-            // Находим поле ответа
-            //page.waitForSelector("textarea, [contenteditable='true']");
-
-            // Вставляем текст
-            //page.fill("textarea, [contenteditable='true']", payload.getDecision().reply());
-
-            // Отправляем
-            //page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Отправить"))
-            //        .click();
+            // Переходим на заказ и пытаемся подать заявку
+            processOrder(page, payload);
 
             page.waitForTimeout(15000);
 
-            log.info("Автоответ успешно отправлен пользователем {}", creds.login());
+            log.debug("Автоответ успешно отправлен пользователем {}", creds.login());
             return true;
 
         } catch (Exception e) {
@@ -77,6 +66,53 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
             playwrightManager.closeResources(page, context, browser, playwright, site);
         }
     }
+
+    private void processOrder(Page page, AiNotificationPayload payload) {
+
+        // Переходим на страницу заказа
+        String link = payload.getOrder().getLink();
+        log.info("Переход на заказ: {}", link);
+
+        page.navigate(link);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        // Ждём кнопку "Добавить заявку"
+        Locator openFormBtn = page.locator("button:has-text('Добавить заявку')");
+        page.waitForCondition(openFormBtn::isVisible);
+
+        // Нажимаем кнопку "Добавить заявку"
+        openFormBtn.click();
+
+        // Ждём появления формы подачи заявки
+        page.waitForSelector("textarea[placeholder='Комментарий']");
+
+        // Вставляем текст автоответа
+        String reply = payload.getDecision().reply();
+        page.fill("textarea[placeholder='Комментарий']", reply);
+
+        page.waitForTimeout(10000);
+
+        // вставляем цену
+        //page.fill("input[name='amount']", "5");
+
+        // 7. Ждём активации кнопки "Добавить"
+        Locator addBtn = page.getByRole(
+                AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Добавить")
+        );
+        page.waitForCondition(addBtn::isEnabled);
+
+        // 8. Нажимаем кнопку "Добавить"
+        //addBtn.click();
+
+        // 9. Даем время увидеть отправку
+        page.waitForTimeout(10000);
+
+        log.debug("Заявка успешно отправлена");
+    }
+
+
+
 
     private void login(Page page, DecryptedCredential creds) {
 
