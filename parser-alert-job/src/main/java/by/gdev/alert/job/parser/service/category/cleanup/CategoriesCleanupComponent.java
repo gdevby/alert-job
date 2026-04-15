@@ -56,10 +56,10 @@ public class CategoriesCleanupComponent {
     }
 
     public void cleanup(String siteName) {
-        log.info("=== CLEANUP {} STARTED ===", siteName);
+        log.debug("=== CLEANUP {} STARTED ===", siteName);
         deletePart(siteName);
         cleanupCoreModule(siteName);
-        log.info("=== CLEANUP {} FINISHED ===", siteName);
+        log.debug("=== CLEANUP {} FINISHED ===", siteName);
     }
 
     @Transactional

@@ -45,6 +45,7 @@ public class MailSenderService {
 
     public void sendMessagesToUser(AppUser user, List<String> messages) {
         if(!user.isSwitchOffAlerts()){
+            log.debug("Send message abort: {}, {}", user.getUuid(), user.getEmail());
             return;
         }
 
