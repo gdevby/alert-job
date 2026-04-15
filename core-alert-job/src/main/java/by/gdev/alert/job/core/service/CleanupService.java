@@ -41,7 +41,6 @@ public class CleanupService {
         log.debug("CORE cleanup completed for siteId={}", siteId);
     }
 
-    @Transactional
     private int deleteTitleWorld(Long sourceSiteId){
         // 1. Удаляем title_word
         return jdbc.update("""
@@ -50,7 +49,7 @@ public class CleanupService {
         """, sourceSiteId);
     }
 
-    @Transactional
+
     private int deleteOrderModuleSources(Long sourceSiteId){
         // 2. Удаляем связи в order_modules_sources
         return jdbc.update("""
@@ -59,7 +58,7 @@ public class CleanupService {
         """, sourceSiteId);
     }
 
-    @Transactional
+
     private int deleteSourceSite(Long siteId){
         return jdbc.update("""
             DELETE FROM source_site
@@ -68,6 +67,8 @@ public class CleanupService {
     }
 
     private void deletePart(Long siteId, List<SourceSite> sources){
+        jdbc.execute("SET FOREIGN_KEY_CHECKS = 0");
+
         int deletedTitleWords = 0;
         for (SourceSite source : sources) {
             deletedTitleWords += deleteTitleWorld(source.getId());
@@ -85,6 +86,7 @@ public class CleanupService {
         int deletedSites = deleteSourceSite(siteId);
         log.debug("Deleted {} source_site rows", deletedSites);
 
+        jdbc.execute("SET FOREIGN_KEY_CHECKS = 1");
     }
 
     private Set<AppUser> getUsersFromSources(List<SourceSite> sources) {
