@@ -1,6 +1,6 @@
 package by.gdev.alert.job.core.controller;
 
-import by.gdev.alert.job.core.service.CleanupService;
+import by.gdev.alert.job.core.service.cleanup.CleanupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

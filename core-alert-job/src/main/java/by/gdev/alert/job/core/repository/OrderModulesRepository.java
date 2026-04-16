@@ -21,6 +21,18 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 
 	List<OrderModules> findAllByUserUuid(String uuid);
 
+    @Query("""
+    select distinct m
+    from OrderModules m
+    join m.sources s
+    where m.user.id = :userId
+      and s.siteSource = :siteId
+""")
+    List<OrderModules> findAllByUserAndSite(
+            @Param("userId") Long userId,
+            @Param("siteId") Long siteId
+    );
+
 	@Query("select o from OrderModules o left join fetch o.filters left join fetch o.user u where o.id = :id and u.uuid = :uuid")
 	Optional<OrderModules> findByIdAndUserUuidOneEagerFilters(@Param("id")Long id, @Param("uuid")String uuid);
 
