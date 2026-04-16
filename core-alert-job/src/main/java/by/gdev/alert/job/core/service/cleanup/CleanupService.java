@@ -186,7 +186,7 @@ SOURCE_SITES     = %d
 
         for (AppUser user : users) {
 
-            // ВАЖНО: модули определяются по ПОЛЬЗОВАТЕЛЮ + САЙТУ
+            // модули определяются по ПОЛЬЗОВАТЕЛЮ + САЙТУ
             List<OrderModules> modules =
                     orderModulesRepository.findAllByUserAndSite(user.getId(), siteId);
 
