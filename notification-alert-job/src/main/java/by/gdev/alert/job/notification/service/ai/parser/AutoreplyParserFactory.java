@@ -19,8 +19,13 @@ public class AutoreplyParserFactory {
     }
 
     public AutoreplyPlaywrightParser getParser(SiteName site) {
-        return registry.get(site);
+        AutoreplyPlaywrightParser parser = registry.get(site);
+        if (parser == null) {
+            throw new IllegalArgumentException("Parser not found for site: " + site);
+        }
+        return parser;
     }
+
 
     public AutoreplyPlaywrightParser getParser(String moduleName) {
         return registry.get(SiteName.valueOf(moduleName.toUpperCase()));

@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/notification/api/ai")
@@ -58,8 +59,50 @@ public class AiNotificationController {
     }
 
     @GetMapping("/testlogin")
-    public Mono<ResponseEntity<Void>> receiveTestCase(@RequestParam String uid) {
+    public Mono<ResponseEntity<?>> receiveTestCase(
+            @RequestParam String uuid,
+            @RequestParam String site
+    ) {
+        AiNotificationPayload payload = buildTestAiDecision(uuid);
 
+        // Проверяем enum
+        SiteName siteEnum;
+        try {
+            siteEnum = SiteName.valueOf(site.toUpperCase());
+        } catch (Exception e) {
+            return Mono.just(
+                    ResponseEntity.badRequest().body(
+                            Map.of("error", "Unknown site: " + site)
+                    )
+            );
+        }
+
+        // Проверяем наличие парсера
+        AutoreplyPlaywrightParser parser;
+        try {
+            parser = parserFactory.getParser(siteEnum);
+        } catch (IllegalArgumentException e) {
+            return Mono.just(
+                    ResponseEntity.badRequest().body(
+                            Map.of("error", "Parser not found for site: " + siteEnum)
+                    )
+            );
+        }
+
+        // Основная логика
+        return userCredentialService.getMonoUserCredentials(payload)
+                .flatMap(credential -> Mono.fromCallable(() -> {
+                                    boolean ok = parser.sendAutoreply(credential, payload);
+                                    log.info("Parser result = {}", ok);
+                                    return ok;
+                                })
+                                .subscribeOn(Schedulers.boundedElastic())
+                                .map(ok -> ResponseEntity.ok().build())
+                );
+    }
+
+
+    private AiNotificationPayload buildTestAiDecision(String uid){
         AiNotificationPayload payload = new AiNotificationPayload();
         AiAppUserDTO user = new AiAppUserDTO();
         user.setUuid(uid);
@@ -91,25 +134,7 @@ public class AiNotificationController {
         payload.setDecision(decision);
         payload.setOrder(order);
 
-        return userCredentialService.getMonoUserCredentials(payload)
-                .flatMap(credential -> {
-
-                    log.info("Decrypted credential: login='{}', password='{}'",
-                            credential.login(),
-                            credential.password()
-                    );
-
-                    return Mono.fromCallable(() -> {
-                        AutoreplyPlaywrightParser parser =
-                                parserFactory.getParser(SiteName.WEBLANCER);
-
-                        boolean ok = parser.sendAutoreply(credential, payload);
-                        log.info("Parser result = {}", ok);
-
-                        return ok;
-                    }).subscribeOn(Schedulers.boundedElastic());
-                })
-                .thenReturn(ResponseEntity.ok().build());
+        return payload;
     }
 
 
