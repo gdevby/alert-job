@@ -6,6 +6,7 @@ import by.gdev.alert.job.notification.service.ai.credential.UserCredentialServic
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyParserFactory;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.common.model.NotificationType;
+import by.gdev.common.model.SiteName;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -100,7 +101,7 @@ public class AiNotificationController {
 
                     return Mono.fromCallable(() -> {
                         AutoreplyPlaywrightParser parser =
-                                parserFactory.getParser(payload.getModule().getName());
+                                parserFactory.getParser(SiteName.WEBLANCER);
 
                         boolean ok = parser.sendAutoreply(credential, payload);
                         log.info("Parser result = {}", ok);

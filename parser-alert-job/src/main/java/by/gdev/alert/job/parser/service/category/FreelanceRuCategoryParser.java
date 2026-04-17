@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

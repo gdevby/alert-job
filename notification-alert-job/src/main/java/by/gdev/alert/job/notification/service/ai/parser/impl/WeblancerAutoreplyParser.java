@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
+import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
@@ -13,11 +14,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component("weblancer")
+@Component
 @RequiredArgsConstructor
 public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
 
     private final PlaywrightManager playwrightManager;
+
+    @Override
+    public SiteName getSiteName() {
+        return SiteName.WEBLANCER;
+    }
 
     @Override
     public boolean sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload) {
@@ -149,7 +155,7 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
         // Ждём загрузки
         page.waitForLoadState(LoadState.NETWORKIDLE);
 
-        log.info("Успешный вход в аккаунт {}", creds.login());
+        log.debug("Успешный вход в аккаунт {}", creds.login());
     }
 }
 

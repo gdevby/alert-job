@@ -1,21 +1,29 @@
 package by.gdev.alert.job.notification.service.ai.parser;
 
-import lombok.RequiredArgsConstructor;
+import by.gdev.common.model.SiteName;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
 public class AutoreplyParserFactory {
 
-    private final Map<String, AutoreplyPlaywrightParser> parsers;
+    private final Map<SiteName, AutoreplyPlaywrightParser> registry = new HashMap<>();
+
+    public AutoreplyParserFactory(List<AutoreplyPlaywrightParser> parsers) {
+        for (AutoreplyPlaywrightParser parser : parsers) {
+            registry.put(parser.getSiteName(), parser);
+        }
+    }
+
+    public AutoreplyPlaywrightParser getParser(SiteName site) {
+        return registry.get(site);
+    }
 
     public AutoreplyPlaywrightParser getParser(String moduleName) {
-        AutoreplyPlaywrightParser parser = parsers.get(moduleName.toLowerCase());
-        if (parser == null) {
-            throw new IllegalArgumentException("Parser not found for module: " + moduleName);
-        }
-        return parser;
+        return registry.get(SiteName.valueOf(moduleName.toUpperCase()));
     }
 }
+

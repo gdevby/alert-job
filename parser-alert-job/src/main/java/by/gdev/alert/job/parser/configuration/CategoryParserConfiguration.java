@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.configuration;
 
 import by.gdev.alert.job.parser.service.category.CategoryParser;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

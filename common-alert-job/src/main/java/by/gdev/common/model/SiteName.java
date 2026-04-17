@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.util;
+package by.gdev.common.model;
 
 public enum SiteName {
     FLRU(1),
