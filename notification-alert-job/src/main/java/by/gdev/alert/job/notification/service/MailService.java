@@ -38,7 +38,7 @@ public class MailService {
                     Email mail = EmailBuilder.startingBlank()
                             .from(property.getFromAddress())
                             .to(userMail.getToMail())
-                            .withSubject("Email")
+                            .withSubject(resolveSubject(userMail))
                             .withHTMLText(userMail.getMessage())
                             .buildEmail();
                     mailer.sendMail(mail);
@@ -88,5 +88,14 @@ public class MailService {
                     negativeTelegramCounter.increment();
                     return Mono.empty(); //возвращаем пустой Mono
                 });
+    }
+
+    private String resolveSubject(UserNotification n) {
+        return switch (n.getType()) {
+            case AUTO_REPLY -> "Автоответ от AI";
+            case ORDER -> "Оповещение о новых заказах";
+            case CLEANUP -> "Уведомление об очистке сайта";
+            case TEST -> "Тестовое сообщение";
+        };
     }
 }

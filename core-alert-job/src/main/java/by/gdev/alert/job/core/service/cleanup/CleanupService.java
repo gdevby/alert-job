@@ -8,6 +8,7 @@ import by.gdev.alert.job.core.repository.SourceSiteRepository;
 import by.gdev.alert.job.core.service.MailSenderService;
 import by.gdev.alert.job.core.service.cleanup.components.ModuleLookupService;
 import by.gdev.alert.job.core.service.cleanup.components.WordCleanupRepositoryService;
+import by.gdev.common.model.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,31 +28,6 @@ public class CleanupService {
     private final WordCleanupRepositoryService wordCleanupRepositoryService;
     private final ModuleLookupService moduleLookupService;
     private final JdbcTemplate jdbc;
-
-    private static final String CATEGORY_REMOVE_MESSAGE_FULL = """
-        Уважаемый пользователь!
-        Мы обновили категории сайта %s.
-
-        Некоторые категории были удалены или изменены.
-        Были удалены следующие ключевые слова из Ваших модулей:
-
-        %s
-
-        Вам необходимо заново настроить фильтры поиска Ваших заказов.
-        """;
-
-
-    private static final String CATEGORY_REMOVE_MESSAGE_ONLY_CATEGORIES = """
-        Уважаемый пользователь!
-        Мы обновили категории сайта %s.
-
-        Некоторые категории были удалены или изменены.
-        Ваши модули были затронуты, так как категории были обновлены:
-
-        %s
-
-        Вам необходимо заново настроить фильтры поиска Ваших заказов.
-        """;
 
     @Transactional
     public void cleanupParserSourceForSite(Long siteId, String siteName) {
@@ -238,50 +214,12 @@ SOURCE_SITES     = %d
             List<UserModuleCleanupData> modules
     ) {
 
-        // Проверяем, есть ли удалённые слова
         boolean wordsDeleted = modules.stream().anyMatch(m ->
                 !m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()
         );
 
-        // Собираем блок модулей
-        StringBuilder sb = new StringBuilder();
+        String htmlMessage = buildCleanupHtmlMessage(siteName, modules, wordsDeleted);
 
-        for (UserModuleCleanupData m : modules) {
-
-            sb.append("Модуль ").append(m.getModuleName()).append(".\n");
-
-            // Слова выводим ТОЛЬКО если они есть
-            if (!m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()) {
-                sb.append("  Позитивные: ")
-                        .append(String.join(", ", m.getPositiveWords()))
-                        .append("\n")
-                        .append("  Негативные: ")
-                        .append(String.join(", ", m.getNegativeWords()))
-                        .append("\n");
-            }
-
-            sb.append("\n");
-        }
-
-        String modulesBlock = sb.toString().trim();
-
-        String msg;
-
-        if (wordsDeleted) {
-            // Используем FULL — когда есть удалённые слова
-            msg = CATEGORY_REMOVE_MESSAGE_FULL.formatted(
-                    siteName,
-                    modulesBlock
-            );
-        } else {
-            // Используем ONLY_CATEGORIES — когда слов нет, но модули есть
-            msg = CATEGORY_REMOVE_MESSAGE_ONLY_CATEGORIES.formatted(
-                    siteName,
-                    modulesBlock
-            );
-        }
-
-        // Лог отправляемого письма
         log.warn("""
 → [CORE_MAIL_PREVIEW]
 USER_ID      = %d
@@ -289,18 +227,88 @@ EMAIL        = %s
 UUID         = %s
 SITE         = %s
 
-MESSAGE:
+MESSAGE (HTML):
 %s
 """.formatted(
                 user.getId(),
                 user.getEmail(),
                 user.getUuid(),
                 siteName,
-                msg
+                htmlMessage
         ));
 
-        mailSenderService.sendMessagesToUser(user, List.of(msg));
+        mailSenderService.sendMessagesToUser(
+                user,
+                List.of(htmlMessage),
+                NotificationType.CLEANUP
+        );
     }
+
+
+    private String buildCleanupHtmlMessage(
+            String siteName,
+            List<UserModuleCleanupData> modules,
+            boolean wordsDeleted
+    ) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<ul>");
+
+        for (UserModuleCleanupData m : modules) {
+
+            sb.append("<li>");
+            sb.append("<b>").append(m.getModuleName()).append("</b>");
+
+            if (!m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()) {
+                sb.append("<br>");
+
+                if (!m.getPositiveWords().isEmpty()) {
+                    sb.append("Позитивные: <b>")
+                            .append(String.join(", ", m.getPositiveWords()))
+                            .append("</b><br>");
+                }
+
+                if (!m.getNegativeWords().isEmpty()) {
+                    sb.append("Негативные: <b>")
+                            .append(String.join(", ", m.getNegativeWords()))
+                            .append("</b><br>");
+                }
+            }
+
+            sb.append("</li>");
+        }
+
+        sb.append("</ul>");
+
+        String modulesBlock = sb.toString();
+
+        if (wordsDeleted) {
+            return """
+            <p>Уважаемый пользователь!</p>
+            <p>Мы обновили категории сайта <b>%s</b>.</p>
+
+            <p>Некоторые категории были удалены или изменены.<br>
+            Были удалены следующие ключевые слова из Ваших модулей:</p>
+
+            %s
+
+            <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
+            """.formatted(siteName, modulesBlock);
+        } else {
+            return """
+            <p>Уважаемый пользователь!</p>
+            <p>Мы обновили категории сайта <b>%s</b>.</p>
+
+            <p>Некоторые категории были удалены или изменены.<br>
+            Ваши модули были затронуты, так как категории были обновлены:</p>
+
+            %s
+
+            <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
+            """.formatted(siteName, modulesBlock);
+        }
+    }
+
 
 
 }
