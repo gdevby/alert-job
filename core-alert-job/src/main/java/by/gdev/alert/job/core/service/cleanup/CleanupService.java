@@ -8,6 +8,7 @@ import by.gdev.alert.job.core.repository.SourceSiteRepository;
 import by.gdev.alert.job.core.service.MailSenderService;
 import by.gdev.alert.job.core.service.cleanup.components.ModuleLookupService;
 import by.gdev.alert.job.core.service.cleanup.components.WordCleanupRepositoryService;
+import by.gdev.alert.job.core.templates.MessageTemplates;
 import by.gdev.common.model.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -218,7 +219,10 @@ SOURCE_SITES     = %d
                 !m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()
         );
 
-        String htmlMessage = buildCleanupHtmlMessage(siteName, modules, wordsDeleted);
+        boolean sendHtml = user.isDefaultSendType();
+        String finalMessage = sendHtml
+                ? MessageTemplates.Cleanup.buildCleanupHtmlMessage(siteName, modules, wordsDeleted)
+                : MessageTemplates.Cleanup.buildTextMessage(siteName, modules, wordsDeleted);
 
         log.warn("""
 → [CORE_MAIL_PREVIEW]
@@ -234,81 +238,13 @@ MESSAGE (HTML):
                 user.getEmail(),
                 user.getUuid(),
                 siteName,
-                htmlMessage
+                finalMessage
         ));
 
         mailSenderService.sendMessagesToUser(
                 user,
-                List.of(htmlMessage),
+                List.of(finalMessage),
                 NotificationType.CLEANUP
         );
     }
-
-
-    private String buildCleanupHtmlMessage(
-            String siteName,
-            List<UserModuleCleanupData> modules,
-            boolean wordsDeleted
-    ) {
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("<ul>");
-
-        for (UserModuleCleanupData m : modules) {
-
-            sb.append("<li>");
-            sb.append("<b>").append(m.getModuleName()).append("</b>");
-
-            if (!m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()) {
-                sb.append("<br>");
-
-                if (!m.getPositiveWords().isEmpty()) {
-                    sb.append("Позитивные: <b>")
-                            .append(String.join(", ", m.getPositiveWords()))
-                            .append("</b><br>");
-                }
-
-                if (!m.getNegativeWords().isEmpty()) {
-                    sb.append("Негативные: <b>")
-                            .append(String.join(", ", m.getNegativeWords()))
-                            .append("</b><br>");
-                }
-            }
-
-            sb.append("</li>");
-        }
-
-        sb.append("</ul>");
-
-        String modulesBlock = sb.toString();
-
-        if (wordsDeleted) {
-            return """
-            <p>Уважаемый пользователь!</p>
-            <p>Мы обновили категории сайта <b>%s</b>.</p>
-
-            <p>Некоторые категории были удалены или изменены.<br>
-            Были удалены следующие ключевые слова из Ваших модулей:</p>
-
-            %s
-
-            <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
-            """.formatted(siteName, modulesBlock);
-        } else {
-            return """
-            <p>Уважаемый пользователь!</p>
-            <p>Мы обновили категории сайта <b>%s</b>.</p>
-
-            <p>Некоторые категории были удалены или изменены.<br>
-            Ваши модули были затронуты, так как категории были обновлены:</p>
-
-            %s
-
-            <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
-            """.formatted(siteName, modulesBlock);
-        }
-    }
-
-
-
 }
