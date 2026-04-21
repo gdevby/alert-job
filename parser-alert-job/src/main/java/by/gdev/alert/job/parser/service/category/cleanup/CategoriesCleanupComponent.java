@@ -1,16 +1,25 @@
 package by.gdev.alert.job.parser.service.category.cleanup;
 
+import by.gdev.alert.job.parser.domain.CleanupRequest;
+import by.gdev.alert.job.parser.domain.ParserCategoryDTO;
+import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -31,7 +40,8 @@ public class CategoriesCleanupComponent {
     @Value("${cleanup.api.url}")
     private String cleanupApiUrl;
 
-    @PostConstruct
+    //@PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void init() {
         log.info("=== CLEANUP ON STARTUP ===");
 
@@ -55,11 +65,47 @@ public class CategoriesCleanupComponent {
         }
     }
 
+    @Transactional
     public void cleanup(String siteName) {
         log.debug("=== CLEANUP {} STARTED ===", siteName);
+        List<ParserCategoryDTO> categories = loadCategoriesForSite(siteName);
         deletePart(siteName);
-        cleanupCoreModule(siteName);
+        cleanupCoreModule(siteName, categories);
         log.debug("=== CLEANUP {} FINISHED ===", siteName);
+    }
+
+    public List<ParserCategoryDTO> loadCategoriesForSite(String siteName) {
+        SiteSourceJob job = siteSourceJobRepository.findWithCategories(siteName);
+        if (job == null) {
+            throw new IllegalArgumentException("Site not found: " + siteName);
+        }
+
+        List<ParserCategoryDTO> result = new ArrayList<>();
+
+        for (Category c : job.getCategories()) {
+
+            // Если у категории нет подкатегорий — всё равно отправляем
+            if (c.getSubCategories() == null || c.getSubCategories().isEmpty()) {
+                result.add(new ParserCategoryDTO(
+                        c.getId(),
+                        c.getNativeLocName(),
+                        null,
+                        null
+                ));
+                continue;
+            }
+
+            // Иначе — отправляем каждую подкатегорию
+            for (Subcategory sc : c.getSubCategories()) {
+                result.add(new ParserCategoryDTO(
+                        c.getId(),
+                        c.getNativeLocName(),
+                        sc.getId(),
+                        sc.getNativeLocName()
+                ));
+            }
+        }
+        return result;
     }
 
     @Transactional
@@ -115,7 +161,7 @@ public class CategoriesCleanupComponent {
         log.info("[{}] Deleted parser_order_source: {}", siteName, count);
     }
 
-    private void cleanupCoreModule(String siteName) {
+    private void cleanupCoreModule(String siteName, List<ParserCategoryDTO> categories) {
         try {
             SiteSourceJob job = siteSourceJobRepository.findByName(siteName);
             if (job == null) {
@@ -123,11 +169,27 @@ public class CategoriesCleanupComponent {
             }
             Long siteId = job.getId();
 
+            String url = coreModuleUrl + cleanupApiUrl;
+
+            CleanupRequest body = new CleanupRequest(
+                    siteId,
+                    siteName,
+                    categories
+            );
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<CleanupRequest> entity = new HttpEntity<>(body, headers);
+
             RestTemplate rest = new RestTemplate();
-            String url = coreModuleUrl + cleanupApiUrl + "?site=" + siteId + "&siteName=" + siteName;
+
             log.debug("[{}] Calling CORE cleanup: {}", siteName, url);
-            rest.postForEntity(url, null, String.class);
+
+            rest.postForEntity(url, entity, String.class);
+
             log.debug("[{}] CORE cleanup completed", siteName);
+
         } catch (Exception e) {
             log.error("[{}] CORE cleanup FAILED: {}", siteName, e.getMessage(), e);
         }

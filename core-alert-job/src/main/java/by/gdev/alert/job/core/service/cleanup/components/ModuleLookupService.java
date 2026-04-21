@@ -5,6 +5,7 @@ import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.SourceSite;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ModuleLookupService {
     private final OrderModulesRepository orderModulesRepository;
+    private final JdbcTemplate jdbc;
 
     public Set<AppUser> getUsersFromSources(List<SourceSite> sources) {
         return sources.stream()
@@ -23,6 +25,14 @@ public class ModuleLookupService {
                 .map(OrderModules::getUser)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    public List<Long> getSourceIdsForModule(Long moduleId) {
+        return jdbc.queryForList(
+                "SELECT sources_id FROM order_modules_sources WHERE order_modules_id = ?",
+                Long.class,
+                moduleId
+        );
     }
 
 }

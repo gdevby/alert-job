@@ -45,6 +45,18 @@ public final class MessageTemplates {
 
             for (UserModuleCleanupData m : modules) {
                 sb.append("Модуль ").append(m.getModuleName()).append(".\n");
+
+                // категории
+                if (!m.getCategories().isEmpty()) {
+                    sb.append("  Категории:\n");
+                    m.getCategories().stream()
+                            .map(dto -> dto.subCategoryName() != null
+                                    ? "    • " + dto.categoryName() + " → " + dto.subCategoryName()
+                                    : "    • " + dto.categoryName())
+                            .distinct()
+                            .forEach(line -> sb.append(line).append("\n"));
+                }
+
                 // Слова выводим ТОЛЬКО если они есть
                 if (!m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()) {
                     sb.append("  Позитивные: ")
@@ -89,10 +101,22 @@ public final class MessageTemplates {
             for (UserModuleCleanupData m : modules) {
 
                 sb.append("<li>");
-                sb.append("<b>").append(m.getModuleName()).append("</b>");
+                sb.append("<b>").append(m.getModuleName()).append("</b><br>");
 
+                // категории
+                if (!m.getCategories().isEmpty()) {
+                    sb.append("Категории:<br><ul>");
+                    m.getCategories().stream()
+                            .map(dto -> dto.subCategoryName() != null
+                                    ? "<li>" + dto.categoryName() + " → " + dto.subCategoryName() + "</li>"
+                                    : "<li>" + dto.categoryName() + "</li>")
+                            .distinct()
+                            .forEach(sb::append);
+                    sb.append("</ul>");
+                }
+
+                // слова
                 if (!m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()) {
-                    sb.append("<br>");
 
                     if (!m.getPositiveWords().isEmpty()) {
                         sb.append("Позитивные: <b>")
@@ -114,31 +138,30 @@ public final class MessageTemplates {
 
             String modulesBlock = sb.toString();
 
-            if (wordsDeleted) {
-                return """
-            <p>Уважаемый пользователь!</p>
-            <p>Мы обновили категории сайта <b>%s</b>.</p>
+            return wordsDeleted
+                    ? """
+        <p>Уважаемый пользователь!</p>
+        <p>Мы обновили категории сайта <b>%s</b>.</p>
 
-            <p>Некоторые категории были удалены или изменены.<br>
-            Были удалены следующие ключевые слова из Ваших модулей:</p>
+        <p>Некоторые категории были удалены или изменены.<br>
+        Были удалены следующие ключевые слова из Ваших модулей:</p>
 
-            %s
+        %s
 
-            <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
-            """.formatted(siteName, modulesBlock);
-            } else {
-                return """
-            <p>Уважаемый пользователь!</p>
-            <p>Мы обновили категории сайта <b>%s</b>.</p>
+        <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
+        """.formatted(siteName, modulesBlock)
+                    : """
+        <p>Уважаемый пользователь!</p>
+        <p>Мы обновили категории сайта <b>%s</b>.</p>
 
-            <p>Некоторые категории были удалены или изменены.<br>
-            Ваши модули были затронуты, так как категории были обновлены:</p>
+        <p>Некоторые категории были удалены или изменены.<br>
+        Ваши модули были затронуты, так как категории были обновлены:</p>
 
-            %s
+        %s
 
-            <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
-            """.formatted(siteName, modulesBlock);
-            }
+        <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
+        """.formatted(siteName, modulesBlock);
         }
+
     }
 }
