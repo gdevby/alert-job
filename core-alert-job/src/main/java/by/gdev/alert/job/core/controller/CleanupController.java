@@ -1,6 +1,7 @@
 package by.gdev.alert.job.core.controller;
 
-import by.gdev.alert.job.core.service.CleanupService;
+import by.gdev.alert.job.core.model.cleanup.CleanupRequest;
+import by.gdev.alert.job.core.service.cleanup.CleanupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +18,20 @@ public class CleanupController {
     @Autowired
     private CleanupService cleanupService;
 
-    @PostMapping(produces = "application/json")
+    @PostMapping(consumes = "application/json", produces = "application/json")
     public ResponseEntity<Map<String, Serializable>> cleanupParserSourceForSite(
-            @RequestParam("site") Long siteId, @RequestParam("siteName")String siteName) {
-        cleanupService.cleanupParserSourceForSite(siteId, siteName);
+            @RequestBody CleanupRequest request) {
+
+        cleanupService.cleanupParserSourceForSite(
+                request.siteId(),
+                request.siteName(),
+                request.categories()
+        );
+
         return ResponseEntity.ok(Map.of(
                 "message", "Очистка завершена",
-                "site", siteId
+                "site", request.siteId()
         ));
     }
+
 }

@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
+import by.gdev.common.model.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,12 +36,6 @@ import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.exeption.CollectionLimitExeption;
 import by.gdev.common.exeption.ConflictExeption;
 import by.gdev.common.exeption.ResourceNotFoundException;
-import by.gdev.common.model.CategoryDTO;
-import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SiteSourceDTO;
-import by.gdev.common.model.SourceSiteDTO;
-import by.gdev.common.model.SubCategoryDTO;
-import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -87,14 +82,14 @@ public class CoreService {
 			AppUser user = userRepository.findByUuid(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			if (user.isDefaultSendType()) {
-				UserNotification un = new UserNotification(user.getEmail(), "Test message from alert");
+				UserNotification un = new UserNotification(user.getEmail(), "Test message from alert", NotificationType.TEST);
 				webClient.post().uri("http://notification:8019/mail").bodyValue(un).retrieve().bodyToMono(Void.class)
 						.subscribe(e -> log.debug("successfully sent message on user mail {}", user.getEmail()),
 								ex -> log.debug("can't send message on user mail {}, cause {}", user.getEmail(),
 										ex.getMessage()));
 			} else {
 				UserNotification un = new UserNotification(String.valueOf(user.getTelegram()),
-						"Test message from alert");
+						"Test message from alert", NotificationType.TEST);
 				webClient.post().uri("http://notification:8019/telegram").bodyValue(un).retrieve()
 						.bodyToMono(Void.class)
 						.subscribe(e -> log.debug("successfully sent message on user mail {}", user.getEmail()),

@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import by.gdev.common.model.NotificationType;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -75,7 +76,7 @@ public class OrderProcessor {
                         s.getSubCategoryName()) : createOrdersMessageTelegram(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), s.getCategoryName(),
                         s.getSubCategoryName());
             }).toList();
-            mailSenderService.sendMessagesToUser(user, resultOrdersString);
+            mailSenderService.sendMessagesToUser(user, resultOrdersString, NotificationType.ORDER);
         } else {
             list.forEach(l -> {
                 SourceSiteDTO s = l.getSourceSite();
@@ -180,7 +181,7 @@ public class OrderProcessor {
                 }).toList();
                 if (!resultOrdersString.isEmpty()) {
                     //sendMessageToUser(user, resultOrdersString);
-                    mailSenderService.sendMessagesToUser(user, resultOrdersString);
+                    mailSenderService.sendMessagesToUser(user, resultOrdersString ,NotificationType.ORDER);
                     delayOrderRepository.deleteAll(user.getDelayOrderNotifications());
                 }
             }

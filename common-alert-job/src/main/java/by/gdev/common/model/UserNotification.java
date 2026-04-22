@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class UserNotification {
 	private String toMail;
 	private String message;
-
+    private NotificationType type = NotificationType.ORDER;
 }

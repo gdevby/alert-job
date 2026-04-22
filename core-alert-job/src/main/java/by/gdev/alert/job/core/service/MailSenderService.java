@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.service;
 
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.repository.AppUserRepository;
+import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class MailSenderService {
 
 
     public void sendTelegramIssueNotification(AppUser user) {
-        UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE);
+        UserNotification notification = new UserNotification(user.getEmail(), TELEGRAM_WARNING_MESSAGE, NotificationType.ORDER);
 
         webClient.post()
                 .uri(SEND_MESSAGE_URL_MAIL)
@@ -43,8 +44,9 @@ public class MailSenderService {
                 );
     }
 
-    public void sendMessagesToUser(AppUser user, List<String> messages) {
+    public void sendMessagesToUser(AppUser user, List<String> messages, NotificationType type) {
         if(!user.isSwitchOffAlerts()){
+            log.debug("Send message abort: {}, {}", user.getUuid(), user.getEmail());
             return;
         }
 
@@ -71,7 +73,7 @@ public class MailSenderService {
         String uri = user.isDefaultSendType() || useEmail ? SEND_MESSAGE_URL_MAIL : SEND_MESSAGE_URL_TELEGRAM;
 
         // Отправляем сообщения
-        boolean success = sendMessageBatch(user, uri, messages);
+        boolean success = sendMessageBatch(user, uri, messages, type);
 
         // Обрабатываем результат
         if (!success && uri.equals(SEND_MESSAGE_URL_TELEGRAM)) {
@@ -98,20 +100,20 @@ public class MailSenderService {
         }
     }
 
-    private boolean sendMessageBatch(AppUser user, String uri, List<String> messages) {
+    private boolean sendMessageBatch(AppUser user, String uri, List<String> messages, NotificationType type) {
         try {
             StringBuilder sb = new StringBuilder();
             for (String msg : messages) {
                 sb.append(msg).append(NEW_LINE);
                 if (sb.length() > 3000) {
-                    if (!sendSingleMessage(user, uri, sb.substring(0, sb.length() - 1))) {
+                    if (!sendSingleMessage(user, uri, sb.substring(0, sb.length() - 1), type)) {
                         return false;
                     }
                     sb.setLength(0);
                 }
             }
             if (sb.length() > 0) {
-                return sendSingleMessage(user, uri, sb.substring(0, sb.length() - 1));
+                return sendSingleMessage(user, uri, sb.substring(0, sb.length() - 1), type);
             }
             return true;
         } catch (Exception e) {
@@ -120,13 +122,13 @@ public class MailSenderService {
         }
     }
 
-    private boolean sendSingleMessage(AppUser user, String uri, String message) {
+    private boolean sendSingleMessage(AppUser user, String uri, String message, NotificationType type) {
         UserNotification un;
 
         if (uri.equals(SEND_MESSAGE_URL_MAIL)) {
-            un = new UserNotification(user.getEmail(), message);
+            un = new UserNotification(user.getEmail(), message, type);
         } else {
-            un = new UserNotification(String.valueOf(user.getTelegram()), message);
+            un = new UserNotification(String.valueOf(user.getTelegram()), message, type);
         }
 
         try {
