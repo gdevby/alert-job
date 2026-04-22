@@ -82,14 +82,14 @@ public class CoreService {
 			AppUser user = userRepository.findByUuid(uuid)
 					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
 			if (user.isDefaultSendType()) {
-				UserNotification un = new UserNotification(user.getEmail(), "Test message from alert", NotificationType.ORDER);
+				UserNotification un = new UserNotification(user.getEmail(), "Test message from alert", NotificationType.TEST);
 				webClient.post().uri("http://notification:8019/mail").bodyValue(un).retrieve().bodyToMono(Void.class)
 						.subscribe(e -> log.debug("successfully sent message on user mail {}", user.getEmail()),
 								ex -> log.debug("can't send message on user mail {}, cause {}", user.getEmail(),
 										ex.getMessage()));
 			} else {
 				UserNotification un = new UserNotification(String.valueOf(user.getTelegram()),
-						"Test message from alert", NotificationType.ORDER);
+						"Test message from alert", NotificationType.TEST);
 				webClient.post().uri("http://notification:8019/telegram").bodyValue(un).retrieve()
 						.bodyToMono(Void.class)
 						.subscribe(e -> log.debug("successfully sent message on user mail {}", user.getEmail()),

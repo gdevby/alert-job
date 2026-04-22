@@ -95,7 +95,8 @@ public class MailService {
         return switch (n.getType()) {
             case AUTO_REPLY -> "Автоответ от AI";
             case ORDER -> "Оповещение о новых заказах";
+            case CLEANUP -> "Уведомление об очистке сайта";
+            case TEST -> "Тестовое сообщение";
         };
     }
-
 }
