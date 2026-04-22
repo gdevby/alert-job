@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 
 @Component
@@ -33,7 +35,13 @@ public class NotificationReplySender implements ReplySender {
             AiDecision decision
     ) {
         NotificationPayload payload = new NotificationPayload(user, module, order, decision);
-        restTemplate.postForEntity(notificationUrl, payload, Void.class);
+        //restTemplate.postForEntity(notificationUrl, payload, Void.class);
+
+        Mono.fromCallable(() ->
+                        restTemplate.postForEntity(notificationUrl, payload, Void.class)
+                )
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
     }
 }
 

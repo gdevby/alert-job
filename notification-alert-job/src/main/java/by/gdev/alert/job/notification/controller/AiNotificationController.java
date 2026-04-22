@@ -28,35 +28,69 @@ public class AiNotificationController {
     private final AutoreplyParserFactory parserFactory;
 
     @PostMapping("/decision")
-    public ResponseEntity<Void> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
+    public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
         log.info("AI REPLY = {}", payload.getDecision().reply());
         AiAppUserDTO user = payload.getUser();
-        if (user != null){
-            boolean isDefaultSendType = user.isDefaultSendType();
-            DecryptedCredential credential = userCredentialService.getUserCredentials(payload);
-
-            if (user.getEmail()!= null || user.getTelegram() != null){
-                UserNotification userNotification = new UserNotification();
-                userNotification.setType(NotificationType.AUTO_REPLY);
-                if (isDefaultSendType) {
-                    // EMAIL → HTML шаблон
-                    String html = buildAiReplyEmailTemplate(payload);
-                    userNotification.setMessage(html);
-                    userNotification.setToMail(user.getEmail());
-                    log.debug("AI нотификация по почте");
-                    service.sendMessage(userNotification).subscribe();
-                }
-                else {
-                    // TELEGRAM → обычный текст
-                    userNotification.setMessage(payload.getDecision().reply());
-                    userNotification.setToMail(user.getTelegram().toString());
-                    log.debug("AI нотификация по телеграм");
-                    service.sendMessageToTelegram(userNotification);
-                }
-            }
+        if (user == null) {
+            return Mono.just(ResponseEntity.ok().build());
         }
-        return ResponseEntity.ok().build();
+
+        boolean isDefaultSendType = user.isDefaultSendType();
+
+        SiteName siteEnum;
+        try {
+            siteEnum = SiteName.valueOf(payload.getOrder().getSourceSite().getSourceName().toUpperCase());
+        } catch (Exception e) {
+            return Mono.just(
+                    ResponseEntity.badRequest().body(
+                            Map.of("error", "Unknown site: " + payload.getOrder().getSourceSite().getSourceName().toUpperCase())
+                    )
+            );
+        }
+
+        AutoreplyPlaywrightParser parser;
+        try {
+            parser = parserFactory.getParser(siteEnum);
+        } catch (IllegalArgumentException e) {
+            return Mono.just(
+                    ResponseEntity.badRequest().body(
+                            Map.of("error", "Parser not found for site: " + siteEnum)
+                    )
+            );
+        }
+
+        return userCredentialService.getMonoUserCredentials(payload)
+                .flatMap(credential ->
+                        Mono.fromCallable(() -> {
+                                    boolean ok = parser.sendAutoreply(credential, payload);
+                                    log.debug("Parser result = {}", ok);
+                                    return ok;
+                                })
+                                .subscribeOn(Schedulers.boundedElastic())
+                )
+                .flatMap(ok -> {
+                    if (user.getEmail() != null || user.getTelegram() != null) {
+                        UserNotification userNotification = new UserNotification();
+                        userNotification.setType(NotificationType.AUTO_REPLY);
+
+                        if (isDefaultSendType) {
+                            String html = buildAiReplyEmailTemplate(payload);
+                            userNotification.setMessage(html);
+                            userNotification.setToMail(user.getEmail());
+                            log.debug("AI нотификация по почте");
+                            return service.sendMessage(userNotification)
+                                    .thenReturn(ResponseEntity.ok().build());
+                        } else {
+                            userNotification.setMessage(payload.getDecision().reply());
+                            userNotification.setToMail(user.getTelegram().toString());
+                            log.debug("AI нотификация по телеграм");
+                            service.sendMessageToTelegram(userNotification);
+                        }
+                    }
+                    return Mono.just(ResponseEntity.ok().build());
+                });
     }
+
 
     @GetMapping("/testlogin")
     public Mono<ResponseEntity<?>> receiveTestCase(
@@ -117,7 +151,7 @@ public class AiNotificationController {
 
         OrderDTO order = new OrderDTO();
         SourceSiteDTO site = new SourceSiteDTO();
-        site.setId(4L);
+        site.setSource(4L);
         order.setSourceSite(site);
         order.setLink("https://www.weblancer.net/freelance/sluzhba-podderzhki-56/administrator-onlain-platformi-udalyonno-1265808/");
 

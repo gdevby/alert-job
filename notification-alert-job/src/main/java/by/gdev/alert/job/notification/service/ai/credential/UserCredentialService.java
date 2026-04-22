@@ -35,9 +35,9 @@ public class UserCredentialService {
 
     public Mono<DecryptedCredential> getMonoUserCredentials(AiNotificationPayload payload) {
 
-        String userUuid = payload.getUser().getUuid();
-        Long moduleId = payload.getModule().getId();
-        Long siteId = payload.getOrder().getSourceSite().getId();
+        String userUuid = payload.getUser().getUuid(); //uuid пользователя
+        Long moduleId = payload.getModule().getId(); //модуль
+        Long siteId = payload.getOrder().getSourceSite().getSource(); //сайт
 
         return credentialClient.getMonoEncryptedCredentials(userUuid, siteId, moduleId)
                 .map(encrypted -> {
