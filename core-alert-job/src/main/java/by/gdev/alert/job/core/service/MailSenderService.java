@@ -45,10 +45,7 @@ public class MailSenderService {
     }
 
     public void sendRequiredMessagesToUser(AppUser user, List<String> messages, NotificationType type){
-        // Выбираем способ отправки
-        String uri = user.isDefaultSendType() ? SEND_MESSAGE_URL_MAIL : SEND_MESSAGE_URL_TELEGRAM;
-        // Отправляем сообщения
-        boolean success = sendMessageBatch(user, uri, messages, type);
+        sendMessageBatch(user, SEND_MESSAGE_URL_MAIL, messages, type);
     }
 
 

@@ -306,10 +306,7 @@
                     !m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()
             );
 
-            boolean sendHtml = user.isDefaultSendType();
-            String finalMessage = sendHtml
-                    ? MessageTemplates.Cleanup.buildCleanupHtmlMessage(siteName, modules, wordsDeleted)
-                    : MessageTemplates.Cleanup.buildTextMessage(siteName, modules, wordsDeleted);
+            String finalMessage = MessageTemplates.Cleanup.buildCleanupHtmlMessage(siteName, modules, wordsDeleted);
 
             log.warn("""
     → [CORE_MAIL_PREVIEW]
