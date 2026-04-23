@@ -54,6 +54,18 @@ public class CategoriesCleanupComponent {
         cleanup();
     }
 
+    public void cleanup(List<String> sitesList) {
+        for (String site : sitesList) {
+            site = site.trim();
+            if (site.isBlank()) {
+                log.warn("Skipping empty site entry in cleanup.sites");
+                continue;
+            }
+            cleanup(site);
+        }
+    }
+
+
     public void cleanup() {
         for (String site : sites) {
             site = site.trim();

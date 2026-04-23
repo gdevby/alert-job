@@ -44,6 +44,14 @@ public class MailSenderService {
                 );
     }
 
+    public void sendRequiredMessagesToUser(AppUser user, List<String> messages, NotificationType type){
+        // Выбираем способ отправки
+        String uri = user.isDefaultSendType() ? SEND_MESSAGE_URL_MAIL : SEND_MESSAGE_URL_TELEGRAM;
+        // Отправляем сообщения
+        boolean success = sendMessageBatch(user, uri, messages, type);
+    }
+
+
     public void sendMessagesToUser(AppUser user, List<String> messages, NotificationType type) {
         if(!user.isSwitchOffAlerts()){
             log.debug("Send message abort: {}, {}", user.getUuid(), user.getEmail());

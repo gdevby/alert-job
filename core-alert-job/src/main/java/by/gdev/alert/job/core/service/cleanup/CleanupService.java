@@ -328,7 +328,7 @@
                     finalMessage
             ));
 
-            mailSenderService.sendMessagesToUser(
+            mailSenderService.sendRequiredMessagesToUser(
                     user,
                     List.of(finalMessage),
                     NotificationType.CLEANUP
