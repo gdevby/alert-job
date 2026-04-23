@@ -11,14 +11,25 @@ import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
+public class WeblancerAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
 
     private final PlaywrightManager playwrightManager;
+
+    @Value("${parser.autoreply.headless.weblancer.net}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
+    }
+
+    @Value("${parser.autoreply.send.request.weblancer.net}")
+    private void setOnSendRequest(boolean sendRequest) {
+        this.sendRequest = sendRequest;
+    }
 
     @Override
     public SiteName getSiteName() {
@@ -33,8 +44,6 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
         BrowserContext context = null;
         Page page = null;
 
-        String site = "WEBLANCER";
-
         try {
             playwright = playwrightManager.createPlaywright();
             ProxyCredentials proxy = playwrightManager.getProxyWithRetry(3, 500);
@@ -42,12 +51,12 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
             browser = playwrightManager.createBrowser(
                     playwright,
                     proxy,
-                    false,
+                    headless,
                     true,
-                    site
+                    getSiteName().name()
             );
 
-            context = playwrightManager.createBrowserContext(browser, proxy, true, site);
+            context = playwrightManager.createBrowserContext(browser, proxy, true, getSiteName().name());
             page = context.newPage();
 
             // ЛОГИН
@@ -57,7 +66,7 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
             page.waitForTimeout(3000);
 
             // Переходим на заказ и пытаемся подать заявку
-            processOrder(page, payload);
+            processAutoReply(page, payload);
 
             page.waitForTimeout(15000);
 
@@ -69,11 +78,11 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
             return false;
 
         } finally {
-            playwrightManager.closeResources(page, context, browser, playwright, site);
+            playwrightManager.closeResources(page, context, browser, playwright, getSiteName().name());
         }
     }
 
-    private void processOrder(Page page, AiNotificationPayload payload) {
+    private void processAutoReply(Page page, AiNotificationPayload payload) {
 
         // Переходим на страницу заказа
         String link = payload.getOrder().getLink();
@@ -109,7 +118,9 @@ public class WeblancerAutoreplyParser implements AutoreplyPlaywrightParser {
         page.waitForCondition(addBtn::isEnabled);
 
         // 8. Нажимаем кнопку "Добавить"
-        //addBtn.click();
+        if (sendRequest){
+            addBtn.click();
+        }
 
         // 9. Даем время увидеть отправку
         page.waitForTimeout(10000);
