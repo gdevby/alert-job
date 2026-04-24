@@ -1,5 +1,6 @@
     package by.gdev.alert.job.core.service.cleanup;
 
+    import by.gdev.alert.job.core.model.cleanup.CleanupMode;
     import by.gdev.alert.job.core.model.cleanup.ParserCategoryDTO;
     import by.gdev.alert.job.core.model.db.AppUser;
     import by.gdev.alert.job.core.model.db.OrderModules;
@@ -32,7 +33,7 @@
         private final JdbcTemplate jdbc;
 
         @Transactional
-        public void cleanupParserSourceForSite(Long siteId, String siteName, List<ParserCategoryDTO> categories)
+        public void cleanupParserSourceForSite(Long siteId, String siteName, List<ParserCategoryDTO> categories, CleanupMode cleanupMode)
         {
             List<SourceSite> sources = sourceSiteRepository.findAllBySiteSource(siteId);
             log.debug("Found {} SOURCES", sources.size());
@@ -54,7 +55,9 @@
             List<UserCleanupData> userData = collectUserCleanupData(users, wordSiteIds, siteId, sources, categoryMap);
 
             // Удаляем связанные сущности
-            deletePart(siteId, siteName, sources);
+            if (CleanupMode.TYPE_FULL.equals(cleanupMode)){
+                deletePart(siteId, siteName, sources);
+            }
 
             // Отправляем уведомления
             sendNotificationPart(userData, siteName);
@@ -306,10 +309,7 @@
                     !m.getPositiveWords().isEmpty() || !m.getNegativeWords().isEmpty()
             );
 
-            boolean sendHtml = user.isDefaultSendType();
-            String finalMessage = sendHtml
-                    ? MessageTemplates.Cleanup.buildCleanupHtmlMessage(siteName, modules, wordsDeleted)
-                    : MessageTemplates.Cleanup.buildTextMessage(siteName, modules, wordsDeleted);
+            String finalMessage = MessageTemplates.Cleanup.buildCleanupHtmlMessage(siteName, modules, wordsDeleted);
 
             log.warn("""
     → [CORE_MAIL_PREVIEW]
@@ -328,7 +328,7 @@
                     finalMessage
             ));
 
-            mailSenderService.sendMessagesToUser(
+            mailSenderService.sendRequiredMessagesToUser(
                     user,
                     List.of(finalMessage),
                     NotificationType.CLEANUP

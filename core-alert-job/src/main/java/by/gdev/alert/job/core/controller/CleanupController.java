@@ -25,7 +25,8 @@ public class CleanupController {
         cleanupService.cleanupParserSourceForSite(
                 request.siteId(),
                 request.siteName(),
-                request.categories()
+                request.categories(),
+                request.mode()
         );
 
         return ResponseEntity.ok(Map.of(
