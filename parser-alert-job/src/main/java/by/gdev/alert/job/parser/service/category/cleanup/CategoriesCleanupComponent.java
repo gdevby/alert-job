@@ -54,14 +54,14 @@ public class CategoriesCleanupComponent {
         cleanup();
     }
 
-    public void cleanup(List<String> sitesList) {
+    public void cleanup(List<String> sitesList, CleanupMode cleanupMode) {
         for (String site : sitesList) {
             site = site.trim();
             if (site.isBlank()) {
                 log.warn("Skipping empty site entry in cleanup.sites");
                 continue;
             }
-            cleanup(site);
+            cleanup(site, cleanupMode);
         }
     }
 
@@ -73,16 +73,18 @@ public class CategoriesCleanupComponent {
                 log.warn("Skipping empty site entry in cleanup.sites");
                 continue;
             }
-            cleanup(site);
+            cleanup(site, CleanupMode.TYPE_FULL);
         }
     }
 
     @Transactional
-    public void cleanup(String siteName) {
+    public void cleanup(String siteName, CleanupMode cleanupMode) {
         log.debug("=== CLEANUP {} STARTED ===", siteName);
         List<ParserCategoryDTO> categories = loadCategoriesForSite(siteName);
-        deletePart(siteName);
-        cleanupCoreModule(siteName, categories);
+        if(CleanupMode.TYPE_FULL.equals(cleanupMode)){
+            deletePart(siteName);
+        }
+        cleanupCoreModule(siteName, cleanupMode, categories);
         log.debug("=== CLEANUP {} FINISHED ===", siteName);
     }
 
@@ -173,7 +175,7 @@ public class CategoriesCleanupComponent {
         log.info("[{}] Deleted parser_order_source: {}", siteName, count);
     }
 
-    private void cleanupCoreModule(String siteName, List<ParserCategoryDTO> categories) {
+    private void cleanupCoreModule(String siteName, CleanupMode cleanupMode, List<ParserCategoryDTO> categories) {
         try {
             SiteSourceJob job = siteSourceJobRepository.findByName(siteName);
             if (job == null) {
@@ -186,7 +188,8 @@ public class CategoriesCleanupComponent {
             CleanupRequest body = new CleanupRequest(
                     siteId,
                     siteName,
-                    categories
+                    categories,
+                    cleanupMode
             );
 
             HttpHeaders headers = new HttpHeaders();

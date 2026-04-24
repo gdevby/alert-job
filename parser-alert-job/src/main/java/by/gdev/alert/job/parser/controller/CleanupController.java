@@ -1,6 +1,7 @@
 package by.gdev.alert.job.parser.controller;
 
 import by.gdev.alert.job.parser.service.category.cleanup.CategoriesCleanupComponent;
+import by.gdev.alert.job.parser.service.category.cleanup.CleanupMode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +21,16 @@ public class CleanupController {
 
     @PostMapping(produces = "application/json")
     public ResponseEntity<Map<String, Serializable>> cleanupForSite(
-            @RequestParam String site) {
-        categoriesCleanupComponent.cleanup(List.of(site));
+            @RequestParam String site,
+            @RequestParam CleanupMode mode) {
+
+        categoriesCleanupComponent.cleanup(List.of(site), mode);
+
         return ResponseEntity.ok(Map.of(
                 "message", "Очистка завершена",
-                "site", site
+                "site", site,
+                "mode", mode.toString()
         ));
     }
+
 }
