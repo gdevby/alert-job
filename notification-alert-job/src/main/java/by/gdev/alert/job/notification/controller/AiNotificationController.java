@@ -5,6 +5,7 @@ import by.gdev.alert.job.notification.service.MailService;
 import by.gdev.alert.job.notification.service.ai.credential.UserCredentialService;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyParserFactory;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
+import by.gdev.alert.job.notification.service.ai.queue.AiDecisionQueue;
 import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.UserNotification;
@@ -27,7 +28,9 @@ public class AiNotificationController {
     private final UserCredentialService userCredentialService;
     private final AutoreplyParserFactory parserFactory;
 
-    @PostMapping("/decision")
+    private final AiDecisionQueue queue;
+
+    /*@PostMapping("/decision")
     public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
         log.info("AI REPLY = {}", payload.getDecision().reply());
         AiAppUserDTO user = payload.getUser();
@@ -89,6 +92,17 @@ public class AiNotificationController {
                     }
                     return Mono.just(ResponseEntity.ok().build());
                 });
+    }*/
+
+    @PostMapping("/decision")
+    public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
+        log.info("QUEUE: received AI decision");
+
+        queue.submit(payload);
+
+        return Mono.just(ResponseEntity.accepted().body(
+                Map.of("status", "queued", "queueSize", queue.size())
+        ));
     }
 
 
@@ -169,47 +183,5 @@ public class AiNotificationController {
         payload.setOrder(order);
 
         return payload;
-    }
-
-
-    private String buildAiReplyEmailTemplate(AiNotificationPayload payload) {
-
-        String replyHtml = payload.getDecision().reply()
-                .replace("\n", "<br>");
-
-        return String.format("""
-        <div style="font-family: Arial, sans-serif; padding: 12px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa; margin-bottom: 12px;">
-            <h3 style="margin: 0 0 10px 0; color: #333;">Автоответ от AI</h3>
-
-            <p style="margin: 4px 0;">
-                <strong>Модуль:</strong> %s
-            </p>
-
-            <p style="margin: 4px 0;">
-                <strong>Название заказа:</strong> %s
-            </p>
-
-            <p style="margin: 4px 0;">
-                <strong>Ссылка:</strong>
-                <a href="%s" style="color: #1a73e8;">%s</a>
-            </p>
-
-            <hr style="margin: 12px 0; border: none; border-top: 1px solid #ddd;">
-
-            <p style="margin: 4px 0;">
-                <strong>Ответ AI:</strong>
-            </p>
-
-            <div style="padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px;">
-                %s
-            </div>
-        </div>
-        """,
-                payload.getModule().getName(),
-                payload.getOrder().getTitle(),
-                payload.getOrder().getLink(),
-                payload.getOrder().getLink(),
-                replyHtml
-        );
     }
 }
