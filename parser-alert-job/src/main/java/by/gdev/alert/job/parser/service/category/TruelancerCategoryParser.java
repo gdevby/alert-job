@@ -4,7 +4,7 @@ import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.truelancer.TrueLancerCategory;
 import by.gdev.alert.job.parser.domain.truelancer.TruelancerCategoriesResponse;
 import by.gdev.alert.job.parser.factory.RestTemplateFactory;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

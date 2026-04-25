@@ -27,6 +27,7 @@ public class MailService {
 
     private final ApplicationProperty property;
     private final Mailer mailer;
+
     private final WebClient webClient;
     private final ApplicationContext context;
 

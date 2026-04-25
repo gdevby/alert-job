@@ -9,9 +9,10 @@ import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
 import by.gdev.alert.job.parser.util.Pair;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -90,15 +91,15 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     }
 
     protected void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
+        playwrightManager.closeResources(page, context , browser, playwright, getSiteName().name());
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
+        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName().name());
     }
 
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
+        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName().name());
     }
 
     /**
@@ -261,9 +262,9 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         OrderDTO dto = mapper.map(order, OrderDTO.class);
         SourceSiteDTO source = dto.getSourceSite();
         source.setCategoryName(category.getNativeLocName());
+        source.setSourceName(getSiteName().name());
         if (subCategory != null)
             source.setSubCategoryName(subCategory.getNativeLocName());
-        dto.setSourceSite(source);
         return dto;
     }
 
