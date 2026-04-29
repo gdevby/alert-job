@@ -28,6 +28,7 @@ public class Order extends BasicId {
     private String title;
     @Column(columnDefinition = "MEDIUMTEXT")
     private String message;
+    @Column(columnDefinition = "TEXT")
     private String link;
 
     private Date dateTime;
