@@ -20,4 +20,13 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
 
 	@Query("select c from parser_category c left join fetch c.siteSourceJob s where c.id = :id and s.id = :sid")
 	Optional<Category> findByIdAndSourceId(@Param("id") Long id, @Param("sid") Long sid);
+
+
+    @Query("""
+    SELECT c FROM parser_category c
+    LEFT JOIN FETCH c.subCategories
+    WHERE c.siteSourceJob.id = :siteId
+""")
+    List<Category> findAllWithSubcategoriesBySourceId(Long siteId);
+
 }

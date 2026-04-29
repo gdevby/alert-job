@@ -4,5 +4,6 @@ public enum NotificationType {
     ORDER,          // новый заказ
     AUTO_REPLY,     // автоответ
     TEST,           //тестовое сообщение
-    CLEANUP         //очистка сайта
+    CLEANUP,         //очистка сайта
+    CATEGORY_CHANGE
 }
