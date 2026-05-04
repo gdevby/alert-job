@@ -6,6 +6,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import by.gdev.alert.job.core.model.ai.AiOrderRequest;
+import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
+import by.gdev.alert.job.core.service.ai.AiOrdersClient;
 import by.gdev.common.model.NotificationType;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,6 +38,8 @@ public class OrderProcessor {
     private final ApplicationProperty property;
     private final UserFilterRepository filterRepository;
     private final MailSenderService mailSenderService;
+    private final AiOrdersClient aiOrdersClient;
+    private final AiOrderRequestMapper aiOrderRequestMapper;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
@@ -53,10 +58,16 @@ public class OrderProcessor {
                                         order.setModuleName(orderModule.getName());
                                         return order;
                                     }).collect(Collectors.toList());
+                            
+                            if (!list.isEmpty() && Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
+                                AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule, list);
+                                aiOrdersClient.sendAiOrderRequest(aiOrderRequest);
+                            }
                             return list;
                         }).flatMap(Collection::stream).toList();
                     }).flatMap(Collection::stream).toList();
             if (!orderListToSend.isEmpty()) {
+                //aiOrdersClient.sendOrders(orderListToSend);
                 sendOrderToUser(user, orderListToSend);
             }
         });

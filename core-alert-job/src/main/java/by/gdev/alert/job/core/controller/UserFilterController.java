@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.controller;
 
 import java.util.Objects;
 
+import by.gdev.alert.job.core.service.ai.AiFilterService;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
@@ -36,6 +37,7 @@ import reactor.core.publisher.Mono;
 public class UserFilterController {
 
 	private final UserFilterService filterService;
+    private final AiFilterService aiFilterService;
 
 	@GetMapping("user/title-word")
 	public ResponseEntity<Mono<Page<WordDTO>>> getTitleWords(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
@@ -170,4 +172,19 @@ public class UserFilterController {
 			@PathVariable("word_id") Long wordId) {
 		return filterService.removeDescriptionWordPriceFromFilter(filterId, wordId);
 	}
+
+    @GetMapping("user/autoreply")
+    public ResponseEntity<Boolean> getAutoReplyStatus(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestParam("module_id") Long moduleId
+    ) {
+        boolean status = aiFilterService.getAutoReplyStatus(uuid, moduleId);
+        return ResponseEntity.ok(status);
+    }
+
+    @PostMapping("user/autoreply")
+    public ResponseEntity<Void> setAutoReplyStatus(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestParam("module_id") Long moduleId,
+            @RequestParam("enabled") boolean enabled
+    ) {
+        aiFilterService.setAutoReplyStatus(uuid, moduleId, enabled);
+        return ResponseEntity.ok().build();
+    }
 }
