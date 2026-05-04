@@ -1,19 +1,56 @@
 package by.gdev.alert.job.core.model.category;
 
+import by.gdev.alert.job.core.model.category.tree.CategoryDTO;
+import by.gdev.alert.job.core.model.category.tree.SubcategoryDTO;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Data
-@Slf4j
 public class CategoryDiffResult {
 
-    private List<String> newCategories;
-    private List<String> removedCategories;
+    // --- Категории ---
+    private final List<CategoryDTO> newCategories = new ArrayList<>();
+    private final List<CategoryDTO> removedCategories = new ArrayList<>();
+    private final List<CategoryMoveDTO> movedCategories = new ArrayList<>();
 
-    private Map<String, List<String>> newSubcategories;
-    private Map<String, List<String>> removedSubcategories;
+    // --- Подкатегории ---
+    private final List<SubcategoryWithParentDTO> newSubcategories = new ArrayList<>();
+    private final List<SubcategoryWithParentDTO> removedSubcategories = new ArrayList<>();
+    private final List<SubcategoryMoveDTO> movedSubcategories = new ArrayList<>();
+
+    public boolean isEmpty() {
+        return newCategories.isEmpty()
+                && removedCategories.isEmpty()
+                && movedCategories.isEmpty()
+                && newSubcategories.isEmpty()
+                && removedSubcategories.isEmpty()
+                && movedSubcategories.isEmpty();
+    }
+
+    // --- DTO для перемещённых категорий ---
+    @Data
+    public static class CategoryMoveDTO {
+        private final CategoryDTO oldCategory;
+        private final CategoryDTO newCategory;
+    }
+
+    // --- DTO для новых/удалённых подкатегорий ---
+    @Data
+    public static class SubcategoryWithParentDTO {
+        private final Long parentId;
+        private final String parentName;
+        private final SubcategoryDTO subcategory;
+    }
+
+    // --- DTO для перемещённых подкатегорий ---
+    @Data
+    public static class SubcategoryMoveDTO {
+        private final Long oldParentId;
+        private final String oldParentName;
+        private final Long newParentId;
+        private final String newParentName;
+        private final SubcategoryDTO subcategory;
+    }
 }
-

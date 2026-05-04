@@ -55,14 +55,14 @@ public class CategoryUpdateService {
             }
         }
 
-        /*if (!changes.isEmpty()) {
+        if (!changes.isEmpty()) {
             coreClient.sendCategoryChanges(changes);
-        }*/
+        }
 
         return changes;
     }
 
-    private CategoryChangeDTO updateSingleSite(SiteSourceJob job) throws IOException {
+    private CategoryChangeDTO updateSingleSite(SiteSourceJob job) {
 
         // Дерево из базы
         SiteDTO dbTree = categoryTreeService.buildTree(job);
@@ -85,6 +85,10 @@ public class CategoryUpdateService {
         CategoryDiffDTO diffDto = toDto(diff);
 
         return new CategoryChangeDTO(job.getName(), diffDto);
+    }
+
+    private void fixCoreModule(List<CategoryChangeDTO> changes){
+
     }
 
 
@@ -113,7 +117,7 @@ public class CategoryUpdateService {
             }
         }
 
-        // --- 2. Подкатегории ---
+        // --- Подкатегории ---
         // Для каждой категории, которая есть в parsedTree
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
 

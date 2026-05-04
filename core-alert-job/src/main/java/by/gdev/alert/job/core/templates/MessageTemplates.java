@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.templates;
 
+import by.gdev.alert.job.core.model.category.CategoryChangeDTO;
 import by.gdev.alert.job.core.service.cleanup.UserModuleCleanupData;
 
 import java.util.List;
@@ -162,6 +163,90 @@ public final class MessageTemplates {
         <p>Вам необходимо заново настроить фильтры поиска Ваших заказов.</p>
         """.formatted(siteName, modulesBlock);
         }
+    }
+
+    public static final class CategoryDiff {
+
+        public static String buildCategoryDiffHtml(List<CategoryChangeDTO> changes) {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("<h2>Изменения категорий</h2>");
+
+            for (CategoryChangeDTO change : changes) {
+
+                sb.append("<h3 style=\"font-size: 20px; color: #1a73e8; margin-top: 25px;\">")
+                        .append("Сайт: ")
+                        .append(change.siteName())
+                        .append("</h3>");
+
+                var diff = change.diff();
+
+                // --- Новые категории ---
+                if (!diff.getNewCategories().isEmpty()) {
+                    sb.append("<p><b>Новые категории:</b></p><ul>");
+                    diff.getNewCategories().forEach(c ->
+                            sb.append("<li>").append(c.getName()).append("</li>")
+                    );
+                    sb.append("</ul>");
+                }
+
+                // --- Удалённые категории ---
+                if (!diff.getRemovedCategories().isEmpty()) {
+                    sb.append("<p><b>Удалённые категории:</b></p><ul>");
+                    diff.getRemovedCategories().forEach(c ->
+                            sb.append("<li>").append(c.getName()).append("</li>")
+                    );
+                    sb.append("</ul>");
+                }
+
+                // --- Новые подкатегории ---
+                if (!diff.getNewSubcategories().isEmpty()) {
+                    sb.append("<p><b>Новые подкатегории:</b></p><ul>");
+                    diff.getNewSubcategories().forEach(s ->
+                            sb.append("<li>")
+                                    .append(s.getParentName())
+                                    .append(" → ")
+                                    .append(s.getSubcategory().getName())
+                                    .append("</li>")
+                    );
+                    sb.append("</ul>");
+                }
+
+                // --- Удалённые подкатегории ---
+                if (!diff.getRemovedSubcategories().isEmpty()) {
+                    sb.append("<p><b>Удалённые подкатегории:</b></p><ul>");
+                    diff.getRemovedSubcategories().forEach(s ->
+                            sb.append("<li>")
+                                    .append(s.getParentName())
+                                    .append(" → ")
+                                    .append(s.getSubcategory().getName())
+                                    .append("</li>")
+                    );
+                    sb.append("</ul>");
+                }
+
+                // --- Перемещённые подкатегории ---
+                if (!diff.getMovedSubcategories().isEmpty()) {
+                    sb.append("<p><b>Перемещённые подкатегории:</b></p><ul>");
+                    diff.getMovedSubcategories().forEach(m ->
+                            sb.append("<li>")
+                                    .append(m.getOldParentName())
+                                    .append(" → ")
+                                    .append(m.getNewParentName())
+                                    .append(": ")
+                                    .append(m.getSubcategory().getName())
+                                    .append("</li>")
+                    );
+                    sb.append("</ul>");
+                }
+
+                sb.append("<hr>");
+            }
+
+            return sb.toString();
+        }
+
 
     }
+
 }
