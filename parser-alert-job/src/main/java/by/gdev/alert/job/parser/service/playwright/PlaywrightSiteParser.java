@@ -211,7 +211,8 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
             // Задержка между попытками
             if (attempt < retryAttempts) {
                 try {
-                    Thread.sleep(retryDelayMs);
+                    long delay = retryDelayMs * (long) Math.pow(2, attempt - 1);
+                    Thread.sleep(delay);
                 } catch (InterruptedException ignored) {
                 }
             }
