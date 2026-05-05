@@ -39,6 +39,11 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         this.headless = headless;
     }
 
+    @Value("${freelancer.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)

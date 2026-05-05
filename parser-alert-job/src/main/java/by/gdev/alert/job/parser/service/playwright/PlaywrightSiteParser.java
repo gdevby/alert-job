@@ -13,6 +13,7 @@ import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import com.microsoft.playwright.*;
+import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +22,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -42,6 +43,11 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     @Value("${parser.site.retry.delay:2000}")
     private long retryDelayMs;
+
+    @Value("${parser.retry.ignored-errors:}")
+    private String ignoredErrorsRaw;
+
+    private List<String> ignoredErrors;
 
     @Getter
     @Autowired
@@ -69,6 +75,21 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     protected boolean debug;
 
     protected boolean headless;
+
+
+    @PostConstruct
+    private void initIgnoredErrors() {
+        if (ignoredErrorsRaw == null || ignoredErrorsRaw.isBlank()) {
+            ignoredErrors = List.of();
+            return;
+        }
+
+        ignoredErrors = Arrays.stream(ignoredErrorsRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        log.debug("Игнорируемые ошибки Playwright: {}", ignoredErrors);
+    }
 
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -127,11 +148,10 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return new PlaywrightSession(playwright, browser, context, page, proxy);
     }
 
-    @Transactional(timeout = 3600)
     @Override
     public List<OrderDTO> parse() {
         Long siteId = getSiteName().getId();
-        SiteSourceJob siteSourceJob = getSiteSourceJobRepository().findById(siteId).orElse(null);
+        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(siteId);
         if (siteSourceJob != null) {
             return getOrdersForPlayright(siteSourceJob);
         }
@@ -163,34 +183,31 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     private List<OrderDTO> executeWithRetry(Supplier<List<OrderDTO>> operation,
                                             String operationDescription) {
-        Exception lastError = null;
+        Exception lastIgnored = null;
+        Exception lastNonIgnored = null;
+
         for (int attempt = 1; attempt <= retryAttempts; attempt++) {
             try {
-                log.info("Попытка {}/{} {}",
+                log.debug("Попытка {}/{} {}",
                         attempt, retryAttempts, operationDescription);
-
-                List<OrderDTO> result = operation.get();
-                return result;
-
+                return operation.get();
             } catch (PlaywrightException e) {
-                if (e.getMessage() != null &&
-                        (e.getMessage().contains("Timeout")
-                                || e.getMessage().contains("Execution context was destroyed")
-                                || e.getMessage().contains("Most likely because of a navigation"))) {
-                    if (debug){
-                        log.warn("Timeout playwright {} {}", getSiteName(), e.getMessage());
-                    }
+                boolean isIgnored = ignoredErrors.stream()
+                        .anyMatch(err -> e.getMessage() != null && e.getMessage().contains(err));
+
+                if (isIgnored) {
+                    lastIgnored = e;
                     continue;
                 }
-                lastError = e;
+
+                lastNonIgnored = e;
                 log.error("Playwright ошибка на попытке {} для {}: {}",
                         attempt, getSiteName(), e.getMessage());
             } catch (Exception e) {
-                lastError = e;
+                lastNonIgnored = e;
                 log.error("Неожиданная ошибка на попытке {} для {}: {}",
                         attempt, getSiteName(), e.getMessage());
             }
-
             // Задержка между попытками
             if (attempt < retryAttempts) {
                 try {
@@ -200,16 +217,21 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
             }
         }
 
-        if (lastError == null) {
-            return List.of();
+        if (lastNonIgnored != null) {
+            log.error("Все {} попытки {} провалились. Последняя ошибка: {}",
+                    retryAttempts, operationDescription, lastNonIgnored.getMessage());
+            throw new RuntimeException("Все попытки " + operationDescription + " провалились", lastNonIgnored);
         }
 
-        log.error("Все {} попытки {} провалились. Последняя ошибка: {}",
-                retryAttempts, operationDescription, lastError.getMessage());
+        if (lastIgnored != null) {
+            log.warn("Все {} попытки {} завершились предупреждениями. Последнее: {}",
+                    retryAttempts, operationDescription, lastIgnored.getMessage());;
+        }
+
         return List.of();
     }
 
-    // Теперь создаем две версии метода
+    // Создаем две версии метода mapItemsWithRetry
     public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
                                             Long siteSourceJobId, Category category, Subcategory subCategory) {
 
@@ -273,9 +295,10 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 .filter(Order::isValidOrder)
                 .peek(order -> {
                     if (debug) {
-                        log.info("*** order: {} , result {}",
+                        log.info("*** order: site {},  title {} , link {}",
+                                getSiteName(),
                                 order.getTitle(),
-                                getParserService().isExistsOrder(category, subCategory, order.getLink()));
+                                order.getLink());
                     }
                 })
                 .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))

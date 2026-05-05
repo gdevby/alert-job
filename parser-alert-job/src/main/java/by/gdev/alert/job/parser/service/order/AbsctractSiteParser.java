@@ -34,8 +34,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
-
-	@Transactional(timeout = 2000)
+    
 	public List<OrderDTO> parse(){
 		return getOrders(getSiteName().getId());
 	};
@@ -45,8 +44,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		List<OrderDTO> orders = new ArrayList<>();
 		for (int i = 0; i < ATTEMPTS_COUNT; i++) {
 			try {
-				SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
-				//log.trace("parsed {}", siteSourceJob.getName());
+                SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(siteId);
 				siteSourceJob.getCategories().stream()
 						// parse only categories that can parse=true
 						// iterate over each category from this collection
