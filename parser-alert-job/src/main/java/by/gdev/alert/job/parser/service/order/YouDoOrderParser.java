@@ -92,11 +92,19 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         }
         // Задержка
         page.waitForTimeout(1000);
-        tasksLoading(page);
+        boolean isEmptyTaskList = tasksLoading(page);
         if (debug){
             log.info("mapPlaywrightItems: After task loading {}", getSiteName());
         }
-        List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subcategory);
+        List<OrderDTO> orders;
+        if (!isEmptyTaskList) {
+            orders = tasksParsing(page, siteSourceJobId, category, subcategory);
+        }
+        else {
+            log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
+                    category.getNativeLocName(), subcategory.getNativeLocName(), getSiteName());
+            orders = List.of();
+        }
         if (debug){
             log.info("mapPlaywrightItems: After task parsing {}, {}", getSiteName(), orders.size());
         }
@@ -111,6 +119,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     }
 
     @Override
+    @Deprecated
     public List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         List<OrderDTO> orders = new ArrayList<>();
         if (!active)
@@ -121,8 +130,14 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             Page page = session.getPage();
             firstLoad(page);
             clickCategory(page, category, subCategory);
-            tasksLoading(page);
-            orders = tasksParsing(page, siteSourceJobId, category, subCategory);
+            boolean isEmptyTaskList = tasksLoading(page);
+            if (!isEmptyTaskList){
+                orders = tasksParsing(page, siteSourceJobId, category, subCategory);
+            }
+            else {
+                log.debug("Список задач выбранной категории {} и субкатегории {} для {} пустой",category.getNativeLocName(),
+                        subCategory.getNativeLocName(), getSiteName());
+            }
         }
         finally {
             closeResources(session.getPage(), session.getContext(), session.getBrowser(), session.getPlaywright());
@@ -144,7 +159,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         throw new RuntimeException("Не удалось открыть страницу после 5 попыток: " + url);
     }
 
-
     private void firstLoad(Page page){
         //page.navigate(tasksUrl);
         safeNavigate(page, tasksUrl);
@@ -163,10 +177,27 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         }
     }
 
-    private void tasksLoading(Page page){
+    private boolean tasksLoading(Page page){
+        // даём обновить страницу
+        page.waitForTimeout(2000);
+        // если сразу пусто — выходим
+        if (isEmptyTaskList(page)) {
+            return true;
+        }
         // Ждём загрузку задач
         page.waitForSelector(TASKS_SELECTOR);
-        page.waitForTimeout(300);
+        page.waitForTimeout(1000);
+        return false;
+    }
+
+    private boolean isEmptyTaskList(Page page) {
+        // Проверяем по селектору
+        if (page.locator("div.EmptyList_emptyListBlock__n6dvb").count() > 0) {
+            return true;
+        }
+
+        // Проверяем по тексту (на случай изменения классов)
+        return page.locator("text=Ничего не найдено").count() > 0;
     }
 
     private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
@@ -207,81 +238,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             }
         }
     }
-
-
-    /*@Override
-    public List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        List<OrderDTO> orders = new ArrayList<>();
-        if (!active)
-            return orders;
-        Playwright playwright = null;
-        Browser browser = null;
-        BrowserContext context = null;
-        Page page = null;
-
-        try {
-            playwright = createPlaywright();
-            ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            if(debug){
-                browser = createBrowser(playwright, proxy, false, youdoProxyActive);
-            }
-            else{
-                browser = createBrowser(playwright, proxy, true, youdoProxyActive);
-            }
-            context = createBrowserContext(browser, null, false);
-
-            page = context.newPage();
-            //long start = System.currentTimeMillis();
-            page.navigate(tasksUrl);
-            //log.debug("{} загрузился за {} ms", getSiteName(), System.currentTimeMillis() - start);
-
-            // Ждём появления списка категорий
-            page.waitForSelector("ul.Categories_container__9z_KX");
-            // Сброс всех категорий
-            page.locator("label.Checkbox_label__uNY3B:has-text(\"Все категории\")").click();
-            //page.waitForTimeout(30000);
-            page.waitForLoadState(LoadState.NETWORKIDLE);
-
-            // Кликаем категорию
-            if (subCategory != null) {
-                //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
-                clickCategory(page, ALL_CATEGORIES_TOKEN);
-                //А затем кликаем нужную субкатегорию
-                clickSubCategory(page, category.getNativeLocName(), subCategory.getNativeLocName());
-            } else {
-                //Если выбраны Все категории - ничего кликать не нужно
-                if (!category.getNativeLocName().equals(ALL_CATEGORIES_TOKEN)){
-                    //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
-                    clickCategory(page, ALL_CATEGORIES_TOKEN);
-                    //А затем кликаем нужную категорию
-                    clickCategory(page, category.getNativeLocName());
-                }
-            }
-
-            // Ждём загрузку задач
-            page.waitForSelector(TASKS_SELECTOR);
-
-            // Парсим HTML
-            String html = page.content();
-            Document doc = Jsoup.parse(html);
-
-            Elements elementsOrders = doc.select(TASKS_SELECTOR);
-            if (elementsOrders.isEmpty()) {
-                return List.of();
-            }
-
-            List<Order> parsedOrders = elementsOrders
-                    .stream()
-                    .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
-                    .toList();
-
-            orders = getOrdersData(parsedOrders, category, subCategory);
-        }
-        finally {
-            closeResources(page, context, browser, playwright);
-        }
-        return orders;
-    }*/
 
     private void resetCategories(Page page) {
         // 1. Кликаем "Все категории"
@@ -324,7 +280,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         page.waitForTimeout(300);
     }
 
-
     private boolean areAllCategoriesUnchecked(Page page) {
         Locator inputs = page.locator("ul.Categories_container__9z_KX input[type='checkbox']");
         int count = inputs.count();
@@ -336,7 +291,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         }
         return true;
     }
-
 
     private void clickCategory(Page page, String categoryName) {
         // Ждём контейнер категорий

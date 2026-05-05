@@ -88,15 +88,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-
-        orders.forEach(order ->
-                log.info("*** order: {} , result {}",
-                        order.getTitle(),
-                        getParserService().isExistsOrder(category, subCategory, order.getLink()))
-        );
-
-        return orders;
+        return getOrdersData(parsedOrders, category, subCategory);
     }
 
 
