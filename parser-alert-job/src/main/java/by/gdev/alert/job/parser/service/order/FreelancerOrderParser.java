@@ -39,6 +39,11 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         this.headless = headless;
     }
 
+    @Value("${freelancer.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)
@@ -83,15 +88,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-
-        orders.forEach(order ->
-                log.info("*** order: {} , result {}",
-                        order.getTitle(),
-                        getParserService().isExistsOrder(category, subCategory, order.getLink()))
-        );
-
-        return orders;
+        return getOrdersData(parsedOrders, category, subCategory);
     }
 
 

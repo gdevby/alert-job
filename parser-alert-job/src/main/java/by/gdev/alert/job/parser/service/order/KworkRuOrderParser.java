@@ -36,6 +36,11 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
         this.headless = headless;
     }
 
+    @Value("${kworkru.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
     @Override
     public SiteName getSiteName() {
         return SiteName.KWORK;
@@ -85,15 +90,7 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-
-        orders.forEach(order -> log.debug("*** {} order: {} , exists: {}",
-                getSiteName(),
-                order.getTitle(),
-                getParserService().isExistsOrder(category, subCategory, order.getLink())
-        ));
-
-        return orders;
+        return getOrdersData(parsedOrders, category, subCategory);
     }
 
 
