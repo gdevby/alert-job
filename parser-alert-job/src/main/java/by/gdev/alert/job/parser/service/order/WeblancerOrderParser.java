@@ -85,9 +85,12 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
 
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-
-        clickCategory(page, category, subCategory);
-
+        boolean ok = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, category, subCategory));
+        if (!ok) {
+            log.error("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+            return List.of();
+        }
         page.waitForTimeout(500);
         return parseOrders(page, siteSourceJobId, category, subCategory);
     }

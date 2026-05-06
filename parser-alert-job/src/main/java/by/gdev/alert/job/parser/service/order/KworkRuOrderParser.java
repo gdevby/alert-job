@@ -203,7 +203,12 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-        clickCategory(page, pair.getLeft(), pair.getRight());
+        boolean ok = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, pair.getLeft(), pair.getRight()));
+        if (!ok) {
+            log.error("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         // Задержка

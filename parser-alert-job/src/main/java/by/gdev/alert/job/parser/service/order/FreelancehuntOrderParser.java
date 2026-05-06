@@ -230,7 +230,12 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subcategory = pair.getRight();
-        clickCategory(page, pair.getLeft());
+        boolean ok = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, category));
+        if (!ok) {
+            log.error("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         boolean isEmptyTaskList = tasksLoading(page, false);

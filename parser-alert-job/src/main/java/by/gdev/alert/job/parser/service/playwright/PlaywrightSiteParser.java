@@ -308,7 +308,32 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 .toList();
     }
 
+    @FunctionalInterface
+    public interface ClickAction {
+        void click();
+    }
 
+    public boolean clickWithRetry(Page page, String name, ClickAction action) {
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            String beforeUrl = page.url();
+            try {
+                action.click();
+            } catch (Exception e) {
+                log.warn("Ошибка при клике по '{}', попытка {}", name, attempt, e);
+            }
+            page.waitForTimeout(500);
+            String afterUrl = page.url();
+
+            if (!afterUrl.equals(beforeUrl)) {
+                log.debug("'{}' выбран успешно (попытка {})", name, attempt);
+                return true;
+            }
+            log.warn("URL не изменился после клика по '{}' (попытка {})", name, attempt);
+        }
+        log.error("'{}' НЕ выбран после 3 попыток", name);
+        return false;
+    }
+    
     protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList);
 
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page);
