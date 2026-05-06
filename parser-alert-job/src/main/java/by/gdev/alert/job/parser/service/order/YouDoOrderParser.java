@@ -101,8 +101,15 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             orders = tasksParsing(page, siteSourceJobId, category, subcategory);
         }
         else {
-            log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
-                    category.getNativeLocName(), subcategory.getNativeLocName(), getSiteName());
+            if (subcategory != null){
+                log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
+                        category.getNativeLocName(), subcategory.getNativeLocName(), getSiteName());
+
+            }
+            else{
+                log.debug("Task list выбранной категории {} для {} пустой",
+                        category.getNativeLocName(), getSiteName());
+            }
             orders = List.of();
         }
         if (debug){
@@ -135,8 +142,15 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 orders = tasksParsing(page, siteSourceJobId, category, subCategory);
             }
             else {
-                log.debug("Список задач выбранной категории {} и субкатегории {} для {} пустой",category.getNativeLocName(),
-                        subCategory.getNativeLocName(), getSiteName());
+                if (subCategory != null){
+                    log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
+                            category.getNativeLocName(), subCategory.getNativeLocName(), getSiteName());
+
+                }
+                else{
+                    log.debug("Task list выбранной категории {} для {} пустой",
+                            category.getNativeLocName(), getSiteName());
+                }
             }
         }
         finally {
