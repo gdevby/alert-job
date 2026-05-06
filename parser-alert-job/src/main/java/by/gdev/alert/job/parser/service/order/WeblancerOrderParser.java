@@ -85,10 +85,10 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
 
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-        boolean ok = clickWithRetry(page, category.getNativeLocName(),
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
                 () -> clickCategory(page, category, subCategory));
-        if (!ok) {
-            log.error("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+        if (!isCategoryChanged) {
+            log.warn("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
             return List.of();
         }
         page.waitForTimeout(500);
@@ -125,7 +125,6 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
     private void clickCategory(Page page, Category category, Subcategory subCategory) {
         String url = (subCategory != null) ? subCategory.getLink() : category.getLink();
         log.debug("[{}] Navigating to {}", getSiteName(), url);
-
         page.navigate(url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
         page.waitForTimeout(500);
     }

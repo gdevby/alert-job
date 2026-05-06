@@ -148,10 +148,10 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         if(category == null || subCategory == null) return orders;
         final Optional<SiteSourceJob> siteJobOptional = getSiteSourceJobRepository().findById(siteSourceJobId);
         String siteUrl = siteJobOptional.map(SiteSourceJob::getParsedURI).orElse(null);
-        boolean ok = clickWithRetry(page, category.getNativeLocName(),
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
                 () -> clickCategory(page, siteUrl, pair.getLeft(), pair.getRight()));
-        if (!ok) {
-            log.error("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+        if (!isCategoryChanged) {
+            log.warn("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
             return List.of();
         }
         // Задержка

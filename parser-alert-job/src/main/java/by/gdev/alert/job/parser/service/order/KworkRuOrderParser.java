@@ -156,37 +156,28 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
 
 
     public void clickCategory(Page page, Category category, Subcategory subCategory) {
-
         page.waitForSelector("div.projects-filter__rubrics-list");
-
         // Категория
         String categoryName = category.getNativeLocName().trim();
 
         Locator categoryNode = page.locator(
                 "xpath=//span[contains(@class,'multilevel-list__label-title') and normalize-space(text())='" + categoryName + "']"
         );
-
         if (categoryNode.count() == 0) {
             log.warn("Категория '{}' не найдена", categoryName);
             return;
         }
-
         categoryNode.first().click();
         page.waitForTimeout(300);
-
         // Подкатегория
         if (subCategory != null) {
-
             String subName = subCategory.getNativeLocName().trim();
-
             Locator activeCategory = page.locator(
                     "xpath=//span[contains(@class,'multilevel-list__label') and contains(@class,'multilevel-list__label--active')]/following-sibling::ul"
             );
-
             Locator subNode = activeCategory.locator(
                     "xpath=.//span[contains(@class,'multilevel-list__label-title') and normalize-space(text())='" + subName + "']"
             );
-
             if (subNode.count() == 0) {
                 log.warn("Подкатегория '{}' не найдена", subName);
             } else {
@@ -203,10 +194,10 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-        boolean ok = clickWithRetry(page, category.getNativeLocName(),
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
                 () -> clickCategory(page, pair.getLeft(), pair.getRight()));
-        if (!ok) {
-            log.error("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+        if (!isCategoryChanged) {
+            log.warn("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
             return List.of();
         }
         // Задержка
