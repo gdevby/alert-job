@@ -37,6 +37,11 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
         this.headless = headless;
     }
 
+    @Value("${weblancer.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
     @Override
     public SiteName getSiteName() {
         return SiteName.WEBLANCER;
