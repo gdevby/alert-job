@@ -323,14 +323,13 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
             }
             page.waitForTimeout(500);
             String afterUrl = page.url();
-
             if (!afterUrl.equals(beforeUrl)) {
                 log.debug("'{}' выбран успешно (попытка {})", name, attempt);
                 return true;
             }
             log.warn("URL не изменился после клика по '{}' (попытка {})", name, attempt);
         }
-        log.error("'{}' НЕ выбран после 3 попыток", name);
+        log.warn("'{}' НЕ выбран после 3 попыток", name);
         return false;
     }
     

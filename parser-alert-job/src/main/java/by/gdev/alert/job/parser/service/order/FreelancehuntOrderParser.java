@@ -229,7 +229,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
                 () -> clickCategory(page, category));
         if (!isCategoryChanged) {
-            log.warn("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subcategory != null ? subcategory.getNativeLocName() : "", getSiteName());
             return List.of();
         }
         // Задержка

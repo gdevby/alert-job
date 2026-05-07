@@ -88,7 +88,7 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
         boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
                 () -> clickCategory(page, category, subCategory));
         if (!isCategoryChanged) {
-            log.warn("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
             return List.of();
         }
         page.waitForTimeout(500);
@@ -111,12 +111,9 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
             ProxyCredentials proxy = weblancerProxyActive ? getProxyWithRetry(5, 2000) : null;
             browser = createBrowser(playwright, proxy, headless, weblancerProxyActive);
             context = createBrowserContext(browser, proxy, weblancerProxyActive);
-
             page = context.newPage();
             clickCategory(page, category, subCategory);
-
             return parseOrders(page, siteSourceJobId, category, subCategory);
-
         } finally {
             closeResources(page, context, browser, playwright);
         }

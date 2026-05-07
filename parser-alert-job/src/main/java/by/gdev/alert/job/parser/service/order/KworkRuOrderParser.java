@@ -195,9 +195,9 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
         boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
-                () -> clickCategory(page, pair.getLeft(), pair.getRight()));
+                () -> clickCategory(page, category, subCategory));
         if (!isCategoryChanged) {
-            log.warn("Категория '{}' не выбрана для {} — пропускаем", category.getNativeLocName(), getSiteName());
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
             return List.of();
         }
         // Задержка
