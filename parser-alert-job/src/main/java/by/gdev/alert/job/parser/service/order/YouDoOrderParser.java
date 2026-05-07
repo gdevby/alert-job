@@ -17,8 +17,10 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -86,41 +88,39 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         Subcategory subcategory = pair.getRight();
         // Задержка
         page.waitForTimeout(1000);
-        clickCategory(page, pair.getLeft(), pair.getRight());
+        boolean isCategoryChanged = clickCategoryWithRetry(page, category, subcategory);
+        if (!isCategoryChanged) {
+            log.warn("Не удалось выбрать категорию {}, {}", category.getNativeLocName(),
+                    subcategory != null ? subcategory.getNativeLocName() : "");
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subcategory != null ? subcategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         if (debug){
-            log.info("mapPlaywrightItems: After click category {}, {}, {}", getSiteName(), category.getNativeLocName(), subcategory.getNativeLocName());
+            log.debug("mapPlaywrightItems: After click category {}, {}, {}", getSiteName(), category.getNativeLocName(), subcategory.getNativeLocName());
         }
         // Задержка
         page.waitForTimeout(1000);
         boolean isEmptyTaskList = tasksLoading(page);
         if (debug){
-            log.info("mapPlaywrightItems: After task loading {}", getSiteName());
+            log.debug("mapPlaywrightItems: After task loading {}", getSiteName());
         }
         List<OrderDTO> orders;
         if (!isEmptyTaskList) {
             orders = tasksParsing(page, siteSourceJobId, category, subcategory);
         }
         else {
-            if (subcategory != null){
-                log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
-                        category.getNativeLocName(), subcategory.getNativeLocName(), getSiteName());
-
-            }
-            else{
-                log.debug("Task list выбранной категории {} для {} пустой",
-                        category.getNativeLocName(), getSiteName());
-            }
+            log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
+                    category.getNativeLocName(), subcategory != null ? subcategory.getNativeLocName() : "", getSiteName());
             orders = List.of();
         }
         if (debug){
-            log.info("mapPlaywrightItems: After task parsing {}, {}", getSiteName(), orders.size());
+            log.debug("mapPlaywrightItems: After task parsing {}, {}", getSiteName(), orders.size());
         }
-        //clickCategory(page, ALL_CATEGORIES_TOKEN);
         resetCategories(page);
         // Задержка
         page.waitForTimeout(1000);
         if (debug){
-            log.info("mapPlaywrightItems: reset categories {}", getSiteName());
+            log.debug("mapPlaywrightItems: reset categories {}", getSiteName());
         }
         return orders;
     }
@@ -142,15 +142,9 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 orders = tasksParsing(page, siteSourceJobId, category, subCategory);
             }
             else {
-                if (subCategory != null){
-                    log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
-                            category.getNativeLocName(), subCategory.getNativeLocName(), getSiteName());
-
-                }
-                else{
-                    log.debug("Task list выбранной категории {} для {} пустой",
-                            category.getNativeLocName(), getSiteName());
-                }
+                log.debug("Task list выбранной категории {} и субкатегории {} для {} пустой",
+                        category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
+                orders = List.of();
             }
         }
         finally {
@@ -174,20 +168,19 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     }
 
     private void firstLoad(Page page){
-        //page.navigate(tasksUrl);
         safeNavigate(page, tasksUrl);
         if (debug){
-            log.info("firstLoad: After navigate {}", getSiteName());
+            log.debug("firstLoad: After navigate {}", getSiteName());
         }
         // Ждём появления списка категорий
         page.waitForSelector(CATEGORIES_SELECTOR);
         if (debug){
-            log.info("firstLoad: After wait for Categories {}", getSiteName());
+            log.debug("firstLoad: After wait for Categories {}", getSiteName());
         }
         // Сброс всех категорий
         clickCategory(page, ALL_CATEGORIES_TOKEN);
         if (debug){
-            log.info("firstLoad: After click All categories {}", getSiteName());
+            log.debug("firstLoad: After click All categories {}", getSiteName());
         }
     }
 
@@ -232,12 +225,42 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         return getOrdersData(parsedOrders, category, subCategory);
     }
 
-    private void clickCategory(Page page, Category category, Subcategory subCategory){
+    public boolean clickCategoryWithRetry(Page page, Category category, Subcategory subcategory) {
+        if (category.getNativeLocName().equals(ALL_CATEGORIES_TOKEN)){
+            return true;
+        }
 
+        String name = subcategory != null ? subcategory.getNativeLocName() : category.getNativeLocName();
+        for (int attempt = 1; attempt <= getCategoryClickRetryAttempts(); attempt++) {
+            // Бэкап DOM до клика
+            String beforeHtml = page.locator("ul.Categories_container__9z_KX").innerHTML();
+            // Клик на категорию
+            clickCategory(page, category, subcategory);
+            page.waitForTimeout(getCategoryClickRetryAttemptsDelay());
+            // Проверяем, что нужный чекбокс выбран
+            boolean checked = isCategoryChecked(page, category, subcategory);
+            // Снимок DOM после клика
+            String afterHtml = page.locator("ul.Categories_container__9z_KX").innerHTML();
+            if (checked && !beforeHtml.equals(afterHtml)) {
+                log.debug("Категория '{}' выбрана успешно (попытка {})", name, attempt);
+                return true;
+            }
+            log.warn("Категория '{}' НЕ выбрана (попытка {})", name, attempt);
+        }
+        log.warn("Категория '{}' НЕ выбрана после 3 попыток", name);
+        return false;
+    }
+
+    private boolean isCategoryChecked(Page page, Category category, Subcategory subcategory) {
+        String name = subcategory != null ? subcategory.getNativeLocName() : category.getNativeLocName();
+        Locator checkbox = page.locator(
+                "//label[contains(@class,'Checkbox_label')][contains(.,'" + name + "')]/../input"
+        );
+        return checkbox.isChecked();
+    }
+    private void clickCategory(Page page, Category category, Subcategory subCategory){
         // Кликаем категорию
         if (subCategory != null) {
-            //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
-            //clickCategory(page, ALL_CATEGORIES_TOKEN);
             resetCategories(page);
             //А затем кликаем нужную субкатегорию
             clickSubCategory(page, category.getNativeLocName(), subCategory.getNativeLocName());
@@ -271,7 +294,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         // 4. Финальная проверка
         if (!areAllCategoriesUnchecked(page)) {
             if(debug) {
-                log.error("После ручного сброса всё ещё остались выбранные категории!");
+                log.warn("После ручного сброса всё ещё остались выбранные категории!");
             }
         }
     }
@@ -311,7 +334,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         page.waitForSelector("ul[class*='Categories_container']",
                 new Page.WaitForSelectorOptions().setTimeout(15000));
         if (debug){
-            log.info("clickCategory: After waitForSelector Categories_container {}", getSiteName());
+            log.debug("clickCategory: After waitForSelector Categories_container {}", getSiteName());
         }
 
         // Ищем КЛИКАБЕЛЬНЫЙ элемент категории — label
@@ -321,7 +344,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         Locator categoryInput = category.locator("..").locator("input[type='checkbox']");
 
         if (debug){
-            log.info("clickCategory: After find Checkbox_label {}", getSiteName());
+            log.debug("clickCategory: After find Checkbox_label {}", getSiteName());
         }
 
         // Ждём, пока label станет видимым
@@ -330,7 +353,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 .setTimeout(15000));
 
         if (debug){
-            log.info("clickCategory: After visible category {}", getSiteName());
+            log.debug("clickCategory: After visible category {}", getSiteName());
         }
 
         boolean before = categoryInput.isChecked();
@@ -343,13 +366,13 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         }
 
         if (debug){
-            log.info("clickCategory: After click {}", getSiteName());
+            log.debug("clickCategory: After click {}", getSiteName());
         }
 
         page.waitForSelector(TASKS_SELECTOR);
 
         if (debug){
-            log.info("clickCategory: After waitForSelector TASKS_SELECTOR after click {}", getSiteName());
+            log.debug("clickCategory: After waitForSelector TASKS_SELECTOR after click {}", getSiteName());
         }
         if (debug){
             // ждём, пока появятся реальные задачи
@@ -392,7 +415,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 .setState(WaitForSelectorState.VISIBLE)
                 .setTimeout(15000));
         if (debug){
-            log.error("Subcategory before click: check state {}",  sub.isChecked());
+            log.warn("Subcategory before click: check state {}",  sub.isChecked());
         }
 
         sub.scrollIntoViewIfNeeded();
@@ -402,7 +425,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         sub.click();
         page.waitForTimeout(500);
         if (debug) {
-            log.error("Subcategory after click: check state {}",  sub.isChecked());
+            log.warn("Subcategory after click: check state {}",  sub.isChecked());
         }
         page.waitForCondition(sub::isChecked);
 
@@ -440,7 +463,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         } else {
             order.setPrice(new Price("По договоренности", 0));
         }
-
         order.setDateTime(new Date());
 
         // Источник

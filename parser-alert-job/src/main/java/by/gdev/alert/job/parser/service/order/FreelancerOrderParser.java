@@ -130,7 +130,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
             return 0;
 
         } catch (Exception e) {
-            log.error("{}: failed to read total-results", getSiteName(), e);
+            log.warn("{}: failed to read total-results", getSiteName(), e);
             return 0;
         }
     }
@@ -148,7 +148,12 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         if(category == null || subCategory == null) return orders;
         final Optional<SiteSourceJob> siteJobOptional = getSiteSourceJobRepository().findById(siteSourceJobId);
         String siteUrl = siteJobOptional.map(SiteSourceJob::getParsedURI).orElse(null);
-        clickCategory(page, siteUrl, pair.getLeft(), pair.getRight());
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, siteUrl, category, subCategory));
+        if (!isCategoryChanged) {
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         if (hasZeroResults(page)) return orders;

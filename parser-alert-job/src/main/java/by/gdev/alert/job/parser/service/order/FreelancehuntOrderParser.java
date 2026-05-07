@@ -46,20 +46,16 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
     public void clickCategory(Page page, Category category) {
         String categoryName = category.getNativeLocName();
-
         // ищем span с нужным текстом
         Locator categorySpan = page.locator("ul.tree li.tree-item span.tree-item-title")
                 .filter(new Locator.FilterOptions().setHasText(categoryName));
-
         if (categorySpan.count() == 0) {
             log.warn("Категория '{}' не найдена на странице FreelancehuntOrderParser", categoryName);
             return;
         }
-
         // поднимаемся к родительскому <a> и кликаем
         Locator categoryLink = categorySpan.first().locator("xpath=..");
         categoryLink.click(new Locator.ClickOptions().setTimeout(30000));
-
         page.waitForLoadState(LoadState.DOMCONTENTLOADED);
     }
 
@@ -230,7 +226,12 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subcategory = pair.getRight();
-        clickCategory(page, pair.getLeft());
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, category));
+        if (!isCategoryChanged) {
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subcategory != null ? subcategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         boolean isEmptyTaskList = tasksLoading(page, false);
