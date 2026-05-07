@@ -231,12 +231,12 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         }
 
         String name = subcategory != null ? subcategory.getNativeLocName() : category.getNativeLocName();
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= getCategoryClickRetryAttempts(); attempt++) {
             // Бэкап DOM до клика
             String beforeHtml = page.locator("ul.Categories_container__9z_KX").innerHTML();
             // Клик на категорию
             clickCategory(page, category, subcategory);
-            page.waitForTimeout(800);
+            page.waitForTimeout(getCategoryClickRetryAttemptsDelay());
             // Проверяем, что нужный чекбокс выбран
             boolean checked = isCategoryChecked(page, category, subcategory);
             // Снимок DOM после клика

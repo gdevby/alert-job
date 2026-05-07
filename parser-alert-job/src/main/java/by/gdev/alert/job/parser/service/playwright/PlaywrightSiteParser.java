@@ -41,6 +41,14 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     @Value("${parser.site.retry.attempts:3}")
     private int retryAttempts;
 
+    @Value("${parser.category-click-retry-attempts:3}")
+    @Getter
+    private int categoryClickRetryAttempts;
+
+    @Value("${parser.category-click-retry-attempts-delay:500}")
+    @Getter
+    private int categoryClickRetryAttemptsDelay;
+
     @Value("${parser.site.retry.delay:2000}")
     private long retryDelayMs;
 
@@ -314,14 +322,14 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     }
 
     public boolean clickWithRetry(Page page, String name, ClickAction action) {
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= categoryClickRetryAttempts; attempt++) {
             String beforeUrl = page.url();
             try {
                 action.click();
             } catch (Exception e) {
                 log.warn("Ошибка при клике по '{}', попытка {}", name, attempt, e);
             }
-            page.waitForTimeout(500);
+            page.waitForTimeout(categoryClickRetryAttemptsDelay);
             String afterUrl = page.url();
             if (!afterUrl.equals(beforeUrl)) {
                 log.debug("'{}' выбран успешно (попытка {})", name, attempt);
