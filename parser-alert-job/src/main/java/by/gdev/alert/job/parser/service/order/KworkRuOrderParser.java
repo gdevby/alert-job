@@ -36,6 +36,11 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
         this.headless = headless;
     }
 
+    @Value("${kworkru.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
     @Override
     public SiteName getSiteName() {
         return SiteName.KWORK;
@@ -85,15 +90,7 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-
-        orders.forEach(order -> log.debug("*** {} order: {} , exists: {}",
-                getSiteName(),
-                order.getTitle(),
-                getParserService().isExistsOrder(category, subCategory, order.getLink())
-        ));
-
-        return orders;
+        return getOrdersData(parsedOrders, category, subCategory);
     }
 
 
@@ -159,37 +156,28 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
 
 
     public void clickCategory(Page page, Category category, Subcategory subCategory) {
-
         page.waitForSelector("div.projects-filter__rubrics-list");
-
         // Категория
         String categoryName = category.getNativeLocName().trim();
 
         Locator categoryNode = page.locator(
                 "xpath=//span[contains(@class,'multilevel-list__label-title') and normalize-space(text())='" + categoryName + "']"
         );
-
         if (categoryNode.count() == 0) {
             log.warn("Категория '{}' не найдена", categoryName);
             return;
         }
-
         categoryNode.first().click();
         page.waitForTimeout(300);
-
         // Подкатегория
         if (subCategory != null) {
-
             String subName = subCategory.getNativeLocName().trim();
-
             Locator activeCategory = page.locator(
                     "xpath=//span[contains(@class,'multilevel-list__label') and contains(@class,'multilevel-list__label--active')]/following-sibling::ul"
             );
-
             Locator subNode = activeCategory.locator(
                     "xpath=.//span[contains(@class,'multilevel-list__label-title') and normalize-space(text())='" + subName + "']"
             );
-
             if (subNode.count() == 0) {
                 log.warn("Подкатегория '{}' не найдена", subName);
             } else {
@@ -206,7 +194,12 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-        clickCategory(page, pair.getLeft(), pair.getRight());
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, category, subCategory));
+        if (!isCategoryChanged) {
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         // Задержка

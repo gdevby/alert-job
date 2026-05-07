@@ -51,7 +51,7 @@ public class SiteParserScheduler {
         }
         catch (PlaywrightException e) {
             if (e.getMessage() != null && (e.getMessage().contains("Timeout") || e.getMessage().contains("TimeoutError"))) {
-                    log.debug("Timeout playwright для парсера {} : {}", parser.getSiteName(), e.getMessage());
+                    log.debug("Timeout playwright для парсера {}", parser.getSiteName());
                     return;
                 }
             log.error("Playwright ошибка парсера {} : {}", parser.getSiteName(),  e.getMessage());

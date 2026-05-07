@@ -39,6 +39,11 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         this.headless = headless;
     }
 
+    @Value("${freelancer.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         if (!active)
@@ -83,15 +88,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-
-        orders.forEach(order ->
-                log.info("*** order: {} , result {}",
-                        order.getTitle(),
-                        getParserService().isExistsOrder(category, subCategory, order.getLink()))
-        );
-
-        return orders;
+        return getOrdersData(parsedOrders, category, subCategory);
     }
 
 
@@ -133,7 +130,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
             return 0;
 
         } catch (Exception e) {
-            log.error("{}: failed to read total-results", getSiteName(), e);
+            log.warn("{}: failed to read total-results", getSiteName(), e);
             return 0;
         }
     }
@@ -151,7 +148,12 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         if(category == null || subCategory == null) return orders;
         final Optional<SiteSourceJob> siteJobOptional = getSiteSourceJobRepository().findById(siteSourceJobId);
         String siteUrl = siteJobOptional.map(SiteSourceJob::getParsedURI).orElse(null);
-        clickCategory(page, siteUrl, pair.getLeft(), pair.getRight());
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, siteUrl, category, subCategory));
+        if (!isCategoryChanged) {
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         if (hasZeroResults(page)) return orders;

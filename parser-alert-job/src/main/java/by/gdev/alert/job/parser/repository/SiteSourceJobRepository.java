@@ -21,5 +21,14 @@ public interface SiteSourceJobRepository extends CrudRepository<SiteSourceJob, L
 """)
     SiteSourceJob findWithCategories(String name);
 
+    @Query("""
+    SELECT ssj FROM SiteSourceJob ssj
+    LEFT JOIN FETCH ssj.categories c
+    LEFT JOIN FETCH c.subCategories
+    WHERE ssj.id = :id
+""")
+    SiteSourceJob findWithCategories(Long id);
+
+
 
 }
