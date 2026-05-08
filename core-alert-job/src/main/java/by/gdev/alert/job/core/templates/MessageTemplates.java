@@ -283,6 +283,112 @@ public final class MessageTemplates {
             }
             return sb.toString();
         }
-    }
 
+        public static String buildCategoryDiffText(List<CategoryChangeDTO> changes, List<UserInfo> usersInfo) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Изменения категорий\n");
+            for (CategoryChangeDTO change : changes) {
+                sb.append("\nСайт: ").append(change.siteName()).append("\n");
+                var diff = change.diff();
+                if (!diff.getNewCategories().isEmpty()) {
+                    sb.append("Новые категории:\n");
+                    diff.getNewCategories().forEach(c ->
+                            sb.append(" - ").append(c.getName()).append("\n")
+                    );
+                }
+
+                if (!diff.getRemovedCategories().isEmpty()) {
+                    sb.append("Удалённые категории:\n");
+                    diff.getRemovedCategories().forEach(c ->
+                            sb.append(" - ").append(c.getName()).append("\n")
+                    );
+                }
+
+                if (!diff.getNewSubcategories().isEmpty()) {
+                    sb.append("Новые подкатегории:\n");
+                    diff.getNewSubcategories().forEach(s ->
+                            sb.append(" - ").append(s.getParentName())
+                                    .append(" → ").append(s.getSubcategory().getName()).append("\n")
+                    );
+                }
+
+                if (!diff.getRemovedSubcategories().isEmpty()) {
+                    sb.append("Удалённые подкатегории:\n");
+                    diff.getRemovedSubcategories().forEach(s ->
+                            sb.append(" - ").append(s.getParentName())
+                                    .append(" → ").append(s.getSubcategory().getName()).append("\n")
+                    );
+                }
+
+                if (!diff.getMovedSubcategories().isEmpty()) {
+                    sb.append("Перемещённые подкатегории:\n");
+                    diff.getMovedSubcategories().forEach(m ->
+                            sb.append(" - ").append(m.getOldParentName())
+                                    .append(" → ").append(m.getNewParentName())
+                                    .append(": ").append(m.getSubcategory().getName()).append("\n")
+                    );
+                }
+            }
+
+            if (usersInfo != null && !usersInfo.isEmpty()) {
+                sb.append("\nПользователи и модули с удалёнными категориями:\n");
+                for (UserInfo userInfo : usersInfo) {
+                    sb.append("\nПользователь: ").append(userInfo.user().getEmail()).append("\n");
+                    for (SiteInfo site : userInfo.sites()) {
+                        sb.append(" Сайт: ").append(site.siteName()).append("\n");
+
+                        for (ModuleInfo module : site.modules()) {
+                            sb.append("  Модуль: ").append(module.moduleName()).append("\n");
+
+                            for (RemovedCategoryInfo rc : module.removed()) {
+                                if (rc.subcategoryName() == null) {
+                                    sb.append("   - ").append(rc.categoryName()).append("\n");
+                                } else {
+                                    sb.append("   - ").append(rc.categoryName())
+                                            .append(" → ").append(rc.subcategoryName()).append("\n");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return sb.toString();
+        }
+
+        public static String buildUserNotificationHtml(UserInfo ui) {
+            String email = ui.user().getEmail();
+            StringBuilder sb = new StringBuilder();
+            sb.append("<p>Уважаемый(ая) ").append(email).append("!</p>");
+            sb.append("<p>В связи с изменением структуры категорий на сайтах из ваших модулей были удалены следующие категории:</p>");
+            sb.append("<ul>");
+            for (SiteInfo site : ui.sites()) {
+                sb.append("<li>");
+                sb.append("<b>Сайт:</b> ").append(site.siteName());
+                sb.append("<ul>");
+                for (ModuleInfo module : site.modules()) {
+                    sb.append("<li>");
+                    sb.append("<b>Модуль:</b> ").append(module.moduleName());
+                    sb.append("<ul>");
+                    for (RemovedCategoryInfo rc : module.removed()) {
+                        if (rc.subcategoryName() == null) {
+                            sb.append("<li>").append(rc.categoryName()).append("</li>");
+                        } else {
+                            sb.append("<li>")
+                                    .append(rc.categoryName())
+                                    .append(" &rarr; ")
+                                    .append(rc.subcategoryName())
+                                    .append("</li>");
+                        }
+                    }
+                    sb.append("</ul>");
+                    sb.append("</li>");
+                }
+                sb.append("</ul>");
+                sb.append("</li>");
+            }
+            sb.append("</ul>");
+            sb.append("<p>Пожалуйста, обновите настройки ваших модулей, чтобы продолжить получать актуальные заказы.</p>");
+            return sb.toString();
+        }
+    }
 }

@@ -5,5 +5,6 @@ public enum NotificationType {
     AUTO_REPLY,     // автоответ
     TEST,           //тестовое сообщение
     CLEANUP,         //очистка сайта
-    CATEGORY_CHANGE
+    CATEGORY_CHANGE, //обновление категорий для администратора
+    CATEGORY_CHANGE_USER //обновление категорий для пользователя
 }

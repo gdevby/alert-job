@@ -15,8 +15,8 @@ import by.gdev.alert.job.core.service.change.dto.ModuleInfo;
 import by.gdev.alert.job.core.service.change.dto.RemovedCategoryInfo;
 import by.gdev.alert.job.core.service.change.dto.SiteInfo;
 import by.gdev.alert.job.core.service.change.dto.UserInfo;
+import by.gdev.alert.job.core.templates.MessageTemplates;
 import by.gdev.common.model.NotificationType;
-import by.gdev.common.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,8 +24,6 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static by.gdev.alert.job.core.templates.MessageTemplates.CategoryDiff.buildCategoryDiffHtml;
 
 @Slf4j
 @Service
@@ -39,69 +37,39 @@ public class CategoryChangeNotificationService {
     private final OrderModulesRepository orderModulesRepository;
 
     private void notifyChanges(List<CategoryChangeDTO> changesRequest, List<UserInfo> usersInfo, AppUser adminUser) {
-        String html = buildCategoryDiffHtml(changesRequest, usersInfo);
+        String message;
+        if (adminUser.isDefaultSendType()) {
+            // для почты
+            message = MessageTemplates.CategoryDiff.buildCategoryDiffHtml(changesRequest, usersInfo);
+        } else {
+            // для Telegram
+            message = MessageTemplates.CategoryDiff.buildCategoryDiffText(changesRequest, usersInfo);
+        }
         mailSenderService.sendMessagesToUser(
                 adminUser,
-                List.of(html),
+                List.of(message),
                 NotificationType.CATEGORY_CHANGE
         );
     }
 
-    private List<Pair<AppUser, SourceSite>> findUserSourceSitePairsWithRemovedFilters(List<CategoryChangeDTO> changes) {
-
-        List<Pair<AppUser, SourceSite>> result = new ArrayList<>();
-
-        for (CategoryChangeDTO change : changes) {
-
-            Long siteSourceId = change.siteSourceId();
-            CategoryDiffDTO diff = change.diff();
-
-            Set<Long> removedCategoryIds = diff.getRemovedCategories().stream()
-                    .map(CategoryDTO::getId)
-                    .collect(Collectors.toSet());
-
-            Set<Long> removedSubcategoryIds = diff.getRemovedSubcategories().stream()
-                    .map(s -> s.getSubcategory().getId())
-                    .collect(Collectors.toSet());
-
-            if (removedCategoryIds.isEmpty() && removedSubcategoryIds.isEmpty()) {
-                continue;
-            }
-
-            List<SourceSite> byCategories = removedCategoryIds.isEmpty()
-                    ? List.of()
-                    : sourceSiteRepository.findBySiteSourceAndSiteCategoryIn(siteSourceId, removedCategoryIds);
-
-            List<SourceSite> bySubcategories = removedSubcategoryIds.isEmpty()
-                    ? List.of()
-                    : sourceSiteRepository.findBySiteSourceAndSiteSubCategoryIn(siteSourceId, removedSubcategoryIds);
-
-            List<SourceSite> affectedSources = Stream.concat(byCategories.stream(), bySubcategories.stream())
-                    .distinct()
-                    .toList();
-
-            if (affectedSources.isEmpty()) {
-                continue;
-            }
-
-            for (SourceSite source : affectedSources) {
-                List<AppUser> users = userRepository.findUsersBySourceSiteId(source.getId());
-                for (AppUser user : users) {
-                    result.add(Pair.of(user, source));
-                }
-            }
+    private void notifyUsers(List<UserInfo> usersInfo) {
+        for (UserInfo ui : usersInfo) {
+            AppUser user = ui.user();
+            String html = MessageTemplates.CategoryDiff.buildUserNotificationHtml(ui);
+            mailSenderService.sendRequiredMessagesToUser(
+                    user,
+                    List.of(html),
+                    NotificationType.CATEGORY_CHANGE_USER
+            );
         }
-
-        return result;
     }
 
     public List<UserInfo> buildUserInfo(List<CategoryChangeDTO> changes) {
 
         List<UserInfo> result = new ArrayList<>();
 
-        // user → siteName → moduleName → removed categories
+        // Собираем структуру Пользователь - Сайт - Модуль - Удаляемые категории
         Map<AppUser, Map<String, Map<String, List<RemovedCategoryInfo>>>> map = new HashMap<>();
-
         for (CategoryChangeDTO change : changes) {
 
             Long siteSourceId = change.siteSourceId();
@@ -205,7 +173,7 @@ public class CategoryChangeNotificationService {
 
 
     public void performChanges(List<CategoryChangeDTO> changesRequest) {
-        // Собираем структуру Пользователь → Сайт → Модуль → Удаляемые категории
+        // Собираем структуру Пользователь - Сайт - Модуль - Удаляемые категории
         List<UserInfo> usersInfo = buildUserInfo(changesRequest);
 
         // Логируем
@@ -227,13 +195,13 @@ public class CategoryChangeNotificationService {
         } else {
             log.debug("No users affected by removed categories.");
         }
-
-        // Находим админа
+        //Находим админа
         AppUser adminUser = userRepository.findByUuid(adminProperties.getUuid())
                 .orElseThrow(() -> new IllegalStateException("user with role Admin not found"));
-
-        // Отправляем письмо админу
+        //Отправляем письмо админу
         notifyChanges(changesRequest, usersInfo, adminUser);
+        //Уведомляем пользователей
+        notifyUsers(usersInfo);
     }
 
 }
