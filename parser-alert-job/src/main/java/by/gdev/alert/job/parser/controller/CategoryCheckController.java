@@ -16,8 +16,14 @@ public class CategoryCheckController {
 
     @GetMapping("/update")
     public List<CategoryChangeDTO> checkOrUpdateAll() {
-        return categoryUpdateService.updateAllSites();
+        try {
+            return categoryUpdateService.updateAllSitesAsync().get();
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка фонового обновления категорий", e);
+        }
     }
+
+
 
 
 }

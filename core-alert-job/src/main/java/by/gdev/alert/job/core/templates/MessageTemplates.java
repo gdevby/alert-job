@@ -1,6 +1,10 @@
 package by.gdev.alert.job.core.templates;
 
 import by.gdev.alert.job.core.model.category.CategoryChangeDTO;
+import by.gdev.alert.job.core.service.change.dto.ModuleInfo;
+import by.gdev.alert.job.core.service.change.dto.RemovedCategoryInfo;
+import by.gdev.alert.job.core.service.change.dto.SiteInfo;
+import by.gdev.alert.job.core.service.change.dto.UserInfo;
 import by.gdev.alert.job.core.service.cleanup.UserModuleCleanupData;
 
 import java.util.List;
@@ -167,21 +171,16 @@ public final class MessageTemplates {
 
     public static final class CategoryDiff {
 
-        public static String buildCategoryDiffHtml(List<CategoryChangeDTO> changes) {
+        public static String buildCategoryDiffHtml(List<CategoryChangeDTO> changes, List<UserInfo> usersInfo) {
             StringBuilder sb = new StringBuilder();
-
             sb.append("<h2>Изменения категорий</h2>");
-
             for (CategoryChangeDTO change : changes) {
-
                 sb.append("<h3 style=\"font-size: 20px; color: #1a73e8; margin-top: 25px;\">")
-                        .append("Сайт: ")
+                        .append("<span style=\"background-color:#00ff00;\"><b>Сайт:</b></span> ")
                         .append(change.siteName())
                         .append("</h3>");
-
                 var diff = change.diff();
-
-                // --- Новые категории ---
+                // Новые категории ---
                 if (!diff.getNewCategories().isEmpty()) {
                     sb.append("<p><b>Новые категории:</b></p><ul>");
                     diff.getNewCategories().forEach(c ->
@@ -190,7 +189,7 @@ public final class MessageTemplates {
                     sb.append("</ul>");
                 }
 
-                // --- Удалённые категории ---
+                // Удалённые категории ---
                 if (!diff.getRemovedCategories().isEmpty()) {
                     sb.append("<p><b>Удалённые категории:</b></p><ul>");
                     diff.getRemovedCategories().forEach(c ->
@@ -199,7 +198,7 @@ public final class MessageTemplates {
                     sb.append("</ul>");
                 }
 
-                // --- Новые подкатегории ---
+                // Новые подкатегории ---
                 if (!diff.getNewSubcategories().isEmpty()) {
                     sb.append("<p><b>Новые подкатегории:</b></p><ul>");
                     diff.getNewSubcategories().forEach(s ->
@@ -212,7 +211,7 @@ public final class MessageTemplates {
                     sb.append("</ul>");
                 }
 
-                // --- Удалённые подкатегории ---
+                // Удалённые подкатегории ---
                 if (!diff.getRemovedSubcategories().isEmpty()) {
                     sb.append("<p><b>Удалённые подкатегории:</b></p><ul>");
                     diff.getRemovedSubcategories().forEach(s ->
@@ -225,7 +224,7 @@ public final class MessageTemplates {
                     sb.append("</ul>");
                 }
 
-                // --- Перемещённые подкатегории ---
+                // Перемещённые подкатегории ---
                 if (!diff.getMovedSubcategories().isEmpty()) {
                     sb.append("<p><b>Перемещённые подкатегории:</b></p><ul>");
                     diff.getMovedSubcategories().forEach(m ->
@@ -243,10 +242,47 @@ public final class MessageTemplates {
                 sb.append("<hr>");
             }
 
+            // ДОБАВЛЯЕМ ВЫВОД usersInfo ---
+            if (usersInfo != null && !usersInfo.isEmpty()) {
+                sb.append("<h2>Пользователи и модули с удаляемыми категориями</h2>");
+                for (UserInfo userInfo : usersInfo) {
+                    sb.append("<h3 style=\"margin-top: 20px;\">Пользователь: ")
+                            .append(userInfo.user().getEmail())
+                            .append("</h3>");
+
+                    for (SiteInfo site : userInfo.sites()) {
+                        sb.append("<h4 style=\"margin-left: 10px;\">")
+                                .append("<span style=\"background-color:#00ff00;\"><b>Сайт:</b></span> ")
+                                .append(site.siteName())
+                                .append("</h4>");
+
+                        for (ModuleInfo module : site.modules()) {
+                            sb.append("<p style=\"margin-left: 20px;\">")
+                                    .append("<span style=\"background-color:#ffff00;\"><b>Модуль:</b></span> ")
+                                    .append(module.moduleName())
+                                    .append("</p>");
+
+                            sb.append("<ul style=\"margin-left: 40px;\">");
+                            for (RemovedCategoryInfo rc : module.removed()) {
+
+                                sb.append("<li>");
+
+                                if (rc.subcategoryName() == null) {
+                                    sb.append(rc.categoryName());
+                                } else {
+                                    sb.append(rc.categoryName())
+                                            .append(" → ")
+                                            .append(rc.subcategoryName());
+                                }
+                                sb.append("</li>");
+                            }
+                            sb.append("</ul>");
+                        }
+                    }
+                }
+            }
             return sb.toString();
         }
-
-
     }
 
 }

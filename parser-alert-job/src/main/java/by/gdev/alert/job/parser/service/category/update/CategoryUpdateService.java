@@ -1,8 +1,6 @@
 package by.gdev.alert.job.parser.service.category.update;
 
-import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.repository.SubCategoryRepository;
@@ -24,9 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
+import static by.gdev.common.model.CategoryLexemes.ALL_CATEGORIES;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +41,11 @@ public class CategoryUpdateService {
     private final CategoryTreeService categoryTreeService;
     private final CategoryParserFactory parserFactory;
     private final CoreClient coreClient;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    public Future<List<CategoryChangeDTO>> updateAllSitesAsync() {
+        return executor.submit(this::updateAllSites);
+    }
 
     @Transactional
     public List<CategoryChangeDTO> updateAllSites() {
@@ -84,40 +91,39 @@ public class CategoryUpdateService {
         // 5. Конвертируем в DTO для core
         CategoryDiffDTO diffDto = toDto(diff);
 
-        return new CategoryChangeDTO(job.getName(), diffDto);
+        return new CategoryChangeDTO(job.getId(), job.getName(), diffDto);
     }
-
-    private void fixCoreModule(List<CategoryChangeDTO> changes){
-
-    }
-
 
     private CategoryDiffResult compareTrees(SiteDTO parsedTree, SiteDTO dbTree) {
 
         CategoryDiffResult diff = new CategoryDiffResult();
 
-        // --- 1. Категории по имени ---
+        //Категории по имени
         Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
+                .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
                 .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
 
         Map<String, CategoryDTO> parsedByName = parsedTree.getCategories().stream()
+                .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
                 .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
 
-        // --- Новые категории ---
+        // Новые категории ---
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
+            if (ALL_CATEGORIES.equals(parsedCat.getName())) continue;
             if (!dbByName.containsKey(parsedCat.getName())) {
                 diff.getNewCategories().add(parsedCat);
             }
         }
 
-        // --- Удалённые категории ---
+        // Удалённые категории
         for (CategoryDTO dbCat : dbTree.getCategories()) {
+            if (ALL_CATEGORIES.equals(dbCat.getName())) continue;
             if (!parsedByName.containsKey(dbCat.getName())) {
                 diff.getRemovedCategories().add(dbCat);
             }
         }
 
-        // --- Подкатегории ---
+        // Подкатегории
         // Для каждой категории, которая есть в parsedTree
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
 
@@ -142,7 +148,7 @@ public class CategoryUpdateService {
                     .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s));
 
             Map<String, SubcategoryDTO> parsedSubs = parsedCat.getSubcategories().stream()
-                    .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s));
+                    .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s, (a, b) -> a));
 
             // Новые подкатегории
             for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
@@ -171,8 +177,7 @@ public class CategoryUpdateService {
             }
         }
 
-        // --- 3. Перемещённые подкатегории ---
-        // subName → parentName (db)
+        // Перемещённые подкатегории
         Map<String, String> dbParent = new HashMap<>();
         for (CategoryDTO dbCat : dbTree.getCategories()) {
             for (SubcategoryDTO sub : dbCat.getSubcategories()) {
@@ -211,7 +216,6 @@ public class CategoryUpdateService {
                 );
             }
         }
-
         return diff;
     }
 
@@ -224,12 +228,9 @@ public class CategoryUpdateService {
         return null;
     }
 
-
-
     private CategoryDiffDTO toDto(CategoryDiffResult diff) {
 
         CategoryDiffDTO dto = new CategoryDiffDTO();
-
         // Категории
         dto.setNewCategories(diff.getNewCategories());
         dto.setRemovedCategories(diff.getRemovedCategories());
@@ -239,7 +240,6 @@ public class CategoryUpdateService {
         dto.setNewSubcategories(diff.getNewSubcategories());
         dto.setRemovedSubcategories(diff.getRemovedSubcategories());
         dto.setMovedSubcategories(diff.getMovedSubcategories());
-
         return dto;
     }
 
@@ -252,7 +252,6 @@ public class CategoryUpdateService {
         site.setName(job.getName());
 
         List<CategoryDTO> categoryDTOs = new ArrayList<>();
-
         for (Map.Entry<ParsedCategory, List<ParsedCategory>> entry : parsed.entrySet()) {
 
             ParsedCategory parsedCat = entry.getKey();

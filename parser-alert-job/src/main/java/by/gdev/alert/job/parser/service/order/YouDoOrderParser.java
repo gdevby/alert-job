@@ -2,9 +2,9 @@ package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
-import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -17,10 +17,10 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
-import java.util.concurrent.CompletableFuture;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+
+import static by.gdev.common.model.CategoryLexemes.ALL_CATEGORIES;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +31,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private final String baseUrl = "https://youdo.com";
     private final String tasksUrl = "https://youdo.com/tasks-all-opened-all";
 
-    private static final String ALL_CATEGORIES_TOKEN = "Все категории";
     private static final String TASKS_SELECTOR = "li.TasksList_listItem__2Yurg";
     private static final String CATEGORIES_SELECTOR = "ul.Categories_container__9z_KX";
 
@@ -178,7 +177,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             log.debug("firstLoad: After wait for Categories {}", getSiteName());
         }
         // Сброс всех категорий
-        clickCategory(page, ALL_CATEGORIES_TOKEN);
+        clickCategory(page, ALL_CATEGORIES);
         if (debug){
             log.debug("firstLoad: After click All categories {}", getSiteName());
         }
@@ -226,7 +225,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     }
 
     public boolean clickCategoryWithRetry(Page page, Category category, Subcategory subcategory) {
-        if (category.getNativeLocName().equals(ALL_CATEGORIES_TOKEN)){
+        if (category.getNativeLocName().equals(ALL_CATEGORIES)){
             return true;
         }
 
@@ -266,7 +265,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             clickSubCategory(page, category.getNativeLocName(), subCategory.getNativeLocName());
         } else {
             //Если выбраны Все категории - ничего кликать не нужно
-            if (!category.getNativeLocName().equals(ALL_CATEGORIES_TOKEN)){
+            if (!category.getNativeLocName().equals(ALL_CATEGORIES)){
                 //Если не выбрана все категории - сначала снимаем выбор кликом на Все категории
                 //clickCategory(page, ALL_CATEGORIES_TOKEN);
                 resetCategories(page);
@@ -278,7 +277,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
     private void resetCategories(Page page) {
         // 1. Кликаем "Все категории"
-        clickCategory(page, ALL_CATEGORIES_TOKEN);
+        clickCategory(page, ALL_CATEGORIES);
 
         // 2. Ждём, пока React обновит DOM
         page.waitForTimeout(300);

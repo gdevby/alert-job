@@ -50,4 +50,6 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 """)
     List<OrderModules> findAllBySourceId(@Param("sourceId") Long sourceId);
 
+    List<OrderModules> findByUserIdAndSources_Id(Long userId, Long sourceSiteId);
+
 }

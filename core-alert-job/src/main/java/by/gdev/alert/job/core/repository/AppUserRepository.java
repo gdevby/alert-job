@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.core.model.db.AppUser;
+import org.springframework.data.repository.query.Param;
 
 public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 
@@ -24,4 +26,15 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 
 	@Query("select u from AppUser u left join fetch u.userAlertTimes left join fetch u.delayOrderNotifications")
 	Set<AppUser> findAllOneEagerUserAlertTimes();
+
+    @Query("""
+    SELECT DISTINCT u
+    FROM AppUser u
+    JOIN OrderModules m ON m.user = u
+    JOIN m.sources s
+    WHERE s.id = :sourceSiteId
+""")
+    List<AppUser> findUsersBySourceSiteId(Long sourceSiteId);
+
+
 }

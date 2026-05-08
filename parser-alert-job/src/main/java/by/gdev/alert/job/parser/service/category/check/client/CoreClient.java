@@ -23,12 +23,9 @@ public class CoreClient {
 
     public void sendCategoryChanges(List<CategoryChangeDTO> changes) {
         CategoryChangeListDTO dto = new CategoryChangeListDTO(changes);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
         HttpEntity<CategoryChangeListDTO> entity = new HttpEntity<>(dto, headers);
-
         restTemplate.postForObject(coreUrl + "/category/changes", entity, Void.class);
     }
 }
