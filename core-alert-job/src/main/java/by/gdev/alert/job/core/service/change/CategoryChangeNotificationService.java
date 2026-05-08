@@ -15,6 +15,7 @@ import by.gdev.alert.job.core.service.change.dto.ModuleInfo;
 import by.gdev.alert.job.core.service.change.dto.RemovedCategoryInfo;
 import by.gdev.alert.job.core.service.change.dto.SiteInfo;
 import by.gdev.alert.job.core.service.change.dto.UserInfo;
+import by.gdev.alert.job.core.service.cleanup.CleanupService;
 import by.gdev.alert.job.core.templates.MessageTemplates;
 import by.gdev.common.model.NotificationType;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +31,50 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class CategoryChangeNotificationService {
 
+    private final CleanupService cleanupService;
     private final MailSenderService mailSenderService;
     private final AdminProperties adminProperties;
     private final AppUserRepository userRepository;
     private final SourceSiteRepository sourceSiteRepository;
     private final OrderModulesRepository orderModulesRepository;
 
-    private void notifyChanges(List<CategoryChangeDTO> changesRequest, List<UserInfo> usersInfo, AppUser adminUser) {
+    public void performChanges(List<CategoryChangeDTO> changesRequest) {
+        // Собираем структуру Пользователь - Сайт - Модуль - Удаляемые категории
+        List<UserInfo> usersInfo = buildUserInfo(changesRequest);
+
+        // Логируем
+        if (!usersInfo.isEmpty()) {
+            log.debug("=== Users with removed category filters ===");
+            for (UserInfo ui : usersInfo) {
+                log.debug("User: {}", ui.user().getEmail());
+                for (SiteInfo si : ui.sites()) {
+                    log.debug("  Site: {}", si.siteName());
+                    for (ModuleInfo mi : si.modules()) {
+                        log.debug("    Module: {}", mi.moduleName());
+                        for (RemovedCategoryInfo rc : mi.removed()) {
+                            log.debug("      Removed: {} -> {}", rc.categoryName(), rc.subcategoryName());
+                        }
+                    }
+                }
+            }
+            log.debug("==========================================");
+        } else {
+            log.debug("No users affected by removed categories.");
+        }
+        //Находим админа
+        AppUser adminUser = userRepository.findByUuid(adminProperties.getUuid())
+                .orElseThrow(() -> new IllegalStateException("user with role Admin not found"));
+
+        // Удаляем категории через CleanupService
+        cleanupRemovedCategories(changesRequest);
+
+        //Отправляем письмо админу (в зависимости как у него настроен тип оповещения - по почте или по телеге
+        notifyChangesForAdmin(changesRequest, usersInfo, adminUser);
+        //Уведомляем пользователей
+        notifyUsers(usersInfo);
+    }
+
+    private void notifyChangesForAdmin(List<CategoryChangeDTO> changesRequest, List<UserInfo> usersInfo, AppUser adminUser) {
         String message;
         if (adminUser.isDefaultSendType()) {
             // для почты
@@ -64,8 +102,9 @@ public class CategoryChangeNotificationService {
         }
     }
 
-    public List<UserInfo> buildUserInfo(List<CategoryChangeDTO> changes) {
-
+    //Построить по пользователям исходя из общего списка изменений какие у них будут изменения
+    //в модулях поиска в связи с изменениями по категориям для сайтов
+    private List<UserInfo> buildUserInfo(List<CategoryChangeDTO> changes) {
         List<UserInfo> result = new ArrayList<>();
 
         // Собираем структуру Пользователь - Сайт - Модуль - Удаляемые категории
@@ -163,7 +202,6 @@ public class CategoryChangeNotificationService {
 
                     modules.add(new ModuleInfo(moduleName, removed));
                 }
-
                 sites.add(new SiteInfo(siteName, modules));
             }
             result.add(new UserInfo(user, sites));
@@ -171,37 +209,34 @@ public class CategoryChangeNotificationService {
         return result;
     }
 
+    //Метод удаления в core категорий которые надо будет удалить исходя из изменений
+    private void cleanupRemovedCategories(List<CategoryChangeDTO> changes) {
+        for (CategoryChangeDTO change : changes) {
+            Long siteId = change.siteSourceId();
+            String siteName = change.siteName();
+            CategoryDiffDTO diff = change.diff();
 
-    public void performChanges(List<CategoryChangeDTO> changesRequest) {
-        // Собираем структуру Пользователь - Сайт - Модуль - Удаляемые категории
-        List<UserInfo> usersInfo = buildUserInfo(changesRequest);
+            Set<Long> removedCategoryIds = diff.getRemovedCategories().stream()
+                    .map(CategoryDTO::getId)
+                    .collect(Collectors.toSet());
 
-        // Логируем
-        if (!usersInfo.isEmpty()) {
-            log.debug("=== Users with removed category filters ===");
-            for (UserInfo ui : usersInfo) {
-                log.debug("User: {}", ui.user().getEmail());
-                for (SiteInfo si : ui.sites()) {
-                    log.debug("  Site: {}", si.siteName());
-                    for (ModuleInfo mi : si.modules()) {
-                        log.debug("    Module: {}", mi.moduleName());
-                        for (RemovedCategoryInfo rc : mi.removed()) {
-                            log.debug("      Removed: {} -> {}", rc.categoryName(), rc.subcategoryName());
-                        }
-                    }
-                }
+            Set<Long> removedSubcategoryIds = diff.getRemovedSubcategories().stream()
+                    .map(s -> s.getSubcategory().getId())
+                    .collect(Collectors.toSet());
+
+            if (removedCategoryIds.isEmpty() && removedSubcategoryIds.isEmpty()) {
+                continue;
             }
-            log.debug("==========================================");
-        } else {
-            log.debug("No users affected by removed categories.");
-        }
-        //Находим админа
-        AppUser adminUser = userRepository.findByUuid(adminProperties.getUuid())
-                .orElseThrow(() -> new IllegalStateException("user with role Admin not found"));
-        //Отправляем письмо админу
-        notifyChanges(changesRequest, usersInfo, adminUser);
-        //Уведомляем пользователей
-        notifyUsers(usersInfo);
-    }
 
+            List<SourceSite> sourcesToDelete = Stream.concat(
+                    sourceSiteRepository.findBySiteSourceAndSiteCategoryIn(siteId, removedCategoryIds).stream(),
+                    sourceSiteRepository.findBySiteSourceAndSiteSubCategoryIn(siteId, removedSubcategoryIds).stream()
+            ).distinct().toList();
+
+            if (sourcesToDelete.isEmpty()) {
+                continue;
+            }
+            cleanupService.deletePartForCategories(sourcesToDelete, siteName);
+        }
+    }
 }

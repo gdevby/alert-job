@@ -9,6 +9,7 @@ import by.gdev.alert.job.core.service.cleanup.UserModuleCleanupData;
 
 import java.util.List;
 
+//Класс для определения шаблонов писем в различных ситуациях
 public final class MessageTemplates {
 
     private MessageTemplates() {}

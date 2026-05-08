@@ -14,6 +14,7 @@ public class CategoryCheckController {
 
     private final CategoryUpdateService categoryUpdateService;
 
+    //Тестовый запуск шедулера для проверки изменений текущей версии сайтов с тем что у нас в базе
     @GetMapping("/update")
     public List<CategoryChangeDTO> checkOrUpdateAll() {
         try {
@@ -22,8 +23,4 @@ public class CategoryCheckController {
             throw new RuntimeException("Ошибка фонового обновления категорий", e);
         }
     }
-
-
-
-
 }

@@ -21,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -65,6 +66,87 @@ public class CategoriesCleanupComponent {
         }
     }
 
+    @Transactional
+    public void deleteParserCategories(List<Long> categoryIds, List<Long> subcategoryIds) {
+        int deletedOrders = 0;
+        int deletedSources = 0;
+        int deletedOrderLinksByCategory = 0;
+        int deletedOrderLinksBySubcategory = 0;
+        int deletedSubcategories = 0;
+        int deletedCategories = 0;
+
+        // Находим ParserSource, которые относятся к удалённым категориям/подкатегориям
+        List<Long> sourceIds = jdbc.queryForList("""
+        SELECT id FROM parser_order_source
+        WHERE (%s)
+           OR (%s)
+    """.formatted(
+                categoryIds.isEmpty() ? "0" : "category IN (" + join(categoryIds) + ")",
+                subcategoryIds.isEmpty() ? "0" : "sub_category IN (" + join(subcategoryIds) + ")"
+        ), Long.class);
+
+        if (!sourceIds.isEmpty()) {
+            //  Удаляем Orders
+            deletedOrders = jdbc.update("""
+            DELETE FROM parser_order
+            WHERE source_site_id IN (%s)
+        """.formatted(join(sourceIds)));
+
+            // Удаляем ParserSource
+            deletedSources = jdbc.update("""
+            DELETE FROM parser_order_source
+            WHERE id IN (%s)
+        """.formatted(join(sourceIds)));
+        }
+
+        // Удаляем OrderLinks
+        if (!categoryIds.isEmpty()) {
+            deletedOrderLinksByCategory = jdbc.update("""
+            DELETE FROM order_links
+            WHERE category_id IN (%s)
+        """.formatted(join(categoryIds)));
+        }
+
+        if (!subcategoryIds.isEmpty()) {
+            deletedOrderLinksBySubcategory = jdbc.update("""
+            DELETE FROM order_links
+            WHERE sub_category_id IN (%s)
+        """.formatted(join(subcategoryIds)));
+        }
+
+        // Удаляем Subcategory
+        if (!subcategoryIds.isEmpty()) {
+            deletedSubcategories = jdbc.update("""
+            DELETE FROM parser_sub_category
+            WHERE id IN (%s)
+        """.formatted(join(subcategoryIds)));
+        }
+
+        // Удаляем Category
+        if (!categoryIds.isEmpty()) {
+            deletedCategories = jdbc.update("""
+            DELETE FROM parser_category
+            WHERE id IN (%s)
+        """.formatted(join(categoryIds)));
+        }
+
+        log.debug("""
+→ [PARSER_DELETE_STATS]
+ORDERS                 = %d
+SOURCES                = %d
+ORDER_LINKS_CATEGORY   = %d
+ORDER_LINKS_SUBCAT     = %d
+SUBCATEGORIES          = %d
+CATEGORIES             = %d
+""".formatted(
+                deletedOrders,
+                deletedSources,
+                deletedOrderLinksByCategory,
+                deletedOrderLinksBySubcategory,
+                deletedSubcategories,
+                deletedCategories
+        ));
+    }
 
     public void cleanup() {
         for (String site : sites) {
@@ -208,6 +290,10 @@ public class CategoriesCleanupComponent {
         } catch (Exception e) {
             log.error("[{}] CORE cleanup FAILED: {}", siteName, e.getMessage(), e);
         }
+    }
+
+    private String join(List<Long> ids) {
+        return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
     private void deletePart(String siteName){
