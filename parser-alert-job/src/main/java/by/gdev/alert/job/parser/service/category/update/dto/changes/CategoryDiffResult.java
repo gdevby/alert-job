@@ -9,13 +9,12 @@ import java.util.List;
 
 @Data
 public class CategoryDiffResult {
-
-    // --- Категории ---
+    // Категории
     private final List<CategoryDTO> newCategories = new ArrayList<>();
     private final List<CategoryDTO> removedCategories = new ArrayList<>();
     private final List<CategoryMoveDTO> movedCategories = new ArrayList<>();
 
-    // --- Подкатегории ---
+    // Подкатегории
     private final List<SubcategoryWithParentDTO> newSubcategories = new ArrayList<>();
     private final List<SubcategoryWithParentDTO> removedSubcategories = new ArrayList<>();
     private final List<SubcategoryMoveDTO> movedSubcategories = new ArrayList<>();
@@ -29,14 +28,14 @@ public class CategoryDiffResult {
                 && movedSubcategories.isEmpty();
     }
 
-    // --- DTO для перемещённых категорий ---
+    // DTO для перемещённых категорий
     @Data
     public static class CategoryMoveDTO {
         private final CategoryDTO oldCategory;
         private final CategoryDTO newCategory;
     }
 
-    // --- DTO для новых/удалённых подкатегорий ---
+    // DTO для новых/удалённых подкатегорий
     @Data
     public static class SubcategoryWithParentDTO {
         private final Long parentId;
@@ -44,7 +43,7 @@ public class CategoryDiffResult {
         private final SubcategoryDTO subcategory;
     }
 
-    // --- DTO для перемещённых подкатегорий ---
+    // DTO для перемещённых подкатегорий
     @Data
     public static class SubcategoryMoveDTO {
         private final Long oldParentId;
