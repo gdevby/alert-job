@@ -3,6 +3,7 @@ package by.gdev.alert.job.parser.service.category.update;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.category.CategoryParser;
+import by.gdev.alert.job.parser.service.category.ParsedCategory;
 import by.gdev.alert.job.parser.service.category.check.CategoryParserFactory;
 import by.gdev.alert.job.parser.service.category.update.component.CategoryTreeService;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryChangeDTO;
@@ -68,9 +69,18 @@ public class CategoryUpdateService {
         // Дерево из базы
         SiteDTO dbTree = categoryTreeService.buildTree(job);
 
-        // Дерево из парсера
+        // Получаем парсер для сайта
         CategoryParser parser = parserFactory.getParser(job);
-        SiteDTO parsedTree = categoryTreeService.buildParsedTree(job, parser.parse(job));
+        // Парсим сайт
+        Map<ParsedCategory, List<ParsedCategory>> parsedMap = parser.parse(job);
+        // Если парсер вернул пустой результат (не смог подключиться к сайту или по другой причине - считаем дерево категорий
+        // в базе актуальным и пропускаем сравнение деревьев категорий сайта и базы
+        if (parsedMap == null || parsedMap.isEmpty()) {
+            log.warn("Парсер {} вернул пустой результат. Пропускаем обновление.", job.getName());
+            return null;
+        }
+        //Строим дерево из того что распарсили
+        SiteDTO parsedTree = categoryTreeService.buildParsedTree(job, parsedMap);
 
         // Сравнение деревьев : распаршенного и дерева из базы
         CategoryDiffResult diff = categoryTreeService.compareTrees(parsedTree, dbTree);

@@ -32,8 +32,8 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	private final OrderLinksRepository linkRepository;
 	@Value("${parser.update.links.after.days}")
 	private long parserUpdateLinksAfterDay;
-	@Value("${parser.insert.categories.active}")
-	boolean parseCategories;
+	//@Value("${parser.insert.categories.active}")
+	//boolean parseCategories;
 	@Value("${currency.site}")
 	private String currencySiteUrl;
 
@@ -49,9 +49,9 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		try {
 			currencyParser();
-			if (parseCategories) {
+			/*if (parseCategories) {
 				parserCategories.parse();
-			}
+			}*/
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
