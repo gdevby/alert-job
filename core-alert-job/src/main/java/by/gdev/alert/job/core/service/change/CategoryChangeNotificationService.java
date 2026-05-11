@@ -62,14 +62,15 @@ public class CategoryChangeNotificationService {
             log.debug("No users affected by removed categories.");
         }
         //Находим админа
-        AppUser adminUser = userRepository.findByUuid(adminProperties.getUuid())
-                .orElseThrow(() -> new IllegalStateException("user with role Admin not found"));
-
+        AppUser adminUser = userRepository.findByUuid(adminProperties.getUuid()).orElse(null);
         // Удаляем категории через CleanupService
         cleanupRemovedCategories(changesRequest);
+        if (adminUser == null) {
+            log.warn("Админ не найден — уведомления админу пропущены");
+        } else {
+            notifyChangesForAdmin(changesRequest, usersInfo, adminUser);
+        }
 
-        //Отправляем письмо админу (в зависимости как у него настроен тип оповещения - по почте или по телеге
-        notifyChangesForAdmin(changesRequest, usersInfo, adminUser);
         //Уведомляем пользователей
         notifyUsers(usersInfo);
     }

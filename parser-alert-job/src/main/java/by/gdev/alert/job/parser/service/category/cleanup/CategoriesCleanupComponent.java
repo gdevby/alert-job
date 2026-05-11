@@ -67,7 +67,7 @@ public class CategoriesCleanupComponent {
     }
 
     @Transactional
-    public void deleteParserCategories(List<Long> categoryIds, List<Long> subcategoryIds) {
+    public void deleteParserCategories(List<Long> categoryIds, List<Long> subcategoryIds, String siteName) {
         int deletedOrders = 0;
         int deletedSources = 0;
         int deletedOrderLinksByCategory = 0;
@@ -131,7 +131,7 @@ public class CategoriesCleanupComponent {
         }
 
         log.debug("""
-→ [PARSER_DELETE_STATS]
+→ [PARSER_DELETE_STATS] SITE = %s
 ORDERS                 = %d
 SOURCES                = %d
 ORDER_LINKS_CATEGORY   = %d
@@ -139,6 +139,7 @@ ORDER_LINKS_SUBCAT     = %d
 SUBCATEGORIES          = %d
 CATEGORIES             = %d
 """.formatted(
+                siteName,
                 deletedOrders,
                 deletedSources,
                 deletedOrderLinksByCategory,
@@ -146,6 +147,7 @@ CATEGORIES             = %d
                 deletedSubcategories,
                 deletedCategories
         ));
+
     }
 
     public void cleanup() {

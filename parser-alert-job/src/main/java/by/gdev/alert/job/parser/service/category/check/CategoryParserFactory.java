@@ -3,13 +3,14 @@ package by.gdev.alert.job.parser.service.category.check;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.service.category.CategoryParser;
 import by.gdev.alert.job.parser.util.SiteName;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class CategoryParserFactory {
 
@@ -25,9 +26,11 @@ public class CategoryParserFactory {
 
     public CategoryParser getParser(SiteSourceJob job) {
         SiteName siteName = resolver.resolve(job.getName());
+        if (siteName == null) return null;
         CategoryParser parser = registry.get(siteName);
         if (parser == null) {
-            throw new IllegalArgumentException("Parser not found for site: " + job.getName());
+            log.warn("Парсер для {} отсутствует. Пропускаем сайт.", siteName);
+            return null;
         }
         return parser;
     }

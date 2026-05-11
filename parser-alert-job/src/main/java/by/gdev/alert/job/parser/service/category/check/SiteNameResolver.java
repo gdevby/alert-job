@@ -1,10 +1,12 @@
 package by.gdev.alert.job.parser.service.category.check;
 
 import by.gdev.alert.job.parser.util.SiteName;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Slf4j
 @Component
 public class SiteNameResolver {
 
@@ -33,7 +35,9 @@ public class SiteNameResolver {
             }
         }
 
-        throw new IllegalArgumentException("Unknown site name: " + raw);
+        log.warn("Unknown site name: {}. Пропускаем.", raw);
+        return null;
+
     }
 
     private List<String> generateCandidates(String raw) {

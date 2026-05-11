@@ -71,6 +71,10 @@ public class CategoryUpdateService {
 
         // Получаем парсер для сайта
         CategoryParser parser = parserFactory.getParser(job);
+        if (parser == null) {
+            log.warn("Парсер для {} отсутствует. Пропускаем обновление.", job.getName());
+            return null;
+        }
         // Парсим сайт
         Map<ParsedCategory, List<ParsedCategory>> parsedMap = parser.parse(job);
         // Если парсер вернул пустой результат (не смог подключиться к сайту или по другой причине - считаем дерево категорий
@@ -79,10 +83,15 @@ public class CategoryUpdateService {
             log.warn("Парсер {} вернул пустой результат. Пропускаем обновление.", job.getName());
             return null;
         }
-        //Строим дерево из того что распарсили
+        //Строим дерево из того что распарсили для сайта
         SiteDTO parsedTree = categoryTreeService.buildParsedTree(job, parsedMap);
 
-        // Сравнение деревьев : распаршенного и дерева из базы
+        if (parsedTree.getCategories().isEmpty()) {
+            log.warn("ParsedTree пустой. Пропускаем обновление {}", job.getName());
+            return null;
+        }
+
+        // Сравнение деревьев: распаршенного и дерева из базы
         CategoryDiffResult diff = categoryTreeService.compareTrees(parsedTree, dbTree);
 
         if (diff.isEmpty()) {

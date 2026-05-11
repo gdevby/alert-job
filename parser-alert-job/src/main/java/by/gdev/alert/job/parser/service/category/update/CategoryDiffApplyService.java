@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,36 +28,52 @@ public class CategoryDiffApplyService {
     @Transactional
     public void applyDiff(SiteSourceJob job, CategoryDiffResult diff) {
 
-        // Удаляем старые категории
+        // 1. Удаляем старые категории и ВСЕ их подкатегории
         deleteRemoved(job, diff);
 
-        // Создаём новые категории и сохраняем их ID
+        // 2. Создаём новые категории
         Map<String, Long> createdCategories = addNewCategories(job, diff);
 
-        // Создаём новые подкатегории (включая те, у которых parentId = null)
+        // 3. Создаём новые подкатегории
         addNewSubcategories(job, diff, createdCategories);
 
-        // Перемещаем подкатегории
+        // 4. Перемещаем существующие подкатегории
         moveSubcategories(diff);
     }
 
     private void deleteRemoved(SiteSourceJob job, CategoryDiffResult diff) {
 
-        List<Long> removedCategoryIds = diff.getRemovedCategories().stream()
+        List<Long> removedCategoryIds = diff.getRemovedCategories()
+                .stream()
                 .map(CategoryDTO::getId)
                 .toList();
 
-        List<Long> removedSubcategoryIds = diff.getRemovedSubcategories().stream()
-                .map(s -> s.getSubcategory().getId())
+        // Удаляем ВСЕ подкатегории, которые diff пометил как удалённые
+        List<Long> removedSubcategoryIds = diff.getRemovedSubcategories()
+                .stream()
+                .map(dto -> dto.getSubcategory().getId())
                 .toList();
+
+        // ПЛЮС подкатегории удалённых категорий
+        if (!removedCategoryIds.isEmpty()) {
+            removedSubcategoryIds = new ArrayList<>(removedSubcategoryIds);
+            removedSubcategoryIds.addAll(
+                    subCategoryRepository.findAllByCategoryIdIn(removedCategoryIds)
+                            .stream()
+                            .map(Subcategory::getId)
+                            .toList()
+            );
+        }
 
         if (!removedCategoryIds.isEmpty() || !removedSubcategoryIds.isEmpty()) {
             categoriesCleanupComponent.deleteParserCategories(
                     removedCategoryIds,
-                    removedSubcategoryIds
+                    removedSubcategoryIds,
+                    job.getName()
             );
         }
     }
+
 
     private Map<String, Long> addNewCategories(SiteSourceJob job, CategoryDiffResult diff) {
 
@@ -87,13 +104,18 @@ public class CategoryDiffApplyService {
 
             Long parentId = dto.getParentId();
 
-            // Если категория новая → parentId = null → ищем по имени
+            // Новая категория → parentId = null → ищем по имени
             if (parentId == null) {
                 parentId = createdCategories.get(dto.getParentName());
             }
 
-            Category parent = categoryRepository.findById(parentId)
-                    .orElseThrow(() -> new IllegalStateException("Parent category not found"));
+            if (parentId == null || !categoryRepository.existsById(parentId)) {
+                // Родитель удалён или не создан — пропускаем
+                continue;
+            }
+
+            Category parent = categoryRepository.findById(parentId).orElse(null);
+            if (parent == null) continue;
 
             Subcategory sc = new Subcategory();
             sc.setName(dto.getSubcategory().getName());
@@ -110,16 +132,26 @@ public class CategoryDiffApplyService {
 
         for (CategoryDiffResult.SubcategoryMoveDTO dto : diff.getMovedSubcategories()) {
 
-            Subcategory sc = subCategoryRepository.findById(dto.getSubcategory().getId())
-                    .orElseThrow(() -> new IllegalStateException("Subcategory not found"));
+            Long subId = dto.getSubcategory().getId();
+            Long newParentId = dto.getNewParentId();
 
-            Category newParent = categoryRepository.findById(dto.getNewParentId())
-                    .orElseThrow(() -> new IllegalStateException("New parent not found"));
+            // Пропускаем новые подкатегории (id = null)
+            if (subId == null) continue;
+
+            // Пропускаем перемещения в несуществующие категории
+            if (newParentId == null || !categoryRepository.existsById(newParentId)) continue;
+
+            // Пропускаем перемещения удалённых подкатегорий
+            if (!subCategoryRepository.existsById(subId)) continue;
+
+            Subcategory sc = subCategoryRepository.findById(subId).orElse(null);
+            if (sc == null) continue;
+
+            Category newParent = categoryRepository.findById(newParentId).orElse(null);
+            if (newParent == null) continue;
 
             sc.setCategory(newParent);
             subCategoryRepository.save(sc);
         }
     }
 }
-
-
