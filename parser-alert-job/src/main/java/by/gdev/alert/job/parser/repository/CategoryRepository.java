@@ -3,6 +3,7 @@ package by.gdev.alert.job.parser.repository;
 import java.util.List;
 import java.util.Optional;
 
+import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -45,6 +46,6 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
     )
     void fixBrokenSubcategoryPositions(Long siteId);
 
-
+    Category findBySiteSourceJobAndName(SiteSourceJob job, String name);
 
 }

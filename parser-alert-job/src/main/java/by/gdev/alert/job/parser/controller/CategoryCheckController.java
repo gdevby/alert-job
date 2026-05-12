@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/test/category-check")
+@RequestMapping("/category-check")
 @RequiredArgsConstructor
 public class CategoryCheckController {
 

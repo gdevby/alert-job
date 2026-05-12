@@ -62,33 +62,52 @@ public class CategoryChangeNotificationService {
             log.debug("No users affected by removed categories.");
         }
         //Находим админа
-        AppUser adminUser = userRepository.findByUuid(adminProperties.getUuid()).orElse(null);
+        List<AppUser> adminUsers = getAdminUsers();
         // Удаляем категории через CleanupService
         cleanupRemovedCategories(changesRequest);
-        if (adminUser == null) {
-            log.warn("Админ не найден — уведомления админу пропущены");
+        if (adminUsers.isEmpty()) {
+            log.warn("Админы не найдены — уведомления пропущены");
         } else {
-            notifyChangesForAdmin(changesRequest, usersInfo, adminUser);
+            notifyChangesForAdmin(changesRequest, usersInfo, adminUsers);
         }
 
         //Уведомляем пользователей
         notifyUsers(usersInfo);
     }
 
-    private void notifyChangesForAdmin(List<CategoryChangeDTO> changesRequest, List<UserInfo> usersInfo, AppUser adminUser) {
-        String message;
-        if (adminUser.isDefaultSendType()) {
-            // для почты
-            message = MessageTemplates.CategoryDiff.buildCategoryDiffHtml(changesRequest, usersInfo);
-        } else {
-            // для Telegram
-            message = MessageTemplates.CategoryDiff.buildCategoryDiffText(changesRequest, usersInfo);
+    public List<AppUser> getAdminUsers() {
+        List<AppUser> admins = new ArrayList<>();
+
+        if (adminProperties.getUuids() == null) {
+            return admins;
         }
-        mailSenderService.sendMessagesToUser(
-                adminUser,
-                List.of(message),
-                NotificationType.CATEGORY_CHANGE
-        );
+
+        for (String uuid : adminProperties.getUuids()) {
+            userRepository.findByUuid(uuid).ifPresent(admins::add);
+        }
+
+        return admins;
+    }
+
+
+    private void notifyChangesForAdmin(List<CategoryChangeDTO> changesRequest, List<UserInfo> usersInfo, List<AppUser> adminUsers) {
+        for (AppUser admin : adminUsers) {
+            boolean email = admin.isDefaultSendType();
+            String channel = email ? "EMAIL" : "TELEGRAM";
+            log.debug("Отправка уведомления админу {} ({}) через {}", admin.getEmail(), admin.getUuid(), channel);
+
+            String message = email
+                    ? MessageTemplates.CategoryDiff.buildCategoryDiffHtml(changesRequest, usersInfo)
+                    : MessageTemplates.CategoryDiff.buildCategoryDiffText(changesRequest, usersInfo);
+
+            mailSenderService.sendMessagesToUser(
+                    admin,
+                    List.of(message),
+                    NotificationType.CATEGORY_CHANGE_ADMIN
+            );
+
+            log.debug("Уведомление админу {} успешно отправлено через {}", admin.getEmail(), channel);
+        }
     }
 
     private void notifyUsers(List<UserInfo> usersInfo) {
@@ -199,7 +218,10 @@ public class CategoryChangeNotificationService {
                 for (var entryModule : entrySite.getValue().entrySet()) {
 
                     String moduleName = entryModule.getKey();
-                    List<RemovedCategoryInfo> removed = entryModule.getValue();
+                    List<RemovedCategoryInfo> removed = entryModule.getValue()
+                            .stream()
+                            .distinct()
+                            .toList();
 
                     modules.add(new ModuleInfo(moduleName, removed));
                 }
