@@ -13,10 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static by.gdev.common.model.CategoryLexemes.ALL_CATEGORIES;
@@ -104,6 +101,7 @@ public class CategoryTreeService {
 
             for (ParsedCategory sub : parsedSubs) {
                 String subName = sub.translatedName();
+                if (subName == null || subName.isBlank()) continue;
 
                 boolean exists = catDto.getSubcategories().stream()
                         .anyMatch(x -> x.getName().equals(subName));
@@ -136,50 +134,85 @@ public class CategoryTreeService {
 
     private CategoryDiffResult compareAdded(SiteDTO parsedTree, SiteDTO dbTree) {
         CategoryDiffResult diff = new CategoryDiffResult();
+        compareCategories(parsedTree, dbTree, diff);
+        //compareSubcategories(parsedTree, dbTree, diff);
+        return diff;
+    }
 
-        Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
-                .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
-                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
+    private void compareCategories(SiteDTO parsedTree, SiteDTO dbTree, CategoryDiffResult diff) {
+        // категории в БД по имени
+        Set<String> dbNames = dbTree.getCategories().stream()
+                .map(CategoryDTO::getName)
+                .collect(Collectors.toSet());
 
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
+            // Пропускаем служебную категорию "Все категории".
             if (ALL_CATEGORIES.equals(parsedCat.getName())) continue;
-
-            CategoryDTO dbCat = dbByName.get(parsedCat.getName());
-
-            // Новая категория
-            if (dbCat == null) {
+            // новая категория
+            if (!dbNames.contains(parsedCat.getName())) {
                 diff.getNewCategories().add(parsedCat);
-
+                // ВСЕ её подкатегории — также новые
                 for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
+                    // Пропускаем пустые и мусорные субкатегории.
+                    if (sub.getName() == null || sub.getName().isBlank()) continue;
                     diff.getNewSubcategories().add(
                             new CategoryDiffResult.SubcategoryWithParentDTO(
-                                    null,
-                                    parsedCat.getName(),
-                                    sub
-                            )
-                    );
-                }
-                continue;
-            }
-
-            // Новые подкатегории
-            Map<String, SubcategoryDTO> dbSubs = dbCat.getSubcategories().stream()
-                    .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s));
-
-            for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
-                if (!dbSubs.containsKey(sub.getName())) {
-                    diff.getNewSubcategories().add(
-                            new CategoryDiffResult.SubcategoryWithParentDTO(
-                                    dbCat.getId(),
-                                    dbCat.getName(),
+                                    null,         // parentId = null - новая категория
+                                    parsedCat.getName(),  // имя новой категории
                                     sub
                             )
                     );
                 }
             }
         }
+    }
 
-        return diff;
+    private void compareSubcategories(SiteDTO parsedTree, SiteDTO dbTree, CategoryDiffResult diff) {
+        // Строим мапу: имя категории - категория из БД.
+        // Это нужно, чтобы понять: категория уже существует или она новая с субкатегорией.
+        Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
+                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
+        // Идём по всем категориям, которые пришли из парсеров.
+        for (CategoryDTO parsedCat : parsedTree.getCategories()) {
+            // Пропускаем служебную категорию "Все категории".
+            if (ALL_CATEGORIES.equals(parsedCat.getName())) continue;
+            // Пытаемся найти категорию в БД.
+            // Если нашли - категория существующая.
+            // Если не нашли - категория новая.
+            CategoryDTO dbCat = dbByName.get(parsedCat.getName());
+            // Если категории НЕТ в БД:
+            // значит она новая, и ВСЕ её подкатегории уже были добавлены
+            // в compareCategories (там parentId = null).
+            // Здесь мы НЕ должны добавлять их повторно.
+            if (dbCat == null) continue;
+            // Собираем имена подкатегорий, которые уже есть в БД
+            // под ЭТОЙ категорией.
+            // Это нужно, чтобы понять: субкатегория новая или уже существует.
+            Set<String> dbSubs = dbCat.getSubcategories().stream()
+                    .map(SubcategoryDTO::getName)
+                    .collect(Collectors.toSet());
+
+            // Идём по подкатегориям, которые пришли из парсера.
+            for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
+                // Пропускаем пустые и мусорные субкатегории.
+                if (sub.getName() == null || sub.getName().isBlank()) continue;
+                // Если подкатегории НЕТ в БД под этой категорией:
+                // значит это НОВАЯ подкатегория к СУЩЕСТВУЮЩЕЙ категории.
+                // ЛОГИКА:
+                // - категория существует - dbCat != null
+                // - субкатегории нет - dbSubs не содержит имя
+                // значит нужно создать саб и привязать к существующей категории.
+                if (!dbSubs.contains(sub.getName())) {
+                    diff.getNewSubcategories().add(
+                            new CategoryDiffResult.SubcategoryWithParentDTO(
+                                    dbCat.getId(),      // - ID существующей категории
+                                    dbCat.getName(),    // - имя существующей категории
+                                    sub                 // - новая подкатегория
+                            )
+                    );
+                }
+            }
+        }
     }
 
     private CategoryDiffResult compareRemoved(SiteDTO parsedTree, SiteDTO dbTree) {
@@ -285,18 +318,5 @@ public class CategoryTreeService {
 
         return diff;
     }
-
-
-
-
-    private SubcategoryDTO findSubByName(SiteDTO tree, String name) {
-        for (CategoryDTO cat : tree.getCategories()) {
-            for (SubcategoryDTO sub : cat.getSubcategories()) {
-                if (sub.getName().equals(name)) return sub;
-            }
-        }
-        return null;
-    }
-
 }
 

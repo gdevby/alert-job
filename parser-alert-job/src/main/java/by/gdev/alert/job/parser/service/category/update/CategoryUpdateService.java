@@ -41,16 +41,11 @@ public class CategoryUpdateService {
     private int maxIterations;
 
     public CategoryUpdateSummary updateAllSitesWithRetries() {
-
         long start = System.currentTimeMillis();
-
         int iteration = 0;
-
         Map<String, CategoryDiffDTO> mergedDiffs = new HashMap<>();
-
         while (iteration < maxIterations) {
             iteration++;
-
             List<CategoryChangeDTO> changes = updateAllSites();
 
             if (changes != null && !changes.isEmpty()) {
@@ -62,7 +57,6 @@ public class CategoryUpdateService {
                     );
                 }
             }
-
             if (changes == null || changes.isEmpty()) {
                 break;
             }
@@ -171,6 +165,11 @@ public class CategoryUpdateService {
         // Сравнение деревьев: распаршенного и дерева из базы
         CategoryDiffResult diff = categoryTreeService.compareTrees(parsedTree, dbTree);
 
+        diff.getNewSubcategories().removeIf(s ->
+                s.getSubcategory().getName() == null ||
+                        s.getSubcategory().getName().isBlank()
+        );
+
         if (diff.isEmpty()) {
             return null;
         }
@@ -184,6 +183,11 @@ public class CategoryUpdateService {
     }
 
     private CategoryDiffDTO buildCoreDto(CategoryDiffResult diff) {
+
+        diff.getNewSubcategories().removeIf(s ->
+                s.getSubcategory().getName() == null ||
+                        s.getSubcategory().getName().isBlank()
+        );
 
         CategoryDiffDTO dto = new CategoryDiffDTO();
         // Категории
