@@ -4,6 +4,7 @@ import by.gdev.alert.job.parser.domain.db.Category;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
+import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.repository.SubCategoryRepository;
 import by.gdev.alert.job.parser.service.category.cleanup.CategoriesCleanupComponent;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryDiffResult;
@@ -23,22 +24,19 @@ public class CategoryDiffApplyService {
 
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
+    private final SiteSourceJobRepository siteSourceJobRepository;
     private final CategoriesCleanupComponent categoriesCleanupComponent;
 
     @Transactional
     public void applyDiff(SiteSourceJob job, CategoryDiffResult diff) {
-
-        // 1. Удаляем старые категории и ВСЕ их подкатегории
-        deleteRemoved(job, diff);
-
-        // 2. Создаём новые категории
-        Map<String, Long> createdCategories = addNewCategories(job, diff);
-
-        // 3. Создаём новые подкатегории
-        addNewSubcategories(job, diff, createdCategories);
-
-        // 4. Перемещаем существующие подкатегории
+        // Перемещаем существующие подкатегории
         moveSubcategories(diff);
+        // Создаём новые категории
+        Map<String, Long> createdCategories = addNewCategories(job, diff);
+        // Создаём новые подкатегории
+        addNewSubcategories(job, diff, createdCategories);
+        // Удаляем старые категории и ВСЕ их подкатегории
+        deleteRemoved(job, diff);
     }
 
     private void deleteRemoved(SiteSourceJob job, CategoryDiffResult diff) {
@@ -78,6 +76,7 @@ public class CategoryDiffApplyService {
     private Map<String, Long> addNewCategories(SiteSourceJob job, CategoryDiffResult diff) {
 
         Map<String, Long> created = new HashMap<>();
+        SiteSourceJob managedJob = siteSourceJobRepository.findById(job.getId()).orElseThrow();
 
         for (CategoryDTO dto : diff.getNewCategories()) {
             Category c = new Category();
@@ -85,7 +84,7 @@ public class CategoryDiffApplyService {
             c.setNativeLocName(dto.getName());
             c.setLink(null);
             c.setParse(true);
-            c.setSiteSourceJob(job);
+            c.setSiteSourceJob(managedJob); // ← теперь OK
             categoryRepository.save(c);
 
             created.put(dto.getName(), c.getId());
@@ -93,6 +92,7 @@ public class CategoryDiffApplyService {
 
         return created;
     }
+
 
     private void addNewSubcategories(
             SiteSourceJob job,
@@ -129,29 +129,55 @@ public class CategoryDiffApplyService {
     }
 
     private void moveSubcategories(CategoryDiffResult diff) {
+        // Собираем id подкатегорий, которые помечены как удалённые
+        var removedSubIds = diff.getRemovedSubcategories().stream()
+                .map(dto -> dto.getSubcategory().getId())
+                .filter(id -> id != null)
+                .collect(java.util.stream.Collectors.toSet());
 
         for (CategoryDiffResult.SubcategoryMoveDTO dto : diff.getMovedSubcategories()) {
 
             Long subId = dto.getSubcategory().getId();
             Long newParentId = dto.getNewParentId();
 
-            // Пропускаем новые подкатегории (id = null)
-            if (subId == null) continue;
-
-            // Пропускаем перемещения в несуществующие категории
-            if (newParentId == null || !categoryRepository.existsById(newParentId)) continue;
-
-            // Пропускаем перемещения удалённых подкатегорий
-            if (!subCategoryRepository.existsById(subId)) continue;
+            // Если эта подкатегория одновременно в removed — НЕ ТРОГАЕМ ЕЁ
+            if (removedSubIds.contains(subId)) {
+                continue;
+            }
 
             Subcategory sc = subCategoryRepository.findById(subId).orElse(null);
-            if (sc == null) continue;
+            if (sc == null) {
+                continue;
+            }
+
+            // ЕСЛИ РОДИТЕЛЬСКИЙ ID NULL → СОЗДАЁМ НОВУЮ КАТЕГОРИЮ
+            if (newParentId == null) {
+
+                Category oldParent = sc.getCategory(); // только для siteSourceJob
+                if (oldParent == null || oldParent.getSiteSourceJob() == null) {
+                    continue;
+                }
+
+                Category newParent = new Category();
+                newParent.setName(dto.getNewParentName());
+                newParent.setNativeLocName(dto.getNewParentName());
+                newParent.setLink(null);
+                newParent.setParse(true);
+                newParent.setSiteSourceJob(oldParent.getSiteSourceJob());
+
+                categoryRepository.save(newParent);
+                newParentId = newParent.getId();
+            }
 
             Category newParent = categoryRepository.findById(newParentId).orElse(null);
-            if (newParent == null) continue;
+            if (newParent == null) {
+                continue;
+            }
 
             sc.setCategory(newParent);
             subCategoryRepository.save(sc);
         }
     }
+
+
 }

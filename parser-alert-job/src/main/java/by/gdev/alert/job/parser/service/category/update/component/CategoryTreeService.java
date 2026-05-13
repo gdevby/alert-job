@@ -10,6 +10,7 @@ import by.gdev.alert.job.parser.service.category.update.dto.tree.CategoryDTO;
 import by.gdev.alert.job.parser.service.category.update.dto.tree.SiteDTO;
 import by.gdev.alert.job.parser.service.category.update.dto.tree.SubcategoryDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,115 +23,133 @@ import static by.gdev.common.model.CategoryLexemes.ALL_CATEGORIES;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CategoryTreeService {
 
     private final CategoryRepository categoryRepository;
 
     public SiteDTO buildTree(SiteSourceJob job) {
-        // АВТОЧИСТКА БИТЫХ SUBCATEGORY
         categoryRepository.fixBrokenSubcategoryPositions(job.getId());
 
-        // Загружаем категории + подкатегории одним запросом
         List<Category> categories =
                 categoryRepository.findAllWithSubcategoriesBySourceId(job.getId());
 
-        // DTO сайта
         SiteDTO site = new SiteDTO();
         site.setId(job.getId());
         site.setName(job.getName());
 
-        List<CategoryDTO> categoryDTOs = new ArrayList<>();
+        // Имя категории → CategoryDTO
+        Map<String, CategoryDTO> categoryMap = new HashMap<>();
 
         for (Category c : categories) {
 
-            CategoryDTO catDto = new CategoryDTO();
-            catDto.setId(c.getId());
-            catDto.setName(c.getNativeLocName());
+            String catName = c.getNativeLocName();
 
-            List<SubcategoryDTO> subDTOs = new ArrayList<>();
+            CategoryDTO catDto = categoryMap.computeIfAbsent(catName, n -> {
+                CategoryDTO dto = new CategoryDTO();
+                dto.setId(c.getId());
+                dto.setName(n);
+                dto.setSubcategories(new ArrayList<>());
+                return dto;
+            });
+
             if (c.getSubCategories() != null) {
                 for (Subcategory s : c.getSubCategories()) {
-                    SubcategoryDTO sd = new SubcategoryDTO();
-                    sd.setId(s.getId());
-                    sd.setName(s.getNativeLocName());
-                    subDTOs.add(sd);
+
+                    if (s == null) continue;
+                    if (s.getId() == null) continue;
+                    if (s.getNativeLocName() == null || s.getNativeLocName().isBlank()) continue;
+
+                    String subName = s.getNativeLocName();
+
+                    boolean exists = catDto.getSubcategories().stream()
+                            .anyMatch(x -> x.getName().equals(subName));
+
+                    if (!exists) {
+                        SubcategoryDTO sd = new SubcategoryDTO();
+                        sd.setId(s.getId());
+                        sd.setName(subName);
+                        catDto.getSubcategories().add(sd);
+                    }
                 }
             }
-
-            catDto.setSubcategories(subDTOs);
-            categoryDTOs.add(catDto);
         }
 
-        site.setCategories(categoryDTOs);
+        site.setCategories(new ArrayList<>(categoryMap.values()));
         return site;
     }
+
 
     public SiteDTO buildParsedTree(SiteSourceJob job, Map<ParsedCategory, List<ParsedCategory>> parsed) {
         SiteDTO site = new SiteDTO();
         site.setId(job.getId());
         site.setName(job.getName());
 
-        List<CategoryDTO> categoryDTOs = new ArrayList<>();
+        // Имя категории → CategoryDTO
+        Map<String, CategoryDTO> categoryMap = new HashMap<>();
+
         for (Map.Entry<ParsedCategory, List<ParsedCategory>> entry : parsed.entrySet()) {
 
             ParsedCategory parsedCat = entry.getKey();
             List<ParsedCategory> parsedSubs = entry.getValue();
 
-            // Категория
-            CategoryDTO catDto = new CategoryDTO();
-            catDto.setName(parsedCat.translatedName());  // имя категории
+            String catName = parsedCat.translatedName();
 
-            List<SubcategoryDTO> subDtos = new ArrayList<>();
+            CategoryDTO catDto = categoryMap.computeIfAbsent(catName, n -> {
+                CategoryDTO dto = new CategoryDTO();
+                dto.setName(n);
+                dto.setSubcategories(new ArrayList<>());
+                return dto;
+            });
 
-            // Подкатегории
             for (ParsedCategory sub : parsedSubs) {
-                SubcategoryDTO sd = new SubcategoryDTO();
-                sd.setName(sub.translatedName());
-                subDtos.add(sd);
-            }
+                String subName = sub.translatedName();
 
-            catDto.setSubcategories(subDtos);
-            categoryDTOs.add(catDto);
+                boolean exists = catDto.getSubcategories().stream()
+                        .anyMatch(x -> x.getName().equals(subName));
+
+                if (!exists) {
+                    SubcategoryDTO sd = new SubcategoryDTO();
+                    sd.setName(subName);
+                    catDto.getSubcategories().add(sd);
+                }
+            }
         }
 
-        site.setCategories(categoryDTOs);
+        site.setCategories(new ArrayList<>(categoryMap.values()));
         return site;
     }
 
     public CategoryDiffResult compareTrees(SiteDTO parsedTree, SiteDTO dbTree) {
+        CategoryDiffResult result = new CategoryDiffResult();
+        CategoryDiffResult added   = compareAdded(parsedTree, dbTree);
+        CategoryDiffResult removed = compareRemoved(parsedTree, dbTree);
+        CategoryDiffResult moved   = compareMoved(parsedTree, dbTree);
+
+        result.getNewCategories().addAll(added.getNewCategories());
+        result.getNewSubcategories().addAll(added.getNewSubcategories());
+        result.getRemovedCategories().addAll(removed.getRemovedCategories());
+        result.getRemovedSubcategories().addAll(removed.getRemovedSubcategories());
+        result.getMovedSubcategories().addAll(moved.getMovedSubcategories());
+        return result;
+    }
+
+    private CategoryDiffResult compareAdded(SiteDTO parsedTree, SiteDTO dbTree) {
         CategoryDiffResult diff = new CategoryDiffResult();
 
-        //Категории по имени
         Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
                 .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
                 .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
 
-        Map<String, CategoryDTO> parsedByName = parsedTree.getCategories().stream()
-                .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
-                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
-
-        //Новые категории
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
             if (ALL_CATEGORIES.equals(parsedCat.getName())) continue;
-            if (!dbByName.containsKey(parsedCat.getName())) {
-                diff.getNewCategories().add(parsedCat);
-            }
-        }
 
-        //Удалённые категории
-        for (CategoryDTO dbCat : dbTree.getCategories()) {
-            if (ALL_CATEGORIES.equals(dbCat.getName())) continue;
-            if (!parsedByName.containsKey(dbCat.getName())) {
-                diff.getRemovedCategories().add(dbCat);
-            }
-        }
-
-        //Подкатегории
-        for (CategoryDTO parsedCat : parsedTree.getCategories()) {
             CategoryDTO dbCat = dbByName.get(parsedCat.getName());
 
-            //Категория новая → все подкатегории новые
+            // Новая категория
             if (dbCat == null) {
+                diff.getNewCategories().add(parsedCat);
+
                 for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
                     diff.getNewSubcategories().add(
                             new CategoryDiffResult.SubcategoryWithParentDTO(
@@ -143,13 +162,10 @@ public class CategoryTreeService {
                 continue;
             }
 
+            // Новые подкатегории
             Map<String, SubcategoryDTO> dbSubs = dbCat.getSubcategories().stream()
                     .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s));
 
-            Map<String, SubcategoryDTO> parsedSubs = parsedCat.getSubcategories().stream()
-                    .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s, (a, b) -> a));
-
-            //Новые подкатегории
             for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
                 if (!dbSubs.containsKey(sub.getName())) {
                     diff.getNewSubcategories().add(
@@ -161,8 +177,43 @@ public class CategoryTreeService {
                     );
                 }
             }
+        }
 
-            //Удалённые подкатегории
+        return diff;
+    }
+
+    private CategoryDiffResult compareRemoved(SiteDTO parsedTree, SiteDTO dbTree) {
+        CategoryDiffResult diff = new CategoryDiffResult();
+
+        Map<String, CategoryDTO> parsedByName = parsedTree.getCategories().stream()
+                .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
+                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
+
+        for (CategoryDTO dbCat : dbTree.getCategories()) {
+            if (ALL_CATEGORIES.equals(dbCat.getName())) continue;
+
+            CategoryDTO parsedCat = parsedByName.get(dbCat.getName());
+
+            // Категория удалена
+            if (parsedCat == null) {
+                diff.getRemovedCategories().add(dbCat);
+
+                for (SubcategoryDTO sub : dbCat.getSubcategories()) {
+                    diff.getRemovedSubcategories().add(
+                            new CategoryDiffResult.SubcategoryWithParentDTO(
+                                    dbCat.getId(),
+                                    dbCat.getName(),
+                                    sub
+                            )
+                    );
+                }
+                continue;
+            }
+
+            // Удалённые подкатегории
+            Map<String, SubcategoryDTO> parsedSubs = parsedCat.getSubcategories().stream()
+                    .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s, (a, b) -> a));
+
             for (SubcategoryDTO sub : dbCat.getSubcategories()) {
                 if (!parsedSubs.containsKey(sub.getName())) {
                     diff.getRemovedSubcategories().add(
@@ -176,64 +227,66 @@ public class CategoryTreeService {
             }
         }
 
-        //Перемещённые подкатегории
+        return diff;
+    }
+
+
+    private CategoryDiffResult compareMoved(SiteDTO parsedTree, SiteDTO dbTree) {
+        CategoryDiffResult diff = new CategoryDiffResult();
+
         Map<String, String> dbParent = new HashMap<>();
+        Map<String, SubcategoryDTO> dbSubsByName = new HashMap<>();
+
         for (CategoryDTO dbCat : dbTree.getCategories()) {
             for (SubcategoryDTO sub : dbCat.getSubcategories()) {
                 dbParent.put(sub.getName(), dbCat.getName());
+                dbSubsByName.put(sub.getName(), sub);
             }
         }
 
         Map<String, String> parsedParent = new HashMap<>();
+
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
             for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
                 parsedParent.put(sub.getName(), parsedCat.getName());
             }
         }
 
-        for (Map.Entry<String, String> e : parsedParent.entrySet()) {
-            String subName = e.getKey();
-            String newParentName = e.getValue();
+        Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
+                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
+
+        Map<String, CategoryDTO> parsedByName = parsedTree.getCategories().stream()
+                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
+
+        for (String subName : parsedParent.keySet()) {
+
+            SubcategoryDTO oldSub = dbSubsByName.get(subName);
+
+            if (oldSub == null) continue;
+            if (oldSub.getId() == null) continue;
+
             String oldParentName = dbParent.get(subName);
+            String newParentName = parsedParent.get(subName);
 
-            if (oldParentName != null && !oldParentName.equals(newParentName)) {
-                CategoryDTO oldParent = dbByName.get(oldParentName);
-                CategoryDTO newParent = parsedByName.get(newParentName);
-                SubcategoryDTO sub = findSubByName(parsedTree, subName);
+            if (oldParentName == null || oldParentName.equals(newParentName)) continue;
 
-                diff.getMovedSubcategories().add(
-                        new CategoryDiffResult.SubcategoryMoveDTO(
-                                oldParent.getId(), oldParent.getName(),
-                                newParent.getId(), newParent.getName(),
-                                sub
-                        )
-                );
-            }
-        }
+            CategoryDTO oldParent = dbByName.get(oldParentName);
+            CategoryDTO newParent = parsedByName.get(newParentName);
 
-        // === ПРАВИЛО ДЛЯ САЙТОВ БЕЗ ПОДКАТЕГОРИЙ ===
-        boolean parsedHasNoSubcategories = parsedTree.getCategories().stream()
-                .allMatch(c -> c.getSubcategories().isEmpty());
-
-        if (parsedHasNoSubcategories) {
-            // убираем возможные дубли
-            diff.getRemovedSubcategories().clear();
-
-            for (CategoryDTO dbCat : dbTree.getCategories()) {
-                for (SubcategoryDTO sub : dbCat.getSubcategories()) {
-                    diff.getRemovedSubcategories().add(
-                            new CategoryDiffResult.SubcategoryWithParentDTO(
-                                    dbCat.getId(),
-                                    dbCat.getName(),
-                                    sub
-                            )
-                    );
-                }
-            }
+            diff.getMovedSubcategories().add(
+                    new CategoryDiffResult.SubcategoryMoveDTO(
+                            oldParent.getId(), oldParent.getName(),
+                            newParent != null ? newParent.getId() : null,
+                            newParentName,
+                            oldSub
+                    )
+            );
         }
 
         return diff;
     }
+
+
 
 
     private SubcategoryDTO findSubByName(SiteDTO tree, String name) {

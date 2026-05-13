@@ -11,12 +11,14 @@ import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryDiff
 import by.gdev.alert.job.parser.service.category.check.client.CoreClient;
 
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryDiffResult;
+import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryUpdateSummary;
 import by.gdev.alert.job.parser.service.category.update.dto.tree.SiteDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -35,8 +37,83 @@ public class CategoryUpdateService {
     private final CoreClient coreClient;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    @Value("${category.update.max-iterations:10}")
+    private int maxIterations;
+
+    public CategoryUpdateSummary updateAllSitesWithRetries() {
+
+        long start = System.currentTimeMillis();
+
+        int iteration = 0;
+
+        Map<String, CategoryDiffDTO> mergedDiffs = new HashMap<>();
+
+        while (iteration < maxIterations) {
+            iteration++;
+
+            List<CategoryChangeDTO> changes = updateAllSites();
+
+            if (changes != null && !changes.isEmpty()) {
+                for (CategoryChangeDTO change : changes) {
+                    mergedDiffs.merge(
+                            change.siteName(),
+                            change.diff(),
+                            this::mergeDiffs
+                    );
+                }
+            }
+
+            if (changes == null || changes.isEmpty()) {
+                break;
+            }
+        }
+
+        long end = System.currentTimeMillis();
+        long duration = end - start;
+
+        List<CategoryChangeDTO> finalList = mergedDiffs.entrySet().stream()
+                .map(e -> new CategoryChangeDTO(
+                        siteSourceJobRepository.findByName(e.getKey()).getId(),
+                        e.getKey(),
+                        e.getValue()
+                ))
+                .toList();
+
+        //Если есть изменения в категориях - отправляем эти изменения в core модуль,
+        // чтобы обновить их у пользователей сайта и оповестить администраторов AlertJob
+        if (!finalList.isEmpty()) {
+            coreClient.sendCategoryChanges(finalList);
+        }
+
+        return new CategoryUpdateSummary(
+                start,
+                end,
+                duration,
+                iteration,
+                finalList
+        );
+    }
+
+    private CategoryDiffDTO mergeDiffs(CategoryDiffDTO a, CategoryDiffDTO b) {
+
+        a.getNewCategories().addAll(b.getNewCategories());
+        a.getRemovedCategories().addAll(b.getRemovedCategories());
+        a.getMovedCategories().addAll(b.getMovedCategories());
+
+        a.getNewSubcategories().addAll(b.getNewSubcategories());
+        a.getRemovedSubcategories().addAll(b.getRemovedSubcategories());
+        a.getMovedSubcategories().addAll(b.getMovedSubcategories());
+
+        return a;
+    }
+
+
     public Future<List<CategoryChangeDTO>> updateAllSitesAsync() {
         return executor.submit(this::updateAllSites);
+    }
+
+    public Future<CategoryUpdateSummary> updateAllSitesWithRetriesAsync() {
+        return executor.submit(this::updateAllSitesWithRetries);
     }
 
     @Transactional
@@ -57,11 +134,11 @@ public class CategoryUpdateService {
             }
         }
 
-        //Если есть изменения в категориях - отправляем эти изменения в core модуль,
+        /*//Если есть изменения в категориях - отправляем эти изменения в core модуль,
         // чтобы обновить их у пользователей сайта
         if (!changes.isEmpty()) {
             coreClient.sendCategoryChanges(changes);
-        }
+        }*/
         return changes;
     }
 

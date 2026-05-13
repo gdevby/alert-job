@@ -23,7 +23,7 @@ public class CategoryUpdateScheduler {
     public void weeklyCategoryUpdate() {
         if (categoriesSchedulerEnabled) {
             log.debug("Запуск ЕЖЕНЕДЕЛЬНОЙ проверки акуальности категорий на сайтах...");
-            categoryUpdateService.updateAllSites();
+            categoryUpdateService.updateAllSitesWithRetries();
         }
         else {
             log.debug("Шедулер проверки категорий ОТКЛЮЧЕН");
