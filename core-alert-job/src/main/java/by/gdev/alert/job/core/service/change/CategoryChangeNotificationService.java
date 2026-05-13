@@ -72,7 +72,7 @@ public class CategoryChangeNotificationService {
         }
 
         //Уведомляем пользователей
-        //notifyUsers(usersInfo);
+        notifyUsers(usersInfo);
     }
 
     public List<AppUser> getAdminUsers() {
