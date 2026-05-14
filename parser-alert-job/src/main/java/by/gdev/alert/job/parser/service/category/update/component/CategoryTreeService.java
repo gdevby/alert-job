@@ -135,7 +135,6 @@ public class CategoryTreeService {
     private CategoryDiffResult compareAdded(SiteDTO parsedTree, SiteDTO dbTree) {
         CategoryDiffResult diff = new CategoryDiffResult();
         compareCategories(parsedTree, dbTree, diff);
-        //compareSubcategories(parsedTree, dbTree, diff);
         return diff;
     }
 
@@ -160,54 +159,6 @@ public class CategoryTreeService {
                                     null,         // parentId = null - новая категория
                                     parsedCat.getName(),  // имя новой категории
                                     sub
-                            )
-                    );
-                }
-            }
-        }
-    }
-
-    private void compareSubcategories(SiteDTO parsedTree, SiteDTO dbTree, CategoryDiffResult diff) {
-        // Строим мапу: имя категории - категория из БД.
-        // Это нужно, чтобы понять: категория уже существует или она новая с субкатегорией.
-        Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
-                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
-        // Идём по всем категориям, которые пришли из парсеров.
-        for (CategoryDTO parsedCat : parsedTree.getCategories()) {
-            // Пропускаем служебную категорию "Все категории".
-            if (ALL_CATEGORIES.equals(parsedCat.getName())) continue;
-            // Пытаемся найти категорию в БД.
-            // Если нашли - категория существующая.
-            // Если не нашли - категория новая.
-            CategoryDTO dbCat = dbByName.get(parsedCat.getName());
-            // Если категории НЕТ в БД:
-            // значит она новая, и ВСЕ её подкатегории уже были добавлены
-            // в compareCategories (там parentId = null).
-            // Здесь мы НЕ должны добавлять их повторно.
-            if (dbCat == null) continue;
-            // Собираем имена подкатегорий, которые уже есть в БД
-            // под ЭТОЙ категорией.
-            // Это нужно, чтобы понять: субкатегория новая или уже существует.
-            Set<String> dbSubs = dbCat.getSubcategories().stream()
-                    .map(SubcategoryDTO::getName)
-                    .collect(Collectors.toSet());
-
-            // Идём по подкатегориям, которые пришли из парсера.
-            for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
-                // Пропускаем пустые и мусорные субкатегории.
-                if (sub.getName() == null || sub.getName().isBlank()) continue;
-                // Если подкатегории НЕТ в БД под этой категорией:
-                // значит это НОВАЯ подкатегория к СУЩЕСТВУЮЩЕЙ категории.
-                // ЛОГИКА:
-                // - категория существует - dbCat != null
-                // - субкатегории нет - dbSubs не содержит имя
-                // значит нужно создать саб и привязать к существующей категории.
-                if (!dbSubs.contains(sub.getName())) {
-                    diff.getNewSubcategories().add(
-                            new CategoryDiffResult.SubcategoryWithParentDTO(
-                                    dbCat.getId(),      // - ID существующей категории
-                                    dbCat.getName(),    // - имя существующей категории
-                                    sub                 // - новая подкатегория
                             )
                     );
                 }

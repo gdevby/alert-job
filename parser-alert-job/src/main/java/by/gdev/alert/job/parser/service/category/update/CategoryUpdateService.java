@@ -6,6 +6,7 @@ import by.gdev.alert.job.parser.service.category.CategoryParser;
 import by.gdev.alert.job.parser.service.category.ParsedCategory;
 import by.gdev.alert.job.parser.service.category.check.CategoryParserFactory;
 import by.gdev.alert.job.parser.service.category.update.component.CategoryTreeService;
+import by.gdev.alert.job.parser.service.category.update.dto.ParsedResult;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryChangeDTO;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryDiffDTO;
 import by.gdev.alert.job.parser.service.category.check.client.CoreClient;
@@ -13,6 +14,7 @@ import by.gdev.alert.job.parser.service.category.check.client.CoreClient;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryDiffResult;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryUpdateSummary;
 import by.gdev.alert.job.parser.service.category.update.dto.tree.SiteDTO;
+import by.gdev.alert.job.parser.util.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,9 +37,12 @@ public class CategoryUpdateService {
     private final CategoryTreeService categoryTreeService;
     private final CategoryParserFactory parserFactory;
     private final CoreClient coreClient;
+    //Пул для запуска обновления категорий в отдельном потоке
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    //Пул для парсинга категорий в отдельных потоках - по количеству сайтов
+    private final ExecutorService parsePool = Executors.newFixedThreadPool(SiteName.values().length);
 
-    @Value("${category.update.max-iterations:10}")
+    @Value("${category.update.max-iterations:3}")
     private int maxIterations;
 
     public CategoryUpdateSummary updateAllSitesWithRetries() {
@@ -101,68 +106,78 @@ public class CategoryUpdateService {
         return a;
     }
 
-
-    public Future<List<CategoryChangeDTO>> updateAllSitesAsync() {
-        return executor.submit(this::updateAllSites);
-    }
-
     public Future<CategoryUpdateSummary> updateAllSitesWithRetriesAsync() {
         return executor.submit(this::updateAllSitesWithRetries);
     }
 
     @Transactional
     public List<CategoryChangeDTO> updateAllSites() {
-        List<CategoryChangeDTO> changes = new ArrayList<>();
+        List<SiteSourceJob> jobs = new ArrayList<>();
+        siteSourceJobRepository.findAll().forEach(jobs::add);
 
-        //Цикл по всем сайтам
-        for (SiteSourceJob job : siteSourceJobRepository.findAll()) {
+        // Параллельно парсим все сайты
+        List<Future<ParsedResult>> futures = new ArrayList<>();
+        for (SiteSourceJob job : jobs) {
+            futures.add(parsePool.submit(() -> parseSite(job)));
+        }
+
+        // Собираем результаты парсинга
+        List<ParsedResult> parsedResults = new ArrayList<>();
+        for (Future<ParsedResult> f : futures) {
             try {
-                //Пытаемся получить изменения в категориях для конкретного сайта и
-                // найти изменения с текущей нашей версией и то что сейчас на сайте
-                CategoryChangeDTO dto = updateSingleSite(job);
-                if (dto != null) {
-                    changes.add(dto);
-                }
+                ParsedResult r = f.get();
+                if (r != null) parsedResults.add(r);
             } catch (Exception e) {
-                log.error("Ошибка обновления категорий для сайта {}", job.getName(), e);
+                log.error("Ошибка парсинга сайта", e);
             }
         }
 
-        /*//Если есть изменения в категориях - отправляем эти изменения в core модуль,
-        // чтобы обновить их у пользователей сайта
-        if (!changes.isEmpty()) {
-            coreClient.sendCategoryChanges(changes);
-        }*/
+        // Теперь последовательно применяем diff
+        List<CategoryChangeDTO> changes = new ArrayList<>();
+        for (ParsedResult result : parsedResults) {
+            try {
+                CategoryChangeDTO dto = applyParsedTree(result);
+                if (dto != null) changes.add(dto);
+            } catch (Exception e) {
+                log.error("Ошибка применения diff для {}", result.job().getName(), e);
+            }
+        }
         return changes;
     }
 
-    private CategoryChangeDTO updateSingleSite(SiteSourceJob job) {
-        // Дерево из базы
+    private ParsedResult parseSite(SiteSourceJob job) {
+        try {
+            CategoryParser parser = parserFactory.getParser(job);
+            if (parser == null) {
+                log.warn("Парсер для {} отсутствует", job.getName());
+                return null;
+            }
+
+            Map<ParsedCategory, List<ParsedCategory>> parsedMap = parser.parse(job);
+            if (parsedMap == null || parsedMap.isEmpty()) {
+                log.warn("Парсер {} вернул пустой результат", job.getName());
+                return null;
+            }
+
+            SiteDTO parsedTree = categoryTreeService.buildParsedTree(job, parsedMap);
+            if (parsedTree.getCategories().isEmpty()) {
+                log.warn("ParsedTree пустой {}", job.getName());
+                return null;
+            }
+
+            return new ParsedResult(job, parsedTree);
+
+        } catch (Exception e) {
+            log.error("Ошибка парсинга {}", job.getName(), e);
+            return null;
+        }
+    }
+
+    private CategoryChangeDTO applyParsedTree(ParsedResult result) {
+        SiteSourceJob job = result.job();
+        SiteDTO parsedTree = result.parsedTree();
+
         SiteDTO dbTree = categoryTreeService.buildTree(job);
-
-        // Получаем парсер для сайта
-        CategoryParser parser = parserFactory.getParser(job);
-        if (parser == null) {
-            log.warn("Парсер для {} отсутствует. Пропускаем обновление.", job.getName());
-            return null;
-        }
-        // Парсим сайт
-        Map<ParsedCategory, List<ParsedCategory>> parsedMap = parser.parse(job);
-        // Если парсер вернул пустой результат (не смог подключиться к сайту или по другой причине - считаем дерево категорий
-        // в базе актуальным и пропускаем сравнение деревьев категорий сайта и базы
-        if (parsedMap == null || parsedMap.isEmpty()) {
-            log.warn("Парсер {} вернул пустой результат. Пропускаем обновление.", job.getName());
-            return null;
-        }
-        //Строим дерево из того что распарсили для сайта
-        SiteDTO parsedTree = categoryTreeService.buildParsedTree(job, parsedMap);
-
-        if (parsedTree.getCategories().isEmpty()) {
-            log.warn("ParsedTree пустой. Пропускаем обновление {}", job.getName());
-            return null;
-        }
-
-        // Сравнение деревьев: распаршенного и дерева из базы
         CategoryDiffResult diff = categoryTreeService.compareTrees(parsedTree, dbTree);
 
         diff.getNewSubcategories().removeIf(s ->
@@ -170,14 +185,8 @@ public class CategoryUpdateService {
                         s.getSubcategory().getName().isBlank()
         );
 
-        if (diff.isEmpty()) {
-            return null;
-        }
-
-        // Применяем разницу деревьев распаршенного и из базы в модуле parser
+        if (diff.isEmpty()) return null;
         categoryDiffApplyService.applyDiff(job, diff);
-
-        // Конвертируем в DTO для отправки в core
         CategoryDiffDTO diffDto = buildCoreDto(diff);
         return new CategoryChangeDTO(job.getId(), job.getName(), diffDto);
     }
