@@ -26,7 +26,6 @@ public class CategoryTreeService {
     private final CategoryRepository categoryRepository;
 
     public SiteDTO buildTree(SiteSourceJob job) {
-        categoryRepository.fixBrokenSubcategoryPositions(job.getId());
 
         List<Category> categories =
                 categoryRepository.findAllWithSubcategoriesBySourceId(job.getId());
@@ -266,7 +265,6 @@ public class CategoryTreeService {
                     )
             );
         }
-
         return diff;
     }
 }

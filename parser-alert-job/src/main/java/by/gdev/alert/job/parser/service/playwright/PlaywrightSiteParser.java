@@ -23,10 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 
@@ -174,7 +171,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     List<Pair<Category, Subcategory>> getCategoriesPairListForJob(SiteSourceJob siteSourceJob){
         List<Pair<Category, Subcategory>> categoriesPairList = new ArrayList<>();
         siteSourceJob.getCategories().forEach(category -> {
-            List<Subcategory> siteSubCategories = category.getSubCategories();
+            Set<Subcategory> siteSubCategories = category.getSubCategories();
             if (category.isParse()) {
                 Pair<Category, Subcategory> categoryPair = new Pair<>(category, null);
                 categoriesPairList.add(categoryPair);
