@@ -155,12 +155,11 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     @Override
     public List<OrderDTO> parse() {
-        Long siteId = getSiteName().getId();
-        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(siteId);
-        if (siteSourceJob != null) {
-            return getOrdersForPlayright(siteSourceJob);
+        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(getSiteName().getId());
+        if (siteSourceJob == null) {
+            return List.of();
         }
-        return List.of();
+        return getOrdersForPlayright(siteSourceJob);
     }
 
     public List<OrderDTO> getOrdersForPlayright(SiteSourceJob siteSourceJob) {

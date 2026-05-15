@@ -27,5 +27,4 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
     WHERE c.siteSourceJob.id = :siteId
 """)
     List<Category> findAllWithSubcategoriesBySourceId(Long siteId);
-
 }

@@ -28,7 +28,4 @@ public interface SiteSourceJobRepository extends CrudRepository<SiteSourceJob, L
     WHERE ssj.id = :id
 """)
     SiteSourceJob findWithCategories(Long id);
-
-
-
 }
