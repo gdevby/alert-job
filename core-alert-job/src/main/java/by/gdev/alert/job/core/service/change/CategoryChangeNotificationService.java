@@ -92,15 +92,10 @@ public class CategoryChangeNotificationService {
 
     private void notifyChangesForAdmin(List<CategoryChangeDTO> changesRequest, List<UserInfo> usersInfo, List<AppUser> adminUsers) {
         for (AppUser admin : adminUsers) {
-            boolean email = admin.isDefaultSendType();
-            String channel = email ? "EMAIL" : "TELEGRAM";
+            String channel = "EMAIL";
             log.debug("Отправка уведомления админу {} ({}) через {}", admin.getEmail(), admin.getUuid(), channel);
-
-            String message = email
-                    ? MessageTemplates.CategoryDiff.buildCategoryDiffHtml(changesRequest, usersInfo)
-                    : MessageTemplates.CategoryDiff.buildCategoryDiffText(changesRequest, usersInfo);
-
-            mailSenderService.sendMessagesToUser(
+            String message = MessageTemplates.CategoryDiff.buildCategoryDiffHtml(changesRequest, usersInfo);
+            mailSenderService.sendRequiredMessagesToUser(
                     admin,
                     List.of(message),
                     NotificationType.CATEGORY_CHANGE_ADMIN
