@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.util;
+package by.gdev.common.util;
 
 import java.util.Objects;
 

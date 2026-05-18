@@ -16,4 +16,7 @@ public interface SubCategoryRepository extends CrudRepository<Subcategory, Long>
 	
 	@Query("select sc from parser_sub_category sc left join fetch sc.category c where sc.id = :id and c.id = :cid")
 	Optional<Subcategory> findByIdAndCategoryId(@Param("id") Long id, @Param("cid") Long cid);
+
+    @Query("select sc from parser_sub_category sc where sc.category.id in :ids")
+    List<Subcategory> findAllByCategoryIdIn(@Param("ids") List<Long> ids);
 }

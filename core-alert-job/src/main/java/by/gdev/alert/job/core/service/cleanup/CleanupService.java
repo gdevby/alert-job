@@ -23,6 +23,7 @@
     @RequiredArgsConstructor
     @Component
     @Slf4j
+    //Класс для очистки сайта или какой-либо сущности в core
     public class CleanupService {
 
         private final SourceSiteRepository sourceSiteRepository;
@@ -99,7 +100,6 @@
         }
 
         private ParserCategoryDTO findCategoryForSource(SourceSite source, Map<Long, ParserCategoryDTO> map) {
-
             // если есть подкатегория — она приоритетная
             if (source.getSiteSubCategory() != null) {
                 ParserCategoryDTO dto = map.get(source.getSiteSubCategory());
@@ -110,37 +110,7 @@
             return map.get(source.getSiteCategory());
         }
 
-        private List<ParserCategoryDTO> getUserCategories(
-                AppUser user,
-                Long siteId,
-                List<SourceSite> allSources,
-                Map<Long, ParserCategoryDTO> categoryMap
-        ) {
-            List<OrderModules> modules =
-                    orderModulesRepository.findAllByUserAndSite(user.getId(), siteId);
-
-            Set<Long> userSourceIds = new HashSet<>();
-
-            for (OrderModules module : modules) {
-                userSourceIds.addAll(moduleLookupService.getSourceIdsForModule(module.getId()));
-            }
-
-            List<ParserCategoryDTO> result = new ArrayList<>();
-
-            for (SourceSite source : allSources) {
-                if (userSourceIds.contains(source.getId())) {
-                    ParserCategoryDTO dto = findCategoryForSource(source, categoryMap);
-                    if (dto != null) {
-                        result.add(dto);
-                    }
-                }
-            }
-
-            return result;
-        }
-
         // ---------- DELETE BLOCK ----------
-
         private int deleteNegativeTitleLinks(Long sourceSiteId, String siteName) {
             try {
                 return jdbc.update("""
@@ -237,8 +207,44 @@
             ));
         }
 
-        // ---------- СБОР ДАННЫХ ПО МОДУЛЯМ ----------
+        public void deletePartForCategories(List<SourceSite> sourcesToDelete, String siteName) {
+            int deletedNegatives = 0;
+            int deletedUserFilterTitles = 0;
+            int deletedTitleWords = 0;
+            int deletedLinks = 0;
+            int deletedSites = 0;
 
+            for (SourceSite source : sourcesToDelete) {
+                Long sourceId = source.getId();
+                deletedNegatives += deleteNegativeTitleLinks(sourceId, siteName);
+                deletedUserFilterTitles += deleteUserFilterTitles(sourceId, siteName);
+                deletedTitleWords += deleteTitleWorld(sourceId, siteName);
+                deletedLinks += deleteOrderModuleSources(sourceId, siteName);
+
+                deletedSites += jdbc.update("""
+            DELETE FROM source_site
+            WHERE id = ?
+        """, sourceId);
+            }
+
+            log.info("""
+→ [CATEGORY_DELETE_STATS]
+NEGATIVE_LINKS   = %d
+POSITIVE_LINKS   = %d
+TITLE_WORDS      = %d
+MODULE_SOURCES   = %d
+SOURCE_SITES     = %d
+""".formatted(
+                    deletedNegatives,
+                    deletedUserFilterTitles,
+                    deletedTitleWords,
+                    deletedLinks,
+                    deletedSites
+            ));
+        }
+
+
+        // ---------- СБОР ДАННЫХ ПО МОДУЛЯМ ----------
         private List<UserCleanupData> collectUserCleanupData(Set<AppUser> users, List<Long> deletedWordIds,
                                                              Long siteId, List<SourceSite> sources, Map<Long, ParserCategoryDTO> categoryMap) {
 
@@ -288,7 +294,6 @@
                 }
                 result.add(new UserCleanupData(user, moduleDataList));
             }
-
             return result;
         }
 

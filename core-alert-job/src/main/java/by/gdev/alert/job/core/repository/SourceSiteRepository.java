@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -21,5 +22,10 @@ public interface SourceSiteRepository extends CrudRepository<SourceSite, Long> {
     Optional<SourceSite> findBySourceSubCategoryIsNull(Long siteSource, Long siteCategory);
 
     List<SourceSite> findAllBySiteSource(Long siteSource);
+
+    List<SourceSite> findBySiteSourceAndSiteCategoryIn(Long siteSource, Set<Long> categoryIds);
+
+    List<SourceSite> findBySiteSourceAndSiteSubCategoryIn(Long siteSource, Set<Long> subcategoryIds);
+
 
 }

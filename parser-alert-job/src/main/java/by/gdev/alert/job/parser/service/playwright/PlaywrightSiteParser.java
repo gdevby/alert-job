@@ -8,10 +8,10 @@ import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
-import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
+import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
@@ -23,10 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 
@@ -158,12 +155,11 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     @Override
     public List<OrderDTO> parse() {
-        Long siteId = getSiteName().getId();
-        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(siteId);
-        if (siteSourceJob != null) {
-            return getOrdersForPlayright(siteSourceJob);
+        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(getSiteName().getId());
+        if (siteSourceJob == null) {
+            return List.of();
         }
-        return List.of();
+        return getOrdersForPlayright(siteSourceJob);
     }
 
     public List<OrderDTO> getOrdersForPlayright(SiteSourceJob siteSourceJob) {
@@ -174,7 +170,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     List<Pair<Category, Subcategory>> getCategoriesPairListForJob(SiteSourceJob siteSourceJob){
         List<Pair<Category, Subcategory>> categoriesPairList = new ArrayList<>();
         siteSourceJob.getCategories().forEach(category -> {
-            List<Subcategory> siteSubCategories = category.getSubCategories();
+            Set<Subcategory> siteSubCategories = category.getSubCategories();
             if (category.isParse()) {
                 Pair<Category, Subcategory> categoryPair = new Pair<>(category, null);
                 categoriesPairList.add(categoryPair);

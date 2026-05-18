@@ -1,26 +1,34 @@
 package by.gdev.alert.job.parser.domain.db;
 
-import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderColumn;
+import jakarta.persistence.*;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Entity
-@EqualsAndHashCode(callSuper = true)
 public class SiteSourceJob extends BasicId {
 
-	private String name;
-	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "siteSourceJob")
-	@OrderColumn(name = "POSITION")
-	private List<Category> categories;
-	private String parsedURI;
-	private boolean parse;
-	private boolean active;
+    private String name;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "siteSourceJob")
+    private Set<Category> categories;
+    private String parsedURI;
+    private boolean parse;
+    private boolean active;
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SiteSourceJob)) return false;
+        return Objects.equals(getId(), ((SiteSourceJob) o).getId());
+    }
 }

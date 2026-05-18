@@ -17,6 +17,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Slf4j
 public abstract class AbsctractSiteParser implements SiteParser{
@@ -49,7 +50,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 						// iterate over each category from this collection
 						.forEach(category -> {
 
-							List<Subcategory> siteSubCategories = category.getSubCategories();
+							Set<Subcategory> siteSubCategories = category.getSubCategories();
 							// checking if a subcategory exists for this category
 							// category does't have a subcategory
 							if (category.isParse()) {
