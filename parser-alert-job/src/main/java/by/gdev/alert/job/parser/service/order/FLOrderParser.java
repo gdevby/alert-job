@@ -58,6 +58,12 @@ public class FLOrderParser extends AbsctractSiteParser {
     protected List<OrderDTO> mapItems(String rssURI, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		if (!active)
 			return new ArrayList<>();
+
+        if (rssURI == null || rssURI.isBlank()) {
+            log.warn("{}: пустой RSS URI для категории {}", getSiteName(), category.getNativeLocName());
+            return List.of();
+        }
+
         JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
