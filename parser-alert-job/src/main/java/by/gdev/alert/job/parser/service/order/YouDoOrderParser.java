@@ -76,7 +76,9 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             }
         }
         finally {
-            closeResources(session.getPage(), session.getContext(), session.getBrowser(), session.getPlaywright());
+            if (session != null){
+                closeResources(session.getPage(), session.getContext(), session.getBrowser(), session.getPlaywright());
+            }
         }
         return orders;
     }
@@ -94,7 +96,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subcategory != null ? subcategory.getNativeLocName() : "", getSiteName());
             return List.of();
         }
-        if (debug){
+        if (debug) {
             log.debug("mapPlaywrightItems: After click category {}, {}, {}", getSiteName(), category.getNativeLocName(), subcategory.getNativeLocName());
         }
         // Задержка
@@ -226,7 +228,11 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
 
     public boolean clickCategoryWithRetry(Page page, Category category, Subcategory subcategory) {
         if (category.getNativeLocName().equals(ALL_CATEGORIES)){
-            return true;
+            // Кликаем "Все категории"
+            clickCategory(page, ALL_CATEGORIES);
+            page.waitForTimeout(getCategoryClickRetryAttemptsDelay());
+            // Проверяем, что нужный чекбокс выбран
+            return isCategoryChecked(page, category, subcategory);
         }
 
         String name = subcategory != null ? subcategory.getNativeLocName() : category.getNativeLocName();
@@ -238,7 +244,7 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             page.waitForTimeout(getCategoryClickRetryAttemptsDelay());
             // Проверяем, что нужный чекбокс выбран
             boolean checked = isCategoryChecked(page, category, subcategory);
-            // Снимок DOM после клика
+            //Снимок DOM после клика
             String afterHtml = page.locator("ul.Categories_container__9z_KX").innerHTML();
             if (checked && !beforeHtml.equals(afterHtml)) {
                 log.debug("Категория '{}' выбрана успешно (попытка {})", name, attempt);
@@ -251,12 +257,28 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     }
 
     private boolean isCategoryChecked(Page page, Category category, Subcategory subcategory) {
-        String name = subcategory != null ? subcategory.getNativeLocName() : category.getNativeLocName();
-        Locator checkbox = page.locator(
-                "//label[contains(@class,'Checkbox_label')][contains(.,'" + name + "')]/../input"
+        // Если проверяем категорию
+        if (subcategory == null) {
+            Locator categoryLabel = getCategoryLabel(page, category.getNativeLocName());
+            Locator checkbox = categoryLabel.locator("..").locator("input[type='checkbox']");
+            return checkbox.isChecked();
+        }
+
+        // Если проверяем субкатегорию
+        Locator subLabel = findSubcategoryLabel(
+                page,
+                category.getNativeLocName(),
+                subcategory.getNativeLocName()
         );
+
+        if (subLabel == null) {
+            return false;
+        }
+
+        Locator checkbox = subLabel.locator("..").locator("input[type='checkbox']");
         return checkbox.isChecked();
     }
+
     private void clickCategory(Page page, Category category, Subcategory subCategory){
         // Кликаем категорию
         if (subCategory != null) {
@@ -301,7 +323,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
     private void forceUncheckAllCategories(Page page) {
         Locator inputs = page.locator("ul.Categories_container__9z_KX input[type='checkbox']");
         int count = inputs.count();
-
         for (int i = 0; i < count; i++) {
             Locator input = inputs.nth(i);
 
@@ -312,7 +333,6 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
                 page.waitForTimeout(200);
             }
         }
-
         page.waitForTimeout(300);
     }
 
@@ -328,6 +348,28 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         return true;
     }
 
+    private Locator findSubcategoryLabel(Page page, String categoryName, String subName) {
+        Locator categoryBlock = getCategoryBlock(page, categoryName);
+        Locator subLabel = categoryBlock
+                .locator("label.Checkbox_label__uNY3B")
+                .filter(new Locator.FilterOptions().setHasText(subName));
+        if (subLabel.count() == 0) {
+            return null;
+        }
+        return subLabel;
+    }
+
+    private Locator getCategoryLabel(Page page, String categoryName) {
+        return page.locator(
+                "//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]"
+        );
+    }
+
+    private Locator getCategoryBlock(Page page, String categoryName) {
+        Locator label = getCategoryLabel(page, categoryName);
+        return label.locator("xpath=ancestor::li[1]");
+    }
+
     private void clickCategory(Page page, String categoryName) {
         // Ждём контейнер категорий
         page.waitForSelector("ul[class*='Categories_container']",
@@ -337,11 +379,8 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
         }
 
         // Ищем КЛИКАБЕЛЬНЫЙ элемент категории — label
-        Locator category = page.locator(
-                "//label[contains(@class,'Checkbox_label')][contains(.,'" + categoryName + "')]"
-        );
+        Locator category = getCategoryLabel(page, categoryName);
         Locator categoryInput = category.locator("..").locator("input[type='checkbox']");
-
         if (debug){
             log.debug("clickCategory: After find Checkbox_label {}", getSiteName());
         }
@@ -407,9 +446,13 @@ public class YouDoOrderParser extends PlaywrightSiteParser {
             page.waitForTimeout(500); //как раскрывается
         }
 
-        Locator sub = categoryBlock
+        /*Locator sub = categoryBlock
                 .locator("label.Checkbox_label__uNY3B")
-                .filter(new Locator.FilterOptions().setHasText(subCategoryName));
+                .filter(new Locator.FilterOptions().setHasText(subCategoryName));*/
+        Locator sub = findSubcategoryLabel(page, categoryName, subCategoryName);
+        if (sub == null){
+            return;
+        }
         sub.waitFor(new Locator.WaitForOptions()
                 .setState(WaitForSelectorState.VISIBLE)
                 .setTimeout(15000));
