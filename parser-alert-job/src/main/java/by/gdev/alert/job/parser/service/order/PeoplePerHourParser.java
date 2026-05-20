@@ -15,6 +15,7 @@ import by.gdev.common.model.SiteName;
 import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -76,8 +77,15 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
         Document document = null;
         try {
             document = Jsoup.connect(uri).get();
+        } catch (HttpStatusException e) {
+            if (e.getStatusCode() == 404) {
+                log.warn("404 Not Found for URL {}", uri);
+                return List.of();
+            }
+            log.error("HTTP error {} for URL {}", e.getStatusCode(), uri);
+            return List.of();
         } catch (IOException e) {
-            log.error("Cannot parse {}", uri);
+            log.error("IO error while parsing {}: {}", uri, e.getMessage());
             return List.of();
         }
 

@@ -4,14 +4,13 @@ package by.gdev.alert.job.parser.service.order;
 import by.gdev.alert.job.parser.domain.currency.Currency;
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
-import by.gdev.alert.job.parser.util.Pair;
-
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
+import by.gdev.common.model.SiteName;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +35,11 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
     @Value("${parser.headless.freelancer.com}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
+    }
+
+    @Value("${freelancer.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     @Override
@@ -82,15 +86,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-
-        orders.forEach(order ->
-                log.info("*** order: {} , result {}",
-                        order.getTitle(),
-                        getParserService().isExistsOrder(category, subCategory, order.getLink()))
-        );
-
-        return orders;
+        return getOrdersData(parsedOrders, category, subCategory);
     }
 
 
@@ -132,7 +128,7 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
             return 0;
 
         } catch (Exception e) {
-            log.error("{}: failed to read total-results", getSiteName(), e);
+            log.warn("{}: failed to read total-results", getSiteName(), e);
             return 0;
         }
     }
@@ -150,7 +146,12 @@ public class FreelancerOrderParser extends PlaywrightSiteParser {
         if(category == null || subCategory == null) return orders;
         final Optional<SiteSourceJob> siteJobOptional = getSiteSourceJobRepository().findById(siteSourceJobId);
         String siteUrl = siteJobOptional.map(SiteSourceJob::getParsedURI).orElse(null);
-        clickCategory(page, siteUrl, pair.getLeft(), pair.getRight());
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, siteUrl, category, subCategory));
+        if (!isCategoryChanged) {
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         if (hasZeroResults(page)) return orders;

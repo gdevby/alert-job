@@ -8,10 +8,10 @@ import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
-import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -46,26 +46,17 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
     public void clickCategory(Page page, Category category) {
         String categoryName = category.getNativeLocName();
-
         // ищем span с нужным текстом
         Locator categorySpan = page.locator("ul.tree li.tree-item span.tree-item-title")
                 .filter(new Locator.FilterOptions().setHasText(categoryName));
-
         if (categorySpan.count() == 0) {
             log.warn("Категория '{}' не найдена на странице FreelancehuntOrderParser", categoryName);
             return;
         }
-
         // поднимаемся к родительскому <a> и кликаем
         Locator categoryLink = categorySpan.first().locator("xpath=..");
         categoryLink.click(new Locator.ClickOptions().setTimeout(30000));
-
-        // ждём загрузки страницы после клика
-        //page.waitForLoadState(LoadState.NETWORKIDLE);
-
         page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        page.locator("div.job-list-item").first().waitFor();
-
     }
 
 	private Order parseOrder(Locator item, Long siteSourceJobId, Category category, Subcategory subCategory) {
@@ -202,20 +193,28 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
     }
 
-    private void tasksLoading(Page page){
-        page.waitForSelector("div.job-list-item", new Page.WaitForSelectorOptions().setTimeout(30000));
+    private boolean tasksLoading(Page page, boolean reset){
+        page.waitForTimeout(2000);
+        if (!reset && isEmptyTaskList(page)){
+            return true;
+        }
+        page.waitForSelector("div.job-list-item",
+                new Page.WaitForSelectorOptions().setTimeout(5000));
+        return false;
     }
 
     private void resetFilter(Page page) {
         firstLoad(page);
-        tasksLoading(page);
+        tasksLoading(page, true);
     }
 
     private List<OrderDTO> tasksParsing(Page page, Long siteSourceJobId, Category category, Subcategory subCategory){
-        Locator elementsOrders = page.locator("div.job-list-item");
-        elementsOrders.first().waitFor();
-        List<Locator> items = elementsOrders.all();
-        List<Order> parsedOrders = items
+        Locator items = page.locator("div.job-list-item");
+
+        if (items.count() == 0) {
+            return List.of();
+        }
+        List<Order> parsedOrders = items.all()
                 .stream()
                 .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
                 .toList();
@@ -227,20 +226,42 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
         Category category = pair.getLeft();
         Subcategory subcategory = pair.getRight();
-        clickCategory(page, pair.getLeft());
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, category));
+        if (!isCategoryChanged) {
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subcategory != null ? subcategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
-        tasksLoading(page);
+        boolean isEmptyTaskList = tasksLoading(page, false);
         // Задержка
         page.waitForTimeout(500);
-        List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subcategory);
+        List<OrderDTO> orders;
+        if (!isEmptyTaskList){
+            orders = tasksParsing(page, siteSourceJobId, category, subcategory);
+        }
+        else {
+            log.debug("Список задач выбранной категории {} для {} пустой",category.getNativeLocName(), getSiteName());
+            orders = List.of();
+        }
         // Задержка
         page.waitForTimeout(500);
         resetFilter(page);
         return orders;
     }
 
+    private boolean isEmptyTaskList(Page page) {
+        Locator counter = page.locator("span.label.label-blue");
+        if (counter.count() == 0) {
+            return false;
+        }
+        String text = counter.first().textContent().trim();
+        return text.equals("0");
+    }
+
     @Override
+    @Deprecated
     protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
         Playwright playwright = null;
         Browser browser = null;
@@ -254,8 +275,16 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
             page = context.newPage();
             firstLoad(page);
             clickCategory(page, category);
-            tasksLoading(page);
-            List<OrderDTO> orders = tasksParsing(page, siteSourceJobId, category, subCategory);
+            boolean isEmptyTaskList = tasksLoading(page, false);
+            List<OrderDTO> orders;
+            if (!isEmptyTaskList) {
+                orders = tasksParsing(page, siteSourceJobId, category, subCategory);
+            }
+            else {
+                orders = List.of();
+                log.debug("Список задач выбранной категории {} и субкатегории {} для {} пустой",category.getNativeLocName(),
+                        subCategory.getNativeLocName(), getSiteName());
+            }
             resetFilter(page);
             return orders;
         }
@@ -263,39 +292,4 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
             closeResources(page, context, browser, playwright);
         }
     }
-
-    /*@Override
-    protected List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        Playwright playwright = null;
-        Browser browser = null;
-        BrowserContext context = null;
-        Page page = null;
-
-        try {
-            playwright = createPlaywright();
-            ProxyCredentials proxy = getProxyWithRetry(5, 2000);
-            browser = createBrowser(playwright, proxy, HEADLESS, freelancehuntProxyActive);
-            context = createBrowserContext(browser, null, false);
-            page = context.newPage();
-            page.navigate(JOBS_LINK, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
-
-            clickCategory(page, category);
-
-            page.waitForSelector("div.job-list-item", new Page.WaitForSelectorOptions().setTimeout(30000));
-
-            Locator elementsOrders = page.locator("div.job-list-item");
-
-            //System.out.println("Found Freelancehunt orders: " + elementsOrders.count());
-            List<Order> parsedOrders = elementsOrders.all()
-                    .stream()
-                    .map(e -> parseOrder(e, siteSourceJobId, category, subCategory))
-                    .toList();
-
-            List<OrderDTO> orders = getOrdersData(parsedOrders, category, subCategory);
-            return orders;
-        }
-        finally {
-            closeResources(page, context, browser, playwright);
-        }
-    }*/
 }

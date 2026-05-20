@@ -11,13 +11,13 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Slf4j
 public abstract class AbsctractSiteParser implements SiteParser{
@@ -35,7 +35,6 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
 
-	@Transactional(timeout = 2000)
 	public List<OrderDTO> parse(){
 		return getOrders(getSiteName().getId());
 	};
@@ -45,14 +44,13 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		List<OrderDTO> orders = new ArrayList<>();
 		for (int i = 0; i < ATTEMPTS_COUNT; i++) {
 			try {
-				SiteSourceJob siteSourceJob = siteSourceJobRepository.findById(siteId).get();
-				//log.trace("parsed {}", siteSourceJob.getName());
+                SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(siteId);
 				siteSourceJob.getCategories().stream()
 						// parse only categories that can parse=true
 						// iterate over each category from this collection
 						.forEach(category -> {
 
-							List<Subcategory> siteSubCategories = category.getSubCategories();
+							Set<Subcategory> siteSubCategories = category.getSubCategories();
 							// checking if a subcategory exists for this category
 							// category does't have a subcategory
 							if (category.isParse()) {

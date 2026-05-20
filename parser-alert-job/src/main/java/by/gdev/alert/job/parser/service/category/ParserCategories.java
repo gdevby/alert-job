@@ -15,11 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -80,7 +76,7 @@ public class ParserCategories {
         }
         Category sc = op.get();
         if (Objects.isNull(sc.getSubCategories())) {
-            sc.setSubCategories(new ArrayList<>());
+            sc.setSubCategories(new HashSet<>());
         }
         subCategories.forEach(subCategory -> {
             Optional<Subcategory> sscOp = sc.getSubCategories().stream()

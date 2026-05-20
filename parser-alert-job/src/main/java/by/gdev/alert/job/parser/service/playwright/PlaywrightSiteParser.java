@@ -8,12 +8,13 @@ import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
 import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
-import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
+import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +23,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 
@@ -41,8 +39,21 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     @Value("${parser.site.retry.attempts:3}")
     private int retryAttempts;
 
+    @Value("${parser.category-click-retry-attempts:3}")
+    @Getter
+    private int categoryClickRetryAttempts;
+
+    @Value("${parser.category-click-retry-attempts-delay:500}")
+    @Getter
+    private int categoryClickRetryAttemptsDelay;
+
     @Value("${parser.site.retry.delay:2000}")
     private long retryDelayMs;
+
+    @Value("${parser.retry.ignored-errors:}")
+    private String ignoredErrorsRaw;
+
+    private List<String> ignoredErrors;
 
     @Getter
     @Autowired
@@ -70,6 +81,21 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     protected boolean debug;
 
     protected boolean headless;
+
+
+    @PostConstruct
+    private void initIgnoredErrors() {
+        if (ignoredErrorsRaw == null || ignoredErrorsRaw.isBlank()) {
+            ignoredErrors = List.of();
+            return;
+        }
+
+        ignoredErrors = Arrays.stream(ignoredErrorsRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        log.debug("Игнорируемые ошибки Playwright: {}", ignoredErrors);
+    }
 
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -128,15 +154,13 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return new PlaywrightSession(playwright, browser, context, page, proxy);
     }
 
-    @Transactional(timeout = 3600)
     @Override
     public List<OrderDTO> parse() {
-        Long siteId = getSiteName().getId();
-        SiteSourceJob siteSourceJob = getSiteSourceJobRepository().findById(siteId).orElse(null);
-        if (siteSourceJob != null) {
-            return getOrdersForPlayright(siteSourceJob);
+        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(getSiteName().getId());
+        if (siteSourceJob == null) {
+            return List.of();
         }
-        return List.of();
+        return getOrdersForPlayright(siteSourceJob);
     }
 
     public List<OrderDTO> getOrdersForPlayright(SiteSourceJob siteSourceJob) {
@@ -147,7 +171,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     List<Pair<Category, Subcategory>> getCategoriesPairListForJob(SiteSourceJob siteSourceJob){
         List<Pair<Category, Subcategory>> categoriesPairList = new ArrayList<>();
         siteSourceJob.getCategories().forEach(category -> {
-            List<Subcategory> siteSubCategories = category.getSubCategories();
+            Set<Subcategory> siteSubCategories = category.getSubCategories();
             if (category.isParse()) {
                 Pair<Category, Subcategory> categoryPair = new Pair<>(category, null);
                 categoriesPairList.add(categoryPair);
@@ -164,53 +188,56 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     private List<OrderDTO> executeWithRetry(Supplier<List<OrderDTO>> operation,
                                             String operationDescription) {
-        Exception lastError = null;
+        Exception lastIgnored = null;
+        Exception lastNonIgnored = null;
+
         for (int attempt = 1; attempt <= retryAttempts; attempt++) {
             try {
-                log.info("Попытка {}/{} {}",
+                log.debug("Попытка {}/{} {}",
                         attempt, retryAttempts, operationDescription);
-
-                List<OrderDTO> result = operation.get();
-                return result;
-
+                return operation.get();
             } catch (PlaywrightException e) {
-                if (e.getMessage() != null &&
-                        (e.getMessage().contains("Timeout")
-                                || e.getMessage().contains("Execution context was destroyed")
-                                || e.getMessage().contains("Most likely because of a navigation"))) {
-                    if (debug){
-                        log.warn("Timeout playwright {} {}", getSiteName(), e.getMessage());
-                    }
+                boolean isIgnored = ignoredErrors.stream()
+                        .anyMatch(err -> e.getMessage() != null && e.getMessage().contains(err));
+
+                if (isIgnored) {
+                    lastIgnored = e;
                     continue;
                 }
-                lastError = e;
+
+                lastNonIgnored = e;
                 log.error("Playwright ошибка на попытке {} для {}: {}",
                         attempt, getSiteName(), e.getMessage());
             } catch (Exception e) {
-                lastError = e;
+                lastNonIgnored = e;
                 log.error("Неожиданная ошибка на попытке {} для {}: {}",
                         attempt, getSiteName(), e.getMessage());
             }
-
             // Задержка между попытками
             if (attempt < retryAttempts) {
                 try {
-                    Thread.sleep(retryDelayMs);
+                    long delay = retryDelayMs * (long) Math.pow(2, attempt - 1);
+                    Thread.sleep(delay);
                 } catch (InterruptedException ignored) {
                 }
             }
         }
 
-        if (lastError == null) {
-            return List.of();
+        if (lastNonIgnored != null) {
+            log.error("Все {} попытки {} провалились. Последняя ошибка: {}",
+                    retryAttempts, operationDescription, lastNonIgnored.getMessage());
+            throw new RuntimeException("Все попытки " + operationDescription + " провалились", lastNonIgnored);
         }
 
-        log.error("Все {} попытки {} провалились. Последняя ошибка: {}",
-                retryAttempts, operationDescription, lastError.getMessage());
+        if (lastIgnored != null) {
+            log.warn("Все {} попытки {} завершились предупреждениями. Последнее: {}",
+                    retryAttempts, operationDescription, lastIgnored.getMessage());;
+        }
+
         return List.of();
     }
 
-    // Теперь создаем две версии метода
+    // Создаем две версии метода mapItemsWithRetry
     public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
                                             Long siteSourceJobId, Category category, Subcategory subCategory) {
 
@@ -274,9 +301,10 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 .filter(Order::isValidOrder)
                 .peek(order -> {
                     if (debug) {
-                        log.info("*** order: {} , result {}",
+                        log.info("*** order: site {},  title {} , link {}",
+                                getSiteName(),
                                 order.getTitle(),
-                                getParserService().isExistsOrder(category, subCategory, order.getLink()));
+                                order.getLink());
                     }
                 })
                 .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
@@ -285,7 +313,31 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
                 .toList();
     }
 
+    @FunctionalInterface
+    public interface ClickAction {
+        void click();
+    }
 
+    public boolean clickWithRetry(Page page, String name, ClickAction action) {
+        for (int attempt = 1; attempt <= categoryClickRetryAttempts; attempt++) {
+            String beforeUrl = page.url();
+            try {
+                action.click();
+            } catch (Exception e) {
+                log.warn("Ошибка при клике по '{}', попытка {}", name, attempt, e);
+            }
+            page.waitForTimeout(categoryClickRetryAttemptsDelay);
+            String afterUrl = page.url();
+            if (!afterUrl.equals(beforeUrl)) {
+                log.debug("'{}' выбран успешно (попытка {})", name, attempt);
+                return true;
+            }
+            log.warn("URL не изменился после клика по '{}' (попытка {})", name, attempt);
+        }
+        log.warn("'{}' НЕ выбран после 3 попыток", name);
+        return false;
+    }
+    
     protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList);
 
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page);

@@ -97,6 +97,8 @@ public class MailService {
             case ORDER -> "Оповещение о новых заказах";
             case CLEANUP -> "Уведомление об очистке сайта";
             case TEST -> "Тестовое сообщение";
+            case CATEGORY_CHANGE_ADMIN -> "Администратор: уведомление об изменении категорий на сайтах";
+            case CATEGORY_CHANGE_USER -> "Уведомление об изменении категорий на сайтах";
         };
     }
 }

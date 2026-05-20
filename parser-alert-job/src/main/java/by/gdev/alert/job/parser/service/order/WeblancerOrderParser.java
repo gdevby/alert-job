@@ -2,10 +2,10 @@ package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
-import by.gdev.alert.job.parser.util.Pair;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +35,11 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
     @Value("${parser.headless.weblancer.net}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
+    }
+
+    @Value("${weblancer.debug:false}")
+    private void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     @Override
@@ -80,9 +85,12 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
 
         Category category = pair.getLeft();
         Subcategory subCategory = pair.getRight();
-
-        clickCategory(page, category, subCategory);
-
+        boolean isCategoryChanged = clickWithRetry(page, category.getNativeLocName(),
+                () -> clickCategory(page, category, subCategory));
+        if (!isCategoryChanged) {
+            log.warn("Категория {} и субкатегория {} НЕ выбрана для сайта {}", category.getNativeLocName(), subCategory != null ? subCategory.getNativeLocName() : "", getSiteName());
+            return List.of();
+        }
         page.waitForTimeout(500);
         return parseOrders(page, siteSourceJobId, category, subCategory);
     }
@@ -103,12 +111,9 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
             ProxyCredentials proxy = weblancerProxyActive ? getProxyWithRetry(5, 2000) : null;
             browser = createBrowser(playwright, proxy, headless, weblancerProxyActive);
             context = createBrowserContext(browser, proxy, weblancerProxyActive);
-
             page = context.newPage();
             clickCategory(page, category, subCategory);
-
             return parseOrders(page, siteSourceJobId, category, subCategory);
-
         } finally {
             closeResources(page, context, browser, playwright);
         }
@@ -117,7 +122,6 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
     private void clickCategory(Page page, Category category, Subcategory subCategory) {
         String url = (subCategory != null) ? subCategory.getLink() : category.getLink();
         log.debug("[{}] Navigating to {}", getSiteName(), url);
-
         page.navigate(url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
         page.waitForTimeout(500);
     }
