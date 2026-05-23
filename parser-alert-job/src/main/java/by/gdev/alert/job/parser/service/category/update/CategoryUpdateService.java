@@ -185,8 +185,11 @@ public class CategoryUpdateService {
                         s.getSubcategory().getName().isBlank()
         );
 
+        if (!diff.isEmpty()) {
+            categoryDiffApplyService.applyDiff(job, diff);
+        }
+        categoryDiffApplyService.applyOrder(job, parsedTree);
         if (diff.isEmpty()) return null;
-        categoryDiffApplyService.applyDiff(job, diff);
         CategoryDiffDTO diffDto = buildCoreDto(diff);
         return new CategoryChangeDTO(job.getId(), job.getName(), diffDto);
     }

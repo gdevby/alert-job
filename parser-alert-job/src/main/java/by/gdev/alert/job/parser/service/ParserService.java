@@ -24,11 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @Service
@@ -53,6 +49,10 @@ public class ParserService {
 	public List<CategoryDTO> getCategories(Long id) {
 		List<CategoryDTO> list = categoryRepository.findAllBySourceIdAndSourceActive(id).stream()
 				.map(el -> mapper.map(el, CategoryDTO.class))
+                .sorted(Comparator.comparing(
+                        CategoryDTO::getOrder,
+                        Comparator.nullsFirst(Integer::compareTo)
+                ))
 				.toList();
 		if (list.isEmpty()) {
 			throw new ResourceNotFoundException("not found category with source id " + id);
