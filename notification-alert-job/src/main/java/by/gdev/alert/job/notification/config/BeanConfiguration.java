@@ -3,7 +3,6 @@ package by.gdev.alert.job.notification.config;
 import java.util.concurrent.TimeUnit;
 
 import org.simplejavamail.api.mailer.Mailer;
-import org.simplejavamail.api.mailer.config.TransportStrategy;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

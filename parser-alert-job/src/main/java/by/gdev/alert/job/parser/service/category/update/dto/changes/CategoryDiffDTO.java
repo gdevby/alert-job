@@ -4,7 +4,6 @@ import by.gdev.alert.job.parser.service.category.update.dto.tree.CategoryDTO;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class CategoryDiffDTO {
