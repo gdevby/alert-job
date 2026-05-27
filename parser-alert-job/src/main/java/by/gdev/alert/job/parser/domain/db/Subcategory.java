@@ -1,9 +1,6 @@
 package by.gdev.alert.job.parser.domain.db;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 
 import lombok.Data;
 
@@ -17,7 +14,11 @@ public class Subcategory extends BasicId {
 	private String link;
 	private boolean parse;
 	private String nativeLocName;
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @Column(name = "order_index")
+    private Integer order;
+
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private Category category;
 
     @Override

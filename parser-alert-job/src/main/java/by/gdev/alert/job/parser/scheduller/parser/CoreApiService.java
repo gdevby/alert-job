@@ -34,22 +34,6 @@ public class CoreApiService {
     @Value("${core.api.batch-size:100}")
     private int batchSize;
 
-    public void sendOrders(List<OrderDTO> orders, SiteName siteName) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<List<OrderDTO>> request = new HttpEntity<>(orders, headers);
-            String urlWithParam = coreModuleUrl + ordersApiUrl + "?site=" + siteName.name();
-            metricsService.save(siteName, orders.size());
-            statisticsService.save(siteName, orders.size());
-            log.debug("Отправка заказов в core... для {}", siteName);
-            restTemplate.exchange(urlWithParam, HttpMethod.POST, request, Void.class);
-            log.debug("Заказы успешно отправлены в core для сайта {}", siteName);
-        } catch (Exception e) {
-            log.error("Ошибка при отправке заказов в core API для сайта {}: {}", siteName, e.getMessage(), e);
-        }
-    }
-
     public void sendOrdersInBatches(List<OrderDTO> orders, SiteName siteName) {
         for (int i = 0; i < orders.size(); i += batchSize) {
             List<OrderDTO> batch = orders.subList(i, Math.min(i + batchSize, orders.size()));

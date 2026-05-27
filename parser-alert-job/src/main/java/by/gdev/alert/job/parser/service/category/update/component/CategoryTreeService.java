@@ -29,18 +29,17 @@ public class CategoryTreeService {
 
         List<Category> categories =
                 categoryRepository.findAllWithSubcategoriesBySourceId(job.getId());
-
         SiteDTO site = new SiteDTO();
         site.setId(job.getId());
         site.setName(job.getName());
 
-        // Имя категории → CategoryDTO
         Map<String, CategoryDTO> categoryMap = new HashMap<>();
-
         for (Category c : categories) {
+            String catName = (c.getNativeLocName() != null && !c.getNativeLocName().isBlank())
+                    ? c.getNativeLocName()
+                    : c.getName();
 
-            String catName = c.getNativeLocName();
-
+            if (catName == null || catName.isBlank()) continue;
             CategoryDTO catDto = categoryMap.computeIfAbsent(catName, n -> {
                 CategoryDTO dto = new CategoryDTO();
                 dto.setId(c.getId());
@@ -54,9 +53,12 @@ public class CategoryTreeService {
 
                     if (s == null) continue;
                     if (s.getId() == null) continue;
-                    if (s.getNativeLocName() == null || s.getNativeLocName().isBlank()) continue;
 
-                    String subName = s.getNativeLocName();
+                    String subName = (s.getNativeLocName() != null && !s.getNativeLocName().isBlank())
+                            ? s.getNativeLocName()
+                            : s.getName();
+
+                    if (subName == null || subName.isBlank()) continue;
 
                     boolean exists = catDto.getSubcategories().stream()
                             .anyMatch(x -> x.getName().equals(subName));
@@ -75,22 +77,18 @@ public class CategoryTreeService {
         return site;
     }
 
-
     public SiteDTO buildParsedTree(SiteSourceJob job, Map<ParsedCategory, List<ParsedCategory>> parsed) {
         SiteDTO site = new SiteDTO();
         site.setId(job.getId());
         site.setName(job.getName());
-
-        // Имя категории → CategoryDTO
-        Map<String, CategoryDTO> categoryMap = new HashMap<>();
-
+        Map<String, CategoryDTO> categoryMap = new LinkedHashMap<>();
         for (Map.Entry<ParsedCategory, List<ParsedCategory>> entry : parsed.entrySet()) {
-
             ParsedCategory parsedCat = entry.getKey();
             List<ParsedCategory> parsedSubs = entry.getValue();
-
-            String catName = parsedCat.translatedName();
-
+            String catName = (parsedCat.translatedName() != null && !parsedCat.translatedName().isBlank())
+                    ? parsedCat.translatedName()
+                    : parsedCat.name();
+            if (catName == null || catName.isBlank()) continue;
             CategoryDTO catDto = categoryMap.computeIfAbsent(catName, n -> {
                 CategoryDTO dto = new CategoryDTO();
                 dto.setName(n);
@@ -99,12 +97,12 @@ public class CategoryTreeService {
             });
 
             for (ParsedCategory sub : parsedSubs) {
-                String subName = sub.translatedName();
+                String subName = (sub.translatedName() != null && !sub.translatedName().isBlank())
+                        ? sub.translatedName()
+                        : sub.name();
                 if (subName == null || subName.isBlank()) continue;
-
                 boolean exists = catDto.getSubcategories().stream()
                         .anyMatch(x -> x.getName().equals(subName));
-
                 if (!exists) {
                     SubcategoryDTO sd = new SubcategoryDTO();
                     sd.setName(subName);
@@ -112,7 +110,6 @@ public class CategoryTreeService {
                 }
             }
         }
-
         site.setCategories(new ArrayList<>(categoryMap.values()));
         return site;
     }
@@ -155,7 +152,7 @@ public class CategoryTreeService {
                     if (sub.getName() == null || sub.getName().isBlank()) continue;
                     diff.getNewSubcategories().add(
                             new CategoryDiffResult.SubcategoryWithParentDTO(
-                                    null,         // parentId = null - новая категория
+                                    null,                 // parentId = null - новая категория
                                     parsedCat.getName(),  // имя новой категории
                                     sub
                             )
@@ -216,56 +213,40 @@ public class CategoryTreeService {
 
     private CategoryDiffResult compareMoved(SiteDTO parsedTree, SiteDTO dbTree) {
         CategoryDiffResult diff = new CategoryDiffResult();
-
-        Map<String, String> dbParent = new HashMap<>();
-        Map<String, SubcategoryDTO> dbSubsByName = new HashMap<>();
+        Map<Long, String> dbParent = new HashMap<>();
+        Map<Long, SubcategoryDTO> dbSubs = new HashMap<>();
 
         for (CategoryDTO dbCat : dbTree.getCategories()) {
             for (SubcategoryDTO sub : dbCat.getSubcategories()) {
-                dbParent.put(sub.getName(), dbCat.getName());
-                dbSubsByName.put(sub.getName(), sub);
+                if (sub.getId() == null) continue;
+                dbParent.put(sub.getId(), dbCat.getName());
+                dbSubs.put(sub.getId(), sub);
             }
         }
-
-        Map<String, String> parsedParent = new HashMap<>();
-
+        Map<Long, String> parsedParent = new HashMap<>();
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
             for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
-                parsedParent.put(sub.getName(), parsedCat.getName());
+                if (sub.getId() == null) continue; // новые — пропускаем
+                parsedParent.put(sub.getId(), parsedCat.getName());
             }
         }
+        for (Long subId : parsedParent.keySet()) {
+            String oldParent = dbParent.get(subId);
+            String newParent = parsedParent.get(subId);
 
-        Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
-                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
-
-        Map<String, CategoryDTO> parsedByName = parsedTree.getCategories().stream()
-                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
-
-        for (String subName : parsedParent.keySet()) {
-
-            SubcategoryDTO oldSub = dbSubsByName.get(subName);
-
-            if (oldSub == null) continue;
-            if (oldSub.getId() == null) continue;
-
-            String oldParentName = dbParent.get(subName);
-            String newParentName = parsedParent.get(subName);
-
-            if (oldParentName == null || oldParentName.equals(newParentName)) continue;
-
-            CategoryDTO oldParent = dbByName.get(oldParentName);
-            CategoryDTO newParent = parsedByName.get(newParentName);
+            if (oldParent == null) continue;
+            if (oldParent.equals(newParent)) continue;
 
             diff.getMovedSubcategories().add(
                     new CategoryDiffResult.SubcategoryMoveDTO(
-                            oldParent.getId(), oldParent.getName(),
-                            newParent != null ? newParent.getId() : null,
-                            newParentName,
-                            oldSub
+                            null, oldParent,
+                            null, newParent,
+                            dbSubs.get(subId)
                     )
             );
         }
         return diff;
     }
+
 }
 
