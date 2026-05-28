@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.proxy.service;
 
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
-import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

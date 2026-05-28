@@ -1,8 +1,9 @@
 package by.gdev.alert.job.parser.proxy.service.planner;
 
-import by.gdev.alert.job.parser.proxy.db.ProxyState;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
-import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
+
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.model.proxy.ProxyState;
+import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

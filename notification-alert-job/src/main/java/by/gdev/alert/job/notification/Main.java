@@ -3,7 +3,7 @@ package by.gdev.alert.job.notification;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "by.gdev")
 public class Main {
 
 	public static void main(String[] args) {

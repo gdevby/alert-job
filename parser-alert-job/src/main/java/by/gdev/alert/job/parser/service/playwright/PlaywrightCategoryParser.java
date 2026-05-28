@@ -4,7 +4,8 @@ import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.service.Parser;
 import by.gdev.alert.job.parser.service.category.ParsedCategory;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,11 +38,11 @@ public abstract class PlaywrightCategoryParser implements Parser {
     }
 
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
+        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName().name());
     }
 
     public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
+        playwrightManager.closeResources(page, context , browser, playwright, getSiteName().name());
     }
 
     public Playwright createPlaywright() {
@@ -49,7 +50,7 @@ public abstract class PlaywrightCategoryParser implements Parser {
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
+        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName().name());
     }
 
     public Map<ParsedCategory, List<ParsedCategory>> parseWithRetry(SiteSourceJob job) {
