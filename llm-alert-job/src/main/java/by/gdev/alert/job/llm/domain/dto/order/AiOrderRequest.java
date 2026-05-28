@@ -8,5 +8,7 @@ import java.util.List;
 public class AiOrderRequest {
     private AiAppUserDTO user;
     private AiOrderModulesDTO module;
+    private Long credentialId;
+    private Long templateId;
     private List<OrderDTO> orders;
 }

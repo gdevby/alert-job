@@ -46,4 +46,17 @@ public class CredentialClient {
                 .retrieve()
                 .bodyToMono(UserCredentialEncrypted.class);
     }
+
+    public UserCredentialEncrypted getEncryptedCredentialsById(Long credentialId) {
+        return coreWebClient.getClient()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/credentials/get-encrypted-by-id")
+                        .queryParam("credentialId", credentialId)
+                        .build())
+                .retrieve()
+                .bodyToMono(UserCredentialEncrypted.class)
+                .block();
+    }
+
 }

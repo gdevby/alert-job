@@ -33,7 +33,7 @@ public class UserCredentialService {
     }
 
 
-    public DecryptedCredential getUserCredentialsBlocking(AiNotificationPayload payload) {
+    /*public DecryptedCredential getUserCredentialsBlocking(AiNotificationPayload payload) {
 
         String userUuid = payload.getUser().getUuid();
         Long moduleId = payload.getModule().getId();
@@ -51,7 +51,23 @@ public class UserCredentialService {
                 encrypted.getLogin(),
                 decryptedPassword
         );
+    }*/
+
+    public DecryptedCredential getUserCredentialsBlocking(AiNotificationPayload payload) {
+
+        Long credentialId = payload.getCredentialId();
+
+        UserCredentialEncrypted encrypted =
+                credentialClient.getEncryptedCredentialsById(credentialId);
+
+        String decryptedPassword = encryptionService.decrypt(encrypted.getPasswordEncrypted());
+
+        return new DecryptedCredential(
+                encrypted.getLogin(),
+                decryptedPassword
+        );
     }
+
 
     public Mono<DecryptedCredential> getMonoUserCredentials(AiNotificationPayload payload) {
 

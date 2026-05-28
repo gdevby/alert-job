@@ -6,9 +6,16 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import by.gdev.alert.job.core.client.LlmClient;
+import by.gdev.alert.job.core.exeption.ai.BindingNotFoundException;
+import by.gdev.alert.job.core.exeption.ai.UserCredentialNotFoundException;
 import by.gdev.alert.job.core.model.ai.AiOrderRequest;
+import by.gdev.alert.job.core.model.db.*;
+import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
+import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
+import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
+import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
 import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
-import by.gdev.alert.job.core.service.ai.AiOrdersClient;
 import by.gdev.common.model.NotificationType;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,10 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import by.gdev.alert.job.core.configuration.ApplicationProperty;
-import by.gdev.alert.job.core.model.db.AppUser;
-import by.gdev.alert.job.core.model.db.DelayOrderNotification;
-import by.gdev.alert.job.core.model.db.SourceSite;
-import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DelayOrderNotificationRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
@@ -38,7 +41,10 @@ public class OrderProcessor {
     private final ApplicationProperty property;
     private final UserFilterRepository filterRepository;
     private final MailSenderService mailSenderService;
-    private final AiOrdersClient aiOrdersClient;
+
+    private final AccountTemplateBindingRepository accountTemplateBindingRepository;
+    private final UserSiteCredentialRepository userSiteCredentialRepository;
+    private final LlmClient llmClient;
     private final AiOrderRequestMapper aiOrderRequestMapper;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
@@ -58,19 +64,39 @@ public class OrderProcessor {
                                         order.setModuleName(orderModule.getName());
                                         return order;
                                     }).collect(Collectors.toList());
-                            
-                            if (!list.isEmpty() && Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
-                                AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule, list);
-                                aiOrdersClient.sendAiOrderRequest(aiOrderRequest);
-                            }
+                            buildAndsSndLlmRequest(user, orderModule, s, list);
                             return list;
                         }).flatMap(Collection::stream).toList();
                     }).flatMap(Collection::stream).toList();
             if (!orderListToSend.isEmpty()) {
-                //aiOrdersClient.sendOrders(orderListToSend);
                 sendOrderToUser(user, orderListToSend);
             }
         });
+    }
+
+    private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders){
+        //Если список заказов не пустой и автоответ включен для модуля
+        if (!orders.isEmpty() && Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
+            //получаем ид сайта для которого нам необходимо отправить заказы
+            Long siteId = sourceSite.getSiteSource();
+            // Находим аккаунт пользователя для логина в автоответе для этого сайта и модуля
+            UserSiteCredential credential =
+                    userSiteCredentialRepository
+                            .findByUserUuidAndModuleIdAndSiteId(user.getUuid(), orderModule.getId(), siteId)
+                            .orElseThrow(() -> new RuntimeException("Нет аккаунта для сайта"));
+            Long credentialId = credential.getId();
+            // Находим активный биндинг для модуля и из него получаем какой шаблон необходимо применить для автоответа
+            AccountTemplateBinding binding =
+                    accountTemplateBindingRepository
+                            .findByModuleIdAndAccountIdAndActiveTrue(orderModule.getId(), credential.getId())
+                            .orElseThrow(() -> new RuntimeException("Нет активного биндинга для этого сайта"));
+            Long templateId = binding.getTemplateId();
+
+            //Формируем запрос к модулю LLM который будет давать автоответ
+            AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule, credentialId,  templateId, orders);
+            //отправляем сформированный запрос в модуль LLM
+            llmClient.sendAiOrderRequest(aiOrderRequest);
+        }
     }
 
     private void sendOrderToUser(AppUser user, List<OrderDTO> list) {

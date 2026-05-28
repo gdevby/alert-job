@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class AppUserDTO {
-
+    private String uuid;
     private String email;
     private Long telegram;
     private boolean switchOffAlerts;

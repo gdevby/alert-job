@@ -2,7 +2,7 @@ package by.gdev.alert.job.core.controller;
 
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
 import by.gdev.alert.job.core.model.UserCredentialRequest;
-import by.gdev.alert.job.core.model.db.UserSiteCredential;
+import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,5 +36,15 @@ public class UserCredentialController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/get-encrypted-by-id")
+    public ResponseEntity<UserCredentialEncrypted> getEncryptedById(@RequestParam Long credentialId) {
+        UserSiteCredential cred = credentialService.getById(credentialId);
+        UserCredentialEncrypted dto = new UserCredentialEncrypted();
+        dto.setLogin(cred.getLogin());
+        dto.setPasswordEncrypted(cred.getPasswordEncrypted());
+        return ResponseEntity.ok(dto);
+    }
+
 
 }

@@ -39,8 +39,7 @@ public class AutoReplyPipeline {
     }
 
     public void process(OrderDTO orderDTO) {
-
-        AiDecision decision = analysisService.analyze(orderDTO, null, null);
+        AiDecision decision = analysisService.analyze(orderDTO, null, null, null);
         if (!decision.shouldReply()) {
             return;
         }
@@ -56,12 +55,14 @@ public class AutoReplyPipeline {
     public void process(AiOrderRequest request) {
         llmUserService.saveUser(request.getUser());
         for (OrderDTO order : request.getOrders()) {
-            AiDecision decision = processItem(order, request.getUser(), request.getModule());
+            AiDecision decision = processItem(order, request.getUser(), request.getModule(), request.getTemplateId());
             String reply = finalizeReply(decision);
             if (reply != null){
                 if (!reply.trim().isEmpty()) {
                     getDummyReplySender().send(order, reply, decision);
-                    getNotificationyReplySender().sendToNotificationService(order, request.getUser(), request.getModule(), decision);
+                    getNotificationyReplySender()
+                            .sendToNotificationService(order, request.getUser(), request.getModule(),
+                                    decision, request.getCredentialId());
                 }
                 else {
                     log.warn("Reply is empty, skipping send to notification");
@@ -70,8 +71,8 @@ public class AutoReplyPipeline {
         }
     }
 
-    private AiDecision processItem(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule) {
-        return analysisService.analyze(order, user, orderModule);
+    private AiDecision processItem(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId) {
+        return analysisService.analyze(order, user, orderModule, templateId);
     }
 
     private String finalizeReply(AiDecision decision) {

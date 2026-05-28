@@ -34,7 +34,7 @@ public class OrdersController {
     public ResponseEntity<Map<String, String>> receiveAiOrderRequest(
             @RequestBody AiOrderRequest request) {
 
-        log.info(
+        log.debug(
                 "AI получил {} заказов от пользователя {} (модуль: {})",
                 request.getOrders().size(),
                 request.getUser().getEmail(),

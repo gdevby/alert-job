@@ -130,7 +130,7 @@ public class AiOrderAnalysisService {
         return "default";
     }
 
-    public AiDecision analyze(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule){
+    public AiDecision analyze(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId){
 
         String orderTitle = order.getTitle();
         String orderContent = order.getMessage();
@@ -149,14 +149,18 @@ public class AiOrderAnalysisService {
         String type = detectType(categoryName, subcategoryName);
 
         // 4. Загружаем шаблон письма
-        String replyTemplate;
+        String replyTemplate = "";
         if (user == null || orderModule == null){
             log.debug("Template source: DEFAULT (user or module is null)");
             replyTemplate = loadTemplate(type, siteName);
         }
         else {
             log.debug("Template source: USER (user={}, module={})", user.getUuid(), orderModule.getName());
-            replyTemplate = loadTemplate(user.getUuid(), orderModule.getId());
+            //replyTemplate = loadTemplate(user.getUuid(), orderModule.getId());
+            AiReplyTemplate template = templateService.getTemplateById(templateId);
+            if (template != null){
+                replyTemplate = template.getHtmlTemplate();
+            }
         }
 
         // 5. Формируем prompt

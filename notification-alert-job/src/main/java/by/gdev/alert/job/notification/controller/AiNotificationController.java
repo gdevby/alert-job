@@ -96,10 +96,8 @@ public class AiNotificationController {
 
     @PostMapping("/decision")
     public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
-        log.info("QUEUE: received AI decision");
-
+        log.debug("QUEUE: received AI decision");
         queue.submit(payload);
-
         return Mono.just(ResponseEntity.accepted().body(
                 Map.of("status", "queued", "queueSize", queue.size())
         ));

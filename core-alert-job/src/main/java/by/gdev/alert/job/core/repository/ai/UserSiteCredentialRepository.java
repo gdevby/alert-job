@@ -1,6 +1,6 @@
-package by.gdev.alert.job.core.repository;
+package by.gdev.alert.job.core.repository.ai;
 
-import by.gdev.alert.job.core.model.db.UserSiteCredential;
+import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -15,4 +15,11 @@ public interface UserSiteCredentialRepository extends JpaRepository<UserSiteCred
             Long siteId,
             Long moduleId
     );
+
+    Optional<UserSiteCredential> findByUserUuidAndModuleIdAndSiteId(
+            String userUuid,
+            Long moduleId,
+            Long siteId
+    );
+
 }

@@ -47,4 +47,16 @@ public class AiReplyTemplateService {
 
         return templateRepository.save(template);
     }
+
+    @Transactional(readOnly = true)
+    public AiReplyTemplate getTemplateById(Long templateId) {
+        return templateRepository.findById(templateId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Шаблон не найден для id: " + templateId
+                ));
+    }
+
+    public boolean exists(Long id) {
+        return templateRepository.existsById(id);
+    }
 }

@@ -17,7 +17,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class NotificationReplySender implements ReplySender {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @Value("${notification.service.url}")
     private String notificationUrl;
@@ -28,13 +28,8 @@ public class NotificationReplySender implements ReplySender {
     }
 
     @Override
-    public void sendToNotificationService(
-            OrderDTO order,
-            AiAppUserDTO user,
-            AiOrderModulesDTO module,
-            AiDecision decision
-    ) {
-        NotificationPayload payload = new NotificationPayload(user, module, order, decision);
+    public void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId) {
+        NotificationPayload payload = new NotificationPayload(user, module, order, credentialId, decision);
         //restTemplate.postForEntity(notificationUrl, payload, Void.class);
 
         Mono.fromCallable(() ->

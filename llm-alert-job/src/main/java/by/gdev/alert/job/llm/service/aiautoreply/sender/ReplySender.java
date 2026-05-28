@@ -7,5 +7,5 @@ import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
 
 public interface ReplySender {
     void send(OrderDTO order, String replyText, AiDecision decision);
-    void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision);
+    void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId);
 }

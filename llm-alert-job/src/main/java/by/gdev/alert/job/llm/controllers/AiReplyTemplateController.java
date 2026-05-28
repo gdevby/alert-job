@@ -50,4 +50,14 @@ public class AiReplyTemplateController {
         }
     }
 
+    @GetMapping("/{id}/exists")
+    public ResponseEntity<?> exists(@PathVariable Long id) {
+        try {
+            boolean exists = templateService.exists(id);
+            return ResponseEntity.ok(exists);
+        } catch (Exception e) {
+            log.error("Failed to check template {}", id, e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

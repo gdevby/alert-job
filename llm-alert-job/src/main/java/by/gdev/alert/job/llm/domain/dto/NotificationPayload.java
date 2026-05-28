@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NotificationPayload {
-
     private AiAppUserDTO user;
     private AiOrderModulesDTO module;
     private OrderDTO order;
+    private Long credentialId;
     private AiDecision decision;
 }

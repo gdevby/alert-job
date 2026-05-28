@@ -15,9 +15,13 @@ public class DummyReplySender implements ReplySender {
 
     private static final AtomicInteger COUNTER = new AtomicInteger(1);
 
+    private void appendIfNotNull(StringBuilder sb, String label, Object value) {
+        if (value == null) return;
+        sb.append(label).append(": ").append(value).append("\n");
+    }
+
     @Override
     public void send(OrderDTO order, String replyText, AiDecision decision) {
-
         int num = COUNTER.getAndIncrement();
 
         StringBuilder sb = new StringBuilder();
@@ -52,17 +56,12 @@ public class DummyReplySender implements ReplySender {
 
         sb.append("===================================================\n\n\n");
 
-        log.info(sb.toString());
+        log.debug(sb.toString());
     }
 
     @Override
-    public void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision) {
+    public void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId) {
 
-    }
-
-    private void appendIfNotNull(StringBuilder sb, String label, Object value) {
-        if (value == null) return;
-        sb.append(label).append(": ").append(value).append("\n");
     }
 }
 

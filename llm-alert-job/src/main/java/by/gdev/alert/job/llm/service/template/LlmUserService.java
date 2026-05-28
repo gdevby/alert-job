@@ -1,5 +1,6 @@
 package by.gdev.alert.job.llm.service.template;
 
+import by.gdev.alert.job.llm.client.CoreClient;
 import by.gdev.alert.job.llm.domain.LlmUser;
 import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.repository.LlmUserRepository;
@@ -10,11 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class LlmUserService {
-
+    private final CoreClient coreClient;
     private final LlmUserRepository userRepository;
 
     @Transactional
     public LlmUser getOrCreateUser(String uuid) {
+        // Проверяем пользователя в CORE
+        AiAppUserDTO coreUser = coreClient.getUserByUuid(uuid);
+        if (coreUser == null) {
+            throw new RuntimeException("User does not exist in CORE: " + uuid);
+        }
+
         return userRepository.findByUuid(uuid)
                 .orElseGet(() -> {
                     LlmUser u = new LlmUser();

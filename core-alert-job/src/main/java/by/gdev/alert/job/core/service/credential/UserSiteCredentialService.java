@@ -1,10 +1,10 @@
 package by.gdev.alert.job.core.service.credential;
 
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
-import by.gdev.alert.job.core.model.db.UserSiteCredential;
+import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
-import by.gdev.alert.job.core.repository.UserSiteCredentialRepository;
+import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserSiteCredentialService {
 
-    private final UserSiteCredentialRepository repository;
+    private final UserSiteCredentialRepository userSiteCredentialRepository;
     private final AppUserRepository userRepository;
     private final OrderModulesRepository moduleRepository;
     private final EncryptionService encryptionService;
@@ -44,13 +44,13 @@ public class UserSiteCredentialService {
         String encryptedPassword = encryptionService.encrypt(rawPassword);
 
         // --- СОЗДАНИЕ ИЛИ ОБНОВЛЕНИЕ ---
-        return repository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId)
+        return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId)
                 .map(existing -> {
                     existing.setLogin(login);
                     existing.setPasswordEncrypted(encryptedPassword);
                     existing.setUpdatedAt(LocalDateTime.now());
 
-                    UserSiteCredential saved = repository.save(existing);
+                    UserSiteCredential saved = userSiteCredentialRepository.save(existing);
 
                     log.debug(
                             "Updated credentials: userUuid={}, siteId={}, moduleId={}, login={}",
@@ -68,7 +68,7 @@ public class UserSiteCredentialService {
                             .passwordEncrypted(encryptedPassword)
                             .build();
 
-                    UserSiteCredential saved = repository.save(credential);
+                    UserSiteCredential saved = userSiteCredentialRepository.save(credential);
 
                     log.debug(
                             "Created new credentials: userUuid={}, siteId={}, moduleId={}, login={}",
@@ -84,7 +84,7 @@ public class UserSiteCredentialService {
             Long siteId,
             Long moduleId
     ) {
-        return repository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId)
+        return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId)
                 .map(cred -> {
 
                     log.info(
@@ -100,15 +100,20 @@ public class UserSiteCredentialService {
     }
 
     public Optional<UserSiteCredential> getCredential(String userUuid, Long siteId, Long moduleId) {
-        return repository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId);
+        return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId);
     }
 
     public List<UserSiteCredential> getCredentialsForUser(String userUuid) {
-        return repository.findByUserUuid(userUuid);
+        return userSiteCredentialRepository.findByUserUuid(userUuid);
     }
 
     public void delete(Long id) {
-        repository.deleteById(id);
+        userSiteCredentialRepository.deleteById(id);
         log.debug("Deleted credentials with id={}", id);
+    }
+
+    public UserSiteCredential getById(Long id) {
+        return userSiteCredentialRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Credential not found with id: " + id));
     }
 }

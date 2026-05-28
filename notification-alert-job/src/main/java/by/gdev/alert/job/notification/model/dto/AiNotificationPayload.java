@@ -12,5 +12,6 @@ public class AiNotificationPayload {
     private AiAppUserDTO user;
     private AiOrderModulesDTO module;
     private OrderDTO order;
+    private Long credentialId;
     private AiDecision decision;
 }
