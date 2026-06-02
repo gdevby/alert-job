@@ -238,6 +238,8 @@ public class AiOrderAnalysisService {
                         .entity(AiDecision.class);
                  */
 
+
+                log.debug("RAW LLM RESPONSE:\n{}", raw);
                 raw = raw.replace("```json", "")
                         .replace("```", "")
                         .trim();

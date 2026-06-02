@@ -78,6 +78,18 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+  llm:
+    image: rg.gdev.by/alert-job/llm-alert-job:1.0
+    ports:
+      - "8033:8033"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=dev"
+       - TZ=Europe/Moscow
+    depends_on:
+      config:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
   parser:
     image: rg.gdev.by/alert-job/parser-alert-job:1.0
     ports:

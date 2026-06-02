@@ -48,6 +48,28 @@ public class OrderProcessor {
     private final AiOrderRequestMapper aiOrderRequestMapper;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
+
+        //LLM
+        for (AppUser user : users){
+            for (OrderModules orderModule : user.getOrderModules()) {
+                if (Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
+                    Set<SourceSite> sources = orderModule.getSources();
+                    for (SourceSite sourceSite : sources){
+                        List<OrderDTO> llmOrders = new ArrayList<>();
+                        for (OrderDTO order : orders){
+                            if (order.getSourceSite().getSource().equals(sourceSite.getSiteSource())){
+                                llmOrders.add(order);
+                            }
+                        }
+                        if (!llmOrders.isEmpty()){
+                            buildAndsSndLlmRequest(user, orderModule, sourceSite, llmOrders);
+                        }
+                    }
+                }
+            }
+        }
+
+
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
@@ -64,7 +86,6 @@ public class OrderProcessor {
                                         order.setModuleName(orderModule.getName());
                                         return order;
                                     }).collect(Collectors.toList());
-                            buildAndsSndLlmRequest(user, orderModule, s, list);
                             return list;
                         }).flatMap(Collection::stream).toList();
                     }).flatMap(Collection::stream).toList();
@@ -76,7 +97,7 @@ public class OrderProcessor {
 
     private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders){
         //Если список заказов не пустой и автоответ включен для модуля
-        if (!orders.isEmpty() && Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
+        if (!orders.isEmpty()){
             //получаем ид сайта для которого нам необходимо отправить заказы
             Long siteId = sourceSite.getSiteSource();
             // Находим аккаунт пользователя для логина в автоответе для этого сайта и модуля
