@@ -60,7 +60,7 @@ public class ParserService {
 		return list;
 	}
 
-	public List<SubCategoryDTO> getSubCategories(Long category) {
+	/*public List<SubCategoryDTO> getSubCategories(Long category) {
 		List<SubCategoryDTO> list = subCategoryRepository.findAllByCategoryId(category).stream()
 				.map(el -> mapper.map(el, SubCategoryDTO.class))
 				.toList();
@@ -68,9 +68,15 @@ public class ParserService {
 			throw new ResourceNotFoundException("not found sub category with category id " + category);
 		}
 		return list;
-	}
+	}*/
 
-	public boolean isExistsOrder(Category category, Subcategory subCategory, String link) {
+    public List<SubCategoryDTO> getSubCategories(Long categoryId) {
+        return subCategoryRepository.findAllByCategoryId(categoryId).stream()
+                .map(el -> mapper.map(el, SubCategoryDTO.class))
+                .toList();
+    }
+
+    public boolean isExistsOrder(Category category, Subcategory subCategory, String link) {
 		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link);
 	}
 
