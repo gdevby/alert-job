@@ -1,14 +1,11 @@
 package by.gdev.alert.job.notification.controller;
 
 import by.gdev.alert.job.notification.model.dto.*;
-import by.gdev.alert.job.notification.service.MailService;
 import by.gdev.alert.job.notification.service.ai.credential.UserCredentialService;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyParserFactory;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.queue.AiDecisionQueue;
-import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,75 +21,10 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class AiNotificationController {
-    private final MailService service;
     private final UserCredentialService userCredentialService;
     private final AutoreplyParserFactory parserFactory;
 
     private final AiDecisionQueue queue;
-
-    /*@PostMapping("/decision")
-    public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
-        log.info("AI REPLY = {}", payload.getDecision().reply());
-        AiAppUserDTO user = payload.getUser();
-        if (user == null) {
-            return Mono.just(ResponseEntity.ok().build());
-        }
-
-        boolean isDefaultSendType = user.isDefaultSendType();
-
-        SiteName siteEnum;
-        try {
-            siteEnum = SiteName.valueOf(payload.getOrder().getSourceSite().getSourceName().toUpperCase());
-        } catch (Exception e) {
-            return Mono.just(
-                    ResponseEntity.badRequest().body(
-                            Map.of("error", "Unknown site: " + payload.getOrder().getSourceSite().getSourceName().toUpperCase())
-                    )
-            );
-        }
-
-        AutoreplyPlaywrightParser parser;
-        try {
-            parser = parserFactory.getParser(siteEnum);
-        } catch (IllegalArgumentException e) {
-            return Mono.just(
-                    ResponseEntity.badRequest().body(
-                            Map.of("error", "Parser not found for site: " + siteEnum)
-                    )
-            );
-        }
-
-        return userCredentialService.getMonoUserCredentials(payload)
-                .flatMap(credential ->
-                        Mono.fromCallable(() -> {
-                                    boolean ok = parser.sendAutoreply(credential, payload);
-                                    log.debug("Parser result = {}", ok);
-                                    return ok;
-                                })
-                                .subscribeOn(Schedulers.boundedElastic())
-                )
-                .flatMap(ok -> {
-                    if (user.getEmail() != null || user.getTelegram() != null) {
-                        UserNotification userNotification = new UserNotification();
-                        userNotification.setType(NotificationType.AUTO_REPLY);
-
-                        if (isDefaultSendType) {
-                            String html = buildAiReplyEmailTemplate(payload);
-                            userNotification.setMessage(html);
-                            userNotification.setToMail(user.getEmail());
-                            log.debug("AI нотификация по почте");
-                            return service.sendMessage(userNotification)
-                                    .thenReturn(ResponseEntity.ok().build());
-                        } else {
-                            userNotification.setMessage(payload.getDecision().reply());
-                            userNotification.setToMail(user.getTelegram().toString());
-                            log.debug("AI нотификация по телеграм");
-                            service.sendMessageToTelegram(userNotification);
-                        }
-                    }
-                    return Mono.just(ResponseEntity.ok().build());
-                });
-    }*/
 
     @PostMapping("/decision")
     public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {

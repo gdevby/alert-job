@@ -49,26 +49,7 @@ public class OrderProcessor {
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
 
-        //LLM
-        for (AppUser user : users){
-            for (OrderModules orderModule : user.getOrderModules()) {
-                if (Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
-                    Set<SourceSite> sources = orderModule.getSources();
-                    for (SourceSite sourceSite : sources){
-                        List<OrderDTO> llmOrders = new ArrayList<>();
-                        for (OrderDTO order : orders){
-                            if (order.getSourceSite().getSource().equals(sourceSite.getSiteSource())){
-                                llmOrders.add(order);
-                            }
-                        }
-                        if (!llmOrders.isEmpty()){
-                            buildAndsSndLlmRequest(user, orderModule, sourceSite, llmOrders);
-                        }
-                    }
-                }
-            }
-        }
-
+        forEachLLm(users, orders);
 
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
@@ -93,6 +74,27 @@ public class OrderProcessor {
                 sendOrderToUser(user, orderListToSend);
             }
         });
+    }
+
+    private void forEachLLm(Set<AppUser> users, List<OrderDTO> orders){
+        for (AppUser user : users){
+            for (OrderModules orderModule : user.getOrderModules()) {
+                if (Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
+                    Set<SourceSite> sources = orderModule.getSources();
+                    for (SourceSite sourceSite : sources){
+                        List<OrderDTO> llmOrders = new ArrayList<>();
+                        for (OrderDTO order : orders){
+                            if (order.getSourceSite().getSource().equals(sourceSite.getSiteSource())){
+                                llmOrders.add(order);
+                            }
+                        }
+                        if (!llmOrders.isEmpty()){
+                            buildAndsSndLlmRequest(user, orderModule, sourceSite, llmOrders);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders){
