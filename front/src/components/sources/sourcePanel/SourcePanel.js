@@ -52,7 +52,6 @@ const SourcePanel = ({ addSource, module_id }) => {
 					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
 					if (currentSite.id === 4 || currentSite.id === 5 || currentSite.id === 8) {
 						setSubcategories([...subcat])
-						console.log('SUBCAT', subcat[0])
 						setCurrentSubCat(subcat[0])
 					}else {
 						setSubcategories([{ id: null, name: 'Все подкатегории' }, ...subcat])
@@ -129,7 +128,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 					<Autocomplete
 						value={currentSubCat?.name ?? null}
 						options={subCategoryOptions}
-						disabled={!subCategoryOptions.length}
+						disabled={subCategoryOptions.length <= 1}
 						clearIcon={false}
 						renderInput={(params) => <TextField {...params} ref={subCatRef} label="Выберите подкатегорию" placeholder={currentSubCat?.name ?? null} />}
 						isOptionEqualToValue={(option, value) => option.name === value}
