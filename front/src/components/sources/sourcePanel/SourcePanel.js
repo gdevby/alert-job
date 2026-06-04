@@ -50,14 +50,13 @@ const SourcePanel = ({ addSource, module_id }) => {
 				.getSubcategories(currentCat.id)
 				.then(response => {
 					let subcat = response.data.map(item => ({ id: item.id, name: item.nativeLocName }))
-					if (currentSite.id === 4 || currentSite.id === 5 || currentSite.id === 8) {
+					if (currentSite.id === 4 || currentSite.id === 8) {
 						setSubcategories([...subcat])
 						setCurrentSubCat(subcat[0])
 					}else {
 						setSubcategories([{ id: null, name: 'Все подкатегории' }, ...subcat])
 						setCurrentSubCat({ id: null, name: 'Все подкатегории' })
 					}
-					
 				})
 		}
 
