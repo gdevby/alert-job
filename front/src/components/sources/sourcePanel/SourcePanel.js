@@ -65,17 +65,7 @@ const SourcePanel = ({ addSource, module_id }) => {
 
 	const addingSource = () => {
 		if (Number(currentSite.id) && Number(currentCat.id)) {
-			/*if ((currentSite.id == 4 || currentSite.id == 5) && currentSubCat.name === 'Все подкатегории') {
-				subcategories.forEach(item => {
-					if (item.id) {
-						addSource({ currentSite, currentCat, currentSubCat: item })
-					}
-					
-				})
-			}else {*/
-				addSource({ currentSite, currentCat, currentSubCat })
-//			}
-			
+			addSource({ currentSite, currentCat, currentSubCat })
 		}
 	}
 
