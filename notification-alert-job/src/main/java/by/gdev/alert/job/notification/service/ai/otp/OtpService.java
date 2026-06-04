@@ -21,32 +21,43 @@ public class OtpService {
         }
     }
 
-    // key = site + ":" + userEmail
     private final Map<String, OtpEntry> storage = new ConcurrentHashMap<>();
+    private final Map<String, Object> locks = new ConcurrentHashMap<>();
+
+    private Object lockFor(String key) {
+        return locks.computeIfAbsent(key, k -> new Object());
+    }
 
     public void saveOtp(String site, String userEmail, String otp) {
         String key = site + ":" + userEmail;
         storage.put(key, new OtpEntry(otp));
         log.debug("OTP SAVED: {} for {}", otp, key);
+        synchronized (lockFor(key)) {
+            lockFor(key).notifyAll();
+        }
     }
 
-    public String getOtp(String site, String userEmail) {
+    public String waitForOtp(String site, String userEmail, long timeoutMs) {
         String key = site + ":" + userEmail;
-        OtpEntry entry = storage.get(key);
+        long deadline = System.currentTimeMillis() + timeoutMs;
 
-        if (entry == null) {
-            log.warn("OTP NOT FOUND for {}", key);
-            return null;
+        synchronized (lockFor(key)) {
+            while (true) {
+                OtpEntry entry = storage.get(key);
+                if (entry != null) {
+                    return entry.otp;
+                }
+
+                long remaining = deadline - System.currentTimeMillis();
+                if (remaining <= 0) {
+                    log.warn("OTP WAIT TIMEOUT for {}", key);
+                    return null;
+                }
+
+                try {
+                    lockFor(key).wait(remaining);
+                } catch (InterruptedException ignored) {}
+            }
         }
-
-        // TTL 10 минут
-        if (Instant.now().minusSeconds(600).isAfter(entry.createdAt)) {
-            log.warn("OTP EXPIRED for {}", key);
-            storage.remove(key);
-            return null;
-        }
-
-        log.debug("OTP RETURNED: {} for {}", entry.otp, key);
-        return entry.otp;
     }
 }

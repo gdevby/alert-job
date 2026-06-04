@@ -109,10 +109,15 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         //Ждём поле ввода кода
         Locator codeInput = page.locator("input[name='code']");
         page.waitForCondition(codeInput::isVisible);
-        // Берём OTP из OtpService
-        String otp = otpService.getOtp(SiteName.YOUDO.name(), creds.login());
+        // Ждём OTP - одноразовый код (до 2 минут)
+        String otp = otpService.waitForOtp(SiteName.YOUDO.name(), creds.login(), 120_000);
         log.debug("Используем OTP={} для входа в YouDo", otp);
+
+        if (otp == null) {
+            throw new RuntimeException("OTP не получен за отведённое время");
+        }
         codeInput.fill(otp);
+        page.waitForTimeout(1500);
         page.waitForLoadState(LoadState.NETWORKIDLE);
         log.debug("Успешный вход в аккаунт {}", creds.login());
     }

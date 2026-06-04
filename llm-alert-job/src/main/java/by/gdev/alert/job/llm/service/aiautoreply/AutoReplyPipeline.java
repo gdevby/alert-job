@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -23,6 +25,8 @@ public class AutoReplyPipeline {
     private final LlmUserService llmUserService;
     private final AiOrderAnalysisService analysisService;
     private final List<ReplySender> replySenders;
+
+    private final Set<String> sent = ConcurrentHashMap.newKeySet();
 
     private ReplySender getDummyReplySender() {
         return replySenders.stream()
@@ -52,7 +56,30 @@ public class AutoReplyPipeline {
         }
     }
 
+
     public void process(AiOrderRequest request) {
+        llmUserService.saveUser(request.getUser());
+        for (OrderDTO order : request.getOrders()) {
+            String key = order.getLink();
+            if (!sent.add(key)) {
+                log.warn("LLM DUPLICATE DROPPED (already sent to Notification): {}", key);
+                continue;
+            }
+
+            AiDecision decision = processItem(order, request.getUser(), request.getModule(), request.getTemplateId());
+            String reply = finalizeReply(decision);
+
+            if (reply != null && !reply.trim().isEmpty()) {
+                getDummyReplySender().send(order, reply, decision);
+                getNotificationyReplySender()
+                        .sendToNotificationService(order, request.getUser(), request.getModule(),
+                                decision, request.getCredentialId());
+            }
+        }
+    }
+
+
+    /*public void process(AiOrderRequest request) {
         llmUserService.saveUser(request.getUser());
         for (OrderDTO order : request.getOrders()) {
             AiDecision decision = processItem(order, request.getUser(), request.getModule(), request.getTemplateId());
@@ -69,7 +96,7 @@ public class AutoReplyPipeline {
                 }
             }
         }
-    }
+    }*/
 
     private AiDecision processItem(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId) {
         return analysisService.analyze(order, user, orderModule, templateId);

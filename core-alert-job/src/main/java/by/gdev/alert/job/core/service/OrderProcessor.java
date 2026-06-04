@@ -48,9 +48,7 @@ public class OrderProcessor {
     private final AiOrderRequestMapper aiOrderRequestMapper;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
-
         forEachLLm(users, orders);
-
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));

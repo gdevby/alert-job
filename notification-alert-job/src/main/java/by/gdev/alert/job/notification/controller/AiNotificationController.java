@@ -12,9 +12,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/notification/api/ai")
@@ -23,17 +26,41 @@ import java.util.Map;
 public class AiNotificationController {
     private final UserCredentialService userCredentialService;
     private final AutoreplyParserFactory parserFactory;
-
     private final AiDecisionQueue queue;
+    private final Set<String> dedup = ConcurrentHashMap.newKeySet();
 
-    @PostMapping("/decision")
+    /*@PostMapping("/decision")
     public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
         log.debug("QUEUE: received AI decision");
         queue.submit(payload);
         return Mono.just(ResponseEntity.accepted().body(
                 Map.of("status", "queued", "queueSize", queue.size())
         ));
+    }*/
+
+    @PostMapping("/decision")
+    public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
+
+        String key = payload.getOrder().getLink();
+
+        if (!dedup.add(key)) {
+            log.warn("DUPLICATE DROPPED at NotificationController: {}", key);
+            return Mono.just(ResponseEntity.ok(
+                    Map.of("status", "duplicate", "queueSize", queue.size())
+            ));
+        }
+
+        // TTL очистка
+        Schedulers.boundedElastic().schedule(() -> dedup.remove(key), 5, TimeUnit.MINUTES);
+
+        log.debug("QUEUE: accepted AI decision {}", key);
+        queue.submit(payload);
+
+        return Mono.just(ResponseEntity.accepted().body(
+                Map.of("status", "queued", "queueSize", queue.size())
+        ));
     }
+
 
 
     @GetMapping("/testlogin")
