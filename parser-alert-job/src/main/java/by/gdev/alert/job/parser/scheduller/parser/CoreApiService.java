@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -48,12 +49,20 @@ public class CoreApiService {
             HttpEntity<List<OrderDTO>> request = new HttpEntity<>(batch, headers);
             String urlWithParam = coreModuleUrl + ordersApiUrl + "?site=" + siteName.name();
             metricsService.save(siteName, batch.size());
-            statisticsService.save(siteName, batch.size());
+            int unique = countUniqueOrders(batch);
+            statisticsService.save(siteName, unique);
             restTemplate.exchange(urlWithParam, HttpMethod.POST, request, Void.class);
-            log.debug("Отправлено {} заказов в core для {}", batch.size(), siteName);
+            log.debug("Отправлено {} заказов (уникальных {}) в core для {}", batch.size(), unique, siteName);
         } catch (Exception e) {
             log.error("Ошибка при отправке пачки заказов: {}", e.getMessage(), e);
         }
     }
 
+    private int countUniqueOrders(List<OrderDTO> batch) {
+        return (int) batch.stream()
+                .map(OrderDTO::getLink)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
+    }
 }

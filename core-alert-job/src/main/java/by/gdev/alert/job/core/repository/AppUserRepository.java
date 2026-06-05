@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.core.model.db.AppUser;
-import org.springframework.data.repository.query.Param;
 
 public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 

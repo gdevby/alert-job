@@ -10,7 +10,6 @@ import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.parser.domain.db.Order;
 import org.springframework.data.repository.query.Param;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface OrderRepository extends CrudRepository<Order, Long> {

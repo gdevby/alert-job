@@ -8,7 +8,6 @@ import by.gdev.common.model.OrderSearchDTO;
 import by.gdev.common.model.PriceDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
