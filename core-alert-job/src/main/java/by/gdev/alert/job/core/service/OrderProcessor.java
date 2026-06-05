@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import by.gdev.alert.job.core.client.LlmClient;
+import by.gdev.alert.job.core.client.NotificationClient;
 import by.gdev.alert.job.core.exeption.ai.BindingNotFoundException;
 import by.gdev.alert.job.core.exeption.ai.UserCredentialNotFoundException;
 import by.gdev.alert.job.core.model.ai.AiOrderRequest;
@@ -17,6 +18,7 @@ import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
 import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
 import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
 import by.gdev.common.model.NotificationType;
+import by.gdev.common.model.SiteName;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -45,6 +47,7 @@ public class OrderProcessor {
     private final AccountTemplateBindingRepository accountTemplateBindingRepository;
     private final UserSiteCredentialRepository userSiteCredentialRepository;
     private final LlmClient llmClient;
+    private final NotificationClient notificationClient;
     private final AiOrderRequestMapper aiOrderRequestMapper;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
@@ -77,19 +80,35 @@ public class OrderProcessor {
     private void forEachLLm(Set<AppUser> users, List<OrderDTO> orders){
         for (AppUser user : users){
             for (OrderModules orderModule : user.getOrderModules()) {
-                if (Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())){
-                    Set<SourceSite> sources = orderModule.getSources();
-                    for (SourceSite sourceSite : sources){
-                        List<OrderDTO> llmOrders = new ArrayList<>();
-                        for (OrderDTO order : orders){
-                            if (order.getSourceSite().getSource().equals(sourceSite.getSiteSource())){
-                                llmOrders.add(order);
-                            }
-                        }
-                        if (!llmOrders.isEmpty()){
-                            buildAndsSndLlmRequest(user, orderModule, sourceSite, llmOrders);
-                        }
+                if (!Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
+                    continue;
+                }
+
+                Map<Long, List<OrderDTO>> bySite = orders.stream()
+                        .collect(Collectors.groupingBy(o -> o.getSourceSite().getSource()));
+
+                for (Map.Entry<Long, List<OrderDTO>> entry : bySite.entrySet()) {
+                    Long siteId = entry.getKey();
+                    List<OrderDTO> siteOrders = entry.getValue();
+                    boolean subscribed = orderModule.getSources().stream()
+                            .anyMatch(s -> s.getSiteSource().equals(siteId));
+                    if (!subscribed) continue;
+
+                    SiteName siteName = SiteName.fromId(siteId);
+                    boolean supported = notificationClient.canParse(siteName.name());
+
+                    if (!supported) {
+                        log.debug("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
+                        continue;
                     }
+
+                    buildAndsSndLlmRequest(user, orderModule,
+                            orderModule.getSources().stream()
+                                    .filter(s -> s.getSiteSource().equals(siteId))
+                                    .findFirst()
+                                    .orElseThrow(),
+                            siteOrders
+                    );
                 }
             }
         }

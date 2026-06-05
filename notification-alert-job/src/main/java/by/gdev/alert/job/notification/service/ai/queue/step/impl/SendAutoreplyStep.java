@@ -20,7 +20,7 @@ public class SendAutoreplyStep implements AiStep<SendAutoreplyInput, Boolean> {
 
     @Override
     public StepResult<Boolean> execute(SendAutoreplyInput input) {
-        return retrySupport.retry(3, 2000, () -> {
+        return retrySupport.retry(1, 2000, () -> {
             try {
                 boolean ok = input.parser().sendAutoreply(
                         input.creds(),

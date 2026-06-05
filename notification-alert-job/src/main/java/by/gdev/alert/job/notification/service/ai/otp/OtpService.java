@@ -30,11 +30,18 @@ public class OtpService {
 
     public void saveOtp(String site, String userEmail, String otp) {
         String key = site + ":" + userEmail;
-        storage.put(key, new OtpEntry(otp));
-        log.debug("OTP SAVED: {} for {}", otp, key);
+
         synchronized (lockFor(key)) {
+            storage.put(key, new OtpEntry(otp));
+            log.debug("OTP SAVED: {} for {}", otp, key);
             lockFor(key).notifyAll();
         }
+    }
+
+    public void invalidateOtp(String site, String userEmail) {
+        String key = site + ":" + userEmail;
+        storage.remove(key);
+        log.debug("OTP INVALIDATED for {}", key);
     }
 
     public String waitForOtp(String site, String userEmail, long timeoutMs) {
@@ -61,3 +68,4 @@ public class OtpService {
         }
     }
 }
+

@@ -78,26 +78,6 @@ public class AutoReplyPipeline {
         }
     }
 
-
-    /*public void process(AiOrderRequest request) {
-        llmUserService.saveUser(request.getUser());
-        for (OrderDTO order : request.getOrders()) {
-            AiDecision decision = processItem(order, request.getUser(), request.getModule(), request.getTemplateId());
-            String reply = finalizeReply(decision);
-            if (reply != null){
-                if (!reply.trim().isEmpty()) {
-                    getDummyReplySender().send(order, reply, decision);
-                    getNotificationyReplySender()
-                            .sendToNotificationService(order, request.getUser(), request.getModule(),
-                                    decision, request.getCredentialId());
-                }
-                else {
-                    log.warn("Reply is empty, skipping send to notification");
-                }
-            }
-        }
-    }*/
-
     private AiDecision processItem(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId) {
         return analysisService.analyze(order, user, orderModule, templateId);
     }

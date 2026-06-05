@@ -4,7 +4,7 @@ import by.gdev.alert.job.notification.model.dto.*;
 import by.gdev.alert.job.notification.service.ai.credential.UserCredentialService;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyParserFactory;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
-import by.gdev.alert.job.notification.service.ai.queue.AiDecisionQueue;
+import by.gdev.alert.job.notification.service.ai.queue.UserQueueManager;
 import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,42 +26,28 @@ import java.util.concurrent.TimeUnit;
 public class AiNotificationController {
     private final UserCredentialService userCredentialService;
     private final AutoreplyParserFactory parserFactory;
-    private final AiDecisionQueue queue;
+    private final UserQueueManager userQueueManager;
     private final Set<String> dedup = ConcurrentHashMap.newKeySet();
-
-    /*@PostMapping("/decision")
-    public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
-        log.debug("QUEUE: received AI decision");
-        queue.submit(payload);
-        return Mono.just(ResponseEntity.accepted().body(
-                Map.of("status", "queued", "queueSize", queue.size())
-        ));
-    }*/
 
     @PostMapping("/decision")
     public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
-
         String key = payload.getOrder().getLink();
-
         if (!dedup.add(key)) {
             log.warn("DUPLICATE DROPPED at NotificationController: {}", key);
-            return Mono.just(ResponseEntity.ok(
-                    Map.of("status", "duplicate", "queueSize", queue.size())
-            ));
+            return Mono.just(ResponseEntity.ok(Map.of("status", "duplicate")));
         }
-
-        // TTL очистка
+        // Через 5 минут удаляем ключ из dedup, чтобы:
+        // 1) не держать ссылку в памяти вечно (иначе Set разрастётся),
+        // 2) позволить повторно обработать этот же заказ, если он придёт позже,
+        // 3) не блокировать повторную отправку, если предыдущая попытка упала.
         Schedulers.boundedElastic().schedule(() -> dedup.remove(key), 5, TimeUnit.MINUTES);
-
         log.debug("QUEUE: accepted AI decision {}", key);
-        queue.submit(payload);
-
-        return Mono.just(ResponseEntity.accepted().body(
-                Map.of("status", "queued", "queueSize", queue.size())
-        ));
+        //кладем пайлоад в очередь обработки пользователя
+        userQueueManager.submit(payload);
+        // получаем размер очереди для пользователя
+        int userQueueSize = userQueueManager.size(payload.getUser().getUuid());
+        return Mono.just(ResponseEntity.accepted().body(Map.of("status", "queued", "queueSize", userQueueSize)));
     }
-
-
 
     @GetMapping("/testlogin")
     public Mono<ResponseEntity<?>> receiveTestCase(

@@ -3,13 +3,10 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
-import com.microsoft.playwright.options.WaitUntilState;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -17,10 +14,8 @@ import by.gdev.alert.job.notification.service.ai.otp.OtpService;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
 
-    private final PlaywrightManager playwrightManager;
     private final OtpService otpService;
 
     @Value("${parser.autoreply.headless.youdo.com}")
@@ -38,139 +33,150 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         this.sendRequest = sendRequest;
     }
 
+    public YouDoAutoreplyParser(PlaywrightManager playwrightManager, OtpService otpService) {
+        super(playwrightManager);
+        this.otpService = otpService;
+    }
+
     @Override
     public SiteName getSiteName() {
         return SiteName.YOUDO;
     }
 
     @Override
-    public boolean sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload) {
-
-        Playwright playwright = null;
-        Browser browser = null;
-        BrowserContext context = null;
-        Page page = null;
-
+    protected boolean login(Page page, DecryptedCredential creds) {
+        // Навигация
         try {
-            playwright = playwrightManager.createPlaywright();
-
-            ProxyCredentials proxyCred = null;
-            if (proxy) {
-                proxyCred = playwrightManager.getProxyWithRetry(3, 500);
-            }
-
-            browser = playwrightManager.createBrowser(
-                    playwright,
-                    proxyCred,
-                    headless,
-                    proxy,
-                    getSiteName().name()
-            );
-            context = playwrightManager.createBrowserContext(browser, null, false, getSiteName().name());
-            page = context.newPage();
-
-            login(page, creds);
-            page.waitForTimeout(3000);
-
-            processAutoReply(page, payload);
-            page.waitForTimeout(15000);
-
-            log.debug("Автоответ успешно отправлен пользователем {}", creds.login());
-            return true;
-
+            safeNavigate(page, "https://youdo.com/");
         } catch (Exception e) {
-            log.error("Ошибка при отправке автоответа", e);
+            log.warn("Не удалось открыть главную страницу YouDo");
+            return false;
+        }
+
+        // Кнопка "Войти"
+        if (!clickOrFail(page, "span[data-test='LoginButton']", 8000, "Кнопка 'Войти'"))
             return false;
 
-        } finally {
-            playwrightManager.closeResources(page, context, browser, playwright, getSiteName().name());
-        }
-    }
+        // Кнопка "Войти через электронную почту"
+        if (!clickOrFail(page, "span[data-test='LoginWithEmailButton']", 8000, "Войти через email"))
+            return false;
 
-    private void login(Page page, DecryptedCredential creds) {
-        // Открываем главную через safeNavigate
-        safeNavigate(page, "https://youdo.com/");
-        // Кликаем "Войти"
-        Locator loginBtn = page.locator("span[data-test='LoginButton']");
-        page.waitForCondition(loginBtn::isVisible);
-        loginBtn.click();
-        // Кликаем "Войти через электронную почту"
-        Locator loginEmailBtn = page.locator("span[data-test='LoginWithEmailButton']");
-        page.waitForCondition(loginEmailBtn::isVisible);
-        loginEmailBtn.click();
-        // Вводим email
-        Locator emailInput = page.locator("input[name='login']");
-        page.waitForCondition(emailInput::isVisible);
-        emailInput.fill(creds.login());
-        // Жмём "Далее"
-        Locator nextBtn = page.locator("button:has-text('Далее')");
-        page.waitForCondition(nextBtn::isEnabled);
-        nextBtn.click();
-        //Ждём поле ввода кода
-        Locator codeInput = page.locator("input[name='code']");
-        page.waitForCondition(codeInput::isVisible);
-        // Ждём OTP - одноразовый код (до 2 минут)
+        // Поле email
+        if (!waitOrFail(page, "input[name='login']", 8000, "Поле email"))
+            return false;
+
+        try {
+            page.fill("input[name='login']", creds.login());
+        } catch (Exception e) {
+            log.warn("Не удалось заполнить email");
+            return false;
+        }
+
+        // Кнопка "Далее"
+        if (!clickOrFail(page, "button:has-text('Далее')", 8000, "Кнопка 'Далее'"))
+            return false;
+
+        // Поле ввода кода
+        if (!waitOrFail(page, "input[name='code']", 15000, "Поле ввода кода"))
+            return false;
+
+        // Получаем OTP
         String otp = otpService.waitForOtp(SiteName.YOUDO.name(), creds.login(), 120_000);
-        log.debug("Используем OTP={} для входа в YouDo", otp);
-
         if (otp == null) {
-            throw new RuntimeException("OTP не получен за отведённое время");
+            log.warn("OTP не получен за отведённое время");
+            return false;
         }
-        codeInput.fill(otp);
-        page.waitForTimeout(1500);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+
+        try {
+            page.fill("input[name='code']", otp);
+        } catch (Exception e) {
+            log.warn("Не удалось заполнить OTP");
+            return false;
+        }
+        // Ждём загрузку
+        try {
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+        } catch (Exception e) {
+            log.warn("Не удалось дождаться загрузки после ввода OTP");
+            return false;
+        }
+
         log.debug("Успешный вход в аккаунт {}", creds.login());
+        page.waitForTimeout(30000); //!!искусственная задержка для обновления кодов
+        otpService.invalidateOtp(SiteName.YOUDO.name(), creds.login());
+        return true;
     }
 
-    private void safeNavigate(Page page, String url) {
-        for (int i = 1; i <= 5; i++) {
-            try {
-                page.navigate(url, new Page.NavigateOptions()
-                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
-                return;
-            } catch (PlaywrightException e) {
-                log.warn("Навигация не удалась (попытка {}): {}", i, e.getMessage());
-                page.waitForTimeout(1500);
-            }
-        }
-        throw new RuntimeException("Не удалось открыть страницу после 5 попыток: " + url);
-    }
 
-    private void processAutoReply(Page page, AiNotificationPayload payload) {
-
+    @Override
+    protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
         String link = payload.getOrder().getLink();
-        log.info("Переход на заказ: {}", link);
+        log.debug("Переход на заказ: {}", link);
 
-        page.navigate(link);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        try {
+            page.navigate(link);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+        } catch (Exception e) {
+            log.warn("Не удалось открыть заказ {}", link);
+            return false;
+        }
 
         // Кнопка "Откликнуться"
-        Locator replyBtn = page.locator("button:has-text('Откликнуться')");
-        page.waitForCondition(replyBtn::isVisible);
-        replyBtn.click();
+        if (!clickOrFail(page, "button:has-text('Откликнуться')", 8000, "Кнопка отклика"))
+            return false;
 
-        // Ждём появления формы
-        page.waitForSelector("textarea[name='Message']");
+        //Дальше не проверено!! - нет соответствующего акк
+        // Форма
+        if (!waitOrFail(page, "textarea[name='Message']", 8000, "Форма отклика"))
+            return false;
 
-        // Текст автоответа
-        String reply = payload.getDecision().reply();
-        page.fill("textarea[name='Message']", reply);
+        // Текст
+        try {
+            page.fill("textarea[name='Message']", payload.getDecision().reply());
+        } catch (Exception e) {
+            log.warn("Не удалось заполнить текст ответа");
+            return false;
+        }
 
         // Цена
-        page.fill("input[name='Price']", "500");
+        try {
+            page.fill("input[name='Price']", "500");
+        } catch (Exception e) {
+            log.warn("Не удалось заполнить цену");
+            return false;
+        }
 
-        // Срок выполнения
-        page.fill("input[name='ExecutionTime']", "1");
+        // Срок
+        try {
+            page.fill("input[name='ExecutionTime']", "1");
+        } catch (Exception e) {
+            log.warn("Не удалось заполнить срок выполнения");
+            return false;
+        }
 
-        // Кнопка "Отправить"
+        // Кнопка отправки
+        if (!waitOrFail(page, "button:has-text('Отправить')", 8000, "Кнопка отправки"))
+            return false;
+
         Locator sendBtn = page.locator("button:has-text('Отправить')");
-        page.waitForCondition(sendBtn::isEnabled);
+        try {
+            page.waitForCondition(sendBtn::isEnabled);
+        } catch (Exception e) {
+            log.warn("Кнопка 'Отправить' не активна");
+            return false;
+        }
 
         if (sendRequest) {
-            sendBtn.click();
+            try {
+                sendBtn.click();
+            } catch (Exception e) {
+                log.warn("Не удалось нажать кнопку 'Отправить'");
+                return false;
+            }
         }
 
         page.waitForTimeout(5000);
         log.debug("Заявка успешно отправлена");
+        return true;
     }
 }

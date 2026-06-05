@@ -24,7 +24,7 @@ public class EmailOtpScheduler {
     private static final DateTimeFormatter DATE_TIME_FMT =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 30000)
     public void checkMailbox() {
         log.debug("Запуск шедулера проверки почты: {} ...", LocalDateTime.now().format(DATE_TIME_FMT));
         try {

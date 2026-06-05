@@ -4,22 +4,17 @@ import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WeblancerAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
-
-    private final PlaywrightManager playwrightManager;
 
     @Value("${parser.autoreply.headless.weblancer.net}")
     private void setHeadless(boolean headless) {
@@ -36,54 +31,12 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
         return SiteName.WEBLANCER;
     }
 
-    @Override
-    public boolean sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload) {
-
-        Playwright playwright = null;
-        Browser browser = null;
-        BrowserContext context = null;
-        Page page = null;
-
-        try {
-            playwright = playwrightManager.createPlaywright();
-            ProxyCredentials proxy = playwrightManager.getProxyWithRetry(3, 500);
-
-            browser = playwrightManager.createBrowser(
-                    playwright,
-                    proxy,
-                    headless,
-                    true,
-                    getSiteName().name()
-            );
-
-            context = playwrightManager.createBrowserContext(browser, proxy, true, getSiteName().name());
-            page = context.newPage();
-
-            // ЛОГИН
-            login(page, creds);
-
-            // Даем время увидеть, что логин успешный
-            page.waitForTimeout(3000);
-
-            // Переходим на заказ и пытаемся подать заявку
-            processAutoReply(page, payload);
-
-            page.waitForTimeout(15000);
-
-            log.debug("Автоответ успешно отправлен пользователем {}", creds.login());
-            return true;
-
-        } catch (Exception e) {
-            log.error("Ошибка при отправке автоответа", e);
-            return false;
-
-        } finally {
-            playwrightManager.closeResources(page, context, browser, playwright, getSiteName().name());
-        }
+    public WeblancerAutoreplyParser(PlaywrightManager playwrightManager) {
+        super(playwrightManager);
     }
 
-    private void processAutoReply(Page page, AiNotificationPayload payload) {
-
+    @Override
+    protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
         // Переходим на страницу заказа
         String link = payload.getOrder().getLink();
         log.info("Переход на заказ: {}", link);
@@ -126,13 +79,11 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
         page.waitForTimeout(10000);
 
         log.debug("Заявка успешно отправлена");
+        return true;
     }
 
-
-
-
-    private void login(Page page, DecryptedCredential creds) {
-
+    @Override
+    protected boolean login(Page page, DecryptedCredential creds) {
         // Переходим на сайт
         page.navigate("https://www.weblancer.net/?lang=ru");
 
@@ -165,8 +116,7 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
 
         // Ждём загрузки
         page.waitForLoadState(LoadState.NETWORKIDLE);
-
         log.debug("Успешный вход в аккаунт {}", creds.login());
+        return true;
     }
 }
-

@@ -1,5 +1,7 @@
 package by.gdev.common.model;
 
+import java.util.Arrays;
+
 public enum SiteName {
     FLRU(1),
     //HABR(2), not in use anymore
@@ -23,4 +25,12 @@ public enum SiteName {
     public long getId() {
         return id;
     }
+
+    public static SiteName fromId(Long id) {
+        return Arrays.stream(values())
+                .filter(s -> s.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown site id: " + id));
+    }
+
 }
