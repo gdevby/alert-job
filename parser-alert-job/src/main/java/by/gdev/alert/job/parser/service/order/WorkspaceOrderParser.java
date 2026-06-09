@@ -5,18 +5,17 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.service.order.jsoup.JsoupClient;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -29,6 +28,8 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class WorkspaceOrderParser extends AbsctractSiteParser {
 
+    private final JsoupClient jsoupClient;
+
     private final String baseURI = "https://workspace.ru";
     private final String statusParam = "?STATUS=published";
     
@@ -39,29 +40,28 @@ public class WorkspaceOrderParser extends AbsctractSiteParser {
 
     @Override
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
-		if (!active)
-			return new ArrayList<>();
-        Document document;
+        if (!active)
+            return new ArrayList<>();
+
         try {
-            document = Jsoup.connect(link + statusParam)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-                    .header("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7")
-                    .referrer("https://workspace.ru/")
-                    .timeout(15000)
-                    .get();
-        } catch (IOException e) {
-            log.error("cannot parse orders by link {}", link);
+            Document document = jsoupClient.get(link + statusParam);
+            Elements cards = document.getElementsByClass("vacancies__card _tender");
+
+            List<Order> rawOrders = cards.stream()
+                    .map(card -> buildOrder(card, siteSourceJobId, category, subCategory))
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            return getOrdersData(rawOrders, category, subCategory);
+        } catch (org.jsoup.HttpStatusException e) {
+            if (e.getStatusCode() == 403) {
+                log.warn("Workspace returned 403 for link {}", link);
+                return List.of();
+            }
+            throw new RuntimeException(e);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        Elements cards = document.getElementsByClass("vacancies__card _tender");
-
-        List<Order> rawOrders = cards.stream()
-                .map(card -> buildOrder(card, siteSourceJobId, category, subCategory))
-                .filter(Objects::nonNull)
-                .toList();
-
-        return getOrdersData(rawOrders, category, subCategory);
     }
 
     private Order buildOrder(Element card, Long siteSourceJobId, Category category, Subcategory subCategory) {

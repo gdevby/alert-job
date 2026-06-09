@@ -15,6 +15,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
+import by.gdev.alert.job.parser.service.order.jsoup.JsoupClient;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -29,6 +30,8 @@ import java.util.Objects;
 @Slf4j
 @RequiredArgsConstructor
 public class PeoplePerHourParser extends AbsctractSiteParser {
+
+    private final JsoupClient jsoupClient;
 
     @Value("${peopleperhour.proxy.active}")
     private boolean isNeedProxy;
@@ -53,7 +56,7 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
         String uri = buildUri(category, subCategory);
         Document document;
         try {
-            document = Jsoup.connect(uri).get();
+            document = jsoupClient.get(uri);
         } catch (HttpStatusException e) {
             if (e.getStatusCode() == 404) {
                 log.warn("404 Not Found for URL {}", uri);

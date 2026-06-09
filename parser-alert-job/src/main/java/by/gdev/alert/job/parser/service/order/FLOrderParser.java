@@ -7,6 +7,7 @@ import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.rss.Item;
 import by.gdev.alert.job.parser.domain.rss.Rss;
+import by.gdev.alert.job.parser.service.order.jsoup.JsoupClient;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
 import jakarta.xml.bind.JAXBContext;
@@ -33,6 +34,8 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @Slf4j
 public class FLOrderParser extends AbsctractSiteParser {
+
+    private final JsoupClient jsoupClient;
 
     private Pattern paymentPatter = Pattern.compile(".*[Бб]юджет: (\\d+).*");
     private Pattern currencyPatter = Pattern.compile("\\d.*&#8381;");
@@ -106,14 +109,16 @@ public class FLOrderParser extends AbsctractSiteParser {
             price.setPrice(m1.group(0).replaceAll("&#8381;", "руб."));
             order.setPrice(price);
         }
-        Document doc = null;
+
+        Document doc;
         try {
-            doc = Jsoup.parse(new URL(order.getLink()), 30000);
-        } catch (IOException ex) {
+            doc = jsoupClient.get(order.getLink());
+        } catch (Exception ex) {
             order.setValidOrder(false);
-            log.debug("invalid flru link " + order.getLink());
+            log.debug("invalid flru link {}", order.getLink());
             return order;
         }
+
         Element el = doc.selectFirst(".b-layout__txt_lineheight_1");
         if (Objects.nonNull(el) && (el.text().contains("Срочный заказ") || el.text().contains("Для всех"))) {
             order.setOpenForAll(true);
