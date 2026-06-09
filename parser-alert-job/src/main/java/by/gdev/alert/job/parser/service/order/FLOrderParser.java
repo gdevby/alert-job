@@ -5,14 +5,10 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.domain.rss.Item;
 import by.gdev.alert.job.parser.domain.rss.Rss;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
-import com.google.common.collect.Lists;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
 import lombok.RequiredArgsConstructor;
@@ -30,19 +26,13 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class FLOrderParser extends AbsctractSiteParser {
-
-    private final ParserService service;
-    private final OrderRepository orderRepository;
-    private final ParserSourceRepository parserSourceRepository;
 
     private Pattern paymentPatter = Pattern.compile(".*[Бб]юджет: (\\d+).*");
     private Pattern currencyPatter = Pattern.compile("\\d.*&#8381;");
@@ -67,50 +57,40 @@ public class FLOrderParser extends AbsctractSiteParser {
         JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
-        return Objects.isNull(rss.getChannel().getItem()) ? Lists.newArrayList()
-                : rss.getChannel().getItem().stream()
-                .filter(f -> service.isExistsOrder(category, subCategory, f.getLink()))
-                .map(m -> {
-                    log.debug("found new order {} {}", m.getTitle(), m.getLink());
-                    service.saveOrderLinks(category, subCategory, m.getLink());
-                    Order order = new Order();
-                    order.setTitle(m.getTitle());
-                    order.setDateTime(m.getPubDate());
-                    order.setMessage(m.getDescription());
-                    order.setLink(m.getLink());
-                    order = parsePrice(order);
-                    String title = order.getTitle().replaceAll("(\\(Бюджет: .*[0-9\\;\\)])", "");
-                    order.setTitle(title);
-                    ParserSource parserSource = new ParserSource();
-                    parserSource.setSource(siteSourceJobId);
-                    parserSource.setCategory(category.getId());
-                    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-                    order.setSourceSite(parserSource);
-                    return order;
-                })
-                .filter(Order::isValidOrder)
-                .map(m -> {
-                    ParserSource parserSource = m.getSourceSite();
-                    Optional<ParserSource> optionalSource = parserSourceRepository
-                            .findBySourceAndCategoryAndSubCategory(parserSource.getSource(),
-                                    parserSource.getCategory(), parserSource.getSubCategory());
-                    if (optionalSource.isPresent()) {
-                        parserSource = optionalSource.get();
-                    } else {
-                        parserSource = parserSourceRepository.save(parserSource);
-                    }
-                    m.setSourceSite(parserSource);
-                    m = orderRepository.save(m);
-                    OrderDTO dto = mapper.map(m, OrderDTO.class);
-                    SourceSiteDTO source = dto.getSourceSite();
-                    source.setCategoryName(category.getNativeLocName());
-                    if (Objects.nonNull(subCategory))
-                        source.setSubCategoryName(subCategory.getNativeLocName());
-                    dto.setSourceSite(source);
-                    return dto;
-                })
-                .peek(e -> log.debug("found new order {} {}", e.getTitle(), e.getLink()))
-                .collect(Collectors.toList());
+
+        if (rss.getChannel() == null || rss.getChannel().getItem() == null)
+            return List.of();
+
+        List<Order> rawOrders = rss.getChannel().getItem().stream()
+                .map(item -> buildOrder(item, siteSourceJobId, category, subCategory))
+                .filter(Objects::nonNull)
+                .toList();
+
+        return getOrdersData(rawOrders, category, subCategory);
+    }
+
+    private Order buildOrder(Item item, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        if (!getParserService().isExistsOrder(category, subCategory, item.getLink()))
+            return null;
+
+        Order order = getOrderRepository().findByLink(item.getLink()).orElse(new Order());
+
+        order.setTitle(item.getTitle());
+        order.setDateTime(item.getPubDate());
+        order.setMessage(item.getDescription());
+        order.setLink(item.getLink());
+
+        order = parsePrice(order);
+
+        String cleaned = order.getTitle().replaceAll("(\\(Бюджет: .*[0-9\\;\\)])", "");
+        order.setTitle(cleaned);
+
+        ParserSource ps = new ParserSource();
+        ps.setSource(siteSourceJobId);
+        ps.setCategory(category.getId());
+        ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
+        order.setSourceSite(ps);
+        return order;
     }
 
     @SneakyThrows
@@ -145,6 +125,4 @@ public class FLOrderParser extends AbsctractSiteParser {
     public SiteName getSiteName() {
         return SiteName.FLRU;
     }
-
-
 }

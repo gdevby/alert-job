@@ -1,26 +1,19 @@
 package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
 import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.workana.WorkanaOrder;
 import by.gdev.alert.job.parser.domain.workana.WorkanaRoot;
-import by.gdev.alert.job.parser.repository.CurrencyRepository;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -37,7 +30,6 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -51,12 +43,6 @@ public class WorkanaOrderParser extends AbsctractSiteParser {
     private final String currencyPattern = "\\b([A-Z]{3})\\b";  // Pattern to match 3 capital letters e.g "text USD text" -> "USD
     private final String numberPattern = "\\d+(?:[.,]\\d+)*";   // Pattern to match number with commas or dots e.g "text 40" -> 40 or "text 1,000" -> 1,000 or "text 3.000" - > 3.000
 
-    private final CurrencyRepository currencyRepository;
-    private final ParserService parserService;
-    private final ParserSourceRepository parserSourceRepository;
-    private final OrderRepository orderRepository;
-    private final ModelMapper mapper;
-    
     @Value("${parser.work.workana.com}")
     private void setActive(boolean active) {
         this.active = active;
@@ -78,80 +64,65 @@ public class WorkanaOrderParser extends AbsctractSiteParser {
 
         List<WorkanaOrder> workanaOrders = response.getBody().getWorkanaOrderWrap().getWorkanaOrders();
 
-        return workanaOrders.stream()
-                .map(workanaOrder -> {
-
-                    String titleHTML = workanaOrder.getTitle();
-
-                    Document doc = Jsoup.parse(titleHTML);
-
-                    Element anchorElement = doc.select("a").first();
-                    String linkPostfix = doc.select("a").first().attr("href");
-                    String title = anchorElement.select("span").text();
-
-                    String descriptionHTML = workanaOrder.getDescription();
-
-                    String description = descriptionHTML.replaceFirst("<br />.*", "");
-
-
-                    Order order = new Order();
-                    order.setTitle(title);
-                    order.setLink(baseURL + linkPostfix);
-                    order.setMessage(description);
-                    order.setDateTime(new Date());
-
-                    String budget = workanaOrder.getBudget();
-
-                    Optional<String> extractedCurrency = extractValue(currencyPattern, budget);
-                    Optional<String> extractedAmount = extractValue(numberPattern, budget);
-
-                    if (extractedCurrency.isPresent() && extractedAmount.isPresent()) {
-                        Optional<CurrencyEntity> optionalCurrency = currencyRepository.findByCurrencyCode(extractedCurrency.get());
-                        double amount = convertToDouble(extractedAmount.get());
-
-                        optionalCurrency.ifPresent(currency -> {
-                            double convertedPrice = (amount / currency.getNominal()) * currency.getCurrencyValue();
-                            order.setPrice(new Price((int) amount + " " + currency.getCurrencyCode(), (int) convertedPrice));
-                        });
-                    }
-
-                    ParserSource parserSource = new ParserSource();
-                    parserSource.setSource(siteSourceJobId);
-                    parserSource.setCategory(category.getId());
-                    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-
-                    order.setSourceSite(parserSource);
-                    return order;
-                })
-                .filter(Order::isValidOrder)
-                .filter(order -> parserService.isExistsOrder(category, subCategory, order.getLink()))
-                .map(order -> {
-                    log.debug("found new order {} {}", order.getTitle(), order.getLink());
-                    parserService.saveOrderLinks(category, subCategory, order.getLink());
-                    ParserSource parserSource = order.getSourceSite();
-                    Optional<ParserSource> source = parserSourceRepository.findBySourceAndCategoryAndSubCategory(
-                            parserSource.getSource(),
-                            parserSource.getCategory(),
-                            parserSource.getSubCategory()
-                    );
-
-                    if (source.isPresent()) {
-                        parserSource = source.get();
-                    } else {
-                        parserSource = parserSourceRepository.save(parserSource);
-                    }
-
-                    order.setSourceSite(parserSource);
-                    order = orderRepository.save(order);
-                    OrderDTO orderDto = mapper.map(order, OrderDTO.class);
-                    SourceSiteDTO sourceSiteDto = orderDto.getSourceSite();
-                    sourceSiteDto.setCategoryName(category.getNativeLocName());
-                    if (Objects.nonNull(subCategory))
-                        sourceSiteDto.setSubCategoryName(subCategory.getNativeLocName());
-                    orderDto.setSourceSite(sourceSiteDto);
-                    return orderDto;
-                })
+        List<Order> rawOrders = workanaOrders.stream()
+                .map(o -> buildOrder(o, siteSourceJobId, category, subCategory))
+                .filter(Objects::nonNull)
                 .toList();
+
+        return getOrdersData(rawOrders, category, subCategory);
+    }
+
+    private Order buildOrder(WorkanaOrder wo,
+                             Long siteSourceJobId,
+                             Category category,
+                             Subcategory subCategory) {
+
+        Document doc = Jsoup.parse(wo.getTitle());
+        Element anchor = doc.selectFirst("a");
+        if (anchor == null)
+            return null;
+
+        String linkPostfix = anchor.attr("href");
+        String title = anchor.select("span").text();
+
+        String fullLink = baseURL + linkPostfix;
+
+        if (!getParserService().isExistsOrder(category, subCategory, fullLink))
+            return null;
+
+        Order order = getOrderRepository().findByLink(fullLink).orElse(new Order());
+
+        String description = wo.getDescription().replaceFirst("<br />.*", "");
+
+        order.setTitle(title);
+        order.setLink(fullLink);
+        order.setMessage(description);
+        order.setDateTime(new Date());
+
+        String budget = wo.getBudget();
+
+        Optional<String> extractedCurrency = extractValue(currencyPattern, budget);
+        Optional<String> extractedAmount = extractValue(numberPattern, budget);
+
+        if (extractedCurrency.isPresent() && extractedAmount.isPresent()) {
+            getCurrencyRepository()
+                    .findByCurrencyCode(extractedCurrency.get())
+                    .ifPresent(currency -> {
+                        double amount = convertToDouble(extractedAmount.get());
+                        double converted = (amount / currency.getNominal()) * currency.getCurrencyValue();
+                        order.setPrice(new Price(
+                                (int) amount + " " + currency.getCurrencyCode(),
+                                (int) converted
+                        ));
+                    });
+        }
+
+        ParserSource ps = new ParserSource();
+        ps.setSource(siteSourceJobId);
+        ps.setCategory(category.getId());
+        ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
+        order.setSourceSite(ps);
+        return order;
     }
 
     @Override

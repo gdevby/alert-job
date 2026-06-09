@@ -1,6 +1,7 @@
 package by.gdev.alert.job.parser.repository;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,6 +24,8 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
     Set<Order> findAllBySourceSubCategoryIsNullOneEager(Long source, Long category, Date date);
 
     Optional<Order> findByLink(String link);
+
+    List<Order> findOrdersByLink(String link);
 
     /**
      * Проверяет существование заказа по link, category и subCategory

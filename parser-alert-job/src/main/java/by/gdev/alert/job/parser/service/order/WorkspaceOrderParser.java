@@ -5,30 +5,21 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,10 +31,6 @@ public class WorkspaceOrderParser extends AbsctractSiteParser {
 
     private final String baseURI = "https://workspace.ru";
     private final String statusParam = "?STATUS=published";
-    private final ParserService parserService;
-    private final ParserSourceRepository parserSourceRepository;
-    private final OrderRepository orderRepository;
-    private final ModelMapper mapper;
     
     @Value("${parser.work.workspace.ru}")
     private void setActive(boolean active) {
@@ -54,81 +41,67 @@ public class WorkspaceOrderParser extends AbsctractSiteParser {
     protected List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		if (!active)
 			return new ArrayList<>();
-        Document document = null;
+        Document document;
         try {
-            document = Jsoup.connect(link+statusParam).get();
+            document = Jsoup.connect(link + statusParam)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                    .header("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7")
+                    .referrer("https://workspace.ru/")
+                    .timeout(15000)
+                    .get();
         } catch (IOException e) {
             log.error("cannot parse orders by link {}", link);
             throw new RuntimeException(e);
         }
 
         Elements cards = document.getElementsByClass("vacancies__card _tender");
-        return cards.stream()
-                .map(card -> {
-                    Element element = card.children().get(1);
-                    String title = element.child(0).child(0).text();
-                    String postfixLink = element.child(0).child(0).attr("href");
-                    String price = element.child(1).text();
 
-                    String date = card.children().get(2).child(0).child(1).text();
-
-                    Order order = new Order();
-                    order.setTitle(title);
-                    order.setLink(baseURI + postfixLink);
-
-                    SimpleDateFormat formatter = new SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("ru"));
-
-                    try {
-                        order.setDateTime(formatter.parse(date));
-                    } catch (ParseException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    String regex = "(\\d+(?:\\s\\d+)*)";
-                    Pattern pattern = Pattern.compile(regex);
-                    Matcher matcher = pattern.matcher(price);
-                    if (matcher.find()) {
-                        order.setPrice(new Price(price, Integer.parseInt(matcher.group(1).replaceAll("\\s", ""))));
-                    }
-
-
-                    ParserSource parserSource = new ParserSource();
-                    parserSource.setSource(siteSourceJobId);
-                    parserSource.setCategory(category.getId());
-                    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-
-                    order.setSourceSite(parserSource);
-                    return order;
-                })
-                .filter(Order::isValidOrder)
-                .filter(order -> parserService.isExistsOrder(category, subCategory, order.getLink()))
-                .map(order -> {
-                    log.debug("found new order {} {}", order.getTitle(), order.getLink());
-                    parserService.saveOrderLinks(category, subCategory, order.getLink());
-                    ParserSource parserSource = order.getSourceSite();
-                    Optional<ParserSource> source = parserSourceRepository.findBySourceAndCategoryAndSubCategory(
-                            parserSource.getSource(),
-                            parserSource.getCategory(),
-                            parserSource.getSubCategory()
-                    );
-
-                    if (source.isPresent()) {
-                        parserSource = source.get();
-                    } else {
-                        parserSource = parserSourceRepository.save(parserSource);
-                    }
-
-                    order.setSourceSite(parserSource);
-                    order = orderRepository.save(order);
-                    OrderDTO orderDto = mapper.map(order, OrderDTO.class);
-                    SourceSiteDTO sourceSiteDto = orderDto.getSourceSite();
-                    sourceSiteDto.setCategoryName(category.getNativeLocName());
-                    if (Objects.nonNull(subCategory))
-                        sourceSiteDto.setSubCategoryName(subCategory.getNativeLocName());
-                    orderDto.setSourceSite(sourceSiteDto);
-                    return orderDto;
-                })
+        List<Order> rawOrders = cards.stream()
+                .map(card -> buildOrder(card, siteSourceJobId, category, subCategory))
+                .filter(Objects::nonNull)
                 .toList();
+
+        return getOrdersData(rawOrders, category, subCategory);
+    }
+
+    private Order buildOrder(Element card, Long siteSourceJobId, Category category, Subcategory subCategory) {
+        Element element = card.children().get(1);
+        String title = element.child(0).child(0).text();
+        String postfixLink = element.child(0).child(0).attr("href");
+        String price = element.child(1).text();
+        String date = card.children().get(2).child(0).child(1).text();
+        String fullLink = baseURI + postfixLink;
+
+        if (!getParserService().isExistsOrder(category, subCategory, fullLink))
+            return null;
+
+        Order order = getOrderRepository().findOrdersByLink(fullLink).stream().findFirst().orElseGet(Order::new);
+
+        order.setTitle(title);
+        order.setLink(fullLink);
+
+        try {
+            SimpleDateFormat formatter =
+                    new SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("ru"));
+            order.setDateTime(formatter.parse(date));
+        } catch (ParseException e) {
+            log.warn("Cannot parse date {} for Workspace", date);
+            order.setDateTime(new Date());
+        }
+
+        // Цена
+        Matcher matcher = Pattern.compile("(\\d+(?:\\s\\d+)*)").matcher(price);
+        if (matcher.find()) {
+            int value = Integer.parseInt(matcher.group(1).replaceAll("\\s", ""));
+            order.setPrice(new Price(price, value));
+        }
+
+        ParserSource ps = new ParserSource();
+        ps.setSource(siteSourceJobId);
+        ps.setCategory(category.getId());
+        ps.setSubCategory(subCategory != null ? subCategory.getId() : null);
+        order.setSourceSite(ps);
+        return order;
     }
 
     @Override

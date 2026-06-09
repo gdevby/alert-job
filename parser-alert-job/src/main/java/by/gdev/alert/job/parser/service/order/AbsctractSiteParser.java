@@ -1,14 +1,18 @@
 package by.gdev.alert.job.parser.service.order;
 
-import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
-import by.gdev.alert.job.parser.domain.db.Subcategory;
+import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.factory.RestTemplateFactory;
+import by.gdev.alert.job.parser.repository.OrderRepository;
+import by.gdev.alert.job.parser.repository.ParserSourceRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
+import by.gdev.alert.job.parser.repository.CurrencyRepository;
+import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SourceSiteDTO;
 import jakarta.xml.bind.UnmarshalException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
@@ -34,6 +38,25 @@ public abstract class AbsctractSiteParser implements SiteParser{
 
 	@Autowired
 	private RestTemplateFactory restTemplateFactory;
+
+	@Autowired
+	private ModelMapper mapper;
+
+	@Getter
+	@Autowired
+	private ParserService parserService;
+
+	@Getter
+	@Autowired
+	private CurrencyRepository currencyRepository;
+
+	@Getter
+	@Autowired
+	private ParserSourceRepository parserSourceRepository;
+
+	@Getter
+	@Autowired
+	private OrderRepository orderRepository;
 
 	public List<OrderDTO> parse(){
 		return getOrders(getSiteName().getId());
@@ -97,6 +120,42 @@ public abstract class AbsctractSiteParser implements SiteParser{
 
 	protected RestTemplate getRestTemplate(boolean isProxyNeeded){
 		return restTemplateFactory.getRestTemplate(isProxyNeeded);
+	}
+
+	protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
+		parserService.saveOrderLinks(category, subCategory, order.getLink());
+		ParserSource ps = order.getSourceSite();
+		ParserSource existing = parserSourceRepository
+				.findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
+				.orElseGet(() -> parserSourceRepository.save(ps));
+		order.setSourceSite(existing);
+		return orderRepository.save(order);
+	}
+
+	private OrderDTO getOrderData(Order order, Category category, Subcategory subCategory){
+		OrderDTO dto = mapper.map(order, OrderDTO.class);
+		SourceSiteDTO source = dto.getSourceSite();
+		source.setCategoryName(category.getNativeLocName());
+		if (subCategory != null)
+			source.setSubCategoryName(subCategory.getNativeLocName());
+		dto.setSourceSite(source);
+		return dto;
+	}
+
+	protected List<OrderDTO> getOrdersData(List<Order> orders, Category category, Subcategory subCategory){
+		return orders.stream()
+				.filter(Objects::nonNull)
+				.filter(Order::isValidOrder)
+				.filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
+				.map(order -> saveOrder(order, category, subCategory))
+				.peek(order -> {
+					log.info("*** save order: site {},  title {} , link {}",
+							getSiteName(),
+							order.getTitle(),
+							order.getLink());
+				})
+				.map(order -> getOrderData(order, category, subCategory))
+				.toList();
 	}
 
     public boolean isActive() {

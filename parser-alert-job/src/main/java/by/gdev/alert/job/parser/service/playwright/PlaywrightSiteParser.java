@@ -2,15 +2,9 @@ package by.gdev.alert.job.parser.service.playwright;
 
 
 import by.gdev.alert.job.parser.domain.db.*;
-import by.gdev.alert.job.parser.repository.CurrencyRepository;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
-import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import jakarta.annotation.PostConstruct;
@@ -18,7 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -53,29 +46,6 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     private String ignoredErrorsRaw;
 
     private List<String> ignoredErrors;
-
-    @Getter
-    @Autowired
-    private ParserSourceRepository parserSourceRepository;
-
-    @Getter
-    @Autowired
-    private SiteSourceJobRepository siteSourceJobRepository;
-
-    @Getter
-    @Autowired
-    private ParserService parserService;
-
-    @Getter
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Getter
-    @Autowired
-    private CurrencyRepository currencyRepository;
-
-    @Autowired
-    private ModelMapper mapper;
 
     protected boolean debug;
 
@@ -155,7 +125,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
     @Override
     public List<OrderDTO> parse() {
-        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(getSiteName().getId());
+        SiteSourceJob siteSourceJob = getSiteSourceJobRepository().findWithCategories(getSiteName().getId());
         if (siteSourceJob == null) {
             return List.of();
         }
@@ -274,44 +244,6 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         );
     }
 
-    protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
-        parserService.saveOrderLinks(category, subCategory, order.getLink());
-        ParserSource ps = order.getSourceSite();
-        ParserSource existing = parserSourceRepository
-                .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
-                .orElseGet(() -> parserSourceRepository.save(ps));
-        order.setSourceSite(existing);
-        return orderRepository.save(order);
-    }
-
-    private OrderDTO getOrderData(Order order, Category category, Subcategory subCategory){
-        OrderDTO dto = mapper.map(order, OrderDTO.class);
-        SourceSiteDTO source = dto.getSourceSite();
-        source.setCategoryName(category.getNativeLocName());
-        if (subCategory != null)
-            source.setSubCategoryName(subCategory.getNativeLocName());
-        dto.setSourceSite(source);
-        return dto;
-    }
-
-    protected List<OrderDTO> getOrdersData(List<Order> orders, Category category, Subcategory subCategory){
-        return orders.stream()
-                .filter(Objects::nonNull)
-                .filter(Order::isValidOrder)
-                .peek(order -> {
-                    if (debug) {
-                        log.info("*** order: site {},  title {} , link {}",
-                                getSiteName(),
-                                order.getTitle(),
-                                order.getLink());
-                    }
-                })
-                .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                .map(order -> saveOrder(order, category, subCategory))
-                .map(order -> getOrderData(order, category, subCategory))
-                .toList();
-    }
-
     @FunctionalInterface
     public interface ClickAction {
         void click();
@@ -336,7 +268,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         log.warn("'{}' НЕ выбран после 3 попыток", name);
         return false;
     }
-    
+
     protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList);
 
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page);
