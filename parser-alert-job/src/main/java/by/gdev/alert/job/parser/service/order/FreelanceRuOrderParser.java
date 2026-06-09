@@ -32,7 +32,7 @@ public class FreelanceRuOrderParser extends PlaywrightSiteParser {
     private static final String CATEGORY_SELECTOR = "div.task-filter-group label.task-filter-check";
     private static final String TASKS_SELECTOR = ".task-feed-list .task-card";
 
-    @Value("${freelanceru.proxy.active}")
+    @Value("${freelanceru.proxy.active:false}")
     private boolean proxyActive;
 
     @Value("${parser.work.freelance.ru}")
@@ -40,7 +40,7 @@ public class FreelanceRuOrderParser extends PlaywrightSiteParser {
         this.active = active;
     }
 
-    @Value("${parser.headless.freelance.ru}")
+    @Value("${parser.headless.freelance.ru:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
     }
