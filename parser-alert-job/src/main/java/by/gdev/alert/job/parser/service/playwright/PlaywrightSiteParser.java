@@ -2,15 +2,9 @@ package by.gdev.alert.job.parser.service.playwright;
 
 
 import by.gdev.alert.job.parser.domain.db.*;
-import by.gdev.alert.job.parser.repository.CurrencyRepository;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
-import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import jakarta.annotation.PostConstruct;
@@ -18,7 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -27,61 +20,86 @@ import java.util.*;
 import java.util.function.Supplier;
 
 
+/**
+ * Абстрактный парсер для сайтов, требующих динамического рендеринга через Playwright.
+ * Предоставляет:
+ *  - создание Playwright‑сессии (браузер, контекст, страница);
+ *  - работу с прокси и retry‑логикой;
+ *  - обработку ошибок Playwright;
+ *  - вспомогательные методы для кликов и повторных попыток;
+ *  - общий цикл получения заказов через Playwright.
+ *
+ * Конкретные реализации должны переопределить методы:
+ *  - {@link #mapItems(String, Long, List)}
+ *  - {@link #mapPlaywrightItems(String, Long, Pair, Page)}
+ *  - {@link #mapPlaywrightItems(String, Long, Category, Subcategory)}
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
 
+    /**
+     * Менеджер Playwright, отвечающий за создание браузеров, контекстов, страниц и прокси.
+     */
     @Autowired
     private PlaywrightManager playwrightManager;
 
+
+    /**
+     * Количество попыток повторного выполнения операции Playwright.
+     */
     @Value("${parser.site.retry.attempts:3}")
     private int retryAttempts;
 
+
+    /**
+     * Количество попыток клика по элементу категории/подкатегории.
+     */
     @Value("${parser.category-click-retry-attempts:3}")
     @Getter
     private int categoryClickRetryAttempts;
 
+    /**
+     * Задержка между попытками клика (мс).
+     */
     @Value("${parser.category-click-retry-attempts-delay:500}")
     @Getter
     private int categoryClickRetryAttemptsDelay;
 
+    /**
+     * Базовая задержка между retry‑попытками Playwright (мс).
+     */
     @Value("${parser.site.retry.delay:2000}")
     private long retryDelayMs;
 
+
+    /**
+     * Сырые строки ошибок Playwright, которые должны игнорироваться (CSV).
+     */
     @Value("${parser.retry.ignored-errors:}")
     private String ignoredErrorsRaw;
 
+    /**
+     * Список ошибок Playwright, которые будут игнорироваться при retry.
+     */
     private List<String> ignoredErrors;
 
-    @Getter
-    @Autowired
-    private ParserSourceRepository parserSourceRepository;
-
-    @Getter
-    @Autowired
-    private SiteSourceJobRepository siteSourceJobRepository;
-
-    @Getter
-    @Autowired
-    private ParserService parserService;
-
-    @Getter
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Getter
-    @Autowired
-    private CurrencyRepository currencyRepository;
-
-    @Autowired
-    private ModelMapper mapper;
-
+    /**
+     * Флаг режима отладки Playwright - дополнительные логи и задержки.
+     */
     protected boolean debug;
 
+    /**
+     * Флаг headless‑режима браузера.
+     */
     protected boolean headless;
 
 
+    /**
+     * Инициализирует список ошибок Playwright, которые должны игнорироваться при retry.
+     * Список берётся из конфигурации (CSV‑строка).
+     */
     @PostConstruct
     private void initIgnoredErrors() {
         if (ignoredErrorsRaw == null || ignoredErrorsRaw.isBlank()) {
@@ -96,6 +114,13 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         log.debug("Игнорируемые ошибки Playwright: {}", ignoredErrors);
     }
 
+    /**
+     * Получает прокси с retry‑логикой.
+     *
+     * @param maxRetries количество попыток
+     * @param retryDelayMs задержка между попытками
+     * @return {@link ProxyCredentials} или null, если прокси не удалось получить
+     */
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -111,24 +136,59 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return null;
     }
 
+    /**
+     * Создаёт новый экземпляр {@link Playwright}.
+     *
+     * @return объект Playwright
+     */
     public Playwright createPlaywright() {
         return playwrightManager.createPlaywright();
     }
 
+    /**
+     * Закрывает все ресурсы Playwright.
+     *
+     * @param page страница
+     * @param context контекст браузера
+     * @param browser браузер
+     * @param playwright движок Playwright
+     */
     protected void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
         playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
     }
 
+    /**
+     * Создаёт новый {@link BrowserContext}.
+     *
+     * @param browser браузер
+     * @param proxy прокси (может быть null)
+     * @param useProxy использовать ли прокси
+     * @return новый контекст браузера
+     */
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
         return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
     }
 
+    /**
+     * Создаёт браузер Playwright.
+     *
+     * @param playwright движок Playwright
+     * @param proxy прокси (может быть null)
+     * @param headless режим headless
+     * @param isActiveProxy использовать ли прокси
+     * @return браузер
+     */
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
         return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
     }
 
     /**
-     * Класс для хранения сессии Playwright
+     * Хранит полную Playwright‑сессию:
+     *  - движок Playwright;
+     *  - браузер;
+     *  - контекст;
+     *  - страницу;
+     *  - прокси.
      */
     @Getter
     @AllArgsConstructor
@@ -141,7 +201,11 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     }
 
     /**
-     * Создает и возвращает сессию Playwright
+     * Создаёт Playwright‑сессию.
+     *
+     * @param headless режим headless
+     * @param useProxy использовать ли прокси
+     * @return {@link PlaywrightSession}
      */
     protected PlaywrightSession createSession(boolean headless, boolean useProxy) {
         Playwright playwright = createPlaywright();
@@ -153,20 +217,38 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return new PlaywrightSession(playwright, browser, context, page, proxy);
     }
 
+    /**
+     * Переопределяет стандартный {@link AbsctractSiteParser#parse()},
+     * так как Playwright‑парсеры используют другой цикл обработки.
+     *
+     * @return список заказов
+     */
     @Override
     public List<OrderDTO> parse() {
-        SiteSourceJob siteSourceJob = siteSourceJobRepository.findWithCategories(getSiteName().getId());
+        SiteSourceJob siteSourceJob = getSiteSourceJobRepository().findWithCategories(getSiteName().getId());
         if (siteSourceJob == null) {
             return List.of();
         }
         return getOrdersForPlayright(siteSourceJob);
     }
 
+    /**
+     * Получает заказы через Playwright.
+     *
+     * @param siteSourceJob объект с категориями и настройками сайта
+     * @return список заказов
+     */
     public List<OrderDTO> getOrdersForPlayright(SiteSourceJob siteSourceJob) {
         List<Pair<Category, Subcategory>>  categoriesPairList = getCategoriesPairListForJob(siteSourceJob);
         return mapItems(siteSourceJob.getParsedURI(), siteSourceJob.getId(), categoriesPairList);
     }
 
+    /**
+     * Формирует список пар (категория, подкатегория), которые нужно парсить.
+     *
+     * @param siteSourceJob источник с категориями
+     * @return список пар
+     */
     List<Pair<Category, Subcategory>> getCategoriesPairListForJob(SiteSourceJob siteSourceJob){
         List<Pair<Category, Subcategory>> categoriesPairList = new ArrayList<>();
         siteSourceJob.getCategories().forEach(category -> {
@@ -185,6 +267,13 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return categoriesPairList;
     }
 
+    /**
+     * Универсальный механизм retry для операций Playwright.
+     *
+     * @param operation операция, возвращающая список заказов
+     * @param operationDescription описание операции для логов
+     * @return результат операции или пустой список
+     */
     private List<OrderDTO> executeWithRetry(Supplier<List<OrderDTO>> operation,
                                             String operationDescription) {
         Exception lastIgnored = null;
@@ -236,10 +325,18 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         return List.of();
     }
 
-    // Создаем две версии метода mapItemsWithRetry
+    /**
+     * Выполняет парсинг категории/подкатегории с retry‑логикой.
+     *
+     * @param link URL страницы
+     * @param proxyActive использовать ли прокси
+     * @param siteSourceJobId ID источника
+     * @param category категория
+     * @param subCategory подкатегория (может быть null)
+     * @return список заказов
+     */
     public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
                                             Long siteSourceJobId, Category category, Subcategory subCategory) {
-
         if (!active) return List.of();
 
         String description = String.format("парсинга %s: категория '%s', подкатегория '%s', прокси %s",
@@ -254,9 +351,18 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         );
     }
 
+    /**
+     * Версия mapItemsWithRetry для заранее созданной Playwright‑страницы.
+     *
+     * @param link URL страницы
+     * @param proxyActive использовать ли прокси
+     * @param siteSourceJobId ID источника
+     * @param pair пара категория/подкатегория
+     * @param page Playwright‑страница
+     * @return список заказов
+     */
     public List<OrderDTO> mapItemsWithRetry(String link, boolean proxyActive,
                                             Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page) {
-
         if (!active) return List.of();
 
         Category category = pair.getLeft();
@@ -274,49 +380,23 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         );
     }
 
-    protected final Order saveOrder(Order order, Category category, Subcategory subCategory) {
-        parserService.saveOrderLinks(category, subCategory, order.getLink());
-        ParserSource ps = order.getSourceSite();
-        ParserSource existing = parserSourceRepository
-                .findBySourceAndCategoryAndSubCategory(ps.getSource(), ps.getCategory(), ps.getSubCategory())
-                .orElseGet(() -> parserSourceRepository.save(ps));
-        order.setSourceSite(existing);
-        return orderRepository.save(order);
-    }
-
-    private OrderDTO getOrderData(Order order, Category category, Subcategory subCategory){
-        OrderDTO dto = mapper.map(order, OrderDTO.class);
-        SourceSiteDTO source = dto.getSourceSite();
-        source.setCategoryName(category.getNativeLocName());
-        if (subCategory != null)
-            source.setSubCategoryName(subCategory.getNativeLocName());
-        dto.setSourceSite(source);
-        return dto;
-    }
-
-    protected List<OrderDTO> getOrdersData(List<Order> orders, Category category, Subcategory subCategory){
-        return orders.stream()
-                .filter(Objects::nonNull)
-                .filter(Order::isValidOrder)
-                .peek(order -> {
-                    if (debug) {
-                        log.info("*** order: site {},  title {} , link {}",
-                                getSiteName(),
-                                order.getTitle(),
-                                order.getLink());
-                    }
-                })
-                .filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
-                .map(order -> saveOrder(order, category, subCategory))
-                .map(order -> getOrderData(order, category, subCategory))
-                .toList();
-    }
-
+    /**
+     * Функциональный интерфейс для действий клика.
+     */
     @FunctionalInterface
     public interface ClickAction {
         void click();
     }
 
+    /**
+     * Выполняет клик с несколькими попытками.
+     * Проверяет изменение URL как признак успешного клика.
+     *
+     * @param page страница Playwright
+     * @param name имя элемента для логов
+     * @param action действие клика
+     * @return true, если клик успешен
+     */
     public boolean clickWithRetry(Page page, String name, ClickAction action) {
         for (int attempt = 1; attempt <= categoryClickRetryAttempts; attempt++) {
             String beforeUrl = page.url();
@@ -336,10 +416,36 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
         log.warn("'{}' НЕ выбран после 3 попыток", name);
         return false;
     }
-    
+
+    /**
+     * Парсинг всех категорий/подкатегорий через Playwright.
+     *
+     * @param link URL страницы
+     * @param siteSourceJobId ID источника
+     * @param categoriesPairList список пар категория/подкатегория
+     * @return список заказов
+     */
     protected abstract List<OrderDTO> mapItems(String link, Long siteSourceJobId, List<Pair<Category, Subcategory>> categoriesPairList);
 
+    /**
+     * Парсинг одной категории/подкатегории через Playwright (с готовой страницей).
+     *
+     * @param link URL страницы
+     * @param siteSourceJobId ID источника
+     * @param pair пара категория/подкатегория
+     * @param page Playwright‑страница
+     * @return список заказов
+     */
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Pair<Category, Subcategory> pair, Page page);
 
+    /**
+     * Парсинг одной категории/подкатегории через Playwright (создаёт страницу самостоятельно).
+     *
+     * @param link URL страницы
+     * @param siteSourceJobId ID источника
+     * @param c категория
+     * @param sub подкатегория (может быть null)
+     * @return список заказов
+     */
     protected abstract List<OrderDTO> mapPlaywrightItems(String link, Long siteSourceJobId, Category c, Subcategory sub);
 }
