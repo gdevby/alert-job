@@ -94,22 +94,19 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
     }
 
 
-    private Order parseOrderData(Locator item,
-                                Long siteSourceJobId,
-                                Category category,
-                                Subcategory subCategory) {
-
+    private Order parseOrderData(Locator item, Long siteSourceJobId, Category category, Subcategory subCategory) {
         // Заголовок
         Locator titleEl = item.locator("h1.wants-card__header-title a");
         if (titleEl.count() == 0) return null;
 
-        String link = titleEl.getAttribute("href");
+        String rawLink = titleEl.getAttribute("href");
+        String link = normalizeLink(rawLink);
         String title = titleEl.textContent().trim();
 
-        Order order = getOrderRepository().findByLink(link).orElseGet(Order::new);
+        Order order = getOrderRepository().findOrdersByLink(link).stream().findFirst().orElseGet(Order::new);
         order.setTitle(title);
         order.setMessage(title);
-        order.setLink("https://kwork.ru" + link);
+        order.setLink(link);
         order.setDateTime(new Date());
 
         // Цена
@@ -133,10 +130,8 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
         order.setSourceSite(parserSource);
         order.setValidOrder(true);
         order.setOpenForAll(true);
-
         return order;
     }
-
 
     private void parsePriceNew(Order order, Locator item) {
         Locator priceEl = item.locator(".wants-card__price div.d-inline");
@@ -268,6 +263,22 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
     }
 
 
+    private String normalizeLink(String link) {
+        if (link == null) return null;
+
+        // если ссылка относительная — добавляем домен
+        if (!link.startsWith("http")) {
+            link = "https://kwork.ru" + link;
+        }
+
+        int idx = link.indexOf("?");
+        if (idx > 0) {
+            link = link.substring(0, idx);
+        }
+
+        return link;
+    }
+
     private Order parseOrder(Locator item,
                              Long siteSourceJobId,
                              Category category,
@@ -275,7 +286,8 @@ public class KworkRuOrderParser extends PlaywrightSiteParser {
         Locator titleEl = item.locator(".kwork-card-item__title a");
         if (titleEl.count() == 0) return null;
 
-        String link = titleEl.getAttribute("href");
+        String rawLink = titleEl.getAttribute("href");
+        String link = normalizeLink(rawLink);
         String title = titleEl.locator("span").textContent().trim();
 
         Order order = getOrderRepository().findByLink(link).orElseGet(Order::new);

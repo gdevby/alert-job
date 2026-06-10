@@ -1,5 +1,6 @@
 package by.gdev.common.service.playwright;
 
+import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.proxy.ProxyService;
 import com.microsoft.playwright.*;
@@ -11,13 +12,33 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 
+/**
+ * Менеджер Playwright, отвечающий за:
+ *  - создание экземпляра {@link Playwright};
+ *  - запуск браузера Chromium с детальной конфигурацией;
+ *  - настройку прокси;
+ *  - создание антидетект‑контекста;
+ *  - корректное закрытие всех ресурсов Playwright.
+ *
+ * Используется всеми Playwright-парсерами.
+ */
 @Slf4j
 @Component
 public class PlaywrightManager {
 
+    /**
+     * Сервис для получения активных HTTP‑прокси.
+     * Используется при включённом режиме useProxy.
+     */
     @Autowired
     private ProxyService proxyService;
 
+    /**
+     * Создаёт новый экземпляр {@link Playwright}.
+     *
+     * @return объект Playwright
+     * @throws RuntimeException если движок не удалось инициализировать
+     */
     public Playwright createPlaywright() {
         Playwright playwright = null;
         try {
@@ -33,7 +54,37 @@ public class PlaywrightManager {
         return playwright;
     }
 
-    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy, String site){
+    /**
+     * Создаёт браузер Chromium с полной конфигурацией.
+     *
+     * @param playwright движок Playwright
+     * @param proxy прокси (может быть null)
+     * @param headless режим headless:
+     *                 true  — браузер работает без UI;
+     *                 false — браузер отображается на экране.
+     * @param useProxy использовать ли прокси:
+     *                 true  — включить прокси;
+     *                 false — работать напрямую.
+     * @param site сайт‑источник (для логирования)
+     *
+     * @return запущенный браузер Chromium
+     *
+     * Параметры браузера:
+     *  - {@code setHeadless(headless)} — включает/выключает UI.
+     *  - {@code setSlowMo(120)} — замедляет выполнение команд (удобно для отладки).
+     *  - {@code --start-maximized} — открывает окно браузера в максимальном размере.
+     *  - {@code --disable-infobars} — скрывает баннеры Chrome "Chrome is being controlled by automated test software".
+     *  - {@code --disable-notifications} — отключает всплывающие уведомления.
+     *  - {@code --window-size=1366,768} — задаёт размер окна.
+     *  - {@code --no-default-browser-check} — отключает проверку "сделать Chrome браузером по умолчанию".
+     *  - {@code --no-first-run} — отключает экран первого запуска Chrome.
+     *
+     * Параметры прокси:
+     *  - {@code new Proxy("http://host:port")} — адрес HTTP‑прокси.
+     *  - {@code setUsername()} — логин прокси.
+     *  - {@code setPassword()} — пароль прокси.
+     */
+    public Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean useProxy,  SiteName site){
         BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                 .setHeadless(headless)
                 .setSlowMo(120)
@@ -66,6 +117,13 @@ public class PlaywrightManager {
         return browser;
     }
 
+    /**
+     * Получает активный прокси с retry‑логикой.
+     *
+     * @param maxRetries максимальное количество попыток
+     * @param retryDelayMs задержка между попытками (мс)
+     * @return {@link ProxyCredentials} или null, если прокси не найден
+     */
     public ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -96,7 +154,22 @@ public class PlaywrightManager {
         return null;
     }
 
-    public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright, String site) {
+    /**
+     * Закрывает все Playwright‑ресурсы:
+     *  - страницу;
+     *  - контекст;
+     *  - браузер;
+     *  - движок Playwright.
+     *
+     * Каждый этап закрытия логируется.
+     *
+     * @param page страница (может быть null)
+     * @param context контекст браузера (может быть null)
+     * @param browser браузер (может быть null)
+     * @param playwright движок Playwright (может быть null)
+     * @param site сайт‑источник (для логов)
+     */
+    public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright, SiteName site) {
         // Закрываем Page
         if (page != null) {
             try {
@@ -186,7 +259,35 @@ public class PlaywrightManager {
         }
     }
 
-    public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, String site) {
+    /**
+     * Создаёт новый {@link BrowserContext} с антидетект‑настройками.
+     *
+     * @param browser браузер
+     * @param proxy прокси (может быть null)
+     * @param useProxy использовать ли прокси
+     * @param site сайт‑источник (для логов)
+     * @return новый контекст браузера
+     *
+     * Параметры контекста:
+     *  - {@code setViewportSize(1366, 768)} — размер окна.
+     *  - {@code setUserAgent(...)} — подмена User‑Agent.
+     *  - {@code setLocale("ru-RU")} — локаль браузера.
+     *  - {@code setDeviceScaleFactor(1.0)} — DPI‑масштаб.
+     *  - {@code setIsMobile(false)} — отключает мобильный режим.
+     *  - {@code setHasTouch(false)} — отключает touch‑события.
+     *
+     * Антидетект‑скрипты:
+     *  - подмена navigator.webdriver;
+     *  - подмена window.chrome;
+     *  - подмена navigator.plugins;
+     *  - подмена navigator.languages;
+     *  - подмена hardwareConcurrency;
+     *  - подмена deviceMemory.
+     *
+     * Особые настройки:
+     *  - FREELANCEHUNT → timezone = Europe/Berlin.
+     */
+    public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, SiteName site) {
         BrowserContext context;
         Browser.NewContextOptions options;
         if (useProxy){

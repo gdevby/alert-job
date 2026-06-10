@@ -38,11 +38,11 @@ public abstract class PlaywrightCategoryParser implements Parser {
     }
 
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName().name());
+        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
     }
 
     public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        playwrightManager.closeResources(page, context , browser, playwright, getSiteName().name());
+        playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
     }
 
     public Playwright createPlaywright() {
@@ -50,7 +50,7 @@ public abstract class PlaywrightCategoryParser implements Parser {
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName().name());
+        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
     }
 
     public Map<ParsedCategory, List<ParsedCategory>> parseWithRetry(SiteSourceJob job) {

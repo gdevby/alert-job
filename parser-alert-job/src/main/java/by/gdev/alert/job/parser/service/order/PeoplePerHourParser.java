@@ -1,26 +1,20 @@
 package by.gdev.alert.job.parser.service.order;
 
 import by.gdev.alert.job.parser.domain.db.Category;
-import by.gdev.alert.job.parser.domain.db.CurrencyEntity;
 import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.repository.CurrencyRepository;
-import by.gdev.alert.job.parser.repository.OrderRepository;
-import by.gdev.alert.job.parser.repository.ParserSourceRepository;
-import by.gdev.alert.job.parser.service.ParserService;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.HttpStatusException;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
+import by.gdev.alert.job.parser.service.order.jsoup.JsoupClient;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -29,13 +23,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class PeoplePerHourParser extends AbsctractSiteParser {
+
+    private final JsoupClient jsoupClient;
 
     @Value("${peopleperhour.proxy.active}")
     private boolean isNeedProxy;
@@ -47,12 +42,6 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
             "AI Services", "artificial+intelligence",
             "Video, Photo & Image", "video-photography"
     );
-
-    private final CurrencyRepository currencyRepository;
-    private final ParserService parserService;
-    private final ParserSourceRepository parserSourceRepository;
-    private final OrderRepository orderRepository;
-    private final ModelMapper mapper;
     
     @Value("${parser.work.peopleperhour.com}")
     private void setActive(boolean active) {
@@ -63,20 +52,10 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
     public List<OrderDTO> mapItems(String link, Long siteSourceJobId, Category category, Subcategory subCategory) {
 		if (!active)
 			return new ArrayList<>();
-
-        String uri = url;
-        if (urlMapping.containsKey(category.getNativeLocName())) {
-            uri += "/" + urlMapping.get(category.getNativeLocName());
-        }else {
-            uri += "/" +category.getNativeLocName().toLowerCase().replaceAll("[\\s&,]+", "-");
-        }
-
-        if (subCategory != null) {
-            uri += "/" + subCategory.getNativeLocName().toLowerCase().replaceAll("[\\s&,]+", "-");
-        }
-        Document document = null;
+        String uri = buildUri(category, subCategory);
+        Document document;
         try {
-            document = Jsoup.connect(uri).get();
+            document = jsoupClient.get(uri);
         } catch (HttpStatusException e) {
             if (e.getStatusCode() == 404) {
                 log.warn("404 Not Found for URL {}", uri);
@@ -91,64 +70,67 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
 
         Elements cards = document.getElementsByClass("card⤍HourlieTile⤚3DrJs");
 
-
-        return cards.stream()
-                .map(card -> {
-                    String title = card.getElementsByClass("title-nano card__title⤍HourlieTile⤚5LQtW").text();
-                    String orderLink = card.getElementsByClass("card__title-link⤍HourlieTile⤚13loh").attr("href");
-                    String price = card.getElementsByClass("u-txt--right card__price⤍HourlieTileMeta⤚3su1s").text();
-                    String amount = price.substring(1).replace(",", "");
-
-                    Order order = new Order();
-                    order.setTitle(title);
-                    order.setLink(orderLink);
-                    order.setDateTime(new Date());
-
-
-                    Optional<CurrencyEntity> optionalCurrency = currencyRepository.findByCurrencyCode(CURRENCY_CODE);
-
-                    optionalCurrency.ifPresent(currency -> {
-                        double convertedPrice = (Integer.parseInt(amount) / currency.getNominal()) * currency.getCurrencyValue();
-                        order.setPrice(new Price(price, (int) convertedPrice));
-                    });
-
-                    ParserSource parserSource = new ParserSource();
-                    parserSource.setSource(siteSourceJobId);
-                    parserSource.setCategory(category.getId());
-                    parserSource.setSubCategory(Objects.nonNull(subCategory) ? subCategory.getId() : null);
-
-                    order.setSourceSite(parserSource);
-                    return order;
-                })
-                .filter(Order::isValidOrder)
-                .filter(order -> parserService.isExistsOrder(category, subCategory, order.getLink()))
-                .map(order -> {
-                    log.debug("found new order {} {}", order.getTitle(), order.getLink());
-                    parserService.saveOrderLinks(category, subCategory, order.getLink());
-                    ParserSource parserSource = order.getSourceSite();
-                    Optional<ParserSource> source = parserSourceRepository.findBySourceAndCategoryAndSubCategory(
-                            parserSource.getSource(),
-                            parserSource.getCategory(),
-                            parserSource.getSubCategory()
-                    );
-
-                    if (source.isPresent()) {
-                        parserSource = source.get();
-                    } else {
-                        parserSource = parserSourceRepository.save(parserSource);
-                    }
-
-                    order.setSourceSite(parserSource);
-                    order = orderRepository.save(order);
-                    OrderDTO orderDto = mapper.map(order, OrderDTO.class);
-                    SourceSiteDTO sourceSiteDto = orderDto.getSourceSite();
-                    sourceSiteDto.setCategoryName(category.getNativeLocName());
-                    if (Objects.nonNull(subCategory))
-                        sourceSiteDto.setSubCategoryName(subCategory.getNativeLocName());
-                    orderDto.setSourceSite(sourceSiteDto);
-                    return orderDto;
-                })
+        List<Order> rawOrders = cards.stream()
+                .map(card -> buildOrder(card, siteSourceJobId, category, subCategory))
+                .filter(Objects::nonNull)
                 .toList();
+
+        return getOrdersData(rawOrders, category, subCategory);
+    }
+
+    private Order buildOrder(Element card,
+                             Long siteSourceJobId,
+                             Category category,
+                             Subcategory subCategory) {
+        String title = card.getElementsByClass("title-nano card__title⤍HourlieTile⤚5LQtW").text();
+        String orderLink = card.getElementsByClass("card__title-link⤍HourlieTile⤚13loh").attr("href");
+        String price = card.getElementsByClass("u-txt--right card__price⤍HourlieTileMeta⤚3su1s").text();
+
+        if (orderLink == null || orderLink.isBlank())
+            return null;
+
+        if (!getParserService().isExistsOrder(category, subCategory, orderLink))
+            return null;
+
+        Order order = getOrderRepository().findByLink(orderLink).orElse(new Order());
+
+        order.setTitle(title);
+        order.setLink(orderLink);
+        order.setDateTime(new Date());
+
+        String amount = price.substring(1).replace(",", "");
+
+        getCurrencyRepository()
+                .findByCurrencyCode(CURRENCY_CODE)
+                .ifPresent(currency -> {
+                    double convertedPrice =
+                            (Integer.parseInt(amount) / currency.getNominal()) * currency.getCurrencyValue();
+                    order.setPrice(new Price(price, (int) convertedPrice));
+                });
+
+        ParserSource parserSource = new ParserSource();
+        parserSource.setSource(siteSourceJobId);
+        parserSource.setCategory(category.getId());
+        parserSource.setSubCategory(subCategory != null ? subCategory.getId() : null);
+        order.setSourceSite(parserSource);
+        return order;
+    }
+
+    private String buildUri(Category category, Subcategory subCategory) {
+        String uri = url;
+        if (urlMapping.containsKey(category.getNativeLocName())) {
+            uri += "/" + urlMapping.get(category.getNativeLocName());
+        } else {
+            uri += "/" + category.getNativeLocName()
+                    .toLowerCase()
+                    .replaceAll("[\\s&,]+", "-");
+        }
+        if (subCategory != null) {
+            uri += "/" + subCategory.getNativeLocName()
+                    .toLowerCase()
+                    .replaceAll("[\\s&,]+", "-");
+        }
+        return uri;
     }
 
     @Override

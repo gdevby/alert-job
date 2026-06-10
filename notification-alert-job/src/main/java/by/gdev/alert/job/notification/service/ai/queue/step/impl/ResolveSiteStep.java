@@ -18,8 +18,8 @@ public class ResolveSiteStep implements AiStep<AiNotificationPayload, SiteName> 
     @Override
     public StepResult<SiteName> execute(AiNotificationPayload payload) {
         try {
-            SiteName siteEnum = SiteName.valueOf(
-                    payload.getOrder().getSourceSite().getSourceName().toUpperCase()
+            SiteName siteEnum = SiteName.fromId(
+                    payload.getOrder().getSourceSite().getSource()
             );
             return StepResult.ok(siteEnum);
         } catch (Exception e) {

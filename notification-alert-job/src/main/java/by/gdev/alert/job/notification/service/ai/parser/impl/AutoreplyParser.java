@@ -37,10 +37,10 @@ public abstract class AutoreplyParser {
                     proxyCred,
                     headless,
                     proxy,
-                    getSiteName().name()
+                    getSiteName()
             );
 
-            context = playwrightManager.createBrowserContext(browser, proxyCred, proxy, getSiteName().name());
+            context = playwrightManager.createBrowserContext(browser, proxyCred, proxy, getSiteName());
             page = context.newPage();
 
             if (!login(page, creds)) {
@@ -61,7 +61,7 @@ public abstract class AutoreplyParser {
             return false;
 
         } finally {
-            playwrightManager.closeResources(page, context, browser, playwright, getSiteName().name());
+            playwrightManager.closeResources(page, context, browser, playwright, getSiteName());
         }
     }
 
