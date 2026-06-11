@@ -18,6 +18,7 @@ public class UserCredentialController {
     @PostMapping("/create-or-update")
     public UserSiteCredential createOrUpdate(@RequestBody UserCredentialRequest request) {
         return credentialService.createOrUpdateCredential(
+                request.getName(),
                 request.getUserUuid(),
                 request.getSiteId(),
                 request.getModuleId(),

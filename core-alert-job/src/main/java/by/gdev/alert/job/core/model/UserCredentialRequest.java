@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class UserCredentialRequest {
+    private String name;
     private String userUuid;
     private Long siteId;
     private Long moduleId;

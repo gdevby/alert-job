@@ -53,11 +53,11 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return false;
         }
 
-        // Кнопка "Войти"
+        // Кнопка Войти
         if (!clickOrFail(page, "span[data-test='LoginButton']", 8000, "Кнопка 'Войти'"))
             return false;
 
-        // Кнопка "Войти через электронную почту"
+        // Кнопка Войти через электронную почту
         if (!clickOrFail(page, "span[data-test='LoginWithEmailButton']", 8000, "Войти через email"))
             return false;
 
@@ -72,7 +72,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return false;
         }
 
-        // Кнопка "Далее"
+        // Кнопка Далее
         if (!clickOrFail(page, "button:has-text('Далее')", 8000, "Кнопка 'Далее'"))
             return false;
 
@@ -102,17 +102,17 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
 
         log.debug("Успешный вход в аккаунт {}", creds.login());
-        page.waitForTimeout(30000); //!!искусственная задержка для обновления кодов
+        page.waitForTimeout(30000); //!!искусственная задержка 30c для обновления кодов
         otpService.invalidateOtp(SiteName.YOUDO.name(), creds.login());
         return true;
     }
-
 
     @Override
     protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
         String link = payload.getOrder().getLink();
         log.debug("Переход на заказ: {}", link);
 
+        // Переходим на заказ
         try {
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);
@@ -121,62 +121,58 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return false;
         }
 
-        // Кнопка "Откликнуться"
-        if (!clickOrFail(page, "button:has-text('Откликнуться')", 8000, "Кнопка отклика"))
-            return false;
+        // Кнопка Откликнуться
+        if (!clickOrFail(page, "button:has-text('Откликнуться')", 8000, "Кнопка 'Откликнуться'")) return false;
 
-        //Дальше не проверено!! - нет соответствующего акк
-        // Форма
-        if (!waitOrFail(page, "textarea[name='Message']", 8000, "Форма отклика"))
-            return false;
+        // Ждём поле цены
+        if (!waitOrFail(page, "input[placeholder='В рублях']", 8000, "Поле цены")) return false;
 
-        // Текст
+        // Заполняем цену
         try {
-            page.fill("textarea[name='Message']", payload.getDecision().reply());
-        } catch (Exception e) {
-            log.warn("Не удалось заполнить текст ответа");
-            return false;
-        }
-
-        // Цена
-        try {
-            page.fill("input[name='Price']", "500");
+            page.fill("input[placeholder='В рублях']", "500");
         } catch (Exception e) {
             log.warn("Не удалось заполнить цену");
             return false;
         }
 
-        // Срок
+        // Ждём textarea
+        if (!waitOrFail(page, "textarea.Textarea_textarea__FjgmX", 8000, "Поле текста отклика")) return false;
+
+        // Заполняем текст отклика
         try {
-            page.fill("input[name='ExecutionTime']", "1");
+            page.fill("textarea.Textarea_textarea__FjgmX", payload.getDecision().reply());
         } catch (Exception e) {
-            log.warn("Не удалось заполнить срок выполнения");
+            log.warn("Не удалось заполнить текст отклика");
             return false;
         }
 
-        // Кнопка отправки
-        if (!waitOrFail(page, "button:has-text('Отправить')", 8000, "Кнопка отправки"))
-            return false;
+        // Ждём кнопку Далее
+        if (!waitOrFail(page, "button.NewButton_button__2D_5n:has-text('Далее')", 8000, "Кнопка 'Далее'")) return false;
+        Locator nextBtn = page.locator("button.NewButton_button__2D_5n:has-text('Далее')");
 
-        Locator sendBtn = page.locator("button:has-text('Отправить')");
+        // Проверяем, что кнопка активна
         try {
-            page.waitForCondition(sendBtn::isEnabled);
+            page.waitForCondition(nextBtn::isEnabled,
+                    new Page.WaitForConditionOptions().setTimeout(5000));
         } catch (Exception e) {
-            log.warn("Кнопка 'Отправить' не активна");
+            log.warn("Кнопка 'Далее' не активна");
             return false;
         }
 
+        // Нажимаем Далее
         if (sendRequest) {
             try {
-                sendBtn.click();
+                nextBtn.click();
             } catch (Exception e) {
-                log.warn("Не удалось нажать кнопку 'Отправить'");
+                log.warn("Не удалось нажать кнопку 'Далее'");
                 return false;
             }
+            log.debug("Отклик отправлен (кнопка 'Далее' нажата)");
+        } else {
+            log.debug("sendRequest=false → кнопку 'Далее' НЕ нажимаем");
         }
 
-        page.waitForTimeout(5000);
-        log.debug("Заявка успешно отправлена");
+        page.waitForTimeout(3000);
         return true;
     }
 }

@@ -1,5 +1,6 @@
 package by.gdev.alert.job.llm.domain;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
@@ -10,6 +11,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class AiReplyTemplate extends BasicId {
+
+    @Column(name = "name", length = 512)
+    private String name;
 
     @ManyToOne
     private LlmUser user;

@@ -38,5 +38,12 @@ public class OrdersController {
                 "count", String.valueOf(orders.size())
         ));
     }
+
+    @GetMapping("/autoreply-status")
+    public Map<String, Object> getAutoReplyStatus() {
+        return Map.of(
+                "enabled", orderProcessor.isAutoReplyEnabled()
+        );
+    }
 }
 

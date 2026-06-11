@@ -247,13 +247,13 @@ public class AiOrderAnalysisService {
                 return mapper.readValue(raw, AiDecision.class);
 
             } catch (org.springframework.ai.retry.NonTransientAiException e) {
-                // Это 429, 400, 500 от Groq
-                log.error("Groq API error: {}", e.getMessage());
+                // Это 429, 400, 500
+                log.error("API error: {}", e.getMessage());
 
                 return new AiDecision(
                         false,
                         0.0,
-                        "Groq API error: " + e.getMessage(),
+                        "API error: " + e.getMessage(),
                         null, null, null, null, null
                 );
 

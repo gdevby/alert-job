@@ -37,6 +37,7 @@ public class AiReplyTemplateController {
 
             List<TemplateResponse> result = templates.stream().map(t -> {
                 TemplateResponse dto = new TemplateResponse();
+                dto.setName(t.getName());
                 dto.setId(t.getId());
                 dto.setHtmlTemplate(t.getHtmlTemplate());
                 return dto;

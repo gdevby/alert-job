@@ -5,6 +5,7 @@ import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,7 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
             return false;
         }
 
-        // Кнопка "Вход"
+        // Кнопка Вход
         if (!clickOrFail(page, "a[href='/auth/login']", 8000, "Кнопка 'Вход'"))
             return false;
 
@@ -92,7 +93,72 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
 
     @Override
     protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
-        return false;
+        String link = payload.getOrder().getLink();
+        log.debug("Переход на заказ: {}", link);
+
+        // Переходим на заказ
+        try {
+            page.navigate(link);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+        } catch (Exception e) {
+            log.warn("Не удалось открыть заказ {}", link);
+            return false;
+        }
+
+        // Кнопка "Откликнуться"
+        if (!clickOrFail(page,
+                "button.btn.btn--success.btn--lg.btn--block:has-text('Откликнуться')",
+                8000,
+                "Кнопка 'Откликнуться'"))
+            return false;
+
+        // Ждём textarea
+        if (!waitOrFail(page,
+                "textarea#replyText[name='TaskReply[text]']",
+                8000,
+                "Поле ответа"))
+            return false;
+
+        // Вставляем текст автоответа
+        try {
+            page.fill("textarea#replyText[name='TaskReply[text]']", payload.getDecision().reply());
+        } catch (Exception e) {
+            log.warn("Не удалось заполнить текст ответа");
+            return false;
+        }
+
+        // Ждём кнопку отправки
+        if (!waitOrFail(page,
+                "button#createReply.btn.btn--success.btn--sm",
+                8000,
+                "Кнопка отправки"))
+            return false;
+
+        Locator sendBtn = page.locator("button#createReply.btn.btn--success.btn--sm");
+
+        // Проверяем, что кнопка активна
+        try {
+            page.waitForCondition(sendBtn::isEnabled,
+                    new Page.WaitForConditionOptions().setTimeout(5000));
+        } catch (Exception e) {
+            log.warn("Кнопка отправки не активна");
+            return false;
+        }
+
+        // Отправляем отклик
+        if (sendRequest) {
+            try {
+                sendBtn.click();
+            } catch (Exception e) {
+                log.warn("Не удалось нажать кнопку отправки");
+                return false;
+            }
+        }
+
+        page.waitForTimeout(2000);
+        log.debug("Отклик успешно отправлен на Freelance.ru");
+        return true;
     }
+
 
 }

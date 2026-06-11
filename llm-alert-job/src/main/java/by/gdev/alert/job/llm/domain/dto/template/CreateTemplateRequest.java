@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class CreateTemplateRequest {
+    private String name;
     private String userUuid;
     private Long moduleId;
     private String htmlTemplate;

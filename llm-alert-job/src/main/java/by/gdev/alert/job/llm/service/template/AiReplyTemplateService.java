@@ -41,6 +41,7 @@ public class AiReplyTemplateService {
                 .findByUserAndModuleId(user, req.getModuleId())
                 .orElseGet(AiReplyTemplate::new);
 
+        template.setName(req.getName());
         template.setUser(user);
         template.setModuleId(req.getModuleId());
         template.setHtmlTemplate(req.getHtmlTemplate());

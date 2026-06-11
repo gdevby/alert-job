@@ -24,6 +24,7 @@ public class UserSiteCredentialService {
     private final EncryptionService encryptionService;
 
     public UserSiteCredential createOrUpdateCredential(
+            String name,
             String userUuid,
             Long siteId,
             Long moduleId,
@@ -46,6 +47,7 @@ public class UserSiteCredentialService {
         // --- СОЗДАНИЕ ИЛИ ОБНОВЛЕНИЕ ---
         return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId)
                 .map(existing -> {
+                    existing.setName(name);
                     existing.setLogin(login);
                     existing.setPasswordEncrypted(encryptedPassword);
                     existing.setUpdatedAt(LocalDateTime.now());
@@ -61,6 +63,7 @@ public class UserSiteCredentialService {
                 })
                 .orElseGet(() -> {
                     UserSiteCredential credential = UserSiteCredential.builder()
+                            .name(name)
                             .userUuid(userUuid)
                             .siteId(siteId)
                             .moduleId(moduleId)
@@ -93,6 +96,7 @@ public class UserSiteCredentialService {
                     );
 
                     UserCredentialEncrypted dto = new UserCredentialEncrypted();
+                    dto.setName(cred.getName());
                     dto.setLogin(cred.getLogin());
                     dto.setPasswordEncrypted(cred.getPasswordEncrypted());
                     return dto;

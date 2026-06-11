@@ -8,8 +8,6 @@ import java.util.stream.Collectors;
 
 import by.gdev.alert.job.core.client.LlmClient;
 import by.gdev.alert.job.core.client.NotificationClient;
-import by.gdev.alert.job.core.exeption.ai.BindingNotFoundException;
-import by.gdev.alert.job.core.exeption.ai.UserCredentialNotFoundException;
 import by.gdev.alert.job.core.model.ai.AiOrderRequest;
 import by.gdev.alert.job.core.model.db.*;
 import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
@@ -19,6 +17,7 @@ import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
 import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
 import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.SiteName;
+import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -31,6 +30,7 @@ import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -50,8 +50,18 @@ public class OrderProcessor {
     private final NotificationClient notificationClient;
     private final AiOrderRequestMapper aiOrderRequestMapper;
 
+    @Value("${autoreply.enabled:false}")
+    @Getter
+    private boolean autoReplyEnabled;
+
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
-        forEachLLm(users, orders);
+        // Автоответы включены?
+        if (autoReplyEnabled) {
+            forEachLLm(users, orders); //отправляем в LLM и запускаем автоответы
+        } else {
+            log.debug("Автоответы отключены через property (autoreply.enabled=false)");
+        }
+
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));

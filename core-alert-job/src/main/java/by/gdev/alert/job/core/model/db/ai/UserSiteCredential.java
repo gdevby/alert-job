@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 @Builder
 public class UserSiteCredential extends BasicId {
 
+    @Column(name = "name", length = 255)
+    private String name;
+
     @Column(name = "site_id", nullable = false)
     private Long siteId;
 
