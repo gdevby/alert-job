@@ -70,10 +70,10 @@ public class AccountTemplateBindingController {
         return ResponseEntity.ok(service.setActive(id, active));
     }
 
-    @GetMapping("/user/{uuid}/all")
-    public ResponseEntity<?> getAllBindingsForUser(@PathVariable String uuid) {
+    @GetMapping("/user/{uuid}/module/{moduleId}")
+    public ResponseEntity<?> getAllBindingsForUser(@PathVariable String uuid, @PathVariable Long moduleId) {
         try {
-            List<BindingResponse> result = service.getBindingsForUser(uuid);
+            List<BindingResponse> result = service.getBindingsForUserAndModule(uuid, moduleId);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

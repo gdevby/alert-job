@@ -167,37 +167,46 @@ public class AccountTemplateBindingService {
         accountTemplateBindingRepository.saveAll(all);
     }
 
-    public List<BindingResponse> getBindingsForUser(String userUuid) {
-
+    public List<BindingResponse> getBindingsForUserAndModule(String userUuid, Long moduleId) {
+        // Все аккаунты пользователя
         List<UserSiteCredential> creds = userSiteCredentialRepository.findByUserUuid(userUuid);
 
+        //Все биндинги по этим аккаунтам
         List<AccountTemplateBinding> bindings = creds.stream()
                 .flatMap(c -> accountTemplateBindingRepository.findByAccountId(c.getId()).stream())
+                // Фильтр по moduleId
+                .filter(b -> b.getModuleId().equals(moduleId))
                 .toList();
 
+        //Собираем DTO и сортируем по дате
         return bindings.stream()
                 .map(b -> {
                     BindingResponse dto = new BindingResponse();
                     dto.setId(b.getId());
 
+                    //Аккаунт
                     UserSiteCredential cred = userSiteCredentialRepository
                             .findById(b.getAccountId())
                             .orElse(null);
                     dto.setAccountName(cred != null ? cred.getName() : "—");
 
+                    //Шаблон через REST
                     TemplateResponse template = llmClient.getTemplate(b.getTemplateId());
                     dto.setTemplateName(template != null ? template.getName() : "—");
 
+                    //Дата
                     dto.setCreatedAt(
                             b.getCreatedAt() != null
                                     ? b.getCreatedAt().toString()
                                     : LocalDateTime.now().toString()
                     );
 
+                    //Активность
                     dto.setActive(b.isActive());
 
                     return dto;
                 })
+                //сортировка по дате
                 .sorted(Comparator.comparing(BindingResponse::getCreatedAt))
                 .toList();
     }
