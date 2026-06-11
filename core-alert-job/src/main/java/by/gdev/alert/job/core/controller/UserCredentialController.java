@@ -1,8 +1,9 @@
 package by.gdev.alert.job.core.controller;
 
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
-import by.gdev.alert.job.core.model.UserCredentialRequest;
+import by.gdev.alert.job.core.model.credential.dto.UserCredentialRequest;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
+import by.gdev.alert.job.core.model.credential.dto.UserSiteCredentialShortResponse;
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,26 @@ import org.springframework.web.bind.annotation.*;
 public class UserCredentialController {
 
     private final UserSiteCredentialService credentialService;
+
+    @GetMapping("/user/{uuid}/all")
+    public ResponseEntity<?> getAllUserCredentials(@PathVariable String uuid) {
+        try {
+            var creds = credentialService.getByUserUuid(uuid);
+            var result = creds.stream().map(c -> {
+                UserSiteCredentialShortResponse dto = new UserSiteCredentialShortResponse();
+                dto.setId(c.getId());
+                dto.setName(c.getName());
+                dto.setLogin(c.getLogin());
+                dto.setCreatedAt(
+                        c.getCreatedAt() != null ? c.getCreatedAt().toString() : null
+                );
+                return dto;
+            }).toList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     @PostMapping("/create-or-update")
     public UserSiteCredential createOrUpdate(@RequestBody UserCredentialRequest request) {
@@ -45,7 +66,6 @@ public class UserCredentialController {
         dto.setLogin(cred.getLogin());
         dto.setPasswordEncrypted(cred.getPasswordEncrypted());
         return ResponseEntity.ok(dto);
+
     }
-
-
 }

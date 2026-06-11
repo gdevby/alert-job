@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -40,6 +41,11 @@ public class AiReplyTemplateController {
                 dto.setName(t.getName());
                 dto.setId(t.getId());
                 dto.setHtmlTemplate(t.getHtmlTemplate());
+                dto.setCreatedAt(
+                        t.getCreatedAt() != null
+                                ? t.getCreatedAt().toString()
+                                : LocalDateTime.now().toString()
+                );
                 return dto;
             }).toList();
 

@@ -103,6 +103,10 @@ public class UserSiteCredentialService {
                 });
     }
 
+    public List<UserSiteCredential> getByUserUuid(String uuid) {
+        return userSiteCredentialRepository.findByUserUuid(uuid);
+    }
+
     public Optional<UserSiteCredential> getCredential(String userUuid, Long siteId, Long moduleId) {
         return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId);
     }

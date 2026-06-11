@@ -7,4 +7,5 @@ public class TemplateResponse {
     private String name;
     private Long id;
     private String htmlTemplate;
+    private String createdAt;
 }
