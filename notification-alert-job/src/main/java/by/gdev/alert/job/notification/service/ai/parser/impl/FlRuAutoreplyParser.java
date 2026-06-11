@@ -6,6 +6,7 @@ import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParse
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.LoadState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -35,8 +36,57 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
 
     @Override
     protected boolean login(Page page, DecryptedCredential creds) {
-        return false;
+        try {
+            // Открываем страницу логина
+            safeNavigate(page, "https://www.fl.ru/account/login/");
+
+            // Ждём поле логина
+            if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина"))
+                return false;
+
+            // Вводим логин
+            try {
+                page.fill("input[name='username']", creds.login());
+            } catch (Exception e) {
+                log.warn("Не удалось заполнить логин");
+                return false;
+            }
+
+            // Вводим пароль
+            try {
+                page.fill("input[name='password']", creds.password());
+            } catch (Exception e) {
+                log.warn("Не удалось заполнить пароль");
+                return false;
+            }
+
+            // Жмём кнопку Войти
+            if (!clickOrFail(page, "#submit-button", 8000, "Кнопка 'Войти'"))
+                return false;
+
+            // Ждём загрузку
+            try {
+                page.waitForLoadState(LoadState.NETWORKIDLE);
+            } catch (Exception e) {
+                log.warn("Не удалось дождаться загрузки после входа");
+                return false;
+            }
+
+            // Проверяем, что логин успешный
+            if (page.url().contains("/account/login")) {
+                log.warn("FL.ru: вход не выполнен, остались на странице логина");
+                return false;
+            }
+
+            log.debug("{}: успешный вход в аккаунт {}", getSiteName(), creds.login());
+            return true;
+
+        } catch (Exception e) {
+            log.error("{}: ошибка при логине", getSiteName(), e);
+            return false;
+        }
     }
+
 
     @Override
     protected boolean processAutoReply(Page page, AiNotificationPayload payload) {

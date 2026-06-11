@@ -67,4 +67,24 @@ public class AiReplyTemplateController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getTemplateById(@PathVariable Long id) {
+        try {
+            AiReplyTemplate t = templateService.getTemplateById(id);
+            TemplateResponse dto = new TemplateResponse();
+            dto.setId(t.getId());
+            dto.setName(t.getName());
+            dto.setHtmlTemplate(t.getHtmlTemplate());
+            dto.setCreatedAt(
+                    t.getCreatedAt() != null
+                            ? t.getCreatedAt().toString()
+                            : LocalDateTime.now().toString()
+            );
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

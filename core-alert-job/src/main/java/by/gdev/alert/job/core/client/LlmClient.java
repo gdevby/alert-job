@@ -1,6 +1,7 @@
 package by.gdev.alert.job.core.client;
 
 import by.gdev.alert.job.core.model.ai.AiOrderRequest;
+import by.gdev.alert.job.core.model.template.dto.TemplateResponse;
 import by.gdev.common.model.OrderDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -95,4 +96,15 @@ public class LlmClient {
             return false;
         }
     }
+
+    public TemplateResponse getTemplate(Long templateId) {
+        try {
+            String url = llmModuleUrl + "/api/templates/" + templateId;
+            return restTemplate.getForObject(url, TemplateResponse.class);
+        } catch (Exception e) {
+            log.error("Ошибка получения шаблона {}", templateId, e);
+            return null;
+        }
+    }
+
 }

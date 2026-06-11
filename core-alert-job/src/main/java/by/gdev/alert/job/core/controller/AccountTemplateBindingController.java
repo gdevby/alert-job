@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.controller;
 
+import by.gdev.alert.job.core.model.binding.dto.BindingResponse;
 import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
 import by.gdev.alert.job.core.service.ai.AccountTemplateBindingService;
 import lombok.RequiredArgsConstructor;
@@ -68,4 +69,16 @@ public class AccountTemplateBindingController {
     ) {
         return ResponseEntity.ok(service.setActive(id, active));
     }
+
+    @GetMapping("/user/{uuid}/all")
+    public ResponseEntity<?> getAllBindingsForUser(@PathVariable String uuid) {
+        try {
+            List<BindingResponse> result = service.getBindingsForUser(uuid);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
 }

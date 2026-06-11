@@ -2,7 +2,10 @@ package by.gdev.alert.job.core.service.ai;
 
 import by.gdev.alert.job.core.client.LlmClient;
 import by.gdev.alert.job.core.exeption.ai.*;
+import by.gdev.alert.job.core.model.binding.dto.BindingResponse;
 import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
+import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
+import by.gdev.alert.job.core.model.template.dto.TemplateResponse;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
 import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
@@ -10,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -162,5 +167,38 @@ public class AccountTemplateBindingService {
         accountTemplateBindingRepository.saveAll(all);
     }
 
+    public List<BindingResponse> getBindingsForUser(String userUuid) {
 
+        List<UserSiteCredential> creds = userSiteCredentialRepository.findByUserUuid(userUuid);
+
+        List<AccountTemplateBinding> bindings = creds.stream()
+                .flatMap(c -> accountTemplateBindingRepository.findByAccountId(c.getId()).stream())
+                .toList();
+
+        return bindings.stream()
+                .map(b -> {
+                    BindingResponse dto = new BindingResponse();
+                    dto.setId(b.getId());
+
+                    UserSiteCredential cred = userSiteCredentialRepository
+                            .findById(b.getAccountId())
+                            .orElse(null);
+                    dto.setAccountName(cred != null ? cred.getName() : "—");
+
+                    TemplateResponse template = llmClient.getTemplate(b.getTemplateId());
+                    dto.setTemplateName(template != null ? template.getName() : "—");
+
+                    dto.setCreatedAt(
+                            b.getCreatedAt() != null
+                                    ? b.getCreatedAt().toString()
+                                    : LocalDateTime.now().toString()
+                    );
+
+                    dto.setActive(b.isActive());
+
+                    return dto;
+                })
+                .sorted(Comparator.comparing(BindingResponse::getCreatedAt))
+                .toList();
+    }
 }
