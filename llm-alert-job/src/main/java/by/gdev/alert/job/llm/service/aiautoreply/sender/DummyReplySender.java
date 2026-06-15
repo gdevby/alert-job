@@ -38,17 +38,17 @@ public class DummyReplySender implements ReplySender {
         }
 
         sb.append("\n--- Решение AI ---\n");
-        appendIfNotNull(sb, "shouldReply", decision.shouldReply());
-        appendIfNotNull(sb, "confidence", decision.confidence());
-        appendIfNotNull(sb, "reason", decision.reason());
-        appendIfNotNull(sb, "categoryMatchReason", decision.categoryMatchReason());
-        appendIfNotNull(sb, "subcategoryMatchReason", decision.subcategoryMatchReason());
+        appendIfNotNull(sb, "shouldReply", decision.isShouldReply());
+        appendIfNotNull(sb, "confidence", decision.getConfidence());
+        appendIfNotNull(sb, "reason", decision.getReason());
+        appendIfNotNull(sb, "categoryMatchReason", decision.getCategoryMatchReason());
+        appendIfNotNull(sb, "subcategoryMatchReason", decision.getSubcategoryMatchReason());
 
-        if (decision.matchedKeywords() != null && !decision.matchedKeywords().isEmpty()) {
-            appendIfNotNull(sb, "matchedKeywords", decision.matchedKeywords());
+        if (decision.getMatchedKeywords() != null && !decision.getMatchedKeywords().isEmpty()) {
+            appendIfNotNull(sb, "matchedKeywords", decision.getMatchedKeywords());
         }
-        if (decision.missedKeywords() != null && !decision.missedKeywords().isEmpty()) {
-            appendIfNotNull(sb, "missedKeywords", decision.missedKeywords());
+        if (decision.getMissedKeywords() != null && !decision.getMissedKeywords().isEmpty()) {
+            appendIfNotNull(sb, "missedKeywords", decision.getMissedKeywords());
         }
 
         sb.append("\n--- Автоответ ---\n");

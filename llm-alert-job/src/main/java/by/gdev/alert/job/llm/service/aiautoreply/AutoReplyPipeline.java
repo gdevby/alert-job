@@ -44,7 +44,7 @@ public class AutoReplyPipeline {
 
     public void process(OrderDTO orderDTO) {
         AiDecision decision = analysisService.analyze(orderDTO, null, null, null);
-        if (!decision.shouldReply()) {
+        if (!decision.isShouldReply()) {
             return;
         }
 
@@ -83,8 +83,8 @@ public class AutoReplyPipeline {
     }
 
     private String finalizeReply(AiDecision decision) {
-        if (decision.reply() == null) return null;
-        return decision.reply().trim();
+        if (decision.getReply() == null) return null;
+        return decision.getReply().trim();
     }
 
 }

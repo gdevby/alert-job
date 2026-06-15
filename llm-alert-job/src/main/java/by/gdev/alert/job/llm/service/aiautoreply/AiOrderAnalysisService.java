@@ -243,11 +243,10 @@ public class AiOrderAnalysisService {
                 raw = raw.replace("```json", "")
                         .replace("```", "")
                         .trim();
-
                 return mapper.readValue(raw, AiDecision.class);
 
             } catch (org.springframework.ai.retry.NonTransientAiException e) {
-                // Это 429, 400, 500
+                // Это 429, 400, 50
                 log.error("API error: {}", e.getMessage());
 
                 return new AiDecision(
@@ -270,8 +269,12 @@ public class AiOrderAnalysisService {
         });
 
         try {
-            return future.get();
-
+            AiDecision decision = future.get();
+            if (replyTemplate.contains("%auto_generated_text%") && decision.getReply() != null) {
+                String finalReply = replyTemplate.replace("%auto_generated_text%", decision.getReply());
+                decision.setReply(finalReply);
+            }
+            return decision;
         } catch (Exception e) {
             log.error("Executor error", e);
 
