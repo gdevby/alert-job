@@ -73,6 +73,10 @@ build-prod-example.sh
 ```
 
 После снова переходим в родительский каталог и получаем все образы проекта, и запускаем их
+
+> [!IMPORTANT]
+> Контейнеры могут потерять сеть ([issue](https://github.com/moby/moby/issues/51758)). Перед запуском освободите все необходимые порты указанные в `docker-compose.yml`.
+
 ```
 cd ..
 docker compose pull grafana prometheus nginx-proxy
