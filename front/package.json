@@ -11,6 +11,8 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
+		"@emotion/react": "^11.10.6",
+		"@emotion/styled": "^11.10.6",
 		"@mui/icons-material": "^5.16.7",
 		"@mui/material": "^5.16.7",
 		"@mui/x-charts": "^7.20.0",
@@ -24,6 +26,7 @@
 		"react-router-dom": "^6.5.0"
 	},
 	"devDependencies": {
+		"@types/node": "^22.19.21",
 		"@types/react": "^18.2.0",
 		"@types/react-dom": "^18.2.0",
 		"@vitejs/plugin-react": "^6.0.2",
