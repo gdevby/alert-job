@@ -31,6 +31,7 @@ target
 .dbeaver
 dist
 front/package-lock.json
+front/bundle-visualizer.html
 /public/
 .vscode
 
