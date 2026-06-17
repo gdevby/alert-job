@@ -6,4 +6,4 @@ COPY ./ ./
 RUN npm run build
 
 FROM nginx:1.31-alpine AS runner
-COPY --from=builder /app/dist /usr/share/nginx/html/front
+COPY --from=builder /app/dist /usr/share/nginx/html

@@ -16,6 +16,7 @@ export default defineConfig({
     }
   },
   build: {
+    outDir: 'dist/front',
     modulePreload: false,
     rolldownOptions: {
       output: {
