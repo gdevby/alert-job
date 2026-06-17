@@ -10,5 +10,16 @@ export default defineConfig({
   },
   build: {
     modulePreload: false,
+    rolldownOptions: {
+      output: {
+        entryFileNames: '[name].js',
+        assetFileNames: ({ names }) => {
+          if (names[0] === 'index.css') {
+            return '[name][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
   },
 });
