@@ -1,5 +1,3 @@
-import React from 'react';
-
 import sources from '../../../images/home/sources.jpg';
 import filters from '../../../images/home/filters.jpg';
 import source from '../../../images/home/source.jpg';
