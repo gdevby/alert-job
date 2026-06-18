@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.1",
   "info": {
     "title": "LLM API",
     "version": "1.0.0"
@@ -38,15 +38,16 @@
     "schemas": {
       "AnalyzeRequest": {
         "type": "object",
+        "required": ["text"],
         "properties": {
           "text": {
             "type": "string"
           }
-        },
-        "required": ["text"]
+        }
       },
       "AnalyzeResponse": {
         "type": "object",
+        "required": ["result"],
         "properties": {
           "result": {
             "type": "string"
