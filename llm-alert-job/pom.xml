@@ -51,6 +51,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.32</version>
+			<scope>provided</scope>
+		</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>
@@ -81,14 +88,93 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.11.0</version>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>1.18.32</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+
+
+			<!-- Open Api -->
+			<plugin>
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<version>7.7.0</version>
+				<executions>
+					<execution>
+						<id>generate-dto-api</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<phase>generate-sources</phase>
+						<configuration>
+							<!-- путь к спецификации -->
+							<inputSpec>${project.basedir}/src/main/resources/openapi.json</inputSpec>
+
+							<!-- куда генерировать -->
+							<output>${project.build.directory}/generated</output>
+
+							<!-- генератор spring (как в Gradle) -->
+							<generatorName>spring</generatorName>
+
+							<!-- пакеты -->
+							<modelPackage>by.gdev.llm.dto</modelPackage>
+							<apiPackage>by.gdev.llm.api</apiPackage>
+
+							<!-- что генерировать -->
+							<globalProperties>
+								<models>true</models>
+								<apis>true</apis>
+								<supportingFiles>false</supportingFiles>
+							</globalProperties>
+
+							<!-- настройки генерации -->
+							<configOptions>
+								<interfaceOnly>false</interfaceOnly>
+								<skipDefaultInterface>false</skipDefaultInterface>
+								<useJakartaEe>true</useJakartaEe>
+								<dateLibrary>java8</dateLibrary>
+								<serializationLibrary>jackson</serializationLibrary>
+								<openApiNullable>false</openApiNullable>
+								<sourceFolder>src/gen/java/main</sourceFolder>
+							</configOptions>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>add-generated-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated/src/gen/java/main</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 </project>
