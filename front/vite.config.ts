@@ -5,9 +5,9 @@ import { join } from 'node:path';
 
 export default defineConfig({
   plugins: [react(), visualizer({ filename: 'bundle-visualizer.html' })],
-  server: { port: 3000, strictPort: true, allowedHosts: true },
+  server: { port: 3001, strictPort: true, allowedHosts: true },
   preview: {
-    port: 3000,
+    port: 3001,
   },
   resolve: {
     mainFields: [],

@@ -4,6 +4,7 @@
 	"description": "",
 	"scripts": {
 		"dev": "vite",
+		"dev:build": "tsc -b && vite build",
 		"build": "tsc -b && vite build --base=/front/",
 		"preview": "vite preview"
 	},
