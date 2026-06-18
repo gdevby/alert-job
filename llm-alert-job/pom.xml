@@ -124,6 +124,7 @@
 
 							<!-- настройки генерации -->
 							<configOptions>
+								<library>spring-boot</library>
 								<interfaceOnly>false</interfaceOnly>
 								<skipDefaultInterface>false</skipDefaultInterface>
 								<useJakartaEe>true</useJakartaEe>
@@ -131,7 +132,9 @@
 								<serializationLibrary>jackson</serializationLibrary>
 								<openApiNullable>false</openApiNullable>
 								<sourceFolder>src/gen/java/main</sourceFolder>
+								<delegatePattern>true</delegatePattern>
 							</configOptions>
+
 						</configuration>
 					</execution>
 				</executions>
