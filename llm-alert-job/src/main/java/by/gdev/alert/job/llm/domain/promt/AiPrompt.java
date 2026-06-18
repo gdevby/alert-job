@@ -19,6 +19,9 @@ public class AiPrompt extends BasicId {
     @Column(nullable = false, length = 100)
     private AiPromptType type;
 
+    @Column(name = "name", length = 512)
+    private String name;
+
     @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String promptText;
 

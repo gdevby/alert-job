@@ -87,7 +87,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
         // Цена
         try {
-            page.fill("#offer-custom-price", "500");
+            page.fill("#offer-custom-price", String.valueOf(defaultPrice));
         } catch (Exception e) {
             log.warn("Не удалось заполнить цену");
             return false;

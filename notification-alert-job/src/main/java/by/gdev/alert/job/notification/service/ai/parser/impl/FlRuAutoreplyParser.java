@@ -126,7 +126,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         if (!waitOrFail(page, "#el-time_from", 8000, "Поле срока выполнения"))
             return false;
         try {
-            String duration = "1";
+            String duration = String.valueOf(defaultDays);
             page.fill("#el-time_from", duration);
         } catch (Exception e) {
             log.warn("{}: не удалось заполнить срок выполнения", getSiteName());
@@ -136,7 +136,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         if (!waitOrFail(page, "#el-cost_from", 8000, "Поле цены"))
             return false;
         try {
-            String price ="500";
+            String price = String.valueOf(defaultPrice);
             page.fill("#el-cost_from", price);
         } catch (Exception e) {
             log.warn("{}: не удалось заполнить цену", getSiteName());

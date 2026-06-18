@@ -129,7 +129,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
         // Заполняем цену
         try {
-            page.fill("input[placeholder='В рублях']", "500");
+            page.fill("input[placeholder='В рублях']", String.valueOf(defaultPrice));
         } catch (Exception e) {
             log.warn("Не удалось заполнить цену");
             return false;

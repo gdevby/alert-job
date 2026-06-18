@@ -8,6 +8,7 @@ import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
 public abstract class AutoreplyParser {
@@ -16,6 +17,14 @@ public abstract class AutoreplyParser {
     protected boolean proxy;
 
     protected PlaywrightManager playwrightManager;
+
+    /** Значение по умолчанию для цены */
+    @Value("${parser.autoreply.default.price:1000}")
+    protected int defaultPrice;
+
+    /** Значение по умолчанию для срока выполнения (в днях) */
+    @Value("${parser.autoreply.default.days:1}")
+    protected int defaultDays;
 
     protected AutoreplyParser(PlaywrightManager playwrightManager) {
         this.playwrightManager = playwrightManager;
