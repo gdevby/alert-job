@@ -94,6 +94,7 @@
 				<groupId>org.openapitools</groupId>
 				<artifactId>openapi-generator-maven-plugin</artifactId>
 				<version>7.7.0</version>
+				<inherited>false</inherited>
 				<executions>
 					<execution>
 						<id>generate-dto-api</id>
