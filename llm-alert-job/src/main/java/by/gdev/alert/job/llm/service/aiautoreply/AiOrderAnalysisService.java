@@ -22,16 +22,50 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+/**
+ * Сервис анализа заказов с использованием LLM.
+ * <p>
+ * Отвечает за:
+ * <ul>
+ *     <li>формирование промта на основе данных заказа;</li>
+ *     <li>выбор шаблона письма (пользовательский, модульный или дефолтный);</li>
+ *     <li>вызов LLM и парсинг результата в {@link AiDecision};</li>
+ *     <li>подстановку сгенерированного текста в HTML‑шаблон;</li>
+ *     <li>загрузку шаблонов из classpath;</li>
+ *     <li>определение типа проекта (front/back/mobile/dev).</li>
+ * </ul>
+ * <p>
+ * Все вызовы LLM выполняются через отдельный {@link ExecutorService},
+ * чтобы избежать блокировки основного потока.
+ */
 @Service
 @Slf4j
 public class AiOrderAnalysisService {
 
+    /**
+     * Клиент для общения с LLM.
+     */
     private final ChatClient chatClient;
+
+    /**
+     * JSON‑маппер для десериализации ответа модели.
+     */
     private final ObjectMapper mapper;
     //private final TokenBucket tokenBucket;
     //private final TimeRateLimiter timeRateLimiter;
+    /**
+     * Исполнитель для асинхронных вызовов LLM.
+     */
     private final ExecutorService llmExecutor;
+
+    /**
+     * Сервис для получения HTML‑шаблонов ответов.
+     */
     private final AiReplyTemplateService templateService;
+
+    /**
+     * Сервис для получения текстовых промтов.
+     */
     private final AiPromptService aiPromptService;
 
     /*@Autowired
@@ -48,6 +82,15 @@ public class AiOrderAnalysisService {
         this.aiPromptService = aiPromptService;
     }*/
 
+    /**
+     * Конструктор, инициализирующий зависимости.
+     *
+     * @param builder          фабрика ChatClient
+     * @param mapper           JSON‑маппер
+     * @param llmExecutor      executor для LLM‑вызовов
+     * @param templateService  сервис шаблонов ответов
+     * @param aiPromptService  сервис текстовых промтов
+     */
     @Autowired
     public AiOrderAnalysisService(ChatClient.Builder builder, ObjectMapper mapper,
                                   ExecutorService llmExecutor, AiReplyTemplateService templateService,
@@ -90,6 +133,7 @@ public class AiOrderAnalysisService {
         throw new RuntimeException("Default template not found: " + defaultPath);
     }
 
+
     public String loadTemplate(String type, String site) {
         String base = "prompts/templates/";
 
@@ -130,6 +174,21 @@ public class AiOrderAnalysisService {
         return "default";
     }
 
+    /**
+     * Основной метод анализа заказа.
+     * <p>
+     * Логика:
+     * <ul>
+     *     <li>определяет тип проекта;</li>
+     *     <li>загружает HTML‑шаблон;</li>
+     *     <li>формирует промт;</li>
+     *     <li>выполняет вызов LLM в отдельном потоке;</li>
+     *     <li>парсит JSON‑ответ в {@link AiDecision};</li>
+     *     <li>подставляет сгенерированный текст в HTML‑шаблон.</li>
+     * </ul>
+     *
+     * @return решение AI с текстом ответа
+     */
     public AiDecision analyze(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId){
 
         String orderTitle = order.getTitle();

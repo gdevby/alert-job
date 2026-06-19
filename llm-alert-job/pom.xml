@@ -17,14 +17,6 @@
 			<version>${spring-ai.version}</version>
 		</dependency>
 
-		<!--
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
-            <version>${spring-ai.version}</version>
-        </dependency>
-        -->
-
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-bootstrap</artifactId>
@@ -50,6 +42,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+
 
 	</dependencies>
 	<build>
@@ -89,79 +88,6 @@
 					</excludes>
 				</configuration>
 			</plugin>
-			<!-- Open Api -->
-			<plugin>
-				<groupId>org.openapitools</groupId>
-				<artifactId>openapi-generator-maven-plugin</artifactId>
-				<version>7.7.0</version>
-				<inherited>false</inherited>
-				<executions>
-					<execution>
-						<id>generate-dto-api</id>
-						<goals>
-							<goal>generate</goal>
-						</goals>
-						<phase>generate-sources</phase>
-						<configuration>
-							<!-- путь к спецификации -->
-							<inputSpec>${project.basedir}/src/main/resources/openapi.json</inputSpec>
-
-							<!-- куда генерировать -->
-							<output>${project.build.directory}/generated</output>
-
-							<!-- генератор spring (как в Gradle) -->
-							<generatorName>spring</generatorName>
-
-							<!-- пакеты -->
-							<modelPackage>by.gdev.llm.dto</modelPackage>
-							<apiPackage>by.gdev.llm.api</apiPackage>
-
-							<!-- что генерировать -->
-							<globalProperties>
-								<models>true</models>
-								<apis>true</apis>
-								<supportingFiles>false</supportingFiles>
-							</globalProperties>
-
-							<!-- настройки генерации -->
-							<configOptions>
-								<library>spring-boot</library>
-								<interfaceOnly>false</interfaceOnly>
-								<skipDefaultInterface>false</skipDefaultInterface>
-								<useJakartaEe>true</useJakartaEe>
-								<dateLibrary>java8</dateLibrary>
-								<serializationLibrary>jackson</serializationLibrary>
-								<openApiNullable>false</openApiNullable>
-								<sourceFolder>src/gen/java/main</sourceFolder>
-								<delegatePattern>true</delegatePattern>
-							</configOptions>
-
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>3.5.0</version>
-				<executions>
-					<execution>
-						<id>add-generated-sources</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-						<configuration>
-							<sources>
-								<source>${project.build.directory}/generated/src/gen/java/main</source>
-							</sources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-
 		</plugins>
 	</build>
 </project>

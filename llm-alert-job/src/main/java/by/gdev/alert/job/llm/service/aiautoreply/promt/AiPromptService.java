@@ -15,22 +15,50 @@ import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Сервис для управления AI‑промтами, используемыми системой автоответов.
+ * <p>
+ * Отвечает за:
+ * <ul>
+ *     <li>создание и обновление промтов;</li>
+ *     <li>хранение версий и контроль изменений;</li>
+ *     <li>экспорт всех промтов в ZIP‑архив;</li>
+ *     <li>получение промта по категории и подкатегории;</li>
+ *     <li>формирование DTO для UI без текста промта.</li>
+ * </ul>
+ * <p>
+ * Логика сервиса гарантирует, что:
+ * <ul>
+ *     <li>каждый тип промта существует в единственном экземпляре;</li>
+ *     <li>обновление промта увеличивает его версию;</li>
+ *     <li>невозможно сохранить идентичный текст без изменений;</li>
+ *     <li>при отсутствии промта для категории используется DEFAULT.</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class AiPromptService {
 
+    /**
+     * Репозиторий для работы с сущностями {@link AiPrompt}.
+     */
     private final AiPromptRepository repo;
 
     /**
      * Создаёт новый промт или обновляет существующий:
-     *  - ищет по типу;
-     *  - если найден — обновляет текст и увеличивает версию;
-     *  - если нет — создаёт новую запись.
+     * <ul>
+     *     <li>ищет промт по типу;</li>
+     *     <li>если найден — обновляет имя, текст и увеличивает версию;</li>
+     *     <li>если текст или имя не изменились — выбрасывает ошибку;</li>
+     *     <li>если не найден — создаёт новый промт с версией 1.</li>
+     * </ul>
      *
      * @param type тип промта
      * @param name имя промта
      * @param text текст промта
      * @return сохранённый промт
+     * @throws IllegalArgumentException если тип или текст некорректны
+     * @throws IllegalStateException если обновление не вносит изменений
      */
     public AiPrompt createOrUpdatePrompt(AiPromptType type, String name, String text) {
 
@@ -41,14 +69,11 @@ public class AiPromptService {
             throw new IllegalArgumentException("Prompt text cannot be empty");
         }
 
-        // Ищем существующий промт по типу
         Optional<AiPrompt> existingOpt = repo.findByType(type);
 
         if (existingOpt.isPresent()) {
-            // Обновляем существующий
             AiPrompt existing = existingOpt.get();
 
-            // Если текст не изменился — кидаем ошибку
             if (existing.getPromptText().equals(text) || existing.getName().equals(name)) {
                 throw new IllegalStateException(
                         "Текст промта идентичен текущей версии. Нечего обновлять."
@@ -61,7 +86,6 @@ public class AiPromptService {
             return repo.save(existing);
         }
 
-        // Создаём новый
         AiPrompt prompt = AiPrompt.builder()
                 .type(type)
                 .name(name)
@@ -72,11 +96,17 @@ public class AiPromptService {
     }
 
     /**
-     * Экспортирует все промты в ZIP:
-     *  - каждый промт сохраняется как отдельный .txt файл;
-     *  - имя файла = тип промта.
+     * Экспортирует все промты в ZIP‑архив.
+     * <p>
+     * Каждый промт сохраняется как отдельный текстовый файл:
+     * <ul>
+     *     <li>имя файла = тип промта;</li>
+     *     <li>содержимое = текст промта;</li>
+     *     <li>кодировка UTF‑8.</li>
+     * </ul>
      *
-     * @return ZIP-файл в виде массива байт
+     * @return ZIP‑файл в виде массива байт
+     * @throws RuntimeException если произошла ошибка записи ZIP
      */
     public byte[] exportAllPromptsAsZip() {
         List<AiPrompt> prompts = repo.findAll();
@@ -100,9 +130,14 @@ public class AiPromptService {
     }
 
     /**
-     * Возвращает текст промта по категории и подкатегории:
-     *  - резолвит тип через AiPromptTypeResolver;
-     *  - если промт отсутствует — возвращает DEFAULT.
+     * Возвращает текст промта по категории и подкатегории.
+     * <p>
+     * Логика:
+     * <ul>
+     *     <li>тип определяется через {@code AiPromptTypeResolver};</li>
+     *     <li>если промт отсутствует — возвращается DEFAULT;</li>
+     *     <li>если DEFAULT отсутствует — выбрасывается ошибка.</li>
+     * </ul>
      *
      * @param category категория заказа
      * @param subcategory подкатегория заказа
@@ -119,11 +154,19 @@ public class AiPromptService {
     }
 
     /**
-     * Возвращает список DTO для UI:
-     *  - без текста промта;
-     *  - только общая информация.
+     * Возвращает список DTO для UI.
+     * <p>
+     * DTO содержит только служебную информацию:
+     * <ul>
+     *     <li>ID;</li>
+     *     <li>тип;</li>
+     *     <li>версию;</li>
+     *     <li>имя;</li>
+     *     <li>даты создания и обновления.</li>
+     * </ul>
+     * Текст промта не включается.
      *
-     * @return список AiPromptDto
+     * @return список {@link AiPromptDto}
      */
     public List<AiPromptDto> getAllPromptDtos() {
         return repo.findAll().stream()
@@ -137,7 +180,4 @@ public class AiPromptService {
                         .build())
                 .toList();
     }
-
 }
-
-

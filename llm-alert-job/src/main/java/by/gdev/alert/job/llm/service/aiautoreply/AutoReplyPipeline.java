@@ -17,17 +17,53 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Основной конвейер обработки заказов и отправки автоответов.
+ * <p>
+ * Отвечает за:
+ * <ul>
+ *     <li>вызов анализа заказа через {@link AiOrderAnalysisService};</li>
+ *     <li>выбор подходящего отправщика ответа ({@link ReplySender});</li>
+ *     <li>исключение дубликатов отправки (по ссылке заказа);</li>
+ *     <li>обработку заказов как без контекста, так и с контекстом пользователя;</li>
+ *     <li>сохранение пользователя в локальной базе через {@link LlmUserService}.</li>
+ * </ul>
+ * <p>
+ * Конвейер поддерживает два режима:
+ * <ul>
+ *     <li>обработка одиночного заказа без контекста;</li>
+ *     <li>обработка расширенного запроса {@link AiOrderRequest} с пользователем, модулем и шаблоном.</li>
+ * </ul>
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class AutoReplyPipeline {
 
+    /**
+     * Сервис для работы с пользователями LLM‑модуля.
+     */
     private final LlmUserService llmUserService;
+
+    /**
+     * Сервис анализа заказа и генерации решения AI.
+     */
     private final AiOrderAnalysisService analysisService;
+
+    /**
+     * Список доступных отправщиков ответов.
+     */
     private final List<ReplySender> replySenders;
 
+    /**
+     * Множество ссылок заказов, для которых уже был отправлен ответ.
+     * Используется для защиты от дубликатов.
+     */
     private final Set<String> sent = ConcurrentHashMap.newKeySet();
 
+    /**
+     * Возвращает отправщик, который пишет ответ в лог (тестовый режим).
+     */
     private ReplySender getDummyReplySender() {
         return replySenders.stream()
                 .filter(sender -> sender instanceof DummyReplySender)
@@ -35,6 +71,9 @@ public class AutoReplyPipeline {
                 .orElse(null);
     }
 
+    /**
+     * Возвращает отправщик, который отправляет ответ в Notification‑сервис.
+     */
     private ReplySender getNotificationyReplySender() {
         return replySenders.stream()
                 .filter(sender -> sender instanceof NotificationReplySender)
@@ -42,6 +81,13 @@ public class AutoReplyPipeline {
                 .orElse(null);
     }
 
+    /**
+     * Обрабатывает одиночный заказ без контекста пользователя.
+     * <p>
+     * Используется для тестов или устаревших сценариев.
+     *
+     * @param orderDTO заказ
+     */
     public void process(OrderDTO orderDTO) {
         AiDecision decision = analysisService.analyze(orderDTO, null, null, null);
         if (!decision.isShouldReply()) {
@@ -56,11 +102,26 @@ public class AutoReplyPipeline {
         }
     }
 
-
+    /**
+     * Обрабатывает расширенный запрос, содержащий:
+     * <ul>
+     *     <li>список заказов;</li>
+     *     <li>данные пользователя;</li>
+     *     <li>данные модуля;</li>
+     *     <li>ID шаблона.</li>
+     * </ul>
+     * <p>
+     * Реализует защиту от дубликатов: один и тот же заказ (по ссылке)
+     * не будет отправлен повторно.
+     *
+     * @param request расширенный запрос
+     */
     public void process(AiOrderRequest request) {
         llmUserService.saveUser(request.getUser());
+
         for (OrderDTO order : request.getOrders()) {
             String key = order.getLink();
+
             if (!sent.add(key)) {
                 log.warn("LLM DUPLICATE DROPPED (already sent to Notification): {}", key);
                 continue;
@@ -78,14 +139,21 @@ public class AutoReplyPipeline {
         }
     }
 
+    /**
+     * Выполняет анализ одного заказа с учётом контекста.
+     */
     private AiDecision processItem(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId) {
         return analysisService.analyze(order, user, orderModule, templateId);
     }
 
+    /**
+     * Приводит текст ответа к финальному виду.
+     *
+     * @param decision решение AI
+     * @return очищенный текст ответа или null
+     */
     private String finalizeReply(AiDecision decision) {
         if (decision.getReply() == null) return null;
         return decision.getReply().trim();
     }
-
 }
-

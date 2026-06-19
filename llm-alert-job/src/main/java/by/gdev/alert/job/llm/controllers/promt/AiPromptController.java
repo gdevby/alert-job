@@ -3,6 +3,10 @@ package by.gdev.alert.job.llm.controllers.promt;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.domain.promt.AiPromptType;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -43,6 +47,23 @@ public class AiPromptController {
      * @param name имя промта
      * @return HTTP 200 при успехе
      */
+    @Operation(
+            summary = "Загрузить или обновить промт",
+            description = """
+                    Загружает текст промта из файла и сохраняет его.
+                    Если промт с таким типом уже существует — обновляет и увеличивает версию.
+                    Если нет — создаёт новый.
+                    """
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Промт успешно сохранён",
+            content = @Content(schema = @Schema(implementation = String.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Ошибка обработки файла или параметров"
+    )
     @PostMapping("/upload")
     public ResponseEntity<?> uploadPrompt(
             @RequestPart("file") MultipartFile file,
@@ -65,6 +86,19 @@ public class AiPromptController {
      *
      * @return ZIP в виде массива байт
      */
+    @Operation(
+            summary = "Экспортировать все промты в ZIP",
+            description = """
+                    Возвращает ZIP-файл, содержащий все промты.
+                    Каждый промт — отдельный .txt файл.
+                    Имя файла = тип промта.
+                    """
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "ZIP-файл с промтами",
+            content = @Content(mediaType = "application/octet-stream")
+    )
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportPrompts() {
         byte[] zip = promptService.exportAllPromptsAsZip();
@@ -81,6 +115,14 @@ public class AiPromptController {
      *
      * @return список AiPromptDto
      */
+    @Operation(
+            summary = "Получить список всех промтов",
+            description = "Возвращает список DTO без текста промта — только служебная информация."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Список промтов"
+    )
     @GetMapping("/list")
     public ResponseEntity<?> listPrompts() {
         return ResponseEntity.ok(promptService.getAllPromptDtos());
