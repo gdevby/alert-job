@@ -18,7 +18,7 @@ public class PriceDTO {
     private String price;
 
     @Schema(
-            description = "Цена в числовом виде (в минимальных единицах, например копейки/центах)",
+            description = "Цена в числовом виде (например рубли/доллары)",
             example = "1000"
     )
     private int value;

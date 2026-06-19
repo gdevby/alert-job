@@ -43,12 +43,45 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!-- Для генерации OpenApi и документации с ней -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.5.0</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.openapitools</groupId>
+			<artifactId>jackson-databind-nullable</artifactId>
+			<version>0.2.6</version>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>1.3.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>jsr305</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>5.10.2</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>5.10.2</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Для генерации OpenApi и документации с ней -->
 
 	</dependencies>
 	<build>
@@ -58,6 +91,7 @@
 				<artifactId>dockerfile-maven-plugin</artifactId>
 				<version>1.4.13</version>
 				<configuration>
+					<skip>${docker.skip}</skip>
 					<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
 					<username>${registry.username}</username>
 					<password>${registry.password}</password>
@@ -76,6 +110,111 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<plugin>
+				<!-- Плагин OpenAPI Generator -->
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<version>7.5.0</version>
+
+				<executions>
+					<execution>
+						<!-- Имя задачи генерации -->
+						<id>generate-llm-sdk</id>
+						<!-- На какой фазе Maven запускать генерацию -->
+						<!-- generate-sources = до компиляции, чтобы код попал в classpath -->
+						<phase>generate-sources</phase>
+						<goals>
+							<!-- Команда плагина: generate = сгенерировать SDK -->
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<!-- Путь к OpenAPI JSON -->
+							<inputSpec>${project.basedir}/openapi/llm-api.json</inputSpec>
+							<!-- Какой генератор использовать: java-клиент -->
+							<generatorName>java</generatorName>
+							<!-- Куда класть сгенерированный код -->
+							<output>${project.build.directory}/generated-sources/openapi</output>
+							<!-- Основные настройки генерации -->
+							<configOptions>
+								<!-- Использовать java -->
+								<dateLibrary>java8</dateLibrary>
+								<!-- Генерировать код под Spring Boot 3-->
+								<useSpringBoot3>true</useSpringBoot3>
+								<!-- Использовать RestTemplate как HTTP-клиент -->
+								<library>resttemplate</library>
+								<!-- Использовать jakarta.* вместо javax.* -->
+								<useJakartaEe>true</useJakartaEe>
+								<!-- Не вставлять timestamp в @Generated -->
+								<hideGenerationTimestamp>true</hideGenerationTimestamp>
+								<!-- Не генерировать Bean Validation аннотации -->
+								<useBeanValidation>false</useBeanValidation>
+								<!-- Не использовать Optional<T> в моделях -->
+								<useOptional>false</useOptional>
+								<!-- Ошибки API будут RuntimeException, а не checked -->
+								<useRuntimeException>true</useRuntimeException>
+								<!-- Убрать префиксы из operationId в названиях методов -->
+								<removeOperationIdPrefix>true</removeOperationIdPrefix>
+								<!-- Отключить генерацию тестов -->
+							</configOptions>
+							<!-- Дополнительные настройки -->
+							<additionalProperties>
+								<!-- Удалять неиспользуемые импорты -->
+								<optimizeImports>true</optimizeImports>
+							</additionalProperties>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<!-- Плагин build-helper: нужен, чтобы добавить дополнительные директории
+                     в список исходников Maven (source roots). Без него Maven НЕ увидит
+                     сгенерированный OpenAPI код и не скомпилирует его. -->
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<!-- Имя задачи -->
+						<id>add-generated-sources</id>
+						<!-- На какой фазе запускать -->
+						<!-- generate-sources = до компиляции, чтобы добавить путь в source roots -->
+						<phase>generate-sources</phase>
+						<goals>
+							<!-- добавить директорию как source root -->
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<!-- Путь к сгенерированным Java-файлам OpenAPI -->
+								<!-- Именно эту папку мы добавляем как исходники -->
+								<source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+
+					<execution>
+						<id>add-generated-test-sources</id>
+						<!-- Фаза Maven, на которой надо подключить тестовые исходники -->
+						<!-- generate-test-sources = момент, когда Maven собирает пути для тестов -->
+						<phase>generate-test-sources</phase>
+						<goals>
+							<!-- Команда build-helper-а: добавить тестовую директорию как test-source-root -->
+							<goal>add-test-source</goal>
+						</goals>
+
+						<configuration>
+							<sources>
+								<!-- OpenAPI Generator кладёт тесты сюда, а Maven эту папку не видит -->
+								<!-- Поэтому мы вручную говорим Maven: "это - тесты, собирай как тесты" -->
+								<source>${project.build.directory}/generated-sources/openapi/src/test/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -88,6 +227,7 @@
 					</excludes>
 				</configuration>
 			</plugin>
+
 		</plugins>
 	</build>
 </project>

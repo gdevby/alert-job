@@ -1,0 +1,608 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8033",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/api/templates/create": {
+      "post": {
+        "tags": [
+          "ai-reply-template-controller"
+        ],
+        "summary": "Создать или обновить шаблон",
+        "description": "Создаёт новый HTML‑шаблон или обновляет существующий. Возвращает ID созданного/обновлённого шаблона.",
+        "operationId": "createOrUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Шаблон успешно создан или обновлён",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации или бизнес‑логики",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompts/upload": {
+      "post": {
+        "tags": [
+          "ai-prompt-controller"
+        ],
+        "summary": "Загрузить или обновить промт",
+        "description": "Загружает текст промта из файла и сохраняет его.\nЕсли промт с таким типом уже существует — обновляет и увеличивает версию.\nЕсли нет — создаёт новый.\n",
+        "operationId": "uploadPrompt",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DEFAULT",
+                "DESIGN",
+                "DEVELOPMENT",
+                "CHATBOTS"
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Ошибка обработки файла или параметров",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Промт успешно сохранён",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/api/orders": {
+      "post": {
+        "tags": [
+          "orders-controller"
+        ],
+        "summary": "Получить список заказов (устаревший метод - не используется или используется для тестов)",
+        "description": "Принимает список заказов (OrderDTO) и отправляет каждый заказ в AutoReplyPipeline.\nИспользуется для массовой обработки заказов без контекста пользователя.\n",
+        "operationId": "receiveOrders",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OrderDTO"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Ошибка обработки входных данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Заказы успешно приняты",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/ai/api/orders/context": {
+      "post": {
+        "tags": [
+          "orders-controller"
+        ],
+        "summary": "Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)",
+        "description": "Принимает расширенный объект AiOrderRequest, содержащий:\n• список заказов,\n• данные пользователя,\n• данные модуля.\n\nИспользуется для более точной обработки заказов с учётом контекста.\n",
+        "operationId": "receiveAiOrderRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Ошибка обработки запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "AiOrderRequest успешно принят",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/templates/{id}": {
+      "get": {
+        "tags": [
+          "ai-reply-template-controller"
+        ],
+        "summary": "Получить шаблон по ID",
+        "description": "Возвращает полную информацию о шаблоне.",
+        "operationId": "getTemplateById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Шаблон найден",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/templates/{id}/exists": {
+      "get": {
+        "tags": [
+          "ai-reply-template-controller"
+        ],
+        "summary": "Проверить существование шаблона",
+        "description": "Возвращает true/false в зависимости от того, существует ли шаблон.",
+        "operationId": "exists",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Результат проверки",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/templates/user/{uuid}": {
+      "get": {
+        "tags": [
+          "ai-reply-template-controller"
+        ],
+        "summary": "Получить шаблоны пользователя",
+        "description": "Возвращает список всех шаблонов, созданных пользователем.",
+        "operationId": "getTemplatesByUser",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список шаблонов",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompts/list": {
+      "get": {
+        "tags": [
+          "ai-prompt-controller"
+        ],
+        "summary": "Получить список всех промтов",
+        "description": "Возвращает список DTO без текста промта — только служебная информация.",
+        "operationId": "listPrompts",
+        "responses": {
+          "200": {
+            "description": "Список промтов",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompts/export": {
+      "get": {
+        "tags": [
+          "ai-prompt-controller"
+        ],
+        "summary": "Экспортировать все промты в ZIP",
+        "description": "Возвращает ZIP-файл, содержащий все промты.\nКаждый промт — отдельный .txt файл.\nИмя файла = тип промта.\n",
+        "operationId": "exportPrompts",
+        "responses": {
+          "200": {
+            "description": "ZIP-файл с промтами",
+            "content": {
+              "application/octet-stream": {
+
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Название шаблона",
+            "example": "Order Template #1"
+          },
+          "userUuid": {
+            "type": "string",
+            "description": "UUID пользователя",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "moduleId": {
+            "type": "integer",
+            "description": "ID модуля",
+            "format": "int64",
+            "example": 42
+          },
+          "htmlTemplate": {
+            "type": "string",
+            "description": "HTML содержимое шаблона"
+          }
+        },
+        "description": "Запрос на создание шаблона"
+      },
+      "OrderDTO": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Заголовок заказа",
+            "example": "Нужен Java разработчик для парсинга API"
+          },
+          "message": {
+            "type": "string",
+            "description": "Полное описание заказа",
+            "example": "Требуется написать парсер для REST API, опыт работы с Spring Boot обязателен."
+          },
+          "link": {
+            "type": "string",
+            "description": "Ссылка на заказ",
+            "example": "https://freelancehunt.com/project/parser-api/123456.html"
+          },
+          "dateTime": {
+            "type": "string",
+            "description": "Дата и время публикации заказа",
+            "format": "date-time",
+            "example": "2025-06-19T10:15:30Z"
+          },
+          "price": {
+            "$ref": "#/components/schemas/PriceDTO"
+          },
+          "sourceSite": {
+            "$ref": "#/components/schemas/SourceSiteDTO"
+          },
+          "moduleName": {
+            "type": "string",
+            "description": "Название модуля, который обработал заказ",
+            "example": "FreelanceParser"
+          },
+          "openForAll": {
+            "type": "boolean",
+            "description": "Флаг: заказ открыт для всех пользователей",
+            "example": true
+          },
+          "validOrder": {
+            "type": "boolean",
+            "description": "Флаг валидности заказа (например, не удалён, не скрыт)",
+            "example": true
+          }
+        },
+        "description": "Информация о заказе, полученном с внешнего сайта"
+      },
+      "PriceDTO": {
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "string",
+            "description": "Цена в текстовом виде (как на сайте)",
+            "example": "1000 RUB"
+          },
+          "value": {
+            "type": "integer",
+            "description": "Цена в числовом виде (в минимальных единицах, например копейки/центах)",
+            "format": "int32",
+            "example": 1000
+          }
+        },
+        "description": "Информация о цене заказа"
+      },
+      "SourceSiteDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID записи источника",
+            "format": "int64",
+            "example": 101
+          },
+          "source": {
+            "type": "integer",
+            "description": "ID сайта, откуда пришёл заказ",
+            "format": "int64",
+            "example": 1
+          },
+          "sourceName": {
+            "type": "string",
+            "description": "Название сайта-источника",
+            "example": "FreelanceHunt"
+          },
+          "category": {
+            "type": "integer",
+            "description": "ID категории заказа",
+            "format": "int64",
+            "example": 12
+          },
+          "categoryName": {
+            "type": "string",
+            "description": "Название категории",
+            "example": "Разработка ПО"
+          },
+          "subCategory": {
+            "type": "integer",
+            "description": "ID подкатегории заказа",
+            "format": "int64",
+            "example": 34
+          },
+          "subCategoryName": {
+            "type": "string",
+            "description": "Название подкатегории",
+            "example": "Java Backend"
+          }
+        },
+        "description": "Информация об источнике заказа: сайт, категория и подкатегория"
+      },
+      "AiAppUserDTO": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "UUID пользователя",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email пользователя",
+            "example": "user@example.com"
+          },
+          "telegram": {
+            "type": "integer",
+            "description": "Telegram ID пользователя",
+            "format": "int64",
+            "example": 123456789
+          },
+          "switchOffAlerts": {
+            "type": "boolean",
+            "description": "Флаг отключения уведомлений",
+            "example": false
+          },
+          "defaultSendType": {
+            "type": "boolean",
+            "description": "Тип отправки по умолчанию: true = email, false = telegram",
+            "example": true
+          }
+        },
+        "description": "Информация о пользователе, связанная с заказами"
+      },
+      "AiOrderModulesDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID модуля",
+            "format": "int64",
+            "example": 42
+          },
+          "name": {
+            "type": "string",
+            "description": "Название модуля",
+            "example": "FreelanceParser"
+          }
+        },
+        "description": "Информация о модуле, от имени которого отправлены заказы"
+      },
+      "AiOrderRequest": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/AiAppUserDTO"
+          },
+          "module": {
+            "$ref": "#/components/schemas/AiOrderModulesDTO"
+          },
+          "credentialId": {
+            "type": "integer",
+            "description": "ID учётных данных пользователя (credential), связанных с модулем",
+            "format": "int64",
+            "example": 101
+          },
+          "templateId": {
+            "type": "integer",
+            "description": "ID шаблона, который должен использоваться для генерации ответа",
+            "format": "int64",
+            "example": 55
+          },
+          "orders": {
+            "$ref": "#/components/schemas/OrderDTO"
+          }
+        },
+        "description": "Расширенный запрос для AI, содержащий пользователя, модуль и список заказов"
+      },
+      "TemplateResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Название шаблона",
+            "example": "Default Reply Template"
+          },
+          "id": {
+            "type": "integer",
+            "description": "Уникальный идентификатор шаблона",
+            "format": "int64",
+            "example": 42
+          },
+          "htmlTemplate": {
+            "type": "string",
+            "description": "HTML содержимое шаблона"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Дата создания шаблона",
+            "example": "2026-06-19T08:44:32"
+          }
+        },
+        "description": "Ответ с информацией о шаблоне HTML для автоответов"
+      }
+    }
+  }
+}
