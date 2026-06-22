@@ -572,7 +572,10 @@
             "example": 55
           },
           "orders": {
-            "$ref": "#/components/schemas/OrderDTO"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderDTO"
+            }
           }
         },
         "description": "Расширенный запрос для AI, содержащий пользователя, модуль и список заказов"
