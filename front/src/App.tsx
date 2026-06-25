@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import Header from './layouts/header/Header'
+import Header from './layouts/header/Header';
 import Footer from './layouts/footer/Footer'
 import Router from './components/routes/router/Router'
 import CircularProgress from '@mui/material/CircularProgress';
@@ -21,13 +21,13 @@ const App = () => {
 			.then(r => {
 				setAuthStatus(r.data === 'ok' || r.data === 'user created')
 			})
-			.catch(error => {
+			.catch(() => {
 				setAuthStatus(false)
 			})
 			.finally(() => setIsFetching(false))
 	}, [])
 
-	const setAuthStatus = (status) => {
+	const setAuthStatus = (status: any) => {
 		handleStatus(status)
 	}
 

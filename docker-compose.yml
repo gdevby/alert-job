@@ -18,6 +18,7 @@ services:
   nginx-proxy:
     container_name: nginx-proxy
     image: nginxproxy/nginx-proxy
+    hostname: alertjob.by
     ports:
 #      - "443:443"
       - "80:80"

@@ -22,7 +22,7 @@ public class SecurityConfig {
                 .authorizeExchange(req ->
                         req.pathMatchers("/logout.html",
                                         "/",
-                                        "/favicon.ico",
+                                        "/favicon.png",
                                         "/actuator/**",
                                         "/core-alert-job/api/user/test",
                                         "/parser/api/orders/statistics")

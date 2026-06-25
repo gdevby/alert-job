@@ -1,5 +1,3 @@
-import React from 'react';
-
 import Title from '../../components/common/title/Title';
 import Examples from '../../layouts/homePage/examples/Examples';
 import Chart from '../../components/orders/chart/Chart';
