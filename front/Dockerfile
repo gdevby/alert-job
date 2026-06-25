@@ -1,10 +1,10 @@
-FROM nginx:1.25.2
-# Must add json files before import, volume is not mounted yet
-RUN apt update
-RUN apt install -y npm
-
-WORKDIR /opt/front
-ADD . /opt/front/
+FROM node:22-alpine AS builder
+ARG REVISION=build_version
+WORKDIR /app
+COPY ./package.json ./package-lock.json ./
 RUN npm install
-RUN npm run build
-RUN cp -r /opt/front/dist /usr/share/nginx/html/front
+COPY ./ ./
+RUN VITE_REVISION=$REVISION npm run build
+
+FROM nginx:1.31-alpine AS runner
+COPY --from=builder /app/dist /usr/share/nginx/html

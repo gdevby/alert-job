@@ -70,6 +70,10 @@ build-prod-example.sh
 ```
 
 After that returning to the parent directory, getting all images and running them
+
+> [!IMPORTANT]
+> Containers may lose their network ([issue](https://github.com/moby/moby/issues/51758)). Before running, release all necessary ports specified in `docker-compose.yml`.
+
 ```
 cd ..
 docker compose pull grafana prometheus nginx-proxy
