@@ -27,6 +27,12 @@ public class AiPromptDto {
     /** Имя промта*/
     private String name;
 
+    /** Ид модуля*/
+    private Long moduleId;
+
+    /** Имя модуля*/
+    private String moduleName;
+
     /** Дата создания записи */
     private LocalDateTime createdAt;
 

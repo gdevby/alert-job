@@ -3,6 +3,7 @@ package by.gdev.alert.job.llm.controllers.promt;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.domain.promt.AiPromptType;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
+import by.gdev.common.model.HeaderName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -39,20 +40,20 @@ public class AiPromptController {
      *  - увеличивает версию при обновлении.
      *
      * @param file файл с текстом промта
-     * @param type тип промта
+     * @param moduleId модуль
      * @param name имя промта
      * @return HTTP 200 при успехе
      */
     @PostMapping("/upload")
     public ResponseEntity<?> uploadPrompt(
             @RequestPart("file") MultipartFile file,
-            @RequestParam("type") AiPromptType type,
+            @RequestParam("module") Long moduleId,
             @RequestParam("name") String name
     ) {
         try {
             String text = new String(file.getBytes(), StandardCharsets.UTF_8);
-            AiPrompt saved = promptService.createOrUpdatePrompt(type, name, text);
-            return ResponseEntity.ok("Prompt saved. type=" + type + ", version=" + saved.getVersion());
+            AiPrompt saved = promptService.createOrUpdatePrompt(name, moduleId, text);
+            return ResponseEntity.ok("Prompt saved. type=" + saved.getType() + ", version=" + saved.getVersion());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
@@ -82,8 +83,8 @@ public class AiPromptController {
      * @return список AiPromptDto
      */
     @GetMapping("/list")
-    public ResponseEntity<?> listPrompts() {
-        return ResponseEntity.ok(promptService.getAllPromptDtos());
+    public ResponseEntity<?> listPrompts(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+        return ResponseEntity.ok(promptService.getAllPromptDtos(uuid));
     }
 
 }

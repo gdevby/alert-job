@@ -143,8 +143,7 @@ public class AiOrderAnalysisService {
         String orderDate = order.getDateTime() != null ? order.getDateTime().toString() : "не указана";
         List<String> keywords = List.of();
 
-        String promptTemplate = aiPromptService.getPrompt(categoryName, subcategoryName);
-
+        String promptTemplate = aiPromptService.getPrompt(orderModule.getId());
         // 3. Определяем тип проекта (front/back/dev/mobile)
         String type = detectType(categoryName, subcategoryName);
 

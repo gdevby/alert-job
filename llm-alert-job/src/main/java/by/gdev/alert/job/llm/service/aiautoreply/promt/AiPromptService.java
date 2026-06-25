@@ -1,5 +1,6 @@
 package by.gdev.alert.job.llm.service.aiautoreply.promt;
 
+import by.gdev.alert.job.llm.client.CoreClient;
 import by.gdev.alert.job.llm.domain.dto.promt.AiPromptDto;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.domain.promt.AiPromptType;
@@ -19,7 +20,8 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 public class AiPromptService {
 
-    private final AiPromptRepository repo;
+    private final AiPromptRepository aiPromptRepository;
+    private final CoreClient coreClient;
 
     /**
      * Создаёт новый промт или обновляет существующий:
@@ -27,48 +29,53 @@ public class AiPromptService {
      *  - если найден — обновляет текст и увеличивает версию;
      *  - если нет — создаёт новую запись.
      *
-     * @param type тип промта
      * @param name имя промта
      * @param text текст промта
      * @return сохранённый промт
      */
-    public AiPrompt createOrUpdatePrompt(AiPromptType type, String name, String text) {
-
-        if (type == null) {
-            throw new IllegalArgumentException("Prompt type cannot be null");
-        }
+    public AiPrompt createOrUpdatePrompt(String name, Long moduleId, String text) {
         if (text == null || text.isBlank()) {
-            throw new IllegalArgumentException("Prompt text cannot be empty");
+            throw new IllegalArgumentException("Текст промта не должен быть пустым");
         }
 
-        // Ищем существующий промт по типу
-        Optional<AiPrompt> existingOpt = repo.findByType(type);
+        Optional<AiPrompt> existingOpt;
+
+        // DEFAULT PROMPT
+        if (moduleId == null) {
+            existingOpt = aiPromptRepository.findByType(AiPromptType.DEFAULT);
+        } else {
+            // PROMPT FOR MODULE
+            existingOpt = aiPromptRepository.findByModuleId(moduleId);
+        }
 
         if (existingOpt.isPresent()) {
-            // Обновляем существующий
             AiPrompt existing = existingOpt.get();
 
-            // Если текст не изменился — кидаем ошибку
-            if (existing.getPromptText().equals(text) || existing.getName().equals(name)) {
-                throw new IllegalStateException(
-                        "Текст промта идентичен текущей версии. Нечего обновлять."
-                );
+            boolean sameName = existing.getName().equals(name);
+            boolean sameText = existing.getPromptText().equals(text);
+
+            // Ошибка только если НИЧЕГО не изменилось
+            if (sameName && sameText) {
+                throw new IllegalStateException("Промт не изменён — обновлять нечего");
             }
 
             existing.setName(name);
             existing.setPromptText(text);
             existing.setVersion(existing.getVersion() + 1);
-            return repo.save(existing);
+
+            return aiPromptRepository.save(existing);
         }
 
-        // Создаём новый
+        // Создание нового промта
         AiPrompt prompt = AiPrompt.builder()
-                .type(type)
+                .type(moduleId == null ? AiPromptType.DEFAULT : AiPromptType.MODULE)
                 .name(name)
+                .moduleId(moduleId)
                 .promptText(text)
                 .version(1)
                 .build();
-        return repo.save(prompt);
+
+        return aiPromptRepository.save(prompt);
     }
 
     /**
@@ -79,7 +86,7 @@ public class AiPromptService {
      * @return ZIP-файл в виде массива байт
      */
     public byte[] exportAllPromptsAsZip() {
-        List<AiPrompt> prompts = repo.findAll();
+        List<AiPrompt> prompts = aiPromptRepository.findAll();
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ZipOutputStream zos = new ZipOutputStream(baos, StandardCharsets.UTF_8)) {
@@ -104,38 +111,55 @@ public class AiPromptService {
      *  - резолвит тип через AiPromptTypeResolver;
      *  - если промт отсутствует — возвращает DEFAULT.
      *
-     * @param category категория заказа
-     * @param subcategory подкатегория заказа
+     * @param moduleId ид модуля
      * @return текст промта
      */
-    public String getPrompt(String category, String subcategory) {
-        AiPromptType type = AiPromptTypeResolver.resolve(category, subcategory);
+    public String getPrompt(Long moduleId) {
+        // Если указан модуль — ищем промт модуля
+        if (moduleId != null) {
+            return aiPromptRepository.findByModuleId(moduleId)
+                    .map(AiPrompt::getPromptText)
+                    .orElseGet(() -> getDefaultPrompt());
+        }
 
-        return repo.findByType(type)
-                .map(AiPrompt::getPromptText)
-                .orElseGet(() -> repo.findByType(AiPromptType.DEFAULT)
-                        .map(AiPrompt::getPromptText)
-                        .orElseThrow(() -> new IllegalStateException("DEFAULT prompt not found")));
+        // Иначе — DEFAULT
+        return getDefaultPrompt();
     }
 
+    private String getDefaultPrompt() {
+        return aiPromptRepository.findByType(AiPromptType.DEFAULT)
+                .map(AiPrompt::getPromptText)
+                .orElseThrow(() -> new IllegalStateException("DEFAULT prompt not found"));
+    }
+
+
     /**
-     * Возвращает список DTO для UI:
+     * Возвращает список DTO промтов пользователя для UI:
      *  - без текста промта;
      *  - только общая информация.
      *
      * @return список AiPromptDto
      */
-    public List<AiPromptDto> getAllPromptDtos() {
-        return repo.findAll().stream()
+    public List<AiPromptDto> getAllPromptDtos(String uuid) {
+        return aiPromptRepository.findAll().stream()
                 .map(p -> AiPromptDto.builder()
                         .id(p.getId())
                         .type(p.getType())
                         .version(p.getVersion())
                         .name(p.getName())
+                        .moduleId(p.getModuleId())
+                        .moduleName(resolveModuleName(p.getModuleId(), uuid))
                         .createdAt(p.getCreatedAt())
                         .updatedAt(p.getUpdatedAt())
                         .build())
                 .toList();
+    }
+
+    private String resolveModuleName(Long moduleId, String userUuid) {
+        if (moduleId == null) {
+            return "DEFAULT";
+        }
+        return coreClient.getModuleName(userUuid, moduleId);
     }
 
 }

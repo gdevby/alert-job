@@ -22,6 +22,9 @@ public class AiPrompt extends BasicId {
     @Column(name = "name", length = 512)
     private String name;
 
+    @Column(name = "module_id")
+    private Long moduleId; // null для DEFAULT
+
     @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String promptText;
 

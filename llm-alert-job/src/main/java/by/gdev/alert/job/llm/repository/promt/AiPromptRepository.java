@@ -9,4 +9,6 @@ import java.util.Optional;
 
 public interface AiPromptRepository extends JpaRepository<AiPrompt, Long> {
     Optional<AiPrompt> findByType(AiPromptType type);
+
+    Optional<AiPrompt> findByModuleId(Long moduleId);
 }
