@@ -1,5 +1,5 @@
 import React, { lazy, Suspense  } from 'react'
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from '../../../hooks/useAuth';
 
 import CircularProgress from '@mui/material/CircularProgress';
@@ -26,7 +26,7 @@ const Router = () => {
 		</>}
 		<Route path="/" element={<Suspense fallback={<CircularProgress />}><HomePage /></Suspense>} />
 		<Route path="/index.html" element={<Suspense fallback={<CircularProgress />}><HomePage /></Suspense>} />
-		<Route path="*" element={<Suspense fallback={<CircularProgress />}><HomePage /></Suspense>} />
+		<Route path="*" element={<Suspense fallback={<CircularProgress />}><Navigate to='/' /></Suspense>} />
 	</Routes>
 }
 
