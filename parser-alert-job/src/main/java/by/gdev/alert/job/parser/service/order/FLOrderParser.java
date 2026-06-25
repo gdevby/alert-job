@@ -21,7 +21,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.net.URL;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +57,14 @@ public class FLOrderParser extends AbsctractSiteParser {
 
         JAXBContext jaxbContext = JAXBContext.newInstance(Rss.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        Rss rss = (Rss) jaxbUnmarshaller.unmarshal(new URL(rssURI));
+        String xml = jsoupClient.getRaw(rssURI);
+        if (xml == null) {
+            log.warn("{} вернул NULL вместо RSS", getSiteName());
+            return List.of();
+        }
+        String trimmed = xml.trim();
+        StringReader reader = new StringReader(trimmed);
+        Rss rss = (Rss) jaxbUnmarshaller.unmarshal(reader);
 
         if (rss.getChannel() == null || rss.getChannel().getItem() == null)
             return List.of();
@@ -111,6 +118,10 @@ public class FLOrderParser extends AbsctractSiteParser {
         Document doc;
         try {
             doc = jsoupClient.get(order.getLink());
+            if (doc == null) {
+                log.warn("{} вернул null (502/503/504) для {}", getSiteName(),  order.getLink());
+                return order;
+            }
         } catch (Exception ex) {
             order.setValidOrder(false);
             log.debug("invalid flru link {}", order.getLink());
