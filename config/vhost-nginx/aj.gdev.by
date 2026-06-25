@@ -1,4 +1,3 @@
 location /page {
-    #try_files $uri front/index.html;
-	return 301 https://aj.gdev.by
+    try_files $uri $uri/ /front/index.html;
 }
