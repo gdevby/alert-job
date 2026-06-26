@@ -1,7 +1,10 @@
-create database keycloak;
-create database core_db;
-create database parser_db;
-create database llm_db;
+CREATE DATABASE IF NOT EXISTS keycloak;
+CREATE DATABASE IF NOT EXISTS core_db;
+CREATE DATABASE IF NOT EXISTS parser_db;
+CREATE DATABASE IF NOT EXISTS llm_db;
+
+CREATE USER IF NOT EXISTS 'alert_job_user'@'%' IDENTIFIED BY '191261';
+
 GRANT ALL PRIVILEGES ON `keycloak`.* to alert_job_user@'%';
 GRANT ALL PRIVILEGES ON `core_db`.* to alert_job_user@'%';
 GRANT ALL PRIVILEGES ON `parser_db`.* to alert_job_user@'%';
