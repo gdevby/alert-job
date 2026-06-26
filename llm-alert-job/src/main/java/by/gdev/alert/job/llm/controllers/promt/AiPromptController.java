@@ -3,7 +3,6 @@ package by.gdev.alert.job.llm.controllers.promt;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.domain.promt.AiPromptType;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
-import by.gdev.common.model.HeaderName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -83,7 +82,7 @@ public class AiPromptController {
      * @return список AiPromptDto
      */
     @GetMapping("/list")
-    public ResponseEntity<?> listPrompts(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+    public ResponseEntity<?> listPrompts(@RequestHeader("UUID-user-header") String uuid) {
         return ResponseEntity.ok(promptService.getAllPromptDtos(uuid));
     }
 

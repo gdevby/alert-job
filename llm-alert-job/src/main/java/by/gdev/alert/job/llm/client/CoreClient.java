@@ -2,7 +2,6 @@ package by.gdev.alert.job.llm.client;
 
 import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
-import by.gdev.common.model.HeaderName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -38,7 +37,7 @@ public class CoreClient {
         String url = coreUrl + "/api/user/order-module";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set(HeaderName.UUID_USER_HEADER, uuid);
+        headers.set("UUID-user-header", uuid);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         try {
             ResponseEntity<AiOrderModulesDTO[]> response =
