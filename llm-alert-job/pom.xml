@@ -6,16 +6,16 @@
 		<version>${revision}</version>
 	</parent>
 	<artifactId>llm-alert-job</artifactId>
-    <properties>
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
-    </properties>
+	<properties>
+		<spring-ai.version>1.0.0-M6</spring-ai.version>
+	</properties>
 	<dependencies>
 
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-            <version>${spring-ai.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+			<version>${spring-ai.version}</version>
+		</dependency>
 
 		<!--
 		<dependency>
@@ -25,31 +25,31 @@
 		</dependency>
 		-->
 
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-bootstrap</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-config</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <version>3.3.3</version>
-        </dependency>
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+			<version>3.3.3</version>
+		</dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
 
 		<!-- Для генерации OpenApi и документации с ней -->
 		<dependency>
@@ -102,7 +102,7 @@
 					<skip>${docker.skip}</skip>
 					<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
 					<username>${registry.username}</username>
-        			<password>${registry.password}</password>
+					<password>${registry.password}</password>
 					<tag>${project.version}</tag>
 					<buildArgs>
 						<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>

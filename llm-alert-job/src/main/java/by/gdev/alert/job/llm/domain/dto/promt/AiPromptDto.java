@@ -1,6 +1,7 @@
 package by.gdev.alert.job.llm.domain.dto.promt;
 
 import by.gdev.alert.job.llm.domain.promt.AiPromptType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,17 +15,23 @@ import java.time.LocalDateTime;
  */
 @Data
 @Builder
+@Schema(description = "Краткое описание промта без текста. Используется в списках и UI.")
 public class AiPromptDto {
+
     /** ID промта в БД */
+    @Schema(description = "ID промта в базе данных", example = "12")
     private Long id;
 
     /** Тип промта (категория) */
+    @Schema(description = "Тип промта", example = "DEVELOPMENT")
     private AiPromptType type;
 
     /** Версия промта (инкрементируется при обновлении) */
+    @Schema(description = "Версия промта", example = "3")
     private Integer version;
 
-    /** Имя промта*/
+    /** Имя промта */
+    @Schema(description = "Имя промта", example = "default_reply_template")
     private String name;
 
     /** Ид модуля*/
@@ -34,8 +41,11 @@ public class AiPromptDto {
     private String moduleName;
 
     /** Дата создания записи */
+    @Schema(description = "Дата создания промта", example = "2026-06-19T08:44:32")
     private LocalDateTime createdAt;
 
     /** Дата последнего обновления */
+    @Schema(description = "Дата последнего обновления промта", example = "2026-06-19T09:12:10")
     private LocalDateTime updatedAt;
 }
+

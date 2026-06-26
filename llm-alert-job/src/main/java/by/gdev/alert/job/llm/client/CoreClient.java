@@ -15,15 +15,41 @@ import org.springframework.http.ResponseEntity;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Клиент для взаимодействия с CORE‑модулем.
+ * <p>
+ * Используется для получения информации о пользователях по их UUID.
+ * Выполняет HTTP‑запросы к CORE‑сервису через {@link RestTemplate}.
+ * <p>
+ * Основные особенности:
+ * <ul>
+ *     <li>Инкапсулирует логику вызовов CORE API.</li>
+ *     <li>Возвращает {@code null}, если пользователь не найден (HTTP 404).</li>
+ *     <li>Использует базовый URL из конфигурации приложения.</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class CoreClient {
 
+    /**
+     * HTTP‑клиент для выполнения запросов к CORE‑сервису.
+     */
     private final RestTemplate restTemplate;
 
+    /**
+     * Базовый URL CORE‑модуля, задаётся через конфигурацию.
+     * Например: {@code http://core-service:8080}
+     */
     @Value("${core.module.url}")
     private String coreUrl;
 
+    /**
+     * Получает информацию о пользователе по его UUID.
+     *
+     * @param uuid уникальный идентификатор пользователя
+     * @return DTO пользователя или {@code null}, если пользователь не найден
+     */
     public AiAppUserDTO getUserByUuid(String uuid) {
         String url = coreUrl + "/api/users/" + uuid;
         try {

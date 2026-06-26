@@ -4,6 +4,10 @@ import by.gdev.alert.job.llm.domain.AiReplyTemplate;
 import by.gdev.alert.job.llm.domain.dto.template.CreateTemplateRequest;
 import by.gdev.alert.job.llm.domain.dto.template.TemplateResponse;
 import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +24,20 @@ public class AiReplyTemplateController {
 
     private final AiReplyTemplateService templateService;
 
+    @Operation(
+            summary = "Создать или обновить шаблон",
+            description = "Создаёт новый HTML‑шаблон или обновляет существующий. "
+                    + "Возвращает ID созданного/обновлённого шаблона."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Шаблон успешно создан или обновлён",
+            content = @Content(schema = @Schema(implementation = Long.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Ошибка валидации или бизнес‑логики"
+    )
     @PostMapping("/create")
     public ResponseEntity<?> createOrUpdate(@RequestBody CreateTemplateRequest req) {
         try {
@@ -31,6 +49,15 @@ public class AiReplyTemplateController {
         }
     }
 
+    @Operation(
+            summary = "Получить шаблоны пользователя",
+            description = "Возвращает список всех шаблонов, созданных пользователем."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Список шаблонов",
+            content = @Content(schema = @Schema(implementation = TemplateResponse.class))
+    )
     @GetMapping("/user/{uuid}")
     public ResponseEntity<?> getTemplatesByUser(@PathVariable String uuid) {
         try {
@@ -57,6 +84,14 @@ public class AiReplyTemplateController {
         }
     }
 
+    @Operation(
+            summary = "Проверить существование шаблона",
+            description = "Возвращает true/false в зависимости от того, существует ли шаблон."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Результат проверки"
+    )
     @GetMapping("/{id}/exists")
     public ResponseEntity<?> exists(@PathVariable Long id) {
         try {
@@ -68,6 +103,15 @@ public class AiReplyTemplateController {
         }
     }
 
+    @Operation(
+            summary = "Получить шаблон по ID",
+            description = "Возвращает полную информацию о шаблоне."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Шаблон найден",
+            content = @Content(schema = @Schema(implementation = TemplateResponse.class))
+    )
     @GetMapping("/{id}")
     public ResponseEntity<?> getTemplateById(@PathVariable Long id) {
         try {
