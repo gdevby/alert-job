@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS ai_reply_template (
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===========================
--- 4. DEFAULT PROMPT
+-- DEFAULT PROMPT
 -- ===========================
 INSERT INTO ai_prompt (type, prompt_text, version, created_at, updated_at)
 SELECT
@@ -63,7 +63,7 @@ SELECT
 );
 
 -- ===========================
--- 5. DEFAULT TEMPLATE
+-- DEFAULT TEMPLATE
 -- ===========================
 INSERT INTO ai_reply_template (name, user_id, module_id, html_template)
 SELECT

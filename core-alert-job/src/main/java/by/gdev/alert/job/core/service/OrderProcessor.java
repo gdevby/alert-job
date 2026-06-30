@@ -55,13 +55,6 @@ public class OrderProcessor {
     private boolean autoReplyEnabled;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
-        // Автоответы включены?
-        if (autoReplyEnabled) {
-            forEachLLm(users, orders); //отправляем в LLM и запускаем автоответы
-        } else {
-            log.debug("Автоответы отключены через property (autoreply.enabled=false)");
-        }
-
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
@@ -83,6 +76,12 @@ public class OrderProcessor {
                     }).flatMap(Collection::stream).toList();
             if (!orderListToSend.isEmpty()) {
                 sendOrderToUser(user, orderListToSend);
+                // Автоответы включены?
+                if (autoReplyEnabled) {
+                    forEachLLm(users, orderListToSend); //отправляем в LLM и запускаем автоответы
+                } else {
+                    log.debug("Автоответы отключены через property (autoreply.enabled=false)");
+                }
             }
         });
     }
