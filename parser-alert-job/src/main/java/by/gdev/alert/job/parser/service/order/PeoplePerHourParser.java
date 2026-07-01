@@ -56,6 +56,9 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
         Document document;
         try {
             document = jsoupClient.get(uri);
+            if (document == null){
+                return List.of();
+            }
         } catch (HttpStatusException e) {
             if (e.getStatusCode() == 404) {
                 log.warn("404 Not Found for URL {}", uri);

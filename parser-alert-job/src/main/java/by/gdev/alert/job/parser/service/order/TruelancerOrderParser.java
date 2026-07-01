@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -42,8 +43,14 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
 			return new ArrayList<>();
         restTemplate = getRestTemplate(isNeedProxy);
 
-        TrueLancerRoot root = restTemplate.postForObject(uri, Map.of("category", link), TrueLancerRoot.class);
+        TrueLancerRoot root = callApi(link);
+        if (root == null) {
+            return List.of();
+        }
         TreuelancerProjects projects = root.getProjects();
+        if (projects == null) {
+            return List.of();
+        }
         List<TruelancerOrder> orders = projects.getOrders();
 
         List<Order> rawOrders = orders.stream()
@@ -51,6 +58,26 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
                 .filter(Objects::nonNull)
                 .toList();
         return getOrdersData(rawOrders, category, subCategory);
+    }
+
+    private TrueLancerRoot callApi(String link) {
+        try {
+            return restTemplate.postForObject(uri, Map.of("category", link), TrueLancerRoot.class);
+        } catch (HttpServerErrorException e) {
+            int code = e.getStatusCode().value();
+            if (code == 502 || code == 503 || code == 504) {
+                log.warn("{} API {} — игнорируем", getSiteName(), code);
+                return null;
+            }
+            throw e;
+        } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().contains("Connect timed out")) {
+                log.debug("Ignored timeout for {}", getSiteName());
+                return null;
+            }
+            log.error("Ошибка {}: {}", getSiteName(), e.getMessage());
+            return null;
+        }
     }
 
     private Order buildOrder(TruelancerOrder tr, Long siteSourceJobId, Category category, Subcategory subCategory) {
