@@ -1,5 +1,6 @@
 package by.gdev.alert.job.llm.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,6 +23,7 @@ import java.util.List;
 @Setter
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Schema(description = "Решение AI о необходимости автоответа и объяснение выбора")
 public class AiDecision {
 
@@ -64,6 +66,9 @@ public class AiDecision {
         @JsonPropertyDescription("Объяснение, почему выбрана конкретная подкатегория")
         @Schema(description = "Причина выбора подкатегории", example = "Упоминание срочности и помощи")
         private String subcategoryMatchReason;
+
+        public AiDecision() {
+        }
 
         public AiDecision(boolean shouldReply, double confidence, String reason, String reply,
                           List<String> matchedKeywords, List<String> missedKeywords,

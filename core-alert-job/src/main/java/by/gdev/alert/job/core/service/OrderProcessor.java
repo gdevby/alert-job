@@ -78,7 +78,7 @@ public class OrderProcessor {
                 sendOrderToUser(user, orderListToSend);
                 // Автоответы включены?
                 if (autoReplyEnabled) {
-                    forEachLLm(users, orderListToSend); //отправляем в LLM и запускаем автоответы
+                    forEachLLm(user, orderListToSend); //отправляем в LLM и запускаем автоответы
                 } else {
                     log.debug("Автоответы отключены через property (autoreply.enabled=false)");
                 }
@@ -86,38 +86,39 @@ public class OrderProcessor {
         });
     }
 
-    private void forEachLLm(Set<AppUser> users, List<OrderDTO> orders){
-        for (AppUser user : users){
-            for (OrderModules orderModule : user.getOrderModules()) {
-                if (!Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
+    private void forEachLLm(AppUser user, List<OrderDTO> orders){
+        for (OrderModules orderModule : user.getOrderModules()) {
+            if (!Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
+                continue;
+            }
+
+            Map<Long, List<OrderDTO>> bySite = orders.stream()
+                    .collect(Collectors.groupingBy(o -> o.getSourceSite().getSource()));
+
+            for (Map.Entry<Long, List<OrderDTO>> entry : bySite.entrySet()) {
+                Long siteId = entry.getKey();
+                List<OrderDTO> siteOrders = entry.getValue();
+                boolean subscribed = orderModule.getSources().stream()
+                        .anyMatch(s -> s.getSiteSource().equals(siteId));
+                if (!subscribed) continue;
+
+                SiteName siteName = SiteName.fromId(siteId);
+                boolean supported = notificationClient.canParse(siteName.name());
+
+                if (!supported) {
+                    log.debug("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
                     continue;
                 }
-
-                Map<Long, List<OrderDTO>> bySite = orders.stream()
-                        .collect(Collectors.groupingBy(o -> o.getSourceSite().getSource()));
-
-                for (Map.Entry<Long, List<OrderDTO>> entry : bySite.entrySet()) {
-                    Long siteId = entry.getKey();
-                    List<OrderDTO> siteOrders = entry.getValue();
-                    boolean subscribed = orderModule.getSources().stream()
-                            .anyMatch(s -> s.getSiteSource().equals(siteId));
-                    if (!subscribed) continue;
-
-                    SiteName siteName = SiteName.fromId(siteId);
-                    boolean supported = notificationClient.canParse(siteName.name());
-
-                    if (!supported) {
-                        log.debug("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
-                        continue;
-                    }
-
+                try {
                     buildAndsSndLlmRequest(user, orderModule,
                             orderModule.getSources().stream()
                                     .filter(s -> s.getSiteSource().equals(siteId))
                                     .findFirst()
-                                    .orElseThrow(),
-                            siteOrders
-                    );
+                                    .orElseThrow(), siteOrders);
+                }
+                catch (Exception e) {
+                    log.debug("Ошибка при отправке автоответа для пользователя {} на сайте {}: {}",
+                            user.getUuid(), siteName, e.getMessage(), e);
                 }
             }
         }

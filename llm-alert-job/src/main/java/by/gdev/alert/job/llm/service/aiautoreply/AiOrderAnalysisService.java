@@ -249,7 +249,9 @@ public class AiOrderAnalysisService {
                 //tokenBucket.consume(estimatedTokens);
 
                 // Вызов LLM
+                String systemPrompt = "Ты — строгий JSON-генератор. Отвечай только валидным JSON без пояснений.";
                 String raw = chatClient.prompt()
+                        .system(systemPrompt)
                         .user(prompt)
                         .call()
                         .content();
@@ -301,7 +303,8 @@ public class AiOrderAnalysisService {
                 raw = raw.replace("```json", "")
                         .replace("```", "")
                         .trim();
-                return mapper.readValue(raw, AiDecision.class);
+                String json = extractJson(raw);
+                return mapper.readValue(json, AiDecision.class);
 
             } catch (org.springframework.ai.retry.NonTransientAiException e) {
                 // Это 429, 400, 50
@@ -344,5 +347,15 @@ public class AiOrderAnalysisService {
             );
         }
     }
+
+    private String extractJson(String raw) {
+        int start = raw.indexOf('{');
+        int end = raw.lastIndexOf('}');
+        if (start == -1 || end == -1 || end < start) {
+            throw new IllegalArgumentException("No JSON object found in response");
+        }
+        return raw.substring(start, end + 1);
+    }
+
 }
 
