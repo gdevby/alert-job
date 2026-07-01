@@ -70,6 +70,10 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
             }
             throw e;
         } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().contains("Connect timed out")) {
+                log.debug("Ignored timeout for {}", getSiteName());
+                return null;
+            }
             log.error("Ошибка {}: {}", getSiteName(), e.getMessage());
             return null;
         }
