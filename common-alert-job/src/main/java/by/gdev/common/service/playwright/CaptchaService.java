@@ -7,7 +7,7 @@ import com.microsoft.playwright.options.BoundingBox;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("captchaServiceCommon")
 @Slf4j
 public class CaptchaService {
 
