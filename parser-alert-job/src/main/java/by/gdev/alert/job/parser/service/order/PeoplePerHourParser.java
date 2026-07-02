@@ -67,7 +67,11 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
             log.error("HTTP error {} for URL {}", e.getStatusCode(), uri);
             return List.of();
         } catch (IOException e) {
-            log.error("IO error while parsing {}: {}", uri, e.getMessage());
+            if (e.getMessage() != null && e.getMessage().contains("Read timed out")) {
+                log.debug("Ignored timeout for {}: {}", uri, e.getMessage());
+            } else {
+                log.error("IO error while parsing {}: {}", uri, e.getMessage());
+            }
             return List.of();
         }
 
