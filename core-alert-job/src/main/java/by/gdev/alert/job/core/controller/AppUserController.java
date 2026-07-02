@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -35,6 +37,12 @@ public class AppUserController {
             log.error("Ошибка при получении пользователя в CORE {}", uuid, e);
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping
+    public List<AppUserDTO> findAllUsers()
+    {
+        return userService.findAllUsers();
     }
 }
 
