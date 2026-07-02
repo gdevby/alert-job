@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.service.metrics;
 
 import by.gdev.alert.job.parser.factory.MeterCounterFactory;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import io.micrometer.core.instrument.Counter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,23 +1,20 @@
 package by.gdev.alert.job.parser.service.order.jsoup;
 
-import by.gdev.alert.job.parser.proxy.service.ProxyService;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
+
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.proxy.ProxyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.auth.AuthScope;
-import org.apache.hc.client5.http.auth.CredentialsProvider;
-import org.apache.hc.client5.http.auth.CredentialsStore;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -25,7 +22,6 @@ import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.net.URL;
 
 /**
  * Клиент‑обёртка над стандартным {@link Jsoup}, обеспечивающий:

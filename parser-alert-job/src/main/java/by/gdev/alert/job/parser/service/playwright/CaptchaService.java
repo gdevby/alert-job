@@ -6,7 +6,7 @@ import com.microsoft.playwright.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("captchaServiceParser")
 @Slf4j
 public class CaptchaService {
 

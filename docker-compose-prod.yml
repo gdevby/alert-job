@@ -171,6 +171,11 @@ services:
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - TZ=Europe/Moscow
+       - CORE_URL=http://core:8018
+       - MAILBOX_HOST=
+       - MAILBOX_USERNAME=
+       - MAILBOX_PWD=
+       - APP_ENCRYPTION_KEY=
     depends_on:
       config:
         condition: service_healthy
@@ -199,6 +204,9 @@ services:
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
+       - LLM_MODULE_URL=http://llm:8033
+       - NOTIFICATION_MODULE_URL=http://notification:8019
+       - APP_ENCRYPTION_KEY=
     depends_on:
       config:
         condition: service_healthy
@@ -206,7 +214,24 @@ services:
         condition: service_healthy
       db:
         condition: service_started
-    mem_limit: 2g  
+    mem_limit: 2g
+  llm:
+    image: rg.gdev.by/alert-job/llm-alert-job:1.0
+    ports:
+      - "8033:8033"
+    environment:
+       - "SPRING_PROFILES_ACTIVE=prod"
+       - TZ=Europe/Moscow
+       - AI_API_KEY=
+       - AI_BASE_URL=
+       - AI_MODEL=
+       - NOTIFICATION_URL=http://notification:8019/notification/api/ai/decision
+       - CORE_URL=http://core:8018
+    depends_on:
+      config:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
   prometheus:
     restart: always
     container_name: prometheus

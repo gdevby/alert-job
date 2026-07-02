@@ -4,7 +4,7 @@ import by.gdev.alert.job.parser.domain.db.OrderStatistics;
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.repository.OrderStatisticsRepository;
 import by.gdev.alert.job.parser.repository.SiteSourceJobRepository;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

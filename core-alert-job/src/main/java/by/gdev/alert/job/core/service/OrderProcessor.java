@@ -6,23 +6,31 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import by.gdev.alert.job.core.client.LlmClient;
+import by.gdev.alert.job.core.client.NotificationClient;
+import by.gdev.alert.job.core.model.ai.AiOrderRequest;
+import by.gdev.alert.job.core.model.db.*;
+import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
+import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
+import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
+import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
+import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
 import by.gdev.common.model.NotificationType;
+import by.gdev.common.model.SiteName;
+import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import by.gdev.alert.job.core.configuration.ApplicationProperty;
-import by.gdev.alert.job.core.model.db.AppUser;
-import by.gdev.alert.job.core.model.db.DelayOrderNotification;
-import by.gdev.alert.job.core.model.db.SourceSite;
-import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DelayOrderNotificationRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -35,6 +43,16 @@ public class OrderProcessor {
     private final ApplicationProperty property;
     private final UserFilterRepository filterRepository;
     private final MailSenderService mailSenderService;
+
+    private final AccountTemplateBindingRepository accountTemplateBindingRepository;
+    private final UserSiteCredentialRepository userSiteCredentialRepository;
+    private final LlmClient llmClient;
+    private final NotificationClient notificationClient;
+    private final AiOrderRequestMapper aiOrderRequestMapper;
+
+    @Value("${autoreply.enabled:false}")
+    @Getter
+    private boolean autoReplyEnabled;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
         orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
@@ -58,8 +76,77 @@ public class OrderProcessor {
                     }).flatMap(Collection::stream).toList();
             if (!orderListToSend.isEmpty()) {
                 sendOrderToUser(user, orderListToSend);
+                // Автоответы включены?
+                if (autoReplyEnabled) {
+                    forEachLLm(user, orderListToSend); //отправляем в LLM и запускаем автоответы
+                } else {
+                    log.debug("Автоответы отключены через property (autoreply.enabled=false)");
+                }
             }
         });
+    }
+
+    private void forEachLLm(AppUser user, List<OrderDTO> orders){
+        for (OrderModules orderModule : user.getOrderModules()) {
+            if (!Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
+                continue;
+            }
+
+            Map<Long, List<OrderDTO>> bySite = orders.stream()
+                    .collect(Collectors.groupingBy(o -> o.getSourceSite().getSource()));
+
+            for (Map.Entry<Long, List<OrderDTO>> entry : bySite.entrySet()) {
+                Long siteId = entry.getKey();
+                List<OrderDTO> siteOrders = entry.getValue();
+                boolean subscribed = orderModule.getSources().stream()
+                        .anyMatch(s -> s.getSiteSource().equals(siteId));
+                if (!subscribed) continue;
+
+                SiteName siteName = SiteName.fromId(siteId);
+                boolean supported = notificationClient.canParse(siteName.name());
+
+                if (!supported) {
+                    log.debug("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
+                    continue;
+                }
+                try {
+                    buildAndsSndLlmRequest(user, orderModule,
+                            orderModule.getSources().stream()
+                                    .filter(s -> s.getSiteSource().equals(siteId))
+                                    .findFirst()
+                                    .orElseThrow(), siteOrders);
+                }
+                catch (Exception e) {
+                    log.debug("Ошибка при отправке автоответа для пользователя {} на сайте {}: {}",
+                            user.getUuid(), siteName, e.getMessage(), e);
+                }
+            }
+        }
+    }
+
+    private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders){
+        //Если список заказов не пустой и автоответ включен для модуля
+        if (!orders.isEmpty()){
+            //получаем ид сайта для которого нам необходимо отправить заказы
+            Long siteId = sourceSite.getSiteSource();
+            // Находим аккаунт пользователя для логина в автоответе для этого сайта и модуля
+            UserSiteCredential credential =
+                    userSiteCredentialRepository
+                            .findByUserUuidAndModuleIdAndSiteId(user.getUuid(), orderModule.getId(), siteId)
+                            .orElseThrow(() -> new RuntimeException("Нет аккаунта для сайта"));
+            Long credentialId = credential.getId();
+            // Находим активный биндинг для модуля и из него получаем какой шаблон необходимо применить для автоответа
+            AccountTemplateBinding binding =
+                    accountTemplateBindingRepository
+                            .findByModuleIdAndAccountIdAndActiveTrue(orderModule.getId(), credential.getId())
+                            .orElseThrow(() -> new RuntimeException("Нет активного биндинга для этого сайта"));
+            Long templateId = binding.getTemplateId();
+
+            //Формируем запрос к модулю LLM который будет давать автоответ
+            AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule, credentialId,  templateId, orders);
+            //отправляем сформированный запрос в модуль LLM
+            llmClient.sendAiOrderRequest(aiOrderRequest);
+        }
     }
 
     private void sendOrderToUser(AppUser user, List<OrderDTO> list) {
