@@ -9,11 +9,11 @@ package by.gdev.alert.job.llm.domain.promt;
  * Значения:
  * <ul>
  *     <li>{@link #DEFAULT} — базовый универсальный промт.</li>
- *     <li>{@link #MODULE} — промты содуля.</li>
+ *     <li>{@link #CUSTOM} — пользовательские промты.</li>
  * </ul>
  */
 public enum AiPromptType {
     /** Универсальный промт по умолчанию */
     DEFAULT,
-    MODULE
+    CUSTOM
 }

@@ -5,6 +5,7 @@ import by.gdev.alert.job.core.model.credential.dto.UserCredentialRequest;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.model.credential.dto.UserSiteCredentialShortResponse;
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
+import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/credentials")
@@ -40,8 +39,8 @@ public class UserCredentialController {
             responseCode = "400",
             description = "Ошибка (например, пользователь не найден)"
     )
-    @GetMapping("/user/{uuid}/all")
-    public ResponseEntity<?> getAllUserCredentials(@PathVariable String uuid) {
+    @GetMapping("/user/all")
+    public ResponseEntity<?> getAllUserCredentials(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         try {
             var creds = credentialService.getByUserUuid(uuid);
             var result = creds.stream().map(c -> {
@@ -76,39 +75,14 @@ public class UserCredentialController {
             description = "Ошибка валидации или бизнес-логики"
     )
     @PostMapping("/create-or-update")
-    public UserSiteCredential createOrUpdate(@RequestBody UserCredentialRequest request) {
+    public UserSiteCredential createOrUpdate(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody UserCredentialRequest request) {
         return credentialService.createOrUpdateCredential(
                 request.getName(),
-                request.getUserUuid(),
+                uuid,
                 request.getSiteId(),
-                request.getModuleId(),
                 request.getLogin(),
                 request.getPassword()
         );
-    }
-
-    @Operation(
-            summary = "Получить зашифрованные учётные данные",
-            description = "Возвращает логин и зашифрованный пароль для указанных пользователя, сайта и модуля."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Учётные данные найдены",
-            content = @Content(schema = @Schema(implementation = UserCredentialEncrypted.class))
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "Учётные данные не найдены"
-    )
-    @GetMapping("/get-encrypted")
-    public ResponseEntity<UserCredentialEncrypted> getEncrypted(
-            @RequestParam String userUuid,
-            @RequestParam Long siteId,
-            @RequestParam Long moduleId
-    ) {
-        return credentialService.getEncryptedCredential(userUuid, siteId, moduleId)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @Operation(
@@ -125,15 +99,11 @@ public class UserCredentialController {
             description = "Учётные данные не найдены"
     )
     @GetMapping("/get-encrypted-by-id")
-    public ResponseEntity<UserCredentialEncrypted> getEncryptedById(@RequestParam Long credentialId) {
-        UserSiteCredential cred = credentialService.getById(credentialId);
-        // Если cred == null, нужно вернуть 404, иначе NullPointerException
-        if (cred == null) {
-            return ResponseEntity.notFound().build();
-        }
-        UserCredentialEncrypted dto = new UserCredentialEncrypted();
-        dto.setLogin(cred.getLogin());
-        dto.setPasswordEncrypted(cred.getPasswordEncrypted());
+    public ResponseEntity<UserCredentialEncrypted> getEncryptedById(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @RequestParam Long credentialId) {
+
+        UserCredentialEncrypted dto = credentialService.getEncryptedById(uuid, credentialId);
         return ResponseEntity.ok(dto);
     }
 }

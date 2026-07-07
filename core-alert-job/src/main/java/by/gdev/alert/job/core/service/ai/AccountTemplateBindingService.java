@@ -2,9 +2,13 @@ package by.gdev.alert.job.core.service.ai;
 
 import by.gdev.alert.job.core.client.LlmClient;
 import by.gdev.alert.job.core.exeption.ai.*;
+import by.gdev.alert.job.core.exeption.ai.binding.BindingAlreadyExistsException;
+import by.gdev.alert.job.core.exeption.ai.binding.BindingNotFoundException;
 import by.gdev.alert.job.core.model.binding.dto.BindingResponse;
+import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
+import by.gdev.alert.job.core.model.promt.dto.PromtResponse;
 import by.gdev.alert.job.core.model.template.dto.TemplateResponse;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
@@ -27,7 +31,7 @@ public class AccountTemplateBindingService {
     private final LlmClient llmClient;
 
     @Transactional
-    public AccountTemplateBinding create(Long moduleId, Long accountId, Long templateId, boolean active) {
+    public BindingResponse create(String uuid, Long moduleId, Long accountId, Long templateId, Long promtId, boolean active) {
 
         if (!orderModulesRepository.existsById(moduleId)) {
             throw new OrderModuleNotFoundException("Модуль не найден с ид: " + moduleId);
@@ -39,8 +43,13 @@ public class AccountTemplateBindingService {
         }
 
         // проверка существования шаблона в LLM
-        if (!llmClient.templateExists(templateId)) {
+        if (!llmClient.templateExists(templateId, uuid)) {
             throw new TemplateNotFoundException("Шаблон не найден в модуле LLM: " + templateId);
+        }
+
+        // проверка существования промта в LLM
+        if (!llmClient.promtExists(promtId, uuid)) {
+            throw new TemplateNotFoundException("Промт не найден в модуле LLM: " + promtId);
         }
 
         if (!userSiteCredentialRepository.existsById(accountId)) {
@@ -56,25 +65,27 @@ public class AccountTemplateBindingService {
                 .moduleId(moduleId)
                 .accountId(accountId)
                 .templateId(templateId)
+                .promtId(promtId)
                 .active(active)
+                .userUuid(uuid)
                 .build();
 
-        return accountTemplateBindingRepository.save(b);
+        AccountTemplateBinding saved = accountTemplateBindingRepository.save(b);
+        return convertToBindingResponse(uuid, saved);
     }
 
     @Transactional
-    public AccountTemplateBinding update(Long id, Long moduleId, Long accountId, Long templateId, boolean active) {
-
-        if (!orderModulesRepository.existsById(moduleId)) {
-            throw new OrderModuleNotFoundException("Модуль не найден с ид: " + moduleId);
-        }
-
+    public BindingResponse update(String uuid, Long id, Long moduleId, Long accountId, Long templateId, Long promtId, boolean active) {
         if (!orderModulesRepository.existsById(moduleId)) {
             throw new OrderModuleNotFoundException("Модуль не найден с ид: " + moduleId);
         }
 
         AccountTemplateBinding b = accountTemplateBindingRepository.findById(id)
                 .orElseThrow(() -> new BindingNotFoundException("Связка аккаунта и шаблона не найдена: " + id));
+
+        if (!uuid.equals(b.getUserUuid())) {
+            throw new AccessDeniedException("Эта привязка не принадлежит текущему пользователю");
+        }
 
         // Проверка дубликата (кроме текущего)
         boolean exists = accountTemplateBindingRepository.existsByModuleIdAndAccountIdAndTemplateId(moduleId, accountId, templateId);
@@ -85,8 +96,13 @@ public class AccountTemplateBindingService {
         }
 
         // Проверка шаблона
-        if (!llmClient.templateExists(templateId)) {
+        if (!llmClient.templateExists(templateId, uuid)) {
             throw new TemplateNotFoundException("Шаблон не найден в модуле LLM: " + templateId);
+        }
+
+        //Проверка промта
+        if (!llmClient.promtExists(promtId, uuid)) {
+            throw new TemplateNotFoundException("Промт не найден в модуле LLM: " + promtId);
         }
 
         if (!userSiteCredentialRepository.existsById(accountId)) {
@@ -102,58 +118,63 @@ public class AccountTemplateBindingService {
         b.setModuleId(moduleId);
         b.setAccountId(accountId);
         b.setTemplateId(templateId);
+        b.setPromtId(promtId);
         b.setActive(active);
 
-        return accountTemplateBindingRepository.save(b);
-    }
-
-
-    @Transactional(readOnly = true)
-    public List<AccountTemplateBinding> getByModule(Long moduleId) {
-        return accountTemplateBindingRepository.findAllByModuleId(moduleId);
+        AccountTemplateBinding saved = accountTemplateBindingRepository.save(b);
+        return convertToBindingResponse(uuid, saved);
     }
 
     @Transactional
-    public void delete(Long id) {
-        accountTemplateBindingRepository.deleteById(id);
+    public void delete(String uuid, Long id) {
+        AccountTemplateBinding b = accountTemplateBindingRepository.findById(id)
+                .orElseThrow(() -> new BindingNotFoundException("Связка не найдена: " + id));
+
+        // Проверка по userUuid из биндинга
+        if (!uuid.equals(b.getUserUuid())) {
+            throw new AccessDeniedException("Эта привязка не принадлежит текущему пользователю");
+        }
+
+        accountTemplateBindingRepository.delete(b);
     }
 
     @Transactional
-    public AccountTemplateBinding updateActive(Long bindingId, boolean active) {
+    public BindingResponse activate(String uuid, Long bindingId) {
         AccountTemplateBinding b = accountTemplateBindingRepository.findById(bindingId)
                 .orElseThrow(() -> new BindingNotFoundException("Связка аккаунта и шаблона не найдена: " + bindingId));
 
-        b.setActive(active);
-        return accountTemplateBindingRepository.save(b);
-    }
+        if (!uuid.equals(b.getUserUuid())) {
+            throw new AccessDeniedException("Эта привязка не принадлежит текущему пользователю");
+        }
 
-    @Transactional
-    public AccountTemplateBinding activate(Long bindingId) {
-        AccountTemplateBinding b = accountTemplateBindingRepository.findById(bindingId)
-                .orElseThrow(() -> new BindingNotFoundException("Связка аккаунта и шаблона не найдена: " + bindingId));
         deactivateOtherBindings(b.getModuleId(), bindingId);
         b.setActive(true);
-        return accountTemplateBindingRepository.save(b);
+        AccountTemplateBinding saved = accountTemplateBindingRepository.save(b);
+        return convertToBindingResponse(uuid, saved);
     }
 
     @Transactional
-    public AccountTemplateBinding deactivate(Long bindingId) {
+    public BindingResponse deactivate(String uuid, Long bindingId) {
         AccountTemplateBinding b = accountTemplateBindingRepository.findById(bindingId)
                 .orElseThrow(() -> new BindingNotFoundException("Связка аккаунта и шаблона не найдена: " + bindingId));
 
+        if (!uuid.equals(b.getUserUuid())) {
+            throw new AccessDeniedException("Эта привязка не принадлежит текущему пользователю");
+        }
+
         b.setActive(false);
-        return accountTemplateBindingRepository.save(b);
+        AccountTemplateBinding saved = accountTemplateBindingRepository.save(b);
+        return convertToBindingResponse(uuid, saved);
     }
 
     @Transactional
-    public AccountTemplateBinding setActive(Long id, boolean active) {
+    public BindingResponse setActive(String uuid, Long id, boolean active) {
         return active
-                ? activate(id)
-                : deactivate(id);
+                ? activate(uuid, id)
+                : deactivate(uuid, id);
     }
 
     private void deactivateOtherBindings(Long moduleId, Long exceptId) {
-
         List<AccountTemplateBinding> all =
                 accountTemplateBindingRepository.findAllByModuleId(moduleId);
         if (all.isEmpty()) {
@@ -167,47 +188,68 @@ public class AccountTemplateBindingService {
         accountTemplateBindingRepository.saveAll(all);
     }
 
-    public List<BindingResponse> getBindingsForUserAndModule(String userUuid, Long moduleId) {
-        // Все аккаунты пользователя
+    @Transactional(readOnly = true)
+    public List<BindingResponse> getBindingsForUser(String userUuid) {
         List<UserSiteCredential> creds = userSiteCredentialRepository.findByUserUuid(userUuid);
 
-        //Все биндинги по этим аккаунтам
         List<AccountTemplateBinding> bindings = creds.stream()
                 .flatMap(c -> accountTemplateBindingRepository.findByAccountId(c.getId()).stream())
-                // Фильтр по moduleId
+                .toList();
+
+        return bindings.stream()
+                .map(b -> convertToBindingResponse(userUuid, b)) // передаём userUuid
+                .sorted(Comparator.comparing(BindingResponse::getCreatedAt))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BindingResponse> getBindingsForUserAndModule(String userUuid, Long moduleId) {
+        List<UserSiteCredential> creds = userSiteCredentialRepository.findByUserUuid(userUuid);
+
+        List<AccountTemplateBinding> bindings = creds.stream()
+                .flatMap(c -> accountTemplateBindingRepository.findByAccountId(c.getId()).stream())
                 .filter(b -> b.getModuleId().equals(moduleId))
                 .toList();
 
-        //Собираем DTO и сортируем по дате
         return bindings.stream()
-                .map(b -> {
-                    BindingResponse dto = new BindingResponse();
-                    dto.setId(b.getId());
-
-                    //Аккаунт
-                    UserSiteCredential cred = userSiteCredentialRepository
-                            .findById(b.getAccountId())
-                            .orElse(null);
-                    dto.setAccountName(cred != null ? cred.getName() : "—");
-
-                    //Шаблон через REST
-                    TemplateResponse template = llmClient.getTemplate(b.getTemplateId());
-                    dto.setTemplateName(template != null ? template.getName() : "—");
-
-                    //Дата
-                    dto.setCreatedAt(
-                            b.getCreatedAt() != null
-                                    ? b.getCreatedAt().toString()
-                                    : LocalDateTime.now().toString()
-                    );
-
-                    //Активность
-                    dto.setActive(b.isActive());
-
-                    return dto;
-                })
-                //сортировка по дате
+                .map(b -> convertToBindingResponse(userUuid, b)) // передаём userUuid
                 .sorted(Comparator.comparing(BindingResponse::getCreatedAt))
                 .toList();
+    }
+
+    private BindingResponse convertToBindingResponse(String uuid, AccountTemplateBinding b) {
+        BindingResponse dto = new BindingResponse();
+        dto.setId(b.getId());
+        dto.setModuleId(b.getModuleId());
+        dto.setAccountId(b.getAccountId());
+        dto.setTemplateId(b.getTemplateId());
+        dto.setPromtId(b.getPromtId());
+        dto.setActive(b.isActive());
+
+        // Аккаунт пользователя для входа в парсер автоответов
+        UserSiteCredential cred = userSiteCredentialRepository
+                .findById(b.getAccountId())
+                .orElse(null);
+        dto.setAccountName(cred != null ? cred.getName() : "—");
+
+        // Шаблон (через REST)
+        TemplateResponse template = llmClient.getTemplate(b.getTemplateId(), uuid);
+        dto.setTemplateName(template != null ? template.getName() : "—");
+
+        // Модуль
+        OrderModules module = orderModulesRepository.findById(b.getModuleId()).orElse(null);
+        dto.setModuleName(module != null ? module.getName() : "—");
+
+        // Промт (через REST)
+        PromtResponse promt = llmClient.getPromt(b.getPromtId(), uuid);
+        dto.setPromtName(promt != null ? promt.getName() : "—");
+
+        // Дата создания
+        dto.setCreatedAt(
+                b.getCreatedAt() != null
+                        ? b.getCreatedAt().toString()
+                        : LocalDateTime.now().toString()
+        );
+        return dto;
     }
 }

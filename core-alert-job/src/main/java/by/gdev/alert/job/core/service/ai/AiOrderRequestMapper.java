@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiOrderRequestMapper {
 
-    public AiOrderRequest build(AppUser user, OrderModules orderModule, Long credentialId, Long templateId, List<OrderDTO> orders) {
+    public AiOrderRequest build(AppUser user, OrderModules orderModule, Long credentialId, Long templateId, Long promtId,  List<OrderDTO> orders) {
 
         AiOrderRequest req = new AiOrderRequest();
 
@@ -36,6 +36,7 @@ public class AiOrderRequestMapper {
 
         req.setTemplateId(templateId);
         req.setCredentialId(credentialId);
+        req.setPromtId(promtId);
 
         // Заказы
         req.setOrders(orders);

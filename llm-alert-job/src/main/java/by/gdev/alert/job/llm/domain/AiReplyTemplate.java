@@ -36,21 +36,15 @@ public class AiReplyTemplate extends BasicId {
 
     /**
      * Пользователь, которому принадлежит шаблон.
-     * Может быть {@code null}, если шаблон общий для модуля.
+     * Может быть {@code null}, если шаблон общий.
      */
     @ManyToOne
     private LlmUser user;
 
     /**
-     * ID модуля, для которого предназначен шаблон.
-     * Если {@code user == null}, шаблон считается модульным.
-     */
-    private Long moduleId;
-
-    /**
-     * HTML‑контент шаблона автоответа.
+     * Содержимое шаблона автоответа.
      * Хранится как LOB, так как может быть большим.
      */
     @Lob
-    private String htmlTemplate;
+    private String text;
 }

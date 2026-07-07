@@ -65,12 +65,32 @@ public class EmailReaderService {
     }
 
     private String extractBody(Message message) throws Exception {
-        if (message.isMimeType("text/plain")) {
-            return message.getContent().toString();
-        } else if (message.isMimeType("multipart/*")) {
-            MimeMultipart mimeMultipart = (MimeMultipart) message.getContent();
-            return getTextFromMimeMultipart(mimeMultipart);
+        Object content = message.getContent();
+        if (content instanceof String) {
+            return (String) content;
         }
+        if (content instanceof MimeMultipart) {
+            return getTextFromMimeMultipart((MimeMultipart) content);
+        }
+        if (content instanceof java.io.InputStream) {
+            try (java.io.InputStream is = (java.io.InputStream) content) {
+                return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        }
+        if (message.isMimeType("multipart/*")) {
+            try {
+                MimeMultipart multipart = (MimeMultipart) message.getContent();
+                return getTextFromMimeMultipart(multipart);
+            } catch (ClassCastException e) {
+                Object raw = message.getContent();
+                if (raw instanceof java.io.InputStream) {
+                    try (java.io.InputStream is = (java.io.InputStream) raw) {
+                        return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                }
+            }
+        }
+
         return "";
     }
 

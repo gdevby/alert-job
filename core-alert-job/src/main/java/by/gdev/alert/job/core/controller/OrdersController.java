@@ -4,6 +4,7 @@ import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.service.OrderProcessor;
 import by.gdev.common.model.OrderDTO;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/orders")
 @Slf4j
+@Hidden
 public class OrdersController {
 
     @Autowired

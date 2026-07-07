@@ -1,131 +1,155 @@
 package by.gdev.alert.job.llm.controllers.promt;
 
+import by.gdev.alert.job.llm.domain.dto.promt.PromptRequest;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
-import by.gdev.alert.job.llm.domain.promt.AiPromptType;
+import by.gdev.alert.job.llm.domain.dto.promt.AiPromptDto;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
+import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/prompts")
 @RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Prompts", description = "Управление AI-промтами")
 public class AiPromptController {
 
     private final AiPromptService promptService;
 
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<?> handleEnumError(MethodArgumentTypeMismatchException ex) {
-        if (ex.getRequiredType() == AiPromptType.class) {
-            return ResponseEntity.badRequest().body(
-                    "Invalid prompt type: " + ex.getValue() +
-                            ". Allowed values: " + Arrays.toString(AiPromptType.values())
-            );
-        }
-        return ResponseEntity.badRequest().body("Invalid parameter: " + ex.getName());
-    }
-
-    /**
-     * Загружает текст промта из файла и сохраняет его:
-     *  - принимает MultipartFile;
-     *  - обновляет существующий промт или создаёт новый;
-     *  - увеличивает версию при обновлении.
-     *
-     * @param file файл с текстом промта
-     * @param moduleId модуль
-     * @param name имя промта
-     * @return HTTP 200 при успехе
-     */
     @Operation(
-            summary = "Загрузить или обновить промт",
-            description = """
-                    Загружает текст промта из файла и сохраняет его.
-                    Если промт с таким типом уже существует — обновляет и увеличивает версию.
-                    Если нет — создаёт новый.
-                    """
+            summary = "Создать или обновить промт пользователя",
+            description = "Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Промт успешно сохранён",
-            content = @Content(schema = @Schema(implementation = String.class))
+            description = "Промт создан или обновлён",
+            content = @Content(schema = @Schema(implementation = Long.class))
+    )
+    @PostMapping("/create")
+    public ResponseEntity<?> createOrUpdate(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @RequestBody PromptRequest request
+    ) {
+        try {
+            AiPromptDto  prompt = promptService.createOrUpdatePrompt(uuid, request.getName(),
+                    request.getText());
+            return ResponseEntity.ok(prompt.getId());
+        } catch (Exception e) {
+            log.error("Failed to create/update prompt", e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Получить все промты пользователя",
+            description = "Возвращает список всех промтов, созданных пользователем."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Список промтов",
+            content = @Content(schema = @Schema(implementation = AiPromptDto.class))
+    )
+    @GetMapping("/user/my")
+    public ResponseEntity<?> getPromptsByUser(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+        try {
+            List<AiPromptDto> dtos = promptService.getAllPromptDtos(uuid);
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            log.error("Failed to load prompts for user {}", uuid, e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Получить промт по ID",
+            description = "Возвращает полную информацию о промте."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Промт найден",
+            content = @Content(schema = @Schema(implementation = AiPrompt.class))
+    )
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getPromptById(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
+        try {
+            AiPromptDto  prompt = promptService.getPromptByIdOrDefault(uuid, id);
+            return ResponseEntity.ok(prompt);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Получить промт по умолчанию",
+            description = "Возвращает глобальный DEFAULT_PROMPT."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "DEFAULT_PROMPT"
+    )
+    @GetMapping("/default")
+    public ResponseEntity<?> getDefaultPrompt() {
+        try {
+            AiPrompt prompt = promptService.getDefaultPromptEntity();
+            return ResponseEntity.ok(prompt);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Удалить промт",
+            description = "Удаляет промт по ID. Можно удалять только свои промты. Системный DEFAULT_PROMPT удалить нельзя."
+    )
+    @ApiResponse(
+            responseCode = "204",
+            description = "Промт успешно удалён"
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Ошибка обработки файла или параметров"
+            description = "Ошибка: промт не найден, нет прав или попытка удалить дефолтный промт"
     )
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadPrompt(
-            @RequestPart("file") MultipartFile file,
-            @RequestParam("module") Long moduleId,
-            @RequestParam("name") String name
-    ) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePrompt(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @PathVariable Long id) {
         try {
-            String text = new String(file.getBytes(), StandardCharsets.UTF_8);
-            AiPrompt saved = promptService.createOrUpdatePrompt(name, moduleId, text);
-            return ResponseEntity.ok("Prompt saved. type=" + saved.getType() + ", version=" + saved.getVersion());
+            promptService.deletePrompt(uuid, id);
+            return ResponseEntity.noContent().build();
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+            log.error("Ошибка при удалении промта {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    /**
-     * Возвращает ZIP-файл со всеми промтами:
-     *  - каждый промт — отдельный .txt файл;
-     *  - имя файла = тип промта.
-     *
-     * @return ZIP в виде массива байт
-     */
     @Operation(
-            summary = "Экспортировать все промты в ZIP",
-            description = """
-                    Возвращает ZIP-файл, содержащий все промты.
-                    Каждый промт — отдельный .txt файл.
-                    Имя файла = тип промта.
-                    """
+            summary = "Проверить существование промта",
+            description = "Возвращает true, если промт существует и доступен пользователю (глобальный или принадлежит пользователю)."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "ZIP-файл с промтами",
-            content = @Content(mediaType = "application/octet-stream")
-    )
-    @GetMapping("/export")
-    public ResponseEntity<byte[]> exportPrompts() {
-        byte[] zip = promptService.exportAllPromptsAsZip();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=prompts.zip")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(zip);
-    }
-
-    /**
-     * Возвращает список всех промтов в виде DTO:
-     *  - без текста промта;
-     *  - только служебная информация.
-     *
-     * @return список AiPromptDto
-     */
-    @Operation(
-            summary = "Получить список всех промтов",
-            description = "Возвращает список DTO без текста промта — только служебная информация."
+            description = "Результат проверки",
+            content = @Content(schema = @Schema(implementation = Boolean.class))
     )
     @ApiResponse(
-            responseCode = "200",
-            description = "Список промтов"
+            responseCode = "400",
+            description = "Ошибка валидации"
     )
-    @GetMapping("/list")
-    public ResponseEntity<?> listPrompts(@RequestHeader("UUID-user-header") String uuid) {
-        return ResponseEntity.ok(promptService.getAllPromptDtos(uuid));
+    @GetMapping("/{id}/exists")
+    public ResponseEntity<Boolean> checkPromptExists(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
+        boolean exists = promptService.existsById(uuid, id);
+        return ResponseEntity.ok(exists);
     }
 
 }

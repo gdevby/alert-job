@@ -1,13 +1,15 @@
 package by.gdev.alert.job.llm.controllers;
 
 import by.gdev.alert.job.llm.domain.AiReplyTemplate;
-import by.gdev.alert.job.llm.domain.dto.template.CreateTemplateRequest;
+import by.gdev.alert.job.llm.domain.dto.template.TemplateRequest;
 import by.gdev.alert.job.llm.domain.dto.template.TemplateResponse;
 import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
+import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.List;
 @RequestMapping("/api/templates")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Templates", description = "Управление шаблонами автоответов")
 public class AiReplyTemplateController {
 
     private final AiReplyTemplateService templateService;
@@ -38,13 +41,39 @@ public class AiReplyTemplateController {
             responseCode = "400",
             description = "Ошибка валидации или бизнес‑логики"
     )
-    @PostMapping("/create")
-    public ResponseEntity<?> createOrUpdate(@RequestBody CreateTemplateRequest req) {
+    @PostMapping
+    public ResponseEntity<?> createOrUpdate(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody TemplateRequest req) {
         try {
-            AiReplyTemplate template = templateService.createOrUpdateTemplate(req);
+            AiReplyTemplate template = templateService.createOrUpdateTemplate(uuid, req);
             return ResponseEntity.ok(template.getId());
         } catch (Exception e) {
             log.error("Failed to create/update template", e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Удалить шаблон",
+            description = "Удаляет шаблон по ID. Можно удалять только свои шаблоны. Системный DEFAULT_TEMPLATE удалить нельзя."
+    )
+    @ApiResponse(
+            responseCode = "204",
+            description = "Шаблон успешно удалён"
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Ошибка: шаблон не найден, нет прав или попытка удалить дефолтный шаблон"
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteTemplate(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @PathVariable Long id) {
+        try {
+            templateService.deleteTemplate(uuid, id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Ошибка при удалении шаблона {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -58,8 +87,9 @@ public class AiReplyTemplateController {
             description = "Список шаблонов",
             content = @Content(schema = @Schema(implementation = TemplateResponse.class))
     )
-    @GetMapping("/user/{uuid}")
-    public ResponseEntity<?> getTemplatesByUser(@PathVariable String uuid) {
+    @GetMapping("/user/my")
+    public ResponseEntity<?> getTemplatesByUser(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         try {
             List<AiReplyTemplate> templates = templateService.getTemplatesByUser(uuid);
 
@@ -67,7 +97,7 @@ public class AiReplyTemplateController {
                 TemplateResponse dto = new TemplateResponse();
                 dto.setName(t.getName());
                 dto.setId(t.getId());
-                dto.setHtmlTemplate(t.getHtmlTemplate());
+                dto.setText(t.getText());
                 dto.setCreatedAt(
                         t.getCreatedAt() != null
                                 ? t.getCreatedAt().toString()
@@ -84,6 +114,7 @@ public class AiReplyTemplateController {
         }
     }
 
+
     @Operation(
             summary = "Проверить существование шаблона",
             description = "Возвращает true/false в зависимости от того, существует ли шаблон."
@@ -93,9 +124,9 @@ public class AiReplyTemplateController {
             description = "Результат проверки"
     )
     @GetMapping("/{id}/exists")
-    public ResponseEntity<?> exists(@PathVariable Long id) {
+    public ResponseEntity<?> exists(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
         try {
-            boolean exists = templateService.exists(id);
+            boolean exists = templateService.exists(uuid, id);
             return ResponseEntity.ok(exists);
         } catch (Exception e) {
             log.error("Failed to check template {}", id, e);
@@ -113,13 +144,13 @@ public class AiReplyTemplateController {
             content = @Content(schema = @Schema(implementation = TemplateResponse.class))
     )
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTemplateById(@PathVariable Long id) {
+    public ResponseEntity<?> getTemplateById(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
         try {
-            AiReplyTemplate t = templateService.getTemplateById(id);
+            AiReplyTemplate t = templateService.getTemplateById(uuid, id);
             TemplateResponse dto = new TemplateResponse();
             dto.setId(t.getId());
             dto.setName(t.getName());
-            dto.setHtmlTemplate(t.getHtmlTemplate());
+            dto.setText(t.getText());
             dto.setCreatedAt(
                     t.getCreatedAt() != null
                             ? t.getCreatedAt().toString()

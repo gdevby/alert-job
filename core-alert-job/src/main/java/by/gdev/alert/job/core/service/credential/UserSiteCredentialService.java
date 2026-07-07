@@ -1,9 +1,9 @@
 package by.gdev.alert.job.core.service.credential;
 
+import by.gdev.alert.job.core.exeption.ai.AccessDeniedException;
+import by.gdev.alert.job.core.exeption.ai.credential.CredentialNotFoundException;
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
-import by.gdev.alert.job.core.repository.AppUserRepository;
-import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,96 +19,48 @@ import java.util.Optional;
 public class UserSiteCredentialService {
 
     private final UserSiteCredentialRepository userSiteCredentialRepository;
-    private final AppUserRepository userRepository;
-    private final OrderModulesRepository moduleRepository;
     private final EncryptionService encryptionService;
 
     public UserSiteCredential createOrUpdateCredential(
             String name,
             String userUuid,
             Long siteId,
-            Long moduleId,
             String login,
             String rawPassword
     ) {
-        // --- ВАЛИДАЦИЯ ПОЛЬЗОВАТЕЛЯ ---
-        if (userRepository.findByUuid(userUuid).isEmpty()) {
-            throw new IllegalArgumentException("User with uuid " + userUuid + " does not exist");
-        }
-
-        // --- ВАЛИДАЦИЯ МОДУЛЯ ---
-        if (!moduleRepository.existsById(moduleId)) {
-            throw new IllegalArgumentException("Module with id " + moduleId + " does not exist");
-        }
-
-        // --- ШИФРОВАНИЕ ---
         String encryptedPassword = encryptionService.encrypt(rawPassword);
 
-        // --- СОЗДАНИЕ ИЛИ ОБНОВЛЕНИЕ ---
-        return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId)
-                .map(existing -> {
-                    existing.setName(name);
-                    existing.setLogin(login);
-                    existing.setPasswordEncrypted(encryptedPassword);
-                    existing.setUpdatedAt(LocalDateTime.now());
+        // Ищем по userUuid, siteId и name
+        Optional<UserSiteCredential> existingOpt = userSiteCredentialRepository
+                .findByUserUuidAndSiteIdAndName(userUuid, siteId, name);
 
-                    UserSiteCredential saved = userSiteCredentialRepository.save(existing);
-
-                    log.debug(
-                            "Updated credentials: userUuid={}, siteId={}, moduleId={}, login={}",
-                            userUuid, siteId, moduleId, login
-                    );
-
-                    return saved;
-                })
-                .orElseGet(() -> {
-                    UserSiteCredential credential = UserSiteCredential.builder()
-                            .name(name)
-                            .userUuid(userUuid)
-                            .siteId(siteId)
-                            .moduleId(moduleId)
-                            .login(login)
-                            .passwordEncrypted(encryptedPassword)
-                            .build();
-
-                    UserSiteCredential saved = userSiteCredentialRepository.save(credential);
-
-                    log.debug(
-                            "Created new credentials: userUuid={}, siteId={}, moduleId={}, login={}",
-                            userUuid, siteId, moduleId, login
-                    );
-
-                    return saved;
-                });
-    }
-
-    public Optional<UserCredentialEncrypted> getEncryptedCredential(
-            String userUuid,
-            Long siteId,
-            Long moduleId
-    ) {
-        return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId)
-                .map(cred -> {
-
-                    log.info(
-                            "Получены учётные данные: userUuid={}, siteId={}, moduleId={}, login={}",
-                            userUuid, siteId, moduleId, cred.getLogin()
-                    );
-
-                    UserCredentialEncrypted dto = new UserCredentialEncrypted();
-                    dto.setName(cred.getName());
-                    dto.setLogin(cred.getLogin());
-                    dto.setPasswordEncrypted(cred.getPasswordEncrypted());
-                    return dto;
-                });
+        if (existingOpt.isPresent()) {
+            UserSiteCredential existing = existingOpt.get();
+            existing.setLogin(login);
+            existing.setPasswordEncrypted(encryptedPassword);
+            existing.setUpdatedAt(LocalDateTime.now());
+            // name не меняем, так как оно является частью ключа
+            UserSiteCredential saved = userSiteCredentialRepository.save(existing);
+            log.debug("Обновлены учётные данные: userUuid={}, siteId={}, name={}, login={}",
+                    userUuid, siteId, name, login);
+            return saved;
+        } else {
+            UserSiteCredential newCredential = UserSiteCredential.builder()
+                    .name(name)
+                    .userUuid(userUuid)
+                    .siteId(siteId)
+                    .login(login)
+                    .passwordEncrypted(encryptedPassword)
+                    .build();
+            UserSiteCredential saved = userSiteCredentialRepository.save(newCredential);
+            log.debug("Созданы новые учётные данные: userUuid={}, siteId={}, name={}, login={}",
+                    userUuid, siteId, name, login);
+            return saved;
+        }
     }
 
     public List<UserSiteCredential> getByUserUuid(String uuid) {
         return userSiteCredentialRepository.findByUserUuid(uuid);
-    }
-
-    public Optional<UserSiteCredential> getCredential(String userUuid, Long siteId, Long moduleId) {
-        return userSiteCredentialRepository.findByUserUuidAndSiteIdAndModuleId(userUuid, siteId, moduleId);
     }
 
     public List<UserSiteCredential> getCredentialsForUser(String userUuid) {
@@ -120,8 +72,18 @@ public class UserSiteCredentialService {
         log.debug("Deleted credentials with id={}", id);
     }
 
-    public UserSiteCredential getById(Long id) {
-        return userSiteCredentialRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Credential not found with id: " + id));
+    public UserCredentialEncrypted getEncryptedById(String uuid, Long credentialId) {
+        UserSiteCredential cred = userSiteCredentialRepository.findById(credentialId)
+                .orElseThrow(() -> new CredentialNotFoundException("Учетные данные не найдены: " + credentialId));
+
+        if (!uuid.equals(cred.getUserUuid())) {
+            throw new AccessDeniedException("У вас нет доступа к этим учётным данным");
+        }
+
+        UserCredentialEncrypted dto = new UserCredentialEncrypted();
+        dto.setLogin(cred.getLogin());
+        dto.setPasswordEncrypted(cred.getPasswordEncrypted());
+        dto.setName(cred.getName());
+        return dto;
     }
 }

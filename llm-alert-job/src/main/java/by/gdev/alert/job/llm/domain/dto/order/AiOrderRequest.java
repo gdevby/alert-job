@@ -34,6 +34,13 @@
         private Long templateId;
 
         @Schema(
+                description = "ID промта, который должен использоваться для генерации ответа",
+                example = "55"
+        )
+        private Long promtId;
+
+
+        @Schema(
                 description = "Список заказов, которые необходимо обработать",
                 implementation = OrderDTO.class
         )

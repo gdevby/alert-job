@@ -1,31 +1,37 @@
 package by.gdev.alert.job.notification.controller;
 
 import by.gdev.alert.job.notification.model.dto.*;
-import by.gdev.alert.job.notification.service.ai.credential.UserCredentialService;
-import by.gdev.alert.job.notification.service.ai.parser.AutoreplyParserFactory;
-import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.queue.UserQueueManager;
+import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/notification/api/ai")
 @Slf4j
 @RequiredArgsConstructor
+@Tag(name = "AI Notification", description = "Управление уведомлениями и очередями AI")
 public class AiNotificationController {
-    private final UserCredentialService userCredentialService;
-    private final AutoreplyParserFactory parserFactory;
     private final UserQueueManager userQueueManager;
     private final Set<String> dedup = ConcurrentHashMap.newKeySet();
 
@@ -37,9 +43,9 @@ public class AiNotificationController {
             return Mono.just(ResponseEntity.ok(Map.of("status", "duplicate")));
         }
         // Через 5 минут удаляем ключ из dedup, чтобы:
-        // 1) не держать ссылку в памяти вечно (иначе Set разрастётся),
-        // 2) позволить повторно обработать этот же заказ, если он придёт позже,
-        // 3) не блокировать повторную отправку, если предыдущая попытка упала.
+        // не держать ссылку в памяти вечно (иначе Set разрастётся),
+        // позволить повторно обработать этот же заказ, если он придёт позже,
+        // не блокировать повторную отправку, если предыдущая попытка упала.
         Schedulers.boundedElastic().schedule(() -> dedup.remove(key), 5, TimeUnit.MINUTES);
         log.debug("QUEUE: accepted AI decision {}", key);
         //кладем пайлоад в очередь обработки пользователя
@@ -49,82 +55,78 @@ public class AiNotificationController {
         return Mono.just(ResponseEntity.accepted().body(Map.of("status", "queued", "queueSize", userQueueSize)));
     }
 
-    @GetMapping("/testlogin")
-    public Mono<ResponseEntity<?>> receiveTestCase(
-            @RequestParam String uuid,
-            @RequestParam String site
-    ) {
-        AiNotificationPayload payload = buildTestAiDecision(uuid);
+    @Operation(
+            summary = "Получить детали очереди пользователя",
+            description = "Возвращает список всех заказов в очереди для данного пользователя (без удаления)."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Информация об очереди",
+            content = @Content(schema = @Schema(
+                    example = "{" +
+                            "\"userUuid\": \"eba609a4-...\"," +
+                            "\"queueSize\": 2," +
+                            "\"items\": [" +
+                            "{\"orderLink\": \"https://...\", \"site\": \"KWORK\", \"module\": \"kwork\"}," +
+                            "{\"orderLink\": \"https://...\", \"site\": \"KWORK\", \"module\": \"kwork\"}" +
+                            "]" +
+                            "}"
+            ))
+    )
+    @GetMapping("/queue-details")
+    public ResponseEntity<?> getQueueDetails(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+        BlockingQueue<AiNotificationPayload> queue = userQueueManager.getQueue(uuid);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("userUuid", uuid != null ? uuid : "unknown");
+        response.put("queueSize", queue != null ? queue.size() : 0);
 
-        // Проверяем enum
-        SiteName siteEnum;
-        try {
-            siteEnum = SiteName.valueOf(site.toUpperCase());
-        } catch (Exception e) {
-            return Mono.just(
-                    ResponseEntity.badRequest().body(
-                            Map.of("error", "Unknown site: " + site)
-                    )
-            );
+        if (queue == null || queue.isEmpty()) {
+            response.put("items", List.of());
+            return ResponseEntity.ok(response);
         }
 
-        // Проверяем наличие парсера
-        AutoreplyPlaywrightParser parser;
-        try {
-            parser = parserFactory.getParser(siteEnum);
-        } catch (IllegalArgumentException e) {
-            return Mono.just(
-                    ResponseEntity.badRequest().body(
-                            Map.of("error", "Parser not found for site: " + siteEnum)
-                    )
-            );
-        }
+        List<Map<String, Object>> items = queue.stream()
+                .map(payload -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    if (payload.getOrder() != null) {
+                        item.put("orderLink", payload.getOrder().getLink());
+                        String siteName = "unknown";
+                        if (payload.getOrder().getSourceSite() != null) {
+                            Long sourceId = payload.getOrder().getSourceSite().getSource();
+                            if (sourceId != null) {
+                                try {
+                                    siteName = SiteName.fromId(sourceId).name();
+                                } catch (IllegalArgumentException e) {
+                                    siteName = "unknown";
+                                }
+                            }
+                        }
+                        item.put("site", siteName);
+                    }
+                    item.put("module", payload.getModule() != null ?
+                            payload.getModule().getName() : "unknown");
+                    return item;
+                })
+                .collect(Collectors.toList());
 
-        // Основная логика
-        return userCredentialService.getMonoUserCredentials(payload)
-                .flatMap(credential -> Mono.fromCallable(() -> {
-                                    boolean ok = parser.sendAutoreply(credential, payload);
-                                    log.info("Parser result = {}", ok);
-                                    return ok;
-                                })
-                                .subscribeOn(Schedulers.boundedElastic())
-                                .map(ok -> ResponseEntity.ok().build())
-                );
+        response.put("items", items);
+        return ResponseEntity.ok(response);
     }
 
 
-    private AiNotificationPayload buildTestAiDecision(String uid){
-        AiNotificationPayload payload = new AiNotificationPayload();
-        AiAppUserDTO user = new AiAppUserDTO();
-        user.setUuid(uid);
-        user.setEmail("provodnik_new@mail.ru");
-        user.setDefaultSendType(true);
-        payload.setUser(user);
-
-        AiOrderModulesDTO module = new AiOrderModulesDTO();
-        module.setId(16L);
-        module.setName("weblancer");
-        payload.setModule(module);
-
-        OrderDTO order = new OrderDTO();
-        SourceSiteDTO site = new SourceSiteDTO();
-        site.setSource(4L);
-        order.setSourceSite(site);
-        order.setLink("https://www.weblancer.net/freelance/sluzhba-podderzhki-56/administrator-onlain-platformi-udalyonno-1265808/");
-
-        AiDecision decision = new AiDecision(
-                true,
-                0.92,
-                "Совпадение по ключевым словам",
-                "Готов выполнить задачу!",
-                List.of("java", "spring"),
-                List.of("docker"),
-                "Категория совпала",
-                "Подкатегория совпала"
-        );
-        payload.setDecision(decision);
-        payload.setOrder(order);
-
-        return payload;
+    @Operation(
+            summary = "Получить размер очереди автоответов пользователя",
+            description = "Возвращает количество заказов в очереди автоответов для данного пользователя."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Размер очереди",
+            content = @Content(schema = @Schema(implementation = Integer.class))
+    )
+    @GetMapping("/queue-size")
+    public ResponseEntity<Integer> getQueueSize(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+        int size = userQueueManager.size(uuid);
+        log.debug("Queue size for user {}: {}", uuid, size);
+        return ResponseEntity.ok(size);
     }
 }

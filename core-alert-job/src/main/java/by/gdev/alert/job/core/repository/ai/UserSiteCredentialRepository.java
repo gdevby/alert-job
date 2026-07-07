@@ -7,19 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserSiteCredentialRepository extends JpaRepository<UserSiteCredential, Long> {
-
     List<UserSiteCredential> findByUserUuid(String userUuid);
-
-    Optional<UserSiteCredential> findByUserUuidAndSiteIdAndModuleId(
-            String userUuid,
-            Long siteId,
-            Long moduleId
-    );
-
-    Optional<UserSiteCredential> findByUserUuidAndModuleIdAndSiteId(
-            String userUuid,
-            Long moduleId,
-            Long siteId
-    );
-
+    List<UserSiteCredential> findByUserUuidAndSiteId(String userUuid, Long siteId);
+    Optional<UserSiteCredential> findByUserUuidAndSiteIdAndName(String userUuid, Long siteId, String name);
 }

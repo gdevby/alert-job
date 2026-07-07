@@ -55,35 +55,45 @@ public class OrderProcessor {
     private boolean autoReplyEnabled;
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
-        orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
+        for (OrderDTO order : orders) {
+            try {
+                statisticService.statisticTitleWord(order.getTitle(), order.getSourceSite());
+            } catch (Exception e) {
+                log.warn("Ошибка при статистике для заказа {}: {}", order.getLink(), e.getMessage());
+            }
+        }
+
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
-        users.stream().filter(AppUser::isSwitchOffAlerts).forEach(user -> {
-            List<OrderDTO> orderListToSend = user.getOrderModules().stream().filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
-                    .map(orderModule -> {
-                        UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
-                        return orderModule.getSources().stream().map(s -> {
-                            List<OrderDTO> list = orders.parallelStream()
-                                    .peek(orderDTO -> {})
-                                    .filter(f -> compareSiteSources(f.getSourceSite(), s))
-                                    .filter(f -> isMatchUserFilter(f, currentFilter))
-                                    .map(order -> {
-                                        order.setModuleName(orderModule.getName());
-                                        return order;
-                                    }).collect(Collectors.toList());
-                            return list;
-                        }).flatMap(Collection::stream).toList();
-                    }).flatMap(Collection::stream).toList();
-            if (!orderListToSend.isEmpty()) {
-                sendOrderToUser(user, orderListToSend);
-                // Автоответы включены?
-                if (autoReplyEnabled) {
-                    forEachLLm(user, orderListToSend); //отправляем в LLM и запускаем автоответы
-                } else {
-                    log.debug("Автоответы отключены через property (autoreply.enabled=false)");
-                }
-            }
-        });
+
+        users.stream()
+                .filter(AppUser::isSwitchOffAlerts)
+                .forEach(user -> {
+                    List<OrderDTO> orderListToSend = user.getOrderModules().stream()
+                            .filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
+                            .flatMap(orderModule -> {
+                                UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
+                                return orderModule.getSources().stream()
+                                        .flatMap(s -> orders.parallelStream()
+                                                .filter(f -> compareSiteSources(f.getSourceSite(), s))
+                                                .filter(f -> isMatchUserFilter(f, currentFilter))
+                                                .map(order -> {
+                                                    order.setModuleName(orderModule.getName());
+                                                    return order;
+                                                })
+                                        );
+                            })
+                            .collect(Collectors.toList());
+
+                    if (!orderListToSend.isEmpty()) {
+                        sendOrderToUser(user, orderListToSend);
+                        if (autoReplyEnabled) {
+                            forEachLLm(user, orderListToSend);
+                        } else {
+                            log.debug("Автоответы отключены через property (autoreply.enabled=false)");
+                        }
+                    }
+                });
     }
 
     private void forEachLLm(AppUser user, List<OrderDTO> orders){
@@ -124,29 +134,44 @@ public class OrderProcessor {
         }
     }
 
-    private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders){
-        //Если список заказов не пустой и автоответ включен для модуля
-        if (!orders.isEmpty()){
-            //получаем ид сайта для которого нам необходимо отправить заказы
-            Long siteId = sourceSite.getSiteSource();
-            // Находим аккаунт пользователя для логина в автоответе для этого сайта и модуля
-            UserSiteCredential credential =
-                    userSiteCredentialRepository
-                            .findByUserUuidAndModuleIdAndSiteId(user.getUuid(), orderModule.getId(), siteId)
-                            .orElseThrow(() -> new RuntimeException("Нет аккаунта для сайта"));
-            Long credentialId = credential.getId();
-            // Находим активный биндинг для модуля и из него получаем какой шаблон необходимо применить для автоответа
-            AccountTemplateBinding binding =
-                    accountTemplateBindingRepository
-                            .findByModuleIdAndAccountIdAndActiveTrue(orderModule.getId(), credential.getId())
-                            .orElseThrow(() -> new RuntimeException("Нет активного биндинга для этого сайта"));
-            Long templateId = binding.getTemplateId();
-
-            //Формируем запрос к модулю LLM который будет давать автоответ
-            AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule, credentialId,  templateId, orders);
-            //отправляем сформированный запрос в модуль LLM
-            llmClient.sendAiOrderRequest(aiOrderRequest);
+    private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders) {
+        if (orders.isEmpty()) {
+            return;
         }
+
+        Long siteId = sourceSite.getSiteSource();
+
+        // 1. Получаем все креды пользователя для этого сайта
+        List<UserSiteCredential> credentials = userSiteCredentialRepository.findByUserUuidAndSiteId(user.getUuid(), siteId);
+        if (credentials.isEmpty()) {
+            throw new RuntimeException("Нет аккаунтов для сайта " + siteId);
+        }
+
+        // Ищем кред, для которого есть активный биндинг с данным модулем
+        UserSiteCredential selectedCredential = null;
+        AccountTemplateBinding selectedBinding = null;
+
+        for (UserSiteCredential cred : credentials) {
+            Optional<AccountTemplateBinding> optBinding = accountTemplateBindingRepository
+                    .findByModuleIdAndAccountIdAndActiveTrue(orderModule.getId(), cred.getId());
+            if (optBinding.isPresent()) {
+                selectedCredential = cred;
+                selectedBinding = optBinding.get();
+                break;
+            }
+        }
+
+        if (selectedBinding == null) {
+            throw new RuntimeException("Нет активного биндинга для модуля " + orderModule.getId() + " и сайта " + siteId);
+        }
+
+        Long credentialId = selectedCredential.getId();
+        Long templateId = selectedBinding.getTemplateId();
+        Long promtId = selectedBinding.getPromtId();
+
+        // Формируем и отправляем запрос
+        AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule, credentialId, templateId, promtId, orders);
+        llmClient.sendAiOrderRequest(aiOrderRequest);
     }
 
     private void sendOrderToUser(AppUser user, List<OrderDTO> list) {

@@ -23,8 +23,15 @@ public class AccountTemplateBinding extends BasicId {
     @Column(name = "template_id", nullable = false)
     private Long templateId;
 
+    //промт
+    @Column(name = "promt_id", nullable = false)
+    private Long promtId;
+
     @Column(name = "active", nullable = false)
     private boolean active;
+
+    @Column(name = "user_uuid", nullable = false, columnDefinition = "CHAR(36)")
+    private String userUuid;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

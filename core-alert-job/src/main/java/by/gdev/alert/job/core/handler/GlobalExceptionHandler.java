@@ -1,6 +1,8 @@
 package by.gdev.alert.job.core.handler;
 
 import by.gdev.alert.job.core.exeption.ai.*;
+import by.gdev.alert.job.core.exeption.ai.binding.BindingAlreadyExistsException;
+import by.gdev.alert.job.core.exeption.ai.binding.BindingNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

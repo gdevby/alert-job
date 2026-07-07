@@ -12,6 +12,10 @@ public interface AccountTemplateBindingRepository extends JpaRepository<AccountT
 
     List<AccountTemplateBinding> findAllByModuleId(Long moduleId);
 
+    List<AccountTemplateBinding> findAllByModuleIdAndUserUuid(Long moduleId, String userUuid);
+
+    List<AccountTemplateBinding> findAllByUserUuid(String userUuid);
+
     boolean existsByModuleIdAndAccountIdAndTemplateId(Long moduleId, Long accountId, Long templateId);
 
     Optional<AccountTemplateBinding> findByModuleIdAndAccountIdAndActiveTrue(Long moduleId, Long accountId);

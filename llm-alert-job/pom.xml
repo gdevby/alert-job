@@ -83,6 +83,12 @@
 		</dependency>
 		<!-- Для генерации OpenApi и документации с ней -->
 
+		<dependency>
+			<groupId>by.gdev</groupId>
+			<artifactId>common-alert-job</artifactId>
+			<version>${revision}</version>
+		</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>

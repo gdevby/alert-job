@@ -23,9 +23,6 @@ public class UserSiteCredential extends BasicId {
     @Column(name = "user_uuid", nullable = false, columnDefinition = "CHAR(36)")
     private String userUuid;
 
-    @Column(name = "module_id", nullable = false)
-    private Long moduleId;
-
     @Column(nullable = false)
     private String login;
 

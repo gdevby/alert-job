@@ -1,13 +1,12 @@
 package by.gdev.alert.job.llm.service.aiautoreply;
 
+import by.gdev.alert.job.llm.constants.LlmConstants;
 import by.gdev.alert.job.llm.domain.AiReplyTemplate;
 import by.gdev.alert.job.llm.domain.dto.AiDecision;
-import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
-import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.alert.job.llm.domain.dto.promt.AiPromptDto;
+import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
-//import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TimeRateLimiter;
-//import by.gdev.alert.job.llm.service.aiautoreply.sender.limiter.TokenBucket;
 import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -15,12 +14,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
 
 /**
  * Сервис анализа заказов с использованием LLM.
@@ -68,20 +65,6 @@ public class AiOrderAnalysisService {
      */
     private final AiPromptService aiPromptService;
 
-    /*@Autowired
-    public AiOrderAnalysisService(ChatClient.Builder builder, ObjectMapper mapper,
-                                  TokenBucket tokenBucket, TimeRateLimiter timeRateLimiter,
-                                  ExecutorService llmExecutor, AiReplyTemplateService templateService,
-                                  AiPromptService aiPromptService) {
-        this.chatClient = builder.build();
-        this.mapper = mapper;
-        this.tokenBucket = tokenBucket;
-        this.timeRateLimiter = timeRateLimiter;
-        this.llmExecutor = llmExecutor;
-        this.templateService = templateService;
-        this.aiPromptService = aiPromptService;
-    }*/
-
     /**
      * Конструктор, инициализирующий зависимости.
      *
@@ -102,78 +85,6 @@ public class AiOrderAnalysisService {
         this.aiPromptService = aiPromptService;
     }
 
-    /*private int estimateTokens(String prompt) { // грубая оценка: 1 токен это 4 символа
-        int length = prompt.length();
-        return Math.max(1, length / 4);
-    }*/
-
-    public String loadTemplate(String userUuid, Long moduleId) {
-
-        // 1. Проверяем пользовательский шаблон
-        if (userUuid != null && moduleId != null) {
-            AiReplyTemplate userTemplate =
-                    templateService.getTemplateForUserAndModule(userUuid, moduleId);
-
-            if (userTemplate != null) {
-                log.debug("Using USER template for user={}, module={}", userUuid, moduleId);
-                return userTemplate.getHtmlTemplate();
-            }
-        }
-
-        // 2. Если пользовательского нет — используем системный default
-        log.debug("Using DEFAULT template");
-
-        String defaultPath = "prompts/templates/default.txt";
-        String defaultContent = loadFromClasspath(defaultPath);
-
-        if (defaultContent != null) {
-            return defaultContent;
-        }
-
-        throw new RuntimeException("Default template not found: " + defaultPath);
-    }
-
-
-    public String loadTemplate(String type, String site) {
-        String base = "prompts/templates/";
-
-        // 1. кастомный шаблон, если сайт указан
-        if (site != null && !site.isBlank()) {
-            String custom = base + site.toLowerCase() + "_" + type + ".txt";
-            String customContent = loadFromClasspath(custom);
-            if (customContent != null) return customContent;
-        }
-
-        // 2. общий шаблон по типу
-        String general = base + type + ".txt";
-        String generalContent = loadFromClasspath(general);
-        if (generalContent != null) return generalContent;
-
-        // 3. fallback отсутствует — шаблон обязателен
-        throw new RuntimeException("Template not found for type=" + type + ", site=" + site);
-    }
-
-    private String loadFromClasspath(String path) {
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(path)) {
-            if (is == null) return null;
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-    private String detectType(String category, String subcategory) {
-        String c = category == null ? "" : category.toLowerCase();
-        String s = subcategory == null ? "" : subcategory.toLowerCase();
-
-        if (c.contains("mobile") || s.contains("mobile")) return "mobile";
-        if (c.contains("front") || s.contains("front")) return "front";
-        if (c.contains("back") || s.contains("backend") || s.contains("server")) return "back";
-        if (c.contains("dev") || c.contains("development")) return "dev";
-
-        return "default";
-    }
-
     /**
      * Основной метод анализа заказа.
      * <p>
@@ -189,7 +100,7 @@ public class AiOrderAnalysisService {
      *
      * @return решение AI с текстом ответа
      */
-    public AiDecision analyze(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId){
+    public AiDecision analyze(OrderDTO order, Long templateId, Long promtId, String uuid){
 
         String orderTitle = order.getTitle();
         String orderContent = order.getMessage();
@@ -202,27 +113,27 @@ public class AiOrderAnalysisService {
         String orderDate = order.getDateTime() != null ? order.getDateTime().toString() : "не указана";
         List<String> keywords = List.of();
 
-        String promptTemplate = aiPromptService.getPrompt(orderModule.getId());
-        // 3. Определяем тип проекта (front/back/dev/mobile)
-        String type = detectType(categoryName, subcategoryName);
+        AiPromptDto promptEntity = aiPromptService.getPromptByIdOrDefault(uuid, promtId);
+        String promptText = promptEntity.getText();
+        String safePromptText = promptText.replace(LlmConstants.AUTO_GENERATED_PLACEHOLDER,
+                LlmConstants.ESCAPED_AUTO_GENERATED_PLACEHOLDER
+        );
 
-        // 4. Загружаем шаблон письма
-        String replyTemplate = "";
-        if (user == null || orderModule == null){
-            log.debug("Template source: DEFAULT (user or module is null)");
-            replyTemplate = loadTemplate(type, siteName);
-        }
-        else {
-            log.debug("Template source: USER (user={}, module={})", user.getUuid(), orderModule.getName());
-            //replyTemplate = loadTemplate(user.getUuid(), orderModule.getId());
-            AiReplyTemplate template = templateService.getTemplateById(templateId);
-            if (template != null){
-                replyTemplate = template.getHtmlTemplate();
+            // Загружаем шаблон письма
+            String replyTemplate;
+            if (templateId != null) {
+                AiReplyTemplate t = templateService.getTemplateById(uuid, templateId);
+                replyTemplate = t.getText();
+            } else {
+                // DEFAULT TEMPLATE
+                AiReplyTemplate t = templateService.getDefaultTemplate();
+                replyTemplate = t.getText();
             }
-        }
+
+        // Экранируем проблемный фрагмент
 
         // 5. Формируем prompt
-        String prompt = promptTemplate.formatted(
+        String prompt = safePromptText.formatted(
                 orderTitle,
                 orderContent,
                 priceText,
@@ -236,22 +147,11 @@ public class AiOrderAnalysisService {
                 replyTemplate
         );
 
-        //int estimatedTokens = estimateTokens(prompt);
-        int estimatedTokens = 0;
-        log.debug("AI ANALYSIS PROMPT TYPE: {}, estimatedTokens: {}", type, estimatedTokens);
-
         Future<AiDecision> future = llmExecutor.submit(() -> {
             try {
-                // Лимит по времени между запросами
-                //timeRateLimiter.awaitSlot();
-
-                // Лимит по токенам в минуту
-                //tokenBucket.consume(estimatedTokens);
-
                 // Вызов LLM
-                String systemPrompt = "Ты — строгий JSON-генератор. Отвечай только валидным JSON без пояснений.";
                 String raw = chatClient.prompt()
-                        .system(systemPrompt)
+                        .system(LlmConstants.SYSTEM_PROMT)
                         .user(prompt)
                         .call()
                         .content();
@@ -357,5 +257,5 @@ public class AiOrderAnalysisService {
         return raw.substring(start, end + 1);
     }
 
-}
 
+}

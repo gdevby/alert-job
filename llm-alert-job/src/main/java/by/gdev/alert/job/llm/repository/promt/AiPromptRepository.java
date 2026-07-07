@@ -1,9 +1,11 @@
 package by.gdev.alert.job.llm.repository.promt;
 
+import by.gdev.alert.job.llm.domain.LlmUser;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.domain.promt.AiPromptType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -14,13 +16,12 @@ import java.util.Optional;
  */
 public interface AiPromptRepository extends JpaRepository<AiPrompt, Long> {
 
-    /**
-     * Ищет промт по его типу.
-     *
-     * @param type тип промта
-     * @return найденный промт или пустой Optional
-     */
-    Optional<AiPrompt> findByType(AiPromptType type);
+    List<AiPrompt> findByUserAndName(LlmUser user, String name);
 
-    Optional<AiPrompt> findByModuleId(Long moduleId);
+    List<AiPrompt> findByUser(LlmUser user);
+
+    Optional<AiPrompt> findByName(String name);
+
+    boolean existsByIdAndUserUuidOrUserIsNull(Long id, String userUuid);
+
 }

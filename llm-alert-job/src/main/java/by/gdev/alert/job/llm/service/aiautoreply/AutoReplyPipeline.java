@@ -82,27 +82,6 @@ public class AutoReplyPipeline {
     }
 
     /**
-     * Обрабатывает одиночный заказ без контекста пользователя.
-     * <p>
-     * Используется для тестов или устаревших сценариев.
-     *
-     * @param orderDTO заказ
-     */
-    public void process(OrderDTO orderDTO) {
-        AiDecision decision = analysisService.analyze(orderDTO, null, null, null);
-        if (!decision.isShouldReply()) {
-            return;
-        }
-
-        String reply = finalizeReply(decision);
-        if (reply != null && !reply.trim().isEmpty()) {
-            getDummyReplySender().send(orderDTO, reply, decision);
-        } else {
-            log.warn("Reply is empty, skipping send to notification");
-        }
-    }
-
-    /**
      * Обрабатывает расширенный запрос, содержащий:
      * <ul>
      *     <li>список заказов;</li>
@@ -118,6 +97,7 @@ public class AutoReplyPipeline {
      */
     public void process(AiOrderRequest request) {
         llmUserService.saveUser(request.getUser());
+        String uuid = request.getUser().getUuid();
 
         for (OrderDTO order : request.getOrders()) {
             String key = order.getLink();
@@ -127,7 +107,7 @@ public class AutoReplyPipeline {
                 continue;
             }
 
-            AiDecision decision = processItem(order, request.getUser(), request.getModule(), request.getTemplateId());
+            AiDecision decision = processItem(order, request.getTemplateId(), request.getPromtId(), uuid);
             String reply = finalizeReply(decision);
 
             if (reply != null && !reply.trim().isEmpty()) {
@@ -142,8 +122,8 @@ public class AutoReplyPipeline {
     /**
      * Выполняет анализ одного заказа с учётом контекста.
      */
-    private AiDecision processItem(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO orderModule, Long templateId) {
-        return analysisService.analyze(order, user, orderModule, templateId);
+    private AiDecision processItem(OrderDTO order, Long templateId, Long promtId, String uuid) {
+        return analysisService.analyze(order, templateId, promtId, uuid);
     }
 
     /**

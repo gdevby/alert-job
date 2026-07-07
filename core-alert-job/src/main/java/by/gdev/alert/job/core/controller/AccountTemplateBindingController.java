@@ -1,8 +1,11 @@
 package by.gdev.alert.job.core.controller;
 
+import by.gdev.alert.job.core.model.binding.dto.BindingCreateRequest;
 import by.gdev.alert.job.core.model.binding.dto.BindingResponse;
+import by.gdev.alert.job.core.model.binding.dto.BindingUpdateRequest;
 import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
 import by.gdev.alert.job.core.service.ai.AccountTemplateBindingService;
+import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,55 +41,69 @@ public class AccountTemplateBindingController {
             description = "Ошибка валидации или бизнес-логики"
     )
     @PostMapping
-    public ResponseEntity<AccountTemplateBinding> create(
-            @RequestParam Long moduleId,
-            @RequestParam Long accountId,
-            @RequestParam Long templateId,
-            @RequestParam(defaultValue = "true") boolean active
+    public ResponseEntity<BindingResponse> create(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @RequestBody BindingCreateRequest request
     ) {
+        // Если нужно использовать uuid, передаём его в сервис, если нет – игнорируем
         return ResponseEntity.ok(
-                service.create(moduleId, accountId, templateId, active)
+                service.create(
+                        uuid,
+                        request.getModuleId(),
+                        request.getAccountId(),
+                        request.getTemplateId(),
+                        request.getPromtId(),
+                        request.getActive() != null ? request.getActive() : true
+                )
         );
     }
 
     @Operation(
             summary = "Обновить существующую привязку",
-            description = "Изменяет параметры привязки по её ID."
+            description = "Обновляет параметры привязки по её ID."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Привязка обновлена",
-            content = @Content(schema = @Schema(implementation = AccountTemplateBinding.class))
+            description = "Привязка успешно обновлена",
+            content = @Content(schema = @Schema(implementation = BindingResponse.class))
     )
     @ApiResponse(
             responseCode = "400",
-            description = "Ошибка валидации или привязка не найдена"
+            description = "Ошибка валидации или бизнес-логики"
     )
     @PutMapping("/{id}")
-    public ResponseEntity<AccountTemplateBinding> update(
+    public ResponseEntity<BindingResponse> update(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @PathVariable Long id,
-            @RequestParam Long moduleId,
-            @RequestParam Long accountId,
-            @RequestParam Long templateId,
-            @RequestParam boolean active
+            @RequestBody BindingUpdateRequest request
     ) {
         return ResponseEntity.ok(
-                service.update(id, moduleId, accountId, templateId, active)
+                service.update(
+                        uuid,
+                        id,
+                        request.getModuleId(),
+                        request.getAccountId(),
+                        request.getTemplateId(),
+                        request.getPromtId(),
+                        request.getActive()
+                )
         );
     }
 
+
     @Operation(
-            summary = "Получить все привязки для модуля",
-            description = "Возвращает список всех привязок, относящихся к указанному модулю."
+            summary = "Получить все привязки для текущего пользователя",
+            description = "Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка)."
     )
     @ApiResponse(
             responseCode = "200",
             description = "Список привязок",
             content = @Content(schema = @Schema(implementation = AccountTemplateBinding.class))
     )
-    @GetMapping("/{moduleId}")
-    public ResponseEntity<List<AccountTemplateBinding>> getByModule(@PathVariable Long moduleId) {
-        return ResponseEntity.ok(service.getByModule(moduleId));
+    @GetMapping("/user")
+    public ResponseEntity<List<BindingResponse>> getByUser(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+        return ResponseEntity.ok(service.getBindingsForUser(uuid));
     }
 
     @Operation(
@@ -102,8 +119,9 @@ public class AccountTemplateBindingController {
             description = "Привязка не найдена"
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+                                       @PathVariable Long id) {
+        service.delete(uuid, id);
         return ResponseEntity.ok().build();
     }
 
@@ -121,8 +139,9 @@ public class AccountTemplateBindingController {
             description = "Привязка не найдена"
     )
     @PostMapping("/{id}/activate")
-    public ResponseEntity<AccountTemplateBinding> activate(@PathVariable Long id) {
-        return ResponseEntity.ok(service.activate(id));
+    public ResponseEntity<BindingResponse> activate(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+                                                           @PathVariable Long id) {
+        return ResponseEntity.ok(service.activate(uuid, id));
     }
 
     @Operation(
@@ -139,8 +158,9 @@ public class AccountTemplateBindingController {
             description = "Привязка не найдена"
     )
     @PostMapping("/{id}/deactivate")
-    public ResponseEntity<AccountTemplateBinding> deactivate(@PathVariable Long id) {
-        return ResponseEntity.ok(service.deactivate(id));
+    public ResponseEntity<BindingResponse> deactivate(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+                                                             @PathVariable Long id) {
+        return ResponseEntity.ok(service.deactivate(uuid, id));
     }
 
     @Operation(
@@ -157,11 +177,12 @@ public class AccountTemplateBindingController {
             description = "Привязка не найдена"
     )
     @PostMapping("/{id}/active")
-    public ResponseEntity<AccountTemplateBinding> setActive(
+    public ResponseEntity<BindingResponse> setActive(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @PathVariable Long id,
             @RequestParam boolean active
     ) {
-        return ResponseEntity.ok(service.setActive(id, active));
+        return ResponseEntity.ok(service.setActive(uuid, id, active));
     }
 
     @Operation(
@@ -178,8 +199,8 @@ public class AccountTemplateBindingController {
             responseCode = "400",
             description = "Ошибка (например, пользователь или модуль не найдены) – возвращает текст ошибки"
     )
-    @GetMapping("/user/{uuid}/module/{moduleId}")
-    public ResponseEntity<?> getAllBindingsForUser(@PathVariable String uuid, @PathVariable Long moduleId) {
+    @GetMapping("module/{moduleId}")
+    public ResponseEntity<?> getAllBindingsForUser(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long moduleId) {
         try {
             List<BindingResponse> result = service.getBindingsForUserAndModule(uuid, moduleId);
             return ResponseEntity.ok(result);

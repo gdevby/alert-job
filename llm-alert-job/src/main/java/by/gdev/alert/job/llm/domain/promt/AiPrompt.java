@@ -1,6 +1,7 @@
 package by.gdev.alert.job.llm.domain.promt;
 
 import by.gdev.alert.job.llm.domain.BasicId;
+import by.gdev.alert.job.llm.domain.LlmUser;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,15 +44,17 @@ public class AiPrompt extends BasicId {
     @Column(name = "name", length = 512)
     private String name;
 
-    @Column(name = "module_id")
-    private Long moduleId; // null для DEFAULT
+    /**
+     * Пользователь, которому принадлежит промт.
+     * Может быть {@code null}, если промт общий.
+     */
+    @ManyToOne
+    private LlmUser user;
 
     /**
      * Полный текст промта, который используется LLM.
      * Хранится в формате LONGTEXT.
      */
-
-
     @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String promptText;
 

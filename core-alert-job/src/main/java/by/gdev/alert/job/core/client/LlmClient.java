@@ -1,8 +1,9 @@
 package by.gdev.alert.job.core.client;
 
 import by.gdev.alert.job.core.model.ai.AiOrderRequest;
+import by.gdev.alert.job.core.model.promt.dto.PromtResponse;
 import by.gdev.alert.job.core.model.template.dto.TemplateResponse;
-import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.HeaderName;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -28,29 +29,11 @@ public class LlmClient {
     @Value("${llm.api.template.exists}")
     private String templateExistsApi;
 
+    @Value("${llm.api.promts.exists}")
+    private String promtExistsApi;
+
     public LlmClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-    }
-
-    // -----------------------------
-    // Отправка заказов
-    // -----------------------------
-    public void sendOrders(List<OrderDTO> orders) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<List<OrderDTO>> request = new HttpEntity<>(orders, headers);
-
-            String url = llmModuleUrl + ordersApi;
-
-            log.debug("Отправляю {} заказов в LLM...", orders.size());
-            restTemplate.exchange(url, HttpMethod.POST, request, Void.class);
-            log.debug("Заказы успешно отправлены в LLM");
-
-        } catch (Exception e) {
-            log.error("Ошибка при отправке заказов в LLM: {}", e.getMessage(), e);
-        }
     }
 
     // -----------------------------
@@ -82,12 +65,14 @@ public class LlmClient {
     // -----------------------------
     // Проверка существования шаблона
     // -----------------------------
-    public boolean templateExists(Long templateId) {
+    public boolean templateExists(Long templateId, String uuid) {
         try {
             String url = llmModuleUrl + templateExistsApi.replace("{id}", templateId.toString());
-
-            ResponseEntity<Boolean> response =
-                    restTemplate.getForEntity(url, Boolean.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HeaderName.UUID_USER_HEADER, uuid);
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            ResponseEntity<Boolean> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, Boolean.class);
 
             return Boolean.TRUE.equals(response.getBody());
 
@@ -97,12 +82,42 @@ public class LlmClient {
         }
     }
 
-    public TemplateResponse getTemplate(Long templateId) {
+    // -----------------------------
+    // Проверка существования промта
+    // -----------------------------
+    public boolean promtExists(Long promtId, String uuid) {
         try {
-            String url = llmModuleUrl + "/api/templates/" + templateId;
-            return restTemplate.getForObject(url, TemplateResponse.class);
+            String url = llmModuleUrl + promtExistsApi.replace("{id}", promtId.toString());
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HeaderName.UUID_USER_HEADER, uuid);
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            ResponseEntity<Boolean> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, Boolean.class);
+            return Boolean.TRUE.equals(response.getBody());
         } catch (Exception e) {
-            log.error("Ошибка получения шаблона {}", templateId, e);
+            log.warn("Промт {} не существует или LLM недоступен", promtId);
+            return false;
+        }
+    }
+
+
+    public TemplateResponse getTemplate(Long templateId, String uuid) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HeaderName.UUID_USER_HEADER, uuid);
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+        String url = llmModuleUrl + "/api/templates/" + templateId;
+        return restTemplate.exchange(url, HttpMethod.GET, entity, TemplateResponse.class).getBody();
+    }
+
+    public PromtResponse getPromt(Long promtId, String uuid) {
+        try {
+            String url = llmModuleUrl + "/api/prompts/" + promtId;
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HeaderName.UUID_USER_HEADER, uuid);
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            return restTemplate.exchange(url, HttpMethod.GET, entity, PromtResponse.class).getBody();
+        } catch (Exception e) {
+            log.error("Ошибка получения промта {}", promtId, e);
             return null;
         }
     }

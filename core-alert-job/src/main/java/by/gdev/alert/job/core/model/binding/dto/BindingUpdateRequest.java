@@ -3,16 +3,10 @@ package by.gdev.alert.job.core.model.binding.dto;
 import lombok.Data;
 
 @Data
-public class BindingResponse {
-    private Long id;
+public class BindingUpdateRequest {
     private Long moduleId;
-    private String moduleName;
     private Long accountId;
-    private String accountName;
     private Long templateId;
-    private String templateName;
     private Long promtId;
-    private String promtName;
     private Boolean active;
-    private String createdAt;
 }

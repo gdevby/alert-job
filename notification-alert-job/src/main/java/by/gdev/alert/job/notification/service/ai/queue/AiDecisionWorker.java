@@ -39,7 +39,7 @@ public class AiDecisionWorker {
     );
 
     void process(AiNotificationPayload payload) {
-
+        log.debug("Processing payload for order: {}", payload.getOrder().getLink());
         SiteName site = null;
         AutoreplyPlaywrightParser parser = null;
         DecryptedCredential creds = null;

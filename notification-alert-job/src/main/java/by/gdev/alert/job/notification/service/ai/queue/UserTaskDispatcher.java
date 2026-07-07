@@ -21,6 +21,7 @@ public class UserTaskDispatcher {
 
     @PostConstruct
     public void start() {
+        log.debug("UserTaskDispatcher started!");
         for (int i = 0; i < 1; i++) {
             executor.submit(this::dispatchLoop);
         }
@@ -35,6 +36,7 @@ public class UserTaskDispatcher {
                 AiNotificationPayload task = q.poll();
                 if (task != null) {
                     anyWork = true;
+                    log.debug(">> Dispatching task for user: {}", user);
                     worker.process(task);
                 }
             }

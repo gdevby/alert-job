@@ -1,6 +1,7 @@
 package by.gdev.alert.job.notification.service.ai.credential;
 
 import by.gdev.alert.job.notification.model.dto.UserCredentialEncrypted;
+import by.gdev.common.model.HeaderName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -47,13 +48,14 @@ public class CredentialClient {
                 .bodyToMono(UserCredentialEncrypted.class);
     }
 
-    public UserCredentialEncrypted getEncryptedCredentialsById(Long credentialId) {
+    public UserCredentialEncrypted getEncryptedCredentialsById(String uuid, Long credentialId) {
         return coreWebClient.getClient()
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/credentials/get-encrypted-by-id")
                         .queryParam("credentialId", credentialId)
                         .build())
+                .header(HeaderName.UUID_USER_HEADER, uuid)
                 .retrieve()
                 .bodyToMono(UserCredentialEncrypted.class)
                 .block();

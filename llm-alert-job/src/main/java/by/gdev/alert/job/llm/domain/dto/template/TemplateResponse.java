@@ -21,8 +21,8 @@ public class TemplateResponse {
     private Long id;
 
     /** HTML‑контент шаблона */
-    @Schema(description = "HTML содержимое шаблона")
-    private String htmlTemplate;
+    @Schema(description = "Cодержимое шаблона")
+    private String text;
 
     /** Дата создания шаблона */
     @Schema(description = "Дата создания шаблона", example = "2026-06-19T08:44:32")

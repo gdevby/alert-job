@@ -11,6 +11,7 @@ public class AiOrderRequest {
     private AiOrderModulesDTO module;
     private Long credentialId;
     private Long templateId;
+    private Long promtId;
     private List<OrderDTO> orders;
 }
 

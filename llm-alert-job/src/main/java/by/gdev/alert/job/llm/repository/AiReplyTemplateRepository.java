@@ -16,20 +16,14 @@ import java.util.Optional;
 public interface AiReplyTemplateRepository extends JpaRepository<AiReplyTemplate, Long> {
 
     /**
-     * Ищет шаблон по пользователю и ID модуля.
-     * Каждый пользователь может иметь один шаблон на модуль.
-     *
-     * @param user     пользователь LLM‑модуля
-     * @param moduleId ID модуля
-     * @return найденный шаблон или пустой Optional
-     */
-    Optional<AiReplyTemplate> findByUserAndModuleId(LlmUser user, Long moduleId);
-
-    /**
      * Возвращает все шаблоны, созданные указанным пользователем.
      *
      * @param user пользователь LLM‑модуля
      * @return список шаблонов
      */
     List<AiReplyTemplate> findByUser(LlmUser user);
+
+    List<AiReplyTemplate> findByName(String name);
+
+    Optional<AiReplyTemplate> findByUserAndName(LlmUser user, String name);
 }
