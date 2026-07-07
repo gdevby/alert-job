@@ -63,6 +63,7 @@ const MobileMenu = ({ isAuth, openLoginForm }) => {
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/order-history'>История заказов</Link></MenuItem>}
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/modules'>Модули</Link></MenuItem>}
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/notifications'>Уведомления</Link></MenuItem>}
+			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/auto-replies'>Автоответы</Link></MenuItem>}
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/logout' target='_parent'>Выйти</Link></MenuItem>}
 			{!isAuth && <MenuItem onClick={openLoginForm}><span>Регистрация и <br /> Авторизация</span></MenuItem>}
 		</Menu>

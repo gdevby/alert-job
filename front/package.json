@@ -6,7 +6,8 @@
 		"dev": "vite",
 		"dev:build": "tsc -b && vite build",
 		"build": "tsc -b && vite build --base=/front/",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"openapi:sdk": "openapi-generator-cli generate"
 	},
 	"keywords": [],
 	"author": "",
@@ -27,6 +28,7 @@
 		"react-router-dom": "^6.5.0"
 	},
 	"devDependencies": {
+		"@openapitools/openapi-generator-cli": "^2.39.1",
 		"@types/node": "^22.19.21",
 		"@types/react": "^18.2.0",
 		"@types/react-dom": "^18.2.0",

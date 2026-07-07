@@ -1,0 +1,5 @@
+src/apis/coreApi/base.ts
+src/apis/coreApi/docs/*.md
+
+src/apis/llmApi/base.ts
+src/apis/llmApi/docs/*.md

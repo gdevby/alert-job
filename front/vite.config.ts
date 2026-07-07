@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), visualizer({ filename: 'bundle-visualizer.html' })],
     server: { port: 3001, strictPort: true, allowedHosts: true },
+    base: '/front',
     preview: {
       port: 3001,
     },
