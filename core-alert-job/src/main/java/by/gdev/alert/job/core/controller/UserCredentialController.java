@@ -7,6 +7,7 @@ import by.gdev.alert.job.core.model.credential.dto.UserSiteCredentialShortRespon
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,7 +41,9 @@ public class UserCredentialController {
             description = "Ошибка (например, пользователь не найден)"
     )
     @GetMapping("/user/all")
-    public ResponseEntity<?> getAllUserCredentials(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+    public ResponseEntity<?> getAllUserCredentials(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         try {
             var creds = credentialService.getByUserUuid(uuid);
             var result = creds.stream().map(c -> {
@@ -75,7 +78,9 @@ public class UserCredentialController {
             description = "Ошибка валидации или бизнес-логики"
     )
     @PostMapping("/create-or-update")
-    public UserSiteCredential createOrUpdate(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody UserCredentialRequest request) {
+    public UserSiteCredential createOrUpdate(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody UserCredentialRequest request) {
         return credentialService.createOrUpdateCredential(
                 request.getName(),
                 uuid,
@@ -100,6 +105,7 @@ public class UserCredentialController {
     )
     @GetMapping("/get-encrypted-by-id")
     public ResponseEntity<UserCredentialEncrypted> getEncryptedById(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @RequestParam Long credentialId) {
 

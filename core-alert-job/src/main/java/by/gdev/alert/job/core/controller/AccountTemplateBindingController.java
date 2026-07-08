@@ -7,6 +7,7 @@ import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
 import by.gdev.alert.job.core.service.ai.AccountTemplateBindingService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -42,6 +43,7 @@ public class AccountTemplateBindingController {
     )
     @PostMapping
     public ResponseEntity<BindingResponse> create(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @RequestBody BindingCreateRequest request
     ) {
@@ -73,6 +75,7 @@ public class AccountTemplateBindingController {
     )
     @PutMapping("/{id}")
     public ResponseEntity<BindingResponse> update(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @PathVariable Long id,
             @RequestBody BindingUpdateRequest request
@@ -102,6 +105,7 @@ public class AccountTemplateBindingController {
     )
     @GetMapping("/user")
     public ResponseEntity<List<BindingResponse>> getByUser(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         return ResponseEntity.ok(service.getBindingsForUser(uuid));
     }
@@ -119,7 +123,9 @@ public class AccountTemplateBindingController {
             description = "Привязка не найдена"
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+    public ResponseEntity<Void> delete(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
                                        @PathVariable Long id) {
         service.delete(uuid, id);
         return ResponseEntity.ok().build();
@@ -139,7 +145,9 @@ public class AccountTemplateBindingController {
             description = "Привязка не найдена"
     )
     @PostMapping("/{id}/activate")
-    public ResponseEntity<BindingResponse> activate(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+    public ResponseEntity<BindingResponse> activate(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
                                                            @PathVariable Long id) {
         return ResponseEntity.ok(service.activate(uuid, id));
     }
@@ -158,7 +166,9 @@ public class AccountTemplateBindingController {
             description = "Привязка не найдена"
     )
     @PostMapping("/{id}/deactivate")
-    public ResponseEntity<BindingResponse> deactivate(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+    public ResponseEntity<BindingResponse> deactivate(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
                                                              @PathVariable Long id) {
         return ResponseEntity.ok(service.deactivate(uuid, id));
     }
@@ -178,6 +188,7 @@ public class AccountTemplateBindingController {
     )
     @PostMapping("/{id}/active")
     public ResponseEntity<BindingResponse> setActive(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @PathVariable Long id,
             @RequestParam boolean active
@@ -200,7 +211,9 @@ public class AccountTemplateBindingController {
             description = "Ошибка (например, пользователь или модуль не найдены) – возвращает текст ошибки"
     )
     @GetMapping("module/{moduleId}")
-    public ResponseEntity<?> getAllBindingsForUser(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long moduleId) {
+    public ResponseEntity<?> getAllBindingsForUser(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long moduleId) {
         try {
             List<BindingResponse> result = service.getBindingsForUserAndModule(uuid, moduleId);
             return ResponseEntity.ok(result);

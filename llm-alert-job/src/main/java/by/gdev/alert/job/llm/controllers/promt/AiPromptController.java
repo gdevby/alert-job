@@ -6,6 +6,7 @@ import by.gdev.alert.job.llm.domain.dto.promt.AiPromptDto;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,6 +38,7 @@ public class AiPromptController {
     )
     @PostMapping("/create")
     public ResponseEntity<?> createOrUpdate(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @RequestBody PromptRequest request
     ) {
@@ -61,6 +63,7 @@ public class AiPromptController {
     )
     @GetMapping("/user/my")
     public ResponseEntity<?> getPromptsByUser(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         try {
             List<AiPromptDto> dtos = promptService.getAllPromptDtos(uuid);
@@ -81,7 +84,9 @@ public class AiPromptController {
             content = @Content(schema = @Schema(implementation = AiPrompt.class))
     )
     @GetMapping("/{id}")
-    public ResponseEntity<?> getPromptById(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
+    public ResponseEntity<?> getPromptById(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
         try {
             AiPromptDto prompt = promptService.getPromptByIdOrDefault(uuid, id);
             return ResponseEntity.ok(prompt);
@@ -122,6 +127,7 @@ public class AiPromptController {
     )
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePrompt(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @PathVariable Long id) {
         try {
@@ -147,7 +153,9 @@ public class AiPromptController {
             description = "Ошибка валидации"
     )
     @GetMapping("/{id}/exists")
-    public ResponseEntity<Boolean> checkPromptExists(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
+    public ResponseEntity<Boolean> checkPromptExists(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
         boolean exists = promptService.existsById(uuid, id);
         return ResponseEntity.ok(exists);
     }

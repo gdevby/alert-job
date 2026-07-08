@@ -6,6 +6,7 @@ import by.gdev.alert.job.llm.domain.dto.template.TemplateResponse;
 import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -43,6 +44,7 @@ public class AiReplyTemplateController {
     )
     @PostMapping
     public ResponseEntity<?> createOrUpdate(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody TemplateRequest req) {
         try {
             AiReplyTemplate template = templateService.createOrUpdateTemplate(uuid, req);
@@ -67,6 +69,7 @@ public class AiReplyTemplateController {
     )
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTemplate(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @PathVariable Long id) {
         try {
@@ -89,6 +92,7 @@ public class AiReplyTemplateController {
     )
     @GetMapping("/user/my")
     public ResponseEntity<?> getTemplatesByUser(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         try {
             List<AiReplyTemplate> templates = templateService.getTemplatesByUser(uuid);
@@ -124,7 +128,9 @@ public class AiReplyTemplateController {
             description = "Результат проверки"
     )
     @GetMapping("/{id}/exists")
-    public ResponseEntity<?> exists(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
+    public ResponseEntity<?> exists(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
         try {
             boolean exists = templateService.exists(uuid, id);
             return ResponseEntity.ok(exists);
@@ -144,7 +150,9 @@ public class AiReplyTemplateController {
             content = @Content(schema = @Schema(implementation = TemplateResponse.class))
     )
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTemplateById(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
+    public ResponseEntity<?> getTemplateById(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
         try {
             AiReplyTemplate t = templateService.getTemplateById(uuid, id);
             TemplateResponse dto = new TemplateResponse();
