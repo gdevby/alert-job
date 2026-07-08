@@ -94,11 +94,6 @@
 		    <artifactId>micrometer-core</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-			<version>2.5.0</version>
-		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

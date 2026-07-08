@@ -83,10 +83,28 @@
 		</dependency>
 		<!-- Для генерации OpenApi и документации с ней -->
 
+
+		<!-- Common модуль -->
 		<dependency>
 			<groupId>by.gdev</groupId>
 			<artifactId>common-alert-job</artifactId>
 			<version>${revision}</version>
+		</dependency>
+
+		<!-- Eureka модуль -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-ribbon</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.netflix.ribbon</groupId>
+					<artifactId>ribbon-eureka</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 	</dependencies>

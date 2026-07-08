@@ -60,8 +60,9 @@ public class AiPromptService {
      */
     @Transactional(readOnly = true)
     public AiPromptDto getPromptByIdOrDefault(String uuid, Long id) {
-        if (id == null || id <= 0) {
-            return toDto(getDefaultPromptEntity());
+        // Проверяем существование пользователя
+        if (!userService.existsByUuid(uuid)) {
+            return null; // пользователь не найден
         }
 
         Optional<AiPrompt> promptOpt = aiPromptRepository.findById(id);

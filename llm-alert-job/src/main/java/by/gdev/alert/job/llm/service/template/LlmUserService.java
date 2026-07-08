@@ -90,4 +90,13 @@ public class LlmUserService {
         return userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new RuntimeException("LlmUser not found: " + uuid));
     }
+
+    /**
+     * Проверяет, существует ли пользователь с указанным UUID.
+     * @param uuid уникальный идентификатор пользователя
+     * @return true, если пользователь существует, иначе false
+     */
+    public boolean existsByUuid(String uuid) {
+        return userRepository.findByUuid(uuid).isPresent();
+    }
 }

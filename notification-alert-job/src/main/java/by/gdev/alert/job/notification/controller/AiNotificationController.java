@@ -4,11 +4,6 @@ import by.gdev.alert.job.notification.model.dto.*;
 import by.gdev.alert.job.notification.service.ai.queue.UserQueueManager;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +25,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/notification/api/ai")
 @Slf4j
 @RequiredArgsConstructor
-@Tag(name = "AI Notification", description = "Управление уведомлениями и очередями AI")
 public class AiNotificationController {
     private final UserQueueManager userQueueManager;
     private final Set<String> dedup = ConcurrentHashMap.newKeySet();
@@ -55,24 +49,6 @@ public class AiNotificationController {
         return Mono.just(ResponseEntity.accepted().body(Map.of("status", "queued", "queueSize", userQueueSize)));
     }
 
-    @Operation(
-            summary = "Получить детали очереди пользователя",
-            description = "Возвращает список всех заказов в очереди для данного пользователя (без удаления)."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Информация об очереди",
-            content = @Content(schema = @Schema(
-                    example = "{" +
-                            "\"userUuid\": \"eba609a4-...\"," +
-                            "\"queueSize\": 2," +
-                            "\"items\": [" +
-                            "{\"orderLink\": \"https://...\", \"site\": \"KWORK\", \"module\": \"kwork\"}," +
-                            "{\"orderLink\": \"https://...\", \"site\": \"KWORK\", \"module\": \"kwork\"}" +
-                            "]" +
-                            "}"
-            ))
-    )
     @GetMapping("/queue-details")
     public ResponseEntity<?> getQueueDetails(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         BlockingQueue<AiNotificationPayload> queue = userQueueManager.getQueue(uuid);
@@ -113,16 +89,6 @@ public class AiNotificationController {
         return ResponseEntity.ok(response);
     }
 
-
-    @Operation(
-            summary = "Получить размер очереди автоответов пользователя",
-            description = "Возвращает количество заказов в очереди автоответов для данного пользователя."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Размер очереди",
-            content = @Content(schema = @Schema(implementation = Integer.class))
-    )
     @GetMapping("/queue-size")
     public ResponseEntity<Integer> getQueueSize(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         int size = userQueueManager.size(uuid);

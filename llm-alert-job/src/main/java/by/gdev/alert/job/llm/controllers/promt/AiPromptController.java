@@ -83,7 +83,7 @@ public class AiPromptController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getPromptById(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @PathVariable Long id) {
         try {
-            AiPromptDto  prompt = promptService.getPromptByIdOrDefault(uuid, id);
+            AiPromptDto prompt = promptService.getPromptByIdOrDefault(uuid, id);
             return ResponseEntity.ok(prompt);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
