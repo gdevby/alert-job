@@ -18,22 +18,6 @@ import { changeAuthStatus } from '../../hooks/changeAuthStatus';
 import { removeCurrentFilter } from '../../store/slices/filterSlice';
 
 import './modulesPage.scss'
-import { AccountTemplateBindingsApi } from '../../apis/coreApi';
-import { AiReplyTemplateControllerApi } from '../../apis/llmApi';
-
-/* const fnCore = async () => {
-const a = new AccountTemplateBindingsApi();
-a.activate('123')
-}
-
-fnCore();
-
-const fnLlm = async () => {
-const a = new AiReplyTemplateControllerApi();
-a.getTemplateById('123');
-}
-
-fnLlm(); */
 
 
 const ModulesPage = () => {

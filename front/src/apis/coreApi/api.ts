@@ -28,101 +28,38 @@ export interface AccountTemplateBinding {
     'moduleId'?: number;
     'accountId'?: number;
     'templateId'?: number;
+    'promtId'?: number;
     'active'?: boolean;
+    'userUuid'?: string;
     'createdAt'?: string;
     'updatedAt'?: string;
 }
-export interface BindingResponse {
-    'id'?: number;
-    'accountName'?: string;
-    'templateName'?: string;
-    'createdAt'?: string;
+export interface BindingCreateRequest {
+    'moduleId'?: number;
+    'accountId'?: number;
+    'templateId'?: number;
+    'promtId'?: number;
     'active'?: boolean;
 }
-export interface CategoryChangeDTO {
-    'siteSourceId'?: number;
-    'siteName'?: string;
-    'diff'?: CategoryDiffDTO;
-}
-export interface CategoryChangeListDTO {
-    'changes'?: Array<CategoryChangeDTO>;
-}
-export interface CategoryDTO {
+export interface BindingResponse {
     'id'?: number;
-    'name'?: string;
-    'subcategories'?: Array<SubcategoryDTO>;
-}
-export interface CategoryDiffDTO {
-    'newCategories'?: Array<CategoryDTO>;
-    'removedCategories'?: Array<CategoryDTO>;
-    'movedCategories'?: Array<CategoryMoveDTO>;
-    'newSubcategories'?: Array<SubcategoryWithParentDTO>;
-    'removedSubcategories'?: Array<SubcategoryWithParentDTO>;
-    'movedSubcategories'?: Array<SubcategoryMoveDTO>;
-}
-export interface CategoryMoveDTO {
-    'oldCategory'?: CategoryDTO;
-    'newCategory'?: CategoryDTO;
-}
-export interface CleanupRequest {
-    'siteId'?: number;
-    'siteName'?: string;
-    'categories'?: Array<ParserCategoryDTO>;
-    'mode'?: CleanupRequestModeEnum;
-}
-
-export const CleanupRequestModeEnum = {
-    TypeNotification: 'TYPE_NOTIFICATION',
-    TypeFull: 'TYPE_FULL',
-} as const;
-
-export type CleanupRequestModeEnum = typeof CleanupRequestModeEnum[keyof typeof CleanupRequestModeEnum];
-
-export interface OrderDTO {
-    'title'?: string;
-    'message'?: string;
-    'link'?: string;
-    'dateTime'?: string;
-    'price'?: PriceDTO;
-    'sourceSite'?: SourceSiteDTO;
+    'moduleId'?: number;
     'moduleName'?: string;
-    'openForAll'?: boolean;
-    'validOrder'?: boolean;
+    'accountId'?: number;
+    'accountName'?: string;
+    'templateId'?: number;
+    'templateName'?: string;
+    'promtId'?: number;
+    'promtName'?: string;
+    'active'?: boolean;
+    'createdAt'?: string;
 }
-export interface ParserCategoryDTO {
-    'categoryId'?: number;
-    'categoryName'?: string;
-    'subCategoryId'?: number;
-    'subCategoryName'?: string;
-}
-export interface PriceDTO {
-    'price'?: string;
-    'value'?: number;
-}
-export interface SourceSiteDTO {
-    'id'?: number;
-    'source'?: number;
-    'sourceName'?: string;
-    'category'?: number;
-    'categoryName'?: string;
-    'subCategory'?: number;
-    'subCategoryName'?: string;
-}
-export interface SubcategoryDTO {
-    'id'?: number;
-    'name'?: string;
-}
-export interface SubcategoryMoveDTO {
-    'oldParentId'?: number;
-    'oldParentName'?: string;
-    'newParentId'?: number;
-    'newParentName'?: string;
-    'subcategory'?: SubcategoryDTO;
-}
-export interface SubcategoryWithParentDTO {
-    'parentId'?: number;
-    'parentName'?: string;
-    'subcategory'?: SubcategoryDTO;
+export interface BindingUpdateRequest {
+    'moduleId'?: number;
+    'accountId'?: number;
+    'templateId'?: number;
+    'promtId'?: number;
+    'active'?: boolean;
 }
 export interface UserCredentialEncrypted {
     'name'?: string;
@@ -131,9 +68,7 @@ export interface UserCredentialEncrypted {
 }
 export interface UserCredentialRequest {
     'name'?: string;
-    'userUuid'?: string;
     'siteId'?: number;
-    'moduleId'?: number;
     'login'?: string;
     'password'?: string;
 }
@@ -142,7 +77,6 @@ export interface UserSiteCredential {
     'name'?: string;
     'siteId'?: number;
     'userUuid'?: string;
-    'moduleId'?: number;
     'login'?: string;
     'passwordEncrypted'?: string;
     'createdAt'?: string;
@@ -230,20 +164,13 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
         /**
          * Создаёт связь между модулем, аккаунтом и шаблоном с указанием активности.
          * @summary Создать новую привязку
-         * @param {number} moduleId 
-         * @param {number} accountId 
-         * @param {number} templateId 
-         * @param {boolean} [active] 
+         * @param {BindingCreateRequest} bindingCreateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        create: async (moduleId: number, accountId: number, templateId: number, active?: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'moduleId' is not null or undefined
-            assertParamExists('create', 'moduleId', moduleId)
-            // verify required parameter 'accountId' is not null or undefined
-            assertParamExists('create', 'accountId', accountId)
-            // verify required parameter 'templateId' is not null or undefined
-            assertParamExists('create', 'templateId', templateId)
+        create: async (bindingCreateRequest: BindingCreateRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bindingCreateRequest' is not null or undefined
+            assertParamExists('create', 'bindingCreateRequest', bindingCreateRequest)
             const localVarPath = `/api/bindings`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -256,27 +183,13 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            if (moduleId !== undefined) {
-                localVarQueryParameter['moduleId'] = moduleId;
-            }
-
-            if (accountId !== undefined) {
-                localVarQueryParameter['accountId'] = accountId;
-            }
-
-            if (templateId !== undefined) {
-                localVarQueryParameter['templateId'] = templateId;
-            }
-
-            if (active !== undefined) {
-                localVarQueryParameter['active'] = active;
-            }
-
+            localVarHeaderParameter['Content-Type'] = 'application/json';
             localVarHeaderParameter['Accept'] = '*/*';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bindingCreateRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -320,18 +233,14 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
         /**
          * Возвращает список привязок для конкретного пользователя (по UUID) и модуля. В случае ошибки возвращает текстовое сообщение.
          * @summary Получить все привязки для пользователя и модуля
-         * @param {string} uuid 
          * @param {number} moduleId 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAllBindingsForUser: async (uuid: string, moduleId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'uuid' is not null or undefined
-            assertParamExists('getAllBindingsForUser', 'uuid', uuid)
+        getAllBindingsForUser: async (moduleId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'moduleId' is not null or undefined
             assertParamExists('getAllBindingsForUser', 'moduleId', moduleId)
-            const localVarPath = `/api/bindings/user/{uuid}/module/{moduleId}`
-                .replace('{uuid}', encodeURIComponent(String(uuid)))
+            const localVarPath = `/api/bindings/module/{moduleId}`
                 .replace('{moduleId}', encodeURIComponent(String(moduleId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -356,17 +265,13 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
             };
         },
         /**
-         * Возвращает список всех привязок, относящихся к указанному модулю.
-         * @summary Получить все привязки для модуля
-         * @param {number} moduleId 
+         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+         * @summary Получить все привязки для текущего пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getByModule: async (moduleId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'moduleId' is not null or undefined
-            assertParamExists('getByModule', 'moduleId', moduleId)
-            const localVarPath = `/api/bindings/{moduleId}`
-                .replace('{moduleId}', encodeURIComponent(String(moduleId)));
+        getByUser: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/bindings/user`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -431,27 +336,18 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
             };
         },
         /**
-         * Изменяет параметры привязки по её ID.
+         * Обновляет параметры привязки по её ID.
          * @summary Обновить существующую привязку
          * @param {number} id 
-         * @param {number} moduleId 
-         * @param {number} accountId 
-         * @param {number} templateId 
-         * @param {boolean} active 
+         * @param {BindingUpdateRequest} bindingUpdateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        update: async (id: number, moduleId: number, accountId: number, templateId: number, active: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        update: async (id: number, bindingUpdateRequest: BindingUpdateRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             assertParamExists('update', 'id', id)
-            // verify required parameter 'moduleId' is not null or undefined
-            assertParamExists('update', 'moduleId', moduleId)
-            // verify required parameter 'accountId' is not null or undefined
-            assertParamExists('update', 'accountId', accountId)
-            // verify required parameter 'templateId' is not null or undefined
-            assertParamExists('update', 'templateId', templateId)
-            // verify required parameter 'active' is not null or undefined
-            assertParamExists('update', 'active', active)
+            // verify required parameter 'bindingUpdateRequest' is not null or undefined
+            assertParamExists('update', 'bindingUpdateRequest', bindingUpdateRequest)
             const localVarPath = `/api/bindings/{id}`
                 .replace('{id}', encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
@@ -465,27 +361,13 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            if (moduleId !== undefined) {
-                localVarQueryParameter['moduleId'] = moduleId;
-            }
-
-            if (accountId !== undefined) {
-                localVarQueryParameter['accountId'] = accountId;
-            }
-
-            if (templateId !== undefined) {
-                localVarQueryParameter['templateId'] = templateId;
-            }
-
-            if (active !== undefined) {
-                localVarQueryParameter['active'] = active;
-            }
-
+            localVarHeaderParameter['Content-Type'] = 'application/json';
             localVarHeaderParameter['Accept'] = '*/*';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bindingUpdateRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -530,15 +412,12 @@ export const AccountTemplateBindingsApiFp = function(configuration?: Configurati
         /**
          * Создаёт связь между модулем, аккаунтом и шаблоном с указанием активности.
          * @summary Создать новую привязку
-         * @param {number} moduleId 
-         * @param {number} accountId 
-         * @param {number} templateId 
-         * @param {boolean} [active] 
+         * @param {BindingCreateRequest} bindingCreateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async create(moduleId: number, accountId: number, templateId: number, active?: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.create(moduleId, accountId, templateId, active, options);
+        async create(bindingCreateRequest: BindingCreateRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.create(bindingCreateRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.create']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -559,28 +438,26 @@ export const AccountTemplateBindingsApiFp = function(configuration?: Configurati
         /**
          * Возвращает список привязок для конкретного пользователя (по UUID) и модуля. В случае ошибки возвращает текстовое сообщение.
          * @summary Получить все привязки для пользователя и модуля
-         * @param {string} uuid 
          * @param {number} moduleId 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getAllBindingsForUser(uuid: string, moduleId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BindingResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllBindingsForUser(uuid, moduleId, options);
+        async getAllBindingsForUser(moduleId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BindingResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllBindingsForUser(moduleId, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.getAllBindingsForUser']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Возвращает список всех привязок, относящихся к указанному модулю.
-         * @summary Получить все привязки для модуля
-         * @param {number} moduleId 
+         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+         * @summary Получить все привязки для текущего пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getByModule(moduleId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getByModule(moduleId, options);
+        async getByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getByUser(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.getByModule']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.getByUser']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -598,18 +475,15 @@ export const AccountTemplateBindingsApiFp = function(configuration?: Configurati
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Изменяет параметры привязки по её ID.
+         * Обновляет параметры привязки по её ID.
          * @summary Обновить существующую привязку
          * @param {number} id 
-         * @param {number} moduleId 
-         * @param {number} accountId 
-         * @param {number} templateId 
-         * @param {boolean} active 
+         * @param {BindingUpdateRequest} bindingUpdateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async update(id: number, moduleId: number, accountId: number, templateId: number, active: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.update(id, moduleId, accountId, templateId, active, options);
+        async update(id: number, bindingUpdateRequest: BindingUpdateRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BindingResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.update(id, bindingUpdateRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.update']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -646,15 +520,12 @@ export const AccountTemplateBindingsApiFactory = function (configuration?: Confi
         /**
          * Создаёт связь между модулем, аккаунтом и шаблоном с указанием активности.
          * @summary Создать новую привязку
-         * @param {number} moduleId 
-         * @param {number} accountId 
-         * @param {number} templateId 
-         * @param {boolean} [active] 
+         * @param {BindingCreateRequest} bindingCreateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        create(moduleId: number, accountId: number, templateId: number, active?: boolean, options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
-            return localVarFp.create(moduleId, accountId, templateId, active, options).then((request) => request(axios, basePath));
+        create(bindingCreateRequest: BindingCreateRequest, options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
+            return localVarFp.create(bindingCreateRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Устанавливает статус активности = false для указанной привязки.
@@ -669,23 +540,21 @@ export const AccountTemplateBindingsApiFactory = function (configuration?: Confi
         /**
          * Возвращает список привязок для конкретного пользователя (по UUID) и модуля. В случае ошибки возвращает текстовое сообщение.
          * @summary Получить все привязки для пользователя и модуля
-         * @param {string} uuid 
          * @param {number} moduleId 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAllBindingsForUser(uuid: string, moduleId: number, options?: RawAxiosRequestConfig): AxiosPromise<BindingResponse> {
-            return localVarFp.getAllBindingsForUser(uuid, moduleId, options).then((request) => request(axios, basePath));
+        getAllBindingsForUser(moduleId: number, options?: RawAxiosRequestConfig): AxiosPromise<BindingResponse> {
+            return localVarFp.getAllBindingsForUser(moduleId, options).then((request) => request(axios, basePath));
         },
         /**
-         * Возвращает список всех привязок, относящихся к указанному модулю.
-         * @summary Получить все привязки для модуля
-         * @param {number} moduleId 
+         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+         * @summary Получить все привязки для текущего пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getByModule(moduleId: number, options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
-            return localVarFp.getByModule(moduleId, options).then((request) => request(axios, basePath));
+        getByUser(options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
+            return localVarFp.getByUser(options).then((request) => request(axios, basePath));
         },
         /**
          * Устанавливает произвольный статус активности (true/false) для привязки.
@@ -699,18 +568,15 @@ export const AccountTemplateBindingsApiFactory = function (configuration?: Confi
             return localVarFp.setActive(id, active, options).then((request) => request(axios, basePath));
         },
         /**
-         * Изменяет параметры привязки по её ID.
+         * Обновляет параметры привязки по её ID.
          * @summary Обновить существующую привязку
          * @param {number} id 
-         * @param {number} moduleId 
-         * @param {number} accountId 
-         * @param {number} templateId 
-         * @param {boolean} active 
+         * @param {BindingUpdateRequest} bindingUpdateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        update(id: number, moduleId: number, accountId: number, templateId: number, active: boolean, options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
-            return localVarFp.update(id, moduleId, accountId, templateId, active, options).then((request) => request(axios, basePath));
+        update(id: number, bindingUpdateRequest: BindingUpdateRequest, options?: RawAxiosRequestConfig): AxiosPromise<BindingResponse> {
+            return localVarFp.update(id, bindingUpdateRequest, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -744,15 +610,12 @@ export class AccountTemplateBindingsApi extends BaseAPI {
     /**
      * Создаёт связь между модулем, аккаунтом и шаблоном с указанием активности.
      * @summary Создать новую привязку
-     * @param {number} moduleId 
-     * @param {number} accountId 
-     * @param {number} templateId 
-     * @param {boolean} [active] 
+     * @param {BindingCreateRequest} bindingCreateRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public create(moduleId: number, accountId: number, templateId: number, active?: boolean, options?: RawAxiosRequestConfig) {
-        return AccountTemplateBindingsApiFp(this.configuration).create(moduleId, accountId, templateId, active, options).then((request) => request(this.axios, this.basePath));
+    public create(bindingCreateRequest: BindingCreateRequest, options?: RawAxiosRequestConfig) {
+        return AccountTemplateBindingsApiFp(this.configuration).create(bindingCreateRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -769,24 +632,22 @@ export class AccountTemplateBindingsApi extends BaseAPI {
     /**
      * Возвращает список привязок для конкретного пользователя (по UUID) и модуля. В случае ошибки возвращает текстовое сообщение.
      * @summary Получить все привязки для пользователя и модуля
-     * @param {string} uuid 
      * @param {number} moduleId 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public getAllBindingsForUser(uuid: string, moduleId: number, options?: RawAxiosRequestConfig) {
-        return AccountTemplateBindingsApiFp(this.configuration).getAllBindingsForUser(uuid, moduleId, options).then((request) => request(this.axios, this.basePath));
+    public getAllBindingsForUser(moduleId: number, options?: RawAxiosRequestConfig) {
+        return AccountTemplateBindingsApiFp(this.configuration).getAllBindingsForUser(moduleId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
-     * Возвращает список всех привязок, относящихся к указанному модулю.
-     * @summary Получить все привязки для модуля
-     * @param {number} moduleId 
+     * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+     * @summary Получить все привязки для текущего пользователя
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public getByModule(moduleId: number, options?: RawAxiosRequestConfig) {
-        return AccountTemplateBindingsApiFp(this.configuration).getByModule(moduleId, options).then((request) => request(this.axios, this.basePath));
+    public getByUser(options?: RawAxiosRequestConfig) {
+        return AccountTemplateBindingsApiFp(this.configuration).getByUser(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -802,475 +663,15 @@ export class AccountTemplateBindingsApi extends BaseAPI {
     }
 
     /**
-     * Изменяет параметры привязки по её ID.
+     * Обновляет параметры привязки по её ID.
      * @summary Обновить существующую привязку
      * @param {number} id 
-     * @param {number} moduleId 
-     * @param {number} accountId 
-     * @param {number} templateId 
-     * @param {boolean} active 
+     * @param {BindingUpdateRequest} bindingUpdateRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public update(id: number, moduleId: number, accountId: number, templateId: number, active: boolean, options?: RawAxiosRequestConfig) {
-        return AccountTemplateBindingsApiFp(this.configuration).update(id, moduleId, accountId, templateId, active, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-
-/**
- * AppUserControllerApi - axios parameter creator
- */
-export const AppUserControllerApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * 
-         * @param {string} uuid 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getUserByUuid: async (uuid: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'uuid' is not null or undefined
-            assertParamExists('getUserByUuid', 'uuid', uuid)
-            const localVarPath = `/api/users/{uuid}`
-                .replace('{uuid}', encodeURIComponent(String(uuid)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Accept'] = '*/*';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * AppUserControllerApi - functional programming interface
- */
-export const AppUserControllerApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = AppUserControllerApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * 
-         * @param {string} uuid 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async getUserByUuid(uuid: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getUserByUuid(uuid, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AppUserControllerApi.getUserByUuid']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * AppUserControllerApi - factory interface
- */
-export const AppUserControllerApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = AppUserControllerApiFp(configuration)
-    return {
-        /**
-         * 
-         * @param {string} uuid 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getUserByUuid(uuid: string, options?: RawAxiosRequestConfig): AxiosPromise<object> {
-            return localVarFp.getUserByUuid(uuid, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * AppUserControllerApi - object-oriented interface
- */
-export class AppUserControllerApi extends BaseAPI {
-    /**
-     * 
-     * @param {string} uuid 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public getUserByUuid(uuid: string, options?: RawAxiosRequestConfig) {
-        return AppUserControllerApiFp(this.configuration).getUserByUuid(uuid, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-
-/**
- * CategoryChangeControllerApi - axios parameter creator
- */
-export const CategoryChangeControllerApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * 
-         * @param {CategoryChangeListDTO} categoryChangeListDTO 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        receiveChanges: async (categoryChangeListDTO: CategoryChangeListDTO, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'categoryChangeListDTO' is not null or undefined
-            assertParamExists('receiveChanges', 'categoryChangeListDTO', categoryChangeListDTO)
-            const localVarPath = `/category/changes`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(categoryChangeListDTO, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * CategoryChangeControllerApi - functional programming interface
- */
-export const CategoryChangeControllerApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = CategoryChangeControllerApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * 
-         * @param {CategoryChangeListDTO} categoryChangeListDTO 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async receiveChanges(categoryChangeListDTO: CategoryChangeListDTO, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.receiveChanges(categoryChangeListDTO, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['CategoryChangeControllerApi.receiveChanges']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * CategoryChangeControllerApi - factory interface
- */
-export const CategoryChangeControllerApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = CategoryChangeControllerApiFp(configuration)
-    return {
-        /**
-         * 
-         * @param {CategoryChangeListDTO} categoryChangeListDTO 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        receiveChanges(categoryChangeListDTO: CategoryChangeListDTO, options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.receiveChanges(categoryChangeListDTO, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * CategoryChangeControllerApi - object-oriented interface
- */
-export class CategoryChangeControllerApi extends BaseAPI {
-    /**
-     * 
-     * @param {CategoryChangeListDTO} categoryChangeListDTO 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public receiveChanges(categoryChangeListDTO: CategoryChangeListDTO, options?: RawAxiosRequestConfig) {
-        return CategoryChangeControllerApiFp(this.configuration).receiveChanges(categoryChangeListDTO, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-
-/**
- * CleanupControllerApi - axios parameter creator
- */
-export const CleanupControllerApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * 
-         * @param {CleanupRequest} cleanupRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        cleanupParserSourceForSite: async (cleanupRequest: CleanupRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'cleanupRequest' is not null or undefined
-            assertParamExists('cleanupParserSourceForSite', 'cleanupRequest', cleanupRequest)
-            const localVarPath = `/api/cleanup`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-            localVarHeaderParameter['Accept'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(cleanupRequest, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * CleanupControllerApi - functional programming interface
- */
-export const CleanupControllerApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = CleanupControllerApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * 
-         * @param {CleanupRequest} cleanupRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async cleanupParserSourceForSite(cleanupRequest: CleanupRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: object; }>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.cleanupParserSourceForSite(cleanupRequest, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['CleanupControllerApi.cleanupParserSourceForSite']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * CleanupControllerApi - factory interface
- */
-export const CleanupControllerApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = CleanupControllerApiFp(configuration)
-    return {
-        /**
-         * 
-         * @param {CleanupRequest} cleanupRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        cleanupParserSourceForSite(cleanupRequest: CleanupRequest, options?: RawAxiosRequestConfig): AxiosPromise<{ [key: string]: object; }> {
-            return localVarFp.cleanupParserSourceForSite(cleanupRequest, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * CleanupControllerApi - object-oriented interface
- */
-export class CleanupControllerApi extends BaseAPI {
-    /**
-     * 
-     * @param {CleanupRequest} cleanupRequest 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public cleanupParserSourceForSite(cleanupRequest: CleanupRequest, options?: RawAxiosRequestConfig) {
-        return CleanupControllerApiFp(this.configuration).cleanupParserSourceForSite(cleanupRequest, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-
-/**
- * OrdersControllerApi - axios parameter creator
- */
-export const OrdersControllerApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * 
-         * @param {string} site 
-         * @param {Array<OrderDTO>} orderDTO 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        createOrders: async (site: string, orderDTO: Array<OrderDTO>, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'site' is not null or undefined
-            assertParamExists('createOrders', 'site', site)
-            // verify required parameter 'orderDTO' is not null or undefined
-            assertParamExists('createOrders', 'orderDTO', orderDTO)
-            const localVarPath = `/api/orders`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            if (site !== undefined) {
-                localVarQueryParameter['site'] = site;
-            }
-
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-            localVarHeaderParameter['Accept'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(orderDTO, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getAutoReplyStatus: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/api/orders/autoreply-status`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Accept'] = '*/*';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * OrdersControllerApi - functional programming interface
- */
-export const OrdersControllerApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = OrdersControllerApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * 
-         * @param {string} site 
-         * @param {Array<OrderDTO>} orderDTO 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async createOrders(site: string, orderDTO: Array<OrderDTO>, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: string; }>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.createOrders(site, orderDTO, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['OrdersControllerApi.createOrders']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async getAutoReplyStatus(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: object; }>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getAutoReplyStatus(options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['OrdersControllerApi.getAutoReplyStatus']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * OrdersControllerApi - factory interface
- */
-export const OrdersControllerApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = OrdersControllerApiFp(configuration)
-    return {
-        /**
-         * 
-         * @param {string} site 
-         * @param {Array<OrderDTO>} orderDTO 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        createOrders(site: string, orderDTO: Array<OrderDTO>, options?: RawAxiosRequestConfig): AxiosPromise<{ [key: string]: string; }> {
-            return localVarFp.createOrders(site, orderDTO, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getAutoReplyStatus(options?: RawAxiosRequestConfig): AxiosPromise<{ [key: string]: object; }> {
-            return localVarFp.getAutoReplyStatus(options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * OrdersControllerApi - object-oriented interface
- */
-export class OrdersControllerApi extends BaseAPI {
-    /**
-     * 
-     * @param {string} site 
-     * @param {Array<OrderDTO>} orderDTO 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public createOrders(site: string, orderDTO: Array<OrderDTO>, options?: RawAxiosRequestConfig) {
-        return OrdersControllerApiFp(this.configuration).createOrders(site, orderDTO, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public getAutoReplyStatus(options?: RawAxiosRequestConfig) {
-        return OrdersControllerApiFp(this.configuration).getAutoReplyStatus(options).then((request) => request(this.axios, this.basePath));
+    public update(id: number, bindingUpdateRequest: BindingUpdateRequest, options?: RawAxiosRequestConfig) {
+        return AccountTemplateBindingsApiFp(this.configuration).update(id, bindingUpdateRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1319,15 +720,11 @@ export const UserCredentialsApiAxiosParamCreator = function (configuration?: Con
         /**
          * Возвращает список всех учётных данных для указанного пользователя (по UUID). Возвращается сокращённая информация (ID, имя, логин, дата создания).
          * @summary Получить все учётные данные пользователя
-         * @param {string} uuid 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAllUserCredentials: async (uuid: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'uuid' is not null or undefined
-            assertParamExists('getAllUserCredentials', 'uuid', uuid)
-            const localVarPath = `/api/credentials/user/{uuid}/all`
-                .replace('{uuid}', encodeURIComponent(String(uuid)));
+        getAllUserCredentials: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/credentials/user/all`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -1338,57 +735,6 @@ export const UserCredentialsApiAxiosParamCreator = function (configuration?: Con
             const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Accept'] = '*/*';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Возвращает логин и зашифрованный пароль для указанных пользователя, сайта и модуля.
-         * @summary Получить зашифрованные учётные данные
-         * @param {string} userUuid 
-         * @param {number} siteId 
-         * @param {number} moduleId 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getEncrypted: async (userUuid: string, siteId: number, moduleId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'userUuid' is not null or undefined
-            assertParamExists('getEncrypted', 'userUuid', userUuid)
-            // verify required parameter 'siteId' is not null or undefined
-            assertParamExists('getEncrypted', 'siteId', siteId)
-            // verify required parameter 'moduleId' is not null or undefined
-            assertParamExists('getEncrypted', 'moduleId', moduleId)
-            const localVarPath = `/api/credentials/get-encrypted`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            if (userUuid !== undefined) {
-                localVarQueryParameter['userUuid'] = userUuid;
-            }
-
-            if (siteId !== undefined) {
-                localVarQueryParameter['siteId'] = siteId;
-            }
-
-            if (moduleId !== undefined) {
-                localVarQueryParameter['moduleId'] = moduleId;
-            }
 
             localVarHeaderParameter['Accept'] = '*/*';
 
@@ -1463,29 +809,13 @@ export const UserCredentialsApiFp = function(configuration?: Configuration) {
         /**
          * Возвращает список всех учётных данных для указанного пользователя (по UUID). Возвращается сокращённая информация (ID, имя, логин, дата создания).
          * @summary Получить все учётные данные пользователя
-         * @param {string} uuid 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getAllUserCredentials(uuid: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserSiteCredentialShortResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllUserCredentials(uuid, options);
+        async getAllUserCredentials(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserSiteCredentialShortResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllUserCredentials(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.getAllUserCredentials']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * Возвращает логин и зашифрованный пароль для указанных пользователя, сайта и модуля.
-         * @summary Получить зашифрованные учётные данные
-         * @param {string} userUuid 
-         * @param {number} siteId 
-         * @param {number} moduleId 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async getEncrypted(userUuid: string, siteId: number, moduleId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserCredentialEncrypted>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getEncrypted(userUuid, siteId, moduleId, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.getEncrypted']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -1523,24 +853,11 @@ export const UserCredentialsApiFactory = function (configuration?: Configuration
         /**
          * Возвращает список всех учётных данных для указанного пользователя (по UUID). Возвращается сокращённая информация (ID, имя, логин, дата создания).
          * @summary Получить все учётные данные пользователя
-         * @param {string} uuid 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAllUserCredentials(uuid: string, options?: RawAxiosRequestConfig): AxiosPromise<UserSiteCredentialShortResponse> {
-            return localVarFp.getAllUserCredentials(uuid, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Возвращает логин и зашифрованный пароль для указанных пользователя, сайта и модуля.
-         * @summary Получить зашифрованные учётные данные
-         * @param {string} userUuid 
-         * @param {number} siteId 
-         * @param {number} moduleId 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getEncrypted(userUuid: string, siteId: number, moduleId: number, options?: RawAxiosRequestConfig): AxiosPromise<UserCredentialEncrypted> {
-            return localVarFp.getEncrypted(userUuid, siteId, moduleId, options).then((request) => request(axios, basePath));
+        getAllUserCredentials(options?: RawAxiosRequestConfig): AxiosPromise<UserSiteCredentialShortResponse> {
+            return localVarFp.getAllUserCredentials(options).then((request) => request(axios, basePath));
         },
         /**
          * Возвращает логин и зашифрованный пароль для указанного ID учётной записи.
@@ -1573,25 +890,11 @@ export class UserCredentialsApi extends BaseAPI {
     /**
      * Возвращает список всех учётных данных для указанного пользователя (по UUID). Возвращается сокращённая информация (ID, имя, логин, дата создания).
      * @summary Получить все учётные данные пользователя
-     * @param {string} uuid 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public getAllUserCredentials(uuid: string, options?: RawAxiosRequestConfig) {
-        return UserCredentialsApiFp(this.configuration).getAllUserCredentials(uuid, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * Возвращает логин и зашифрованный пароль для указанных пользователя, сайта и модуля.
-     * @summary Получить зашифрованные учётные данные
-     * @param {string} userUuid 
-     * @param {number} siteId 
-     * @param {number} moduleId 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public getEncrypted(userUuid: string, siteId: number, moduleId: number, options?: RawAxiosRequestConfig) {
-        return UserCredentialsApiFp(this.configuration).getEncrypted(userUuid, siteId, moduleId, options).then((request) => request(this.axios, this.basePath));
+    public getAllUserCredentials(options?: RawAxiosRequestConfig) {
+        return UserCredentialsApiFp(this.configuration).getAllUserCredentials(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

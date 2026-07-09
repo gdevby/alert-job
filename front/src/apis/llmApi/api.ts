@@ -75,28 +75,63 @@ export interface AiOrderRequest {
      * ID шаблона, который должен использоваться для генерации ответа
      */
     'templateId'?: number;
+    /**
+     * ID промта, который должен использоваться для генерации ответа
+     */
+    'promtId'?: number;
     'orders'?: OrderDTO;
 }
+export interface AiPrompt {
+    'id'?: number;
+    'createdAt'?: string;
+    'type'?: AiPromptTypeEnum;
+    'name'?: string;
+    'user'?: LlmUser;
+    'promptText'?: string;
+    'version'?: number;
+    'updatedAt'?: string;
+}
+
+export const AiPromptTypeEnum = {
+    Default: 'DEFAULT',
+    Custom: 'CUSTOM',
+} as const;
+
+export type AiPromptTypeEnum = typeof AiPromptTypeEnum[keyof typeof AiPromptTypeEnum];
+
 /**
- * Запрос на создание шаблона
+ * Описание промта. Используется в списках и UI.
  */
-export interface CreateTemplateRequest {
+export interface AiPromptDto {
     /**
-     * Название шаблона
+     * ID промта в базе данных
+     */
+    'id'?: number;
+    /**
+     * Версия промта
+     */
+    'version'?: number;
+    /**
+     * Имя промта
      */
     'name'?: string;
     /**
-     * UUID пользователя
+     * Текст промта
      */
-    'userUuid'?: string;
+    'text'?: string;
     /**
-     * ID модуля
+     * Дата создания промта
      */
-    'moduleId'?: number;
+    'createdAt'?: string;
     /**
-     * HTML содержимое шаблона
+     * Дата последнего обновления промта
      */
-    'htmlTemplate'?: string;
+    'updatedAt'?: string;
+}
+export interface LlmUser {
+    'id'?: number;
+    'createdAt'?: string;
+    'uuid'?: string;
 }
 /**
  * Информация о заказе, полученном с внешнего сайта
@@ -146,6 +181,10 @@ export interface PriceDTO {
      */
     'value'?: number;
 }
+export interface PromptRequest {
+    'name'?: string;
+    'text'?: string;
+}
 /**
  * Информация об источнике заказа: сайт, категория и подкатегория
  */
@@ -180,6 +219,19 @@ export interface SourceSiteDTO {
     'subCategoryName'?: string;
 }
 /**
+ * Запрос на операции с шаблоном
+ */
+export interface TemplateRequest {
+    /**
+     * Название шаблона
+     */
+    'name'?: string;
+    /**
+     * Cодержимое шаблона
+     */
+    'text'?: string;
+}
+/**
  * Ответ с информацией о шаблоне HTML для автоответов
  */
 export interface TemplateResponse {
@@ -192,104 +244,31 @@ export interface TemplateResponse {
      */
     'id'?: number;
     /**
-     * HTML содержимое шаблона
+     * Cодержимое шаблона
      */
-    'htmlTemplate'?: string;
+    'text'?: string;
     /**
      * Дата создания шаблона
      */
     'createdAt'?: string;
 }
-export interface UploadPromptRequest {
-    'file': File;
-}
 
 /**
- * AiPromptControllerApi - axios parameter creator
+ * OrdersApi - axios parameter creator
  */
-export const AiPromptControllerApiAxiosParamCreator = function (configuration?: Configuration) {
+export const OrdersApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * Возвращает ZIP-файл, содержащий все промты. Каждый промт — отдельный .txt файл. Имя файла = тип промта. 
-         * @summary Экспортировать все промты в ZIP
+         * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
+         * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
+         * @param {AiOrderRequest} aiOrderRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        exportPrompts: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/api/prompts/export`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Accept'] = 'application/octet-stream';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Возвращает список DTO без текста промта — только служебная информация.
-         * @summary Получить список всех промтов
-         * @param {string} uUIDUserHeader 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        listPrompts: async (uUIDUserHeader: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'uUIDUserHeader' is not null or undefined
-            assertParamExists('listPrompts', 'uUIDUserHeader', uUIDUserHeader)
-            const localVarPath = `/api/prompts/list`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Accept'] = '*/*';
-
-            if (uUIDUserHeader != null) {
-                localVarHeaderParameter['UUID-user-header'] = String(uUIDUserHeader);
-            }
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Загружает текст промта из файла и сохраняет его. Если промт с таким типом уже существует — обновляет и увеличивает версию. Если нет — создаёт новый. 
-         * @summary Загрузить или обновить промт
-         * @param {number} module 
-         * @param {string} name 
-         * @param {UploadPromptRequest} [uploadPromptRequest] 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        uploadPrompt: async (module: number, name: string, uploadPromptRequest?: UploadPromptRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'module' is not null or undefined
-            assertParamExists('uploadPrompt', 'module', module)
-            // verify required parameter 'name' is not null or undefined
-            assertParamExists('uploadPrompt', 'name', name)
-            const localVarPath = `/api/prompts/upload`;
+        receiveAiOrderRequest: async (aiOrderRequest: AiOrderRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'aiOrderRequest' is not null or undefined
+            assertParamExists('receiveAiOrderRequest', 'aiOrderRequest', aiOrderRequest)
+            const localVarPath = `/ai/api/orders/context`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -301,21 +280,13 @@ export const AiPromptControllerApiAxiosParamCreator = function (configuration?: 
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            if (module !== undefined) {
-                localVarQueryParameter['module'] = module;
-            }
-
-            if (name !== undefined) {
-                localVarQueryParameter['name'] = name;
-            }
-
             localVarHeaderParameter['Content-Type'] = 'application/json';
-            localVarHeaderParameter['Accept'] = '*/*';
+            localVarHeaderParameter['Accept'] = 'application/json';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(uploadPromptRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(aiOrderRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -326,151 +297,114 @@ export const AiPromptControllerApiAxiosParamCreator = function (configuration?: 
 };
 
 /**
- * AiPromptControllerApi - functional programming interface
+ * OrdersApi - functional programming interface
  */
-export const AiPromptControllerApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = AiPromptControllerApiAxiosParamCreator(configuration)
+export const OrdersApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = OrdersApiAxiosParamCreator(configuration)
     return {
         /**
-         * Возвращает ZIP-файл, содержащий все промты. Каждый промт — отдельный .txt файл. Имя файла = тип промта. 
-         * @summary Экспортировать все промты в ZIP
+         * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
+         * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
+         * @param {AiOrderRequest} aiOrderRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async exportPrompts(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.exportPrompts(options);
+        async receiveAiOrderRequest(aiOrderRequest: AiOrderRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.receiveAiOrderRequest(aiOrderRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AiPromptControllerApi.exportPrompts']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * Возвращает список DTO без текста промта — только служебная информация.
-         * @summary Получить список всех промтов
-         * @param {string} uUIDUserHeader 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async listPrompts(uUIDUserHeader: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.listPrompts(uUIDUserHeader, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AiPromptControllerApi.listPrompts']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * Загружает текст промта из файла и сохраняет его. Если промт с таким типом уже существует — обновляет и увеличивает версию. Если нет — создаёт новый. 
-         * @summary Загрузить или обновить промт
-         * @param {number} module 
-         * @param {string} name 
-         * @param {UploadPromptRequest} [uploadPromptRequest] 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async uploadPrompt(module: number, name: string, uploadPromptRequest?: UploadPromptRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.uploadPrompt(module, name, uploadPromptRequest, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AiPromptControllerApi.uploadPrompt']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['OrdersApi.receiveAiOrderRequest']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
 };
 
 /**
- * AiPromptControllerApi - factory interface
+ * OrdersApi - factory interface
  */
-export const AiPromptControllerApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = AiPromptControllerApiFp(configuration)
+export const OrdersApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = OrdersApiFp(configuration)
     return {
         /**
-         * Возвращает ZIP-файл, содержащий все промты. Каждый промт — отдельный .txt файл. Имя файла = тип промта. 
-         * @summary Экспортировать все промты в ZIP
+         * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
+         * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
+         * @param {AiOrderRequest} aiOrderRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        exportPrompts(options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.exportPrompts(options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Возвращает список DTO без текста промта — только служебная информация.
-         * @summary Получить список всех промтов
-         * @param {string} uUIDUserHeader 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        listPrompts(uUIDUserHeader: string, options?: RawAxiosRequestConfig): AxiosPromise<object> {
-            return localVarFp.listPrompts(uUIDUserHeader, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Загружает текст промта из файла и сохраняет его. Если промт с таким типом уже существует — обновляет и увеличивает версию. Если нет — создаёт новый. 
-         * @summary Загрузить или обновить промт
-         * @param {number} module 
-         * @param {string} name 
-         * @param {UploadPromptRequest} [uploadPromptRequest] 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        uploadPrompt(module: number, name: string, uploadPromptRequest?: UploadPromptRequest, options?: RawAxiosRequestConfig): AxiosPromise<string> {
-            return localVarFp.uploadPrompt(module, name, uploadPromptRequest, options).then((request) => request(axios, basePath));
+        receiveAiOrderRequest(aiOrderRequest: AiOrderRequest, options?: RawAxiosRequestConfig): AxiosPromise<string> {
+            return localVarFp.receiveAiOrderRequest(aiOrderRequest, options).then((request) => request(axios, basePath));
         },
     };
 };
 
 /**
- * AiPromptControllerApi - object-oriented interface
+ * OrdersApi - object-oriented interface
  */
-export class AiPromptControllerApi extends BaseAPI {
+export class OrdersApi extends BaseAPI {
     /**
-     * Возвращает ZIP-файл, содержащий все промты. Каждый промт — отдельный .txt файл. Имя файла = тип промта. 
-     * @summary Экспортировать все промты в ZIP
+     * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
+     * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
+     * @param {AiOrderRequest} aiOrderRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public exportPrompts(options?: RawAxiosRequestConfig) {
-        return AiPromptControllerApiFp(this.configuration).exportPrompts(options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * Возвращает список DTO без текста промта — только служебная информация.
-     * @summary Получить список всех промтов
-     * @param {string} uUIDUserHeader 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public listPrompts(uUIDUserHeader: string, options?: RawAxiosRequestConfig) {
-        return AiPromptControllerApiFp(this.configuration).listPrompts(uUIDUserHeader, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * Загружает текст промта из файла и сохраняет его. Если промт с таким типом уже существует — обновляет и увеличивает версию. Если нет — создаёт новый. 
-     * @summary Загрузить или обновить промт
-     * @param {number} module 
-     * @param {string} name 
-     * @param {UploadPromptRequest} [uploadPromptRequest] 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public uploadPrompt(module: number, name: string, uploadPromptRequest?: UploadPromptRequest, options?: RawAxiosRequestConfig) {
-        return AiPromptControllerApiFp(this.configuration).uploadPrompt(module, name, uploadPromptRequest, options).then((request) => request(this.axios, this.basePath));
+    public receiveAiOrderRequest(aiOrderRequest: AiOrderRequest, options?: RawAxiosRequestConfig) {
+        return OrdersApiFp(this.configuration).receiveAiOrderRequest(aiOrderRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
 
 
 /**
- * AiReplyTemplateControllerApi - axios parameter creator
+ * PromptsApi - axios parameter creator
  */
-export const AiReplyTemplateControllerApiAxiosParamCreator = function (configuration?: Configuration) {
+export const PromptsApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * Создаёт новый HTML‑шаблон или обновляет существующий. Возвращает ID созданного/обновлённого шаблона.
-         * @summary Создать или обновить шаблон
-         * @param {CreateTemplateRequest} createTemplateRequest 
+         * Возвращает true, если промт существует и доступен пользователю (глобальный или принадлежит пользователю).
+         * @summary Проверить существование промта
+         * @param {number} id 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        createOrUpdate: async (createTemplateRequest: CreateTemplateRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'createTemplateRequest' is not null or undefined
-            assertParamExists('createOrUpdate', 'createTemplateRequest', createTemplateRequest)
-            const localVarPath = `/api/templates/create`;
+        checkPromptExists: async (id: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('checkPromptExists', 'id', id)
+            const localVarPath = `/api/prompts/{id}/exists`
+                .replace('{id}', encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
+         * @summary Создать или обновить промт пользователя
+         * @param {PromptRequest} promptRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createOrUpdate1: async (promptRequest: PromptRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'promptRequest' is not null or undefined
+            assertParamExists('createOrUpdate1', 'promptRequest', promptRequest)
+            const localVarPath = `/api/prompts/create`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -488,7 +422,435 @@ export const AiReplyTemplateControllerApiAxiosParamCreator = function (configura
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(createTemplateRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(promptRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Удаляет промт по ID. Можно удалять только свои промты. Системный DEFAULT_PROMPT удалить нельзя.
+         * @summary Удалить промт
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deletePrompt: async (id: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('deletePrompt', 'id', id)
+            const localVarPath = `/api/prompts/{id}`
+                .replace('{id}', encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Возвращает глобальный DEFAULT_PROMPT.
+         * @summary Получить промт по умолчанию
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDefaultPrompt: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/prompts/default`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Возвращает полную информацию о промте.
+         * @summary Получить промт по ID
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPromptById: async (id: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('getPromptById', 'id', id)
+            const localVarPath = `/api/prompts/{id}`
+                .replace('{id}', encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Возвращает список всех промтов, созданных пользователем.
+         * @summary Получить все промты пользователя
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPromptsByUser: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/prompts/user/my`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * PromptsApi - functional programming interface
+ */
+export const PromptsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = PromptsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Возвращает true, если промт существует и доступен пользователю (глобальный или принадлежит пользователю).
+         * @summary Проверить существование промта
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async checkPromptExists(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<boolean>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.checkPromptExists(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PromptsApi.checkPromptExists']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
+         * @summary Создать или обновить промт пользователя
+         * @param {PromptRequest} promptRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async createOrUpdate1(promptRequest: PromptRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<number>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.createOrUpdate1(promptRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PromptsApi.createOrUpdate1']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Удаляет промт по ID. Можно удалять только свои промты. Системный DEFAULT_PROMPT удалить нельзя.
+         * @summary Удалить промт
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deletePrompt(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deletePrompt(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PromptsApi.deletePrompt']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Возвращает глобальный DEFAULT_PROMPT.
+         * @summary Получить промт по умолчанию
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDefaultPrompt(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDefaultPrompt(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PromptsApi.getDefaultPrompt']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Возвращает полную информацию о промте.
+         * @summary Получить промт по ID
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getPromptById(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AiPrompt>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getPromptById(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PromptsApi.getPromptById']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Возвращает список всех промтов, созданных пользователем.
+         * @summary Получить все промты пользователя
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getPromptsByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AiPromptDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getPromptsByUser(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PromptsApi.getPromptsByUser']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * PromptsApi - factory interface
+ */
+export const PromptsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = PromptsApiFp(configuration)
+    return {
+        /**
+         * Возвращает true, если промт существует и доступен пользователю (глобальный или принадлежит пользователю).
+         * @summary Проверить существование промта
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        checkPromptExists(id: number, options?: RawAxiosRequestConfig): AxiosPromise<boolean> {
+            return localVarFp.checkPromptExists(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
+         * @summary Создать или обновить промт пользователя
+         * @param {PromptRequest} promptRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createOrUpdate1(promptRequest: PromptRequest, options?: RawAxiosRequestConfig): AxiosPromise<number> {
+            return localVarFp.createOrUpdate1(promptRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Удаляет промт по ID. Можно удалять только свои промты. Системный DEFAULT_PROMPT удалить нельзя.
+         * @summary Удалить промт
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deletePrompt(id: number, options?: RawAxiosRequestConfig): AxiosPromise<object> {
+            return localVarFp.deletePrompt(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Возвращает глобальный DEFAULT_PROMPT.
+         * @summary Получить промт по умолчанию
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDefaultPrompt(options?: RawAxiosRequestConfig): AxiosPromise<object> {
+            return localVarFp.getDefaultPrompt(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Возвращает полную информацию о промте.
+         * @summary Получить промт по ID
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPromptById(id: number, options?: RawAxiosRequestConfig): AxiosPromise<AiPrompt> {
+            return localVarFp.getPromptById(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Возвращает список всех промтов, созданных пользователем.
+         * @summary Получить все промты пользователя
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPromptsByUser(options?: RawAxiosRequestConfig): AxiosPromise<AiPromptDto> {
+            return localVarFp.getPromptsByUser(options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * PromptsApi - object-oriented interface
+ */
+export class PromptsApi extends BaseAPI {
+    /**
+     * Возвращает true, если промт существует и доступен пользователю (глобальный или принадлежит пользователю).
+     * @summary Проверить существование промта
+     * @param {number} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public checkPromptExists(id: number, options?: RawAxiosRequestConfig) {
+        return PromptsApiFp(this.configuration).checkPromptExists(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
+     * @summary Создать или обновить промт пользователя
+     * @param {PromptRequest} promptRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public createOrUpdate1(promptRequest: PromptRequest, options?: RawAxiosRequestConfig) {
+        return PromptsApiFp(this.configuration).createOrUpdate1(promptRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Удаляет промт по ID. Можно удалять только свои промты. Системный DEFAULT_PROMPT удалить нельзя.
+     * @summary Удалить промт
+     * @param {number} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public deletePrompt(id: number, options?: RawAxiosRequestConfig) {
+        return PromptsApiFp(this.configuration).deletePrompt(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Возвращает глобальный DEFAULT_PROMPT.
+     * @summary Получить промт по умолчанию
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getDefaultPrompt(options?: RawAxiosRequestConfig) {
+        return PromptsApiFp(this.configuration).getDefaultPrompt(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Возвращает полную информацию о промте.
+     * @summary Получить промт по ID
+     * @param {number} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getPromptById(id: number, options?: RawAxiosRequestConfig) {
+        return PromptsApiFp(this.configuration).getPromptById(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Возвращает список всех промтов, созданных пользователем.
+     * @summary Получить все промты пользователя
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getPromptsByUser(options?: RawAxiosRequestConfig) {
+        return PromptsApiFp(this.configuration).getPromptsByUser(options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * TemplatesApi - axios parameter creator
+ */
+export const TemplatesApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Создаёт новый HTML‑шаблон или обновляет существующий. Возвращает ID созданного/обновлённого шаблона.
+         * @summary Создать или обновить шаблон
+         * @param {TemplateRequest} templateRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createOrUpdate: async (templateRequest: TemplateRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'templateRequest' is not null or undefined
+            assertParamExists('createOrUpdate', 'templateRequest', templateRequest)
+            const localVarPath = `/api/templates`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(templateRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Удаляет шаблон по ID. Можно удалять только свои шаблоны. Системный DEFAULT_TEMPLATE удалить нельзя.
+         * @summary Удалить шаблон
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteTemplate: async (id: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('deleteTemplate', 'id', id)
+            const localVarPath = `/api/templates/{id}`
+                .replace('{id}', encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -566,15 +928,11 @@ export const AiReplyTemplateControllerApiAxiosParamCreator = function (configura
         /**
          * Возвращает список всех шаблонов, созданных пользователем.
          * @summary Получить шаблоны пользователя
-         * @param {string} uuid 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getTemplatesByUser: async (uuid: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'uuid' is not null or undefined
-            assertParamExists('getTemplatesByUser', 'uuid', uuid)
-            const localVarPath = `/api/templates/user/{uuid}`
-                .replace('{uuid}', encodeURIComponent(String(uuid)));
+        getTemplatesByUser: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/templates/user/my`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -601,22 +959,35 @@ export const AiReplyTemplateControllerApiAxiosParamCreator = function (configura
 };
 
 /**
- * AiReplyTemplateControllerApi - functional programming interface
+ * TemplatesApi - functional programming interface
  */
-export const AiReplyTemplateControllerApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = AiReplyTemplateControllerApiAxiosParamCreator(configuration)
+export const TemplatesApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = TemplatesApiAxiosParamCreator(configuration)
     return {
         /**
          * Создаёт новый HTML‑шаблон или обновляет существующий. Возвращает ID созданного/обновлённого шаблона.
          * @summary Создать или обновить шаблон
-         * @param {CreateTemplateRequest} createTemplateRequest 
+         * @param {TemplateRequest} templateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async createOrUpdate(createTemplateRequest: CreateTemplateRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<number>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.createOrUpdate(createTemplateRequest, options);
+        async createOrUpdate(templateRequest: TemplateRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<number>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.createOrUpdate(templateRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AiReplyTemplateControllerApi.createOrUpdate']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.createOrUpdate']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Удаляет шаблон по ID. Можно удалять только свои шаблоны. Системный DEFAULT_TEMPLATE удалить нельзя.
+         * @summary Удалить шаблон
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deleteTemplate(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteTemplate(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.deleteTemplate']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -629,7 +1000,7 @@ export const AiReplyTemplateControllerApiFp = function(configuration?: Configura
         async exists(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.exists(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AiReplyTemplateControllerApi.exists']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.exists']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -642,40 +1013,49 @@ export const AiReplyTemplateControllerApiFp = function(configuration?: Configura
         async getTemplateById(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TemplateResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getTemplateById(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AiReplyTemplateControllerApi.getTemplateById']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.getTemplateById']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
          * Возвращает список всех шаблонов, созданных пользователем.
          * @summary Получить шаблоны пользователя
-         * @param {string} uuid 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getTemplatesByUser(uuid: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TemplateResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getTemplatesByUser(uuid, options);
+        async getTemplatesByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TemplateResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getTemplatesByUser(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AiReplyTemplateControllerApi.getTemplatesByUser']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.getTemplatesByUser']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
 };
 
 /**
- * AiReplyTemplateControllerApi - factory interface
+ * TemplatesApi - factory interface
  */
-export const AiReplyTemplateControllerApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = AiReplyTemplateControllerApiFp(configuration)
+export const TemplatesApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = TemplatesApiFp(configuration)
     return {
         /**
          * Создаёт новый HTML‑шаблон или обновляет существующий. Возвращает ID созданного/обновлённого шаблона.
          * @summary Создать или обновить шаблон
-         * @param {CreateTemplateRequest} createTemplateRequest 
+         * @param {TemplateRequest} templateRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        createOrUpdate(createTemplateRequest: CreateTemplateRequest, options?: RawAxiosRequestConfig): AxiosPromise<number> {
-            return localVarFp.createOrUpdate(createTemplateRequest, options).then((request) => request(axios, basePath));
+        createOrUpdate(templateRequest: TemplateRequest, options?: RawAxiosRequestConfig): AxiosPromise<number> {
+            return localVarFp.createOrUpdate(templateRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Удаляет шаблон по ID. Можно удалять только свои шаблоны. Системный DEFAULT_TEMPLATE удалить нельзя.
+         * @summary Удалить шаблон
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteTemplate(id: number, options?: RawAxiosRequestConfig): AxiosPromise<object> {
+            return localVarFp.deleteTemplate(id, options).then((request) => request(axios, basePath));
         },
         /**
          * Возвращает true/false в зависимости от того, существует ли шаблон.
@@ -700,29 +1080,39 @@ export const AiReplyTemplateControllerApiFactory = function (configuration?: Con
         /**
          * Возвращает список всех шаблонов, созданных пользователем.
          * @summary Получить шаблоны пользователя
-         * @param {string} uuid 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getTemplatesByUser(uuid: string, options?: RawAxiosRequestConfig): AxiosPromise<TemplateResponse> {
-            return localVarFp.getTemplatesByUser(uuid, options).then((request) => request(axios, basePath));
+        getTemplatesByUser(options?: RawAxiosRequestConfig): AxiosPromise<TemplateResponse> {
+            return localVarFp.getTemplatesByUser(options).then((request) => request(axios, basePath));
         },
     };
 };
 
 /**
- * AiReplyTemplateControllerApi - object-oriented interface
+ * TemplatesApi - object-oriented interface
  */
-export class AiReplyTemplateControllerApi extends BaseAPI {
+export class TemplatesApi extends BaseAPI {
     /**
      * Создаёт новый HTML‑шаблон или обновляет существующий. Возвращает ID созданного/обновлённого шаблона.
      * @summary Создать или обновить шаблон
-     * @param {CreateTemplateRequest} createTemplateRequest 
+     * @param {TemplateRequest} templateRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public createOrUpdate(createTemplateRequest: CreateTemplateRequest, options?: RawAxiosRequestConfig) {
-        return AiReplyTemplateControllerApiFp(this.configuration).createOrUpdate(createTemplateRequest, options).then((request) => request(this.axios, this.basePath));
+    public createOrUpdate(templateRequest: TemplateRequest, options?: RawAxiosRequestConfig) {
+        return TemplatesApiFp(this.configuration).createOrUpdate(templateRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Удаляет шаблон по ID. Можно удалять только свои шаблоны. Системный DEFAULT_TEMPLATE удалить нельзя.
+     * @summary Удалить шаблон
+     * @param {number} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public deleteTemplate(id: number, options?: RawAxiosRequestConfig) {
+        return TemplatesApiFp(this.configuration).deleteTemplate(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -733,7 +1123,7 @@ export class AiReplyTemplateControllerApi extends BaseAPI {
      * @throws {RequiredError}
      */
     public exists(id: number, options?: RawAxiosRequestConfig) {
-        return AiReplyTemplateControllerApiFp(this.configuration).exists(id, options).then((request) => request(this.axios, this.basePath));
+        return TemplatesApiFp(this.configuration).exists(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -744,193 +1134,17 @@ export class AiReplyTemplateControllerApi extends BaseAPI {
      * @throws {RequiredError}
      */
     public getTemplateById(id: number, options?: RawAxiosRequestConfig) {
-        return AiReplyTemplateControllerApiFp(this.configuration).getTemplateById(id, options).then((request) => request(this.axios, this.basePath));
+        return TemplatesApiFp(this.configuration).getTemplateById(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * Возвращает список всех шаблонов, созданных пользователем.
      * @summary Получить шаблоны пользователя
-     * @param {string} uuid 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public getTemplatesByUser(uuid: string, options?: RawAxiosRequestConfig) {
-        return AiReplyTemplateControllerApiFp(this.configuration).getTemplatesByUser(uuid, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-
-/**
- * OrdersControllerApi - axios parameter creator
- */
-export const OrdersControllerApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
-         * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
-         * @param {AiOrderRequest} aiOrderRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        receiveAiOrderRequest: async (aiOrderRequest: AiOrderRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'aiOrderRequest' is not null or undefined
-            assertParamExists('receiveAiOrderRequest', 'aiOrderRequest', aiOrderRequest)
-            const localVarPath = `/ai/api/orders/context`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-            localVarHeaderParameter['Accept'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(aiOrderRequest, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Принимает список заказов (OrderDTO) и отправляет каждый заказ в AutoReplyPipeline. Используется для массовой обработки заказов без контекста пользователя. 
-         * @summary Получить список заказов (устаревший метод - не используется или используется для тестов)
-         * @param {Array<OrderDTO>} orderDTO 
-         * @param {*} [options] Override http request option.
-         * @deprecated
-         * @throws {RequiredError}
-         */
-        receiveOrders: async (orderDTO: Array<OrderDTO>, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'orderDTO' is not null or undefined
-            assertParamExists('receiveOrders', 'orderDTO', orderDTO)
-            const localVarPath = `/ai/api/orders`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-            localVarHeaderParameter['Accept'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(orderDTO, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * OrdersControllerApi - functional programming interface
- */
-export const OrdersControllerApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = OrdersControllerApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
-         * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
-         * @param {AiOrderRequest} aiOrderRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async receiveAiOrderRequest(aiOrderRequest: AiOrderRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.receiveAiOrderRequest(aiOrderRequest, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['OrdersControllerApi.receiveAiOrderRequest']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * Принимает список заказов (OrderDTO) и отправляет каждый заказ в AutoReplyPipeline. Используется для массовой обработки заказов без контекста пользователя. 
-         * @summary Получить список заказов (устаревший метод - не используется или используется для тестов)
-         * @param {Array<OrderDTO>} orderDTO 
-         * @param {*} [options] Override http request option.
-         * @deprecated
-         * @throws {RequiredError}
-         */
-        async receiveOrders(orderDTO: Array<OrderDTO>, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.receiveOrders(orderDTO, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['OrdersControllerApi.receiveOrders']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * OrdersControllerApi - factory interface
- */
-export const OrdersControllerApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = OrdersControllerApiFp(configuration)
-    return {
-        /**
-         * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
-         * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
-         * @param {AiOrderRequest} aiOrderRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        receiveAiOrderRequest(aiOrderRequest: AiOrderRequest, options?: RawAxiosRequestConfig): AxiosPromise<string> {
-            return localVarFp.receiveAiOrderRequest(aiOrderRequest, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Принимает список заказов (OrderDTO) и отправляет каждый заказ в AutoReplyPipeline. Используется для массовой обработки заказов без контекста пользователя. 
-         * @summary Получить список заказов (устаревший метод - не используется или используется для тестов)
-         * @param {Array<OrderDTO>} orderDTO 
-         * @param {*} [options] Override http request option.
-         * @deprecated
-         * @throws {RequiredError}
-         */
-        receiveOrders(orderDTO: Array<OrderDTO>, options?: RawAxiosRequestConfig): AxiosPromise<string> {
-            return localVarFp.receiveOrders(orderDTO, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * OrdersControllerApi - object-oriented interface
- */
-export class OrdersControllerApi extends BaseAPI {
-    /**
-     * Принимает расширенный объект AiOrderRequest, содержащий: • список заказов, • данные пользователя, • данные модуля.  Используется для более точной обработки заказов с учётом контекста. 
-     * @summary Получить заказы с дополнительной информацией (пользователь, модуль, шаблон и т.д.)
-     * @param {AiOrderRequest} aiOrderRequest 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public receiveAiOrderRequest(aiOrderRequest: AiOrderRequest, options?: RawAxiosRequestConfig) {
-        return OrdersControllerApiFp(this.configuration).receiveAiOrderRequest(aiOrderRequest, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * Принимает список заказов (OrderDTO) и отправляет каждый заказ в AutoReplyPipeline. Используется для массовой обработки заказов без контекста пользователя. 
-     * @summary Получить список заказов (устаревший метод - не используется или используется для тестов)
-     * @param {Array<OrderDTO>} orderDTO 
-     * @param {*} [options] Override http request option.
-     * @deprecated
-     * @throws {RequiredError}
-     */
-    public receiveOrders(orderDTO: Array<OrderDTO>, options?: RawAxiosRequestConfig) {
-        return OrdersControllerApiFp(this.configuration).receiveOrders(orderDTO, options).then((request) => request(this.axios, this.basePath));
+    public getTemplatesByUser(options?: RawAxiosRequestConfig) {
+        return TemplatesApiFp(this.configuration).getTemplatesByUser(options).then((request) => request(this.axios, this.basePath));
     }
 }
 
