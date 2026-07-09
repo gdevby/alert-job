@@ -112,4 +112,30 @@ public class UserCredentialController {
         UserCredentialEncrypted dto = credentialService.getEncryptedById(uuid, credentialId);
         return ResponseEntity.ok(dto);
     }
+
+    @Operation(
+            summary = "Удалить учётные данные по ID",
+            description = "Удаляет запись учётных данных. Можно удалять только свои записи."
+    )
+    @ApiResponse(
+            responseCode = "204",
+            description = "Учётные данные успешно удалены"
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Учётные данные не найдены"
+    )
+    @ApiResponse(
+            responseCode = "403",
+            description = "У вас нет доступа к этим учётным данным"
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCredential(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @PathVariable Long id) {
+        credentialService.delete(uuid, id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

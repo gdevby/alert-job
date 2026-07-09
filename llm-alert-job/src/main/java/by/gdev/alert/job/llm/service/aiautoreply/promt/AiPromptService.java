@@ -145,7 +145,7 @@ public class AiPromptService {
         return AiPromptDto.builder()
                 .id(prompt.getId())
                 .name(prompt.getName())
-                .text(prompt.getPromptText()) 
+                .text(prompt.getPromptText())
                 .version(prompt.getVersion())
                 .createdAt(prompt.getCreatedAt())
                 .updatedAt(prompt.getUpdatedAt())

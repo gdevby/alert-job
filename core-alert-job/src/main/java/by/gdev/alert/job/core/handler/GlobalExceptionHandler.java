@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -30,10 +32,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(404).body(ex.getMessage());
     }
 
-
     @ExceptionHandler(OrderModuleNotFoundException.class)
     public ResponseEntity<?> handleOrderModuleNotFound(OrderModuleNotFoundException ex) {
         return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidSiteIdException.class)
+    public ResponseEntity<?> handleInvalidSiteId(InvalidSiteIdException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
 
 
