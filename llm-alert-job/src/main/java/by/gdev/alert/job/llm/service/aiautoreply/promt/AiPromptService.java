@@ -132,11 +132,11 @@ public class AiPromptService {
 
 
     public boolean existsById(String uuid, Long id) {
-        if (id == null) {
-            return false;
-        }
-        // Проверяем, существует ли промт с данным id и доступен ли он
-        return aiPromptRepository.existsByIdAndUserUuidOrUserIsNull(id, uuid);
+        if (id == null) return false;
+        Optional<AiPrompt> promptOpt = aiPromptRepository.findById(id);
+        if (promptOpt.isEmpty()) return false;
+        AiPrompt prompt = promptOpt.get();
+        return prompt.getUser() == null || prompt.getUser().getUuid().equals(uuid);
     }
     /**
      * Преобразует сущность AiPrompt в DTO.
@@ -145,7 +145,7 @@ public class AiPromptService {
         return AiPromptDto.builder()
                 .id(prompt.getId())
                 .name(prompt.getName())
-                .text(prompt.getPromptText()) // или .getText(), в зависимости от поля
+                .text(prompt.getPromptText()) 
                 .version(prompt.getVersion())
                 .createdAt(prompt.getCreatedAt())
                 .updatedAt(prompt.getUpdatedAt())

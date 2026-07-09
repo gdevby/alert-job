@@ -2,7 +2,6 @@ package by.gdev.alert.job.llm.repository.promt;
 
 import by.gdev.alert.job.llm.domain.LlmUser;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
-import by.gdev.alert.job.llm.domain.promt.AiPromptType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -21,7 +20,5 @@ public interface AiPromptRepository extends JpaRepository<AiPrompt, Long> {
     List<AiPrompt> findByUser(LlmUser user);
 
     Optional<AiPrompt> findByName(String name);
-
-    boolean existsByIdAndUserUuidOrUserIsNull(Long id, String userUuid);
 
 }
