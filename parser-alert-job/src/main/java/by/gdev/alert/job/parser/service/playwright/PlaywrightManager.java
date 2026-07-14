@@ -1,5 +1,6 @@
 package by.gdev.alert.job.parser.service.playwright;
 
+import by.gdev.alert.job.parser.service.order.CloudflareChallengeService;
 import by.gdev.alert.job.parser.proxy.service.ProxyService;
 import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
@@ -10,7 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Менеджер Playwright, отвечающий за:
@@ -32,6 +36,9 @@ public class PlaywrightManager {
      */
     @Autowired
     private ProxyService proxyService;
+
+    @Autowired
+    private CloudflareChallengeService cloudflareChallengeService;
 
     /**
      * Создаёт новый экземпляр {@link Playwright}.
@@ -94,6 +101,7 @@ public class PlaywrightManager {
                         "--disable-notifications",
                         "--window-size=1366,768",
                         "--no-default-browser-check",
+                        "--disable-blink-features=AutomationControlled",
                         "--no-first-run"
                 ));
 
@@ -288,17 +296,15 @@ public class PlaywrightManager {
      *  - FREELANCEHUNT → timezone = Europe/Berlin.
      */
     public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, SiteName site) {
-        BrowserContext context;
         Browser.NewContextOptions options;
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                + "AppleWebKit/537.36 (KHTML, like Gecko) "
+                + "Chrome/131.0.0.0 Safari/537.36";
         if (useProxy){
             ProxyCredentials usedProxy = proxy != null ? proxy : proxyService.getRandomActiveProxy();
             options = new Browser.NewContextOptions()
                     .setViewportSize(1366, 768)
-                    .setUserAgent(
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                    "Chrome/123.0.0.0 Safari/537.36"
-                    )
+                    .setUserAgent(userAgent)
                     .setLocale("ru-RU")
                     .setDeviceScaleFactor(1.0)
                     .setIsMobile(false)
@@ -310,11 +316,7 @@ public class PlaywrightManager {
         else {
             options = new Browser.NewContextOptions()
                     .setViewportSize(1366, 768)
-                    .setUserAgent(
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                    "Chrome/123.0.0.0 Safari/537.36"
-                    )
+                    .setUserAgent(userAgent)
                     .setLocale("ru-RU")
                     .setDeviceScaleFactor(1.0)
                     .setIsMobile(false)
@@ -323,9 +325,18 @@ public class PlaywrightManager {
 
         if (SiteName.FREELANCEHUNT.equals(site)){
             options.setTimezoneId("Europe/Berlin");
+            options.setExtraHTTPHeaders(Map.of(
+                    "Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+            ));
         }
 
-        context = browser.newContext(options);
+        Path storagePath = cloudflareChallengeService.resolveStoragePath(site);
+        if (storagePath != null && Files.exists(storagePath)) {
+            options.setStorageStatePath(storagePath);
+            log.debug("Загружен Cloudflare storageState для {} из {}", site, storagePath);
+        }
+
+        BrowserContext context = browser.newContext(options);
         context.addInitScript(
                 // webdriver = undefined
                 "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });" +
