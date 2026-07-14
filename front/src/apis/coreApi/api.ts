@@ -718,6 +718,39 @@ export const UserCredentialsApiAxiosParamCreator = function (configuration?: Con
             };
         },
         /**
+         * Удаляет запись учётных данных. Можно удалять только свои записи.
+         * @summary Удалить учётные данные по ID
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteCredential: async (id: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('deleteCredential', 'id', id)
+            const localVarPath = `/api/credentials/{id}`
+                .replace('{id}', encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Возвращает список всех учётных данных для указанного пользователя (по UUID). Возвращается сокращённая информация (ID, имя, логин, дата создания).
          * @summary Получить все учётные данные пользователя
          * @param {*} [options] Override http request option.
@@ -807,6 +840,19 @@ export const UserCredentialsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Удаляет запись учётных данных. Можно удалять только свои записи.
+         * @summary Удалить учётные данные по ID
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deleteCredential(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteCredential(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.deleteCredential']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Возвращает список всех учётных данных для указанного пользователя (по UUID). Возвращается сокращённая информация (ID, имя, логин, дата создания).
          * @summary Получить все учётные данные пользователя
          * @param {*} [options] Override http request option.
@@ -851,6 +897,16 @@ export const UserCredentialsApiFactory = function (configuration?: Configuration
             return localVarFp.createOrUpdate(userCredentialRequest, options).then((request) => request(axios, basePath));
         },
         /**
+         * Удаляет запись учётных данных. Можно удалять только свои записи.
+         * @summary Удалить учётные данные по ID
+         * @param {number} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteCredential(id: number, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.deleteCredential(id, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Возвращает список всех учётных данных для указанного пользователя (по UUID). Возвращается сокращённая информация (ID, имя, логин, дата создания).
          * @summary Получить все учётные данные пользователя
          * @param {*} [options] Override http request option.
@@ -885,6 +941,17 @@ export class UserCredentialsApi extends BaseAPI {
      */
     public createOrUpdate(userCredentialRequest: UserCredentialRequest, options?: RawAxiosRequestConfig) {
         return UserCredentialsApiFp(this.configuration).createOrUpdate(userCredentialRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Удаляет запись учётных данных. Можно удалять только свои записи.
+     * @summary Удалить учётные данные по ID
+     * @param {number} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public deleteCredential(id: number, options?: RawAxiosRequestConfig) {
+        return UserCredentialsApiFp(this.configuration).deleteCredential(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
