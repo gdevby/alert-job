@@ -43,7 +43,7 @@ export const TemplatesTab = () => {
 
   return (
     <div className="templates-tab">
-      <Button onClick={handleCreateTemplateButton}>Создать шаблон</Button>
+      <Button onClick={handleCreateTemplateButton}>Добавить шаблон</Button>
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
           <TableHead>
