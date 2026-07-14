@@ -7,6 +7,7 @@ import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -83,12 +84,14 @@ public class AiReplyTemplateController {
 
     @Operation(
             summary = "Получить шаблоны пользователя",
-            description = "Возвращает список всех шаблонов, созданных пользователем."
+            description = "Возвращает список всех шаблонов, созданных пользователем, включая системный DEFAULT_TEMPLATE."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Список шаблонов",
-            content = @Content(schema = @Schema(implementation = TemplateResponse.class))
+            description = "Список DTO шаблонов",
+            content = @Content(
+                    array = @ArraySchema(schema = @Schema(implementation = TemplateResponse.class))
+            )
     )
     @GetMapping("/user/my")
     public ResponseEntity<?> getTemplatesByUser(
