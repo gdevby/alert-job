@@ -22,7 +22,7 @@ export const TemplatesTab = () => {
   const [templateIdForEditing, setTemplateIdForEditing] = useState<number>();
   const [formState, setFormState] = useState<FormState>(FormState.Creating);
 
-  const { data, isFetching } = useQuery({
+  const { data } = useQuery({
     queryKey: ['templatesApi.getTemplatesByUser'],
     queryFn: () => templatesApi.getTemplatesByUser(),
     placeholderData: data => data,
@@ -58,7 +58,7 @@ export const TemplatesTab = () => {
     <div className="templates-tab">
       <Button onClick={handleCreateTemplateButton}>Добавить шаблон</Button>
       <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <Table sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow>
               <TableCell>Название</TableCell>

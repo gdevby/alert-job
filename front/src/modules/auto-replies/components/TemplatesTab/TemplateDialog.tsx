@@ -42,8 +42,7 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
 
   useEffect(() => {
     if (isOpen && formState === 'editing' && initialFields) {
-      const { name, text } = initialFields;
-      reset({ name, text });
+      reset(initialFields);
     }
   }, [isOpen, formState]);
 
@@ -68,7 +67,6 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
             placeholder="Название"
             disabled={formState === 'editing'}
             required
-            defaultValue={initialFields?.name}
             error={Boolean(errors.name)}
             {...register('name', { required: true })}
           />
@@ -78,14 +76,13 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
             multiline
             rows={16}
             required
-            defaultValue={initialFields?.text}
             error={Boolean(errors.text)}
             {...register('text', { required: true })}
           />
 
           <div className="template-dialog__submit-button">
             <Button type="submit" variant="contained" disabled={isPending}>
-              {formState === 'creating' ? 'Создать' : 'Изменить'}
+              {formState === 'creating' ? 'Добавить' : 'Изменить'}
             </Button>
           </div>
         </DialogContent>
