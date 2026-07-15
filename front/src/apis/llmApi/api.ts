@@ -81,24 +81,6 @@ export interface AiOrderRequest {
     'promtId'?: number;
     'orders'?: OrderDTO;
 }
-export interface AiPrompt {
-    'id'?: number;
-    'createdAt'?: string;
-    'type'?: AiPromptTypeEnum;
-    'name'?: string;
-    'user'?: LlmUser;
-    'promptText'?: string;
-    'version'?: number;
-    'updatedAt'?: string;
-}
-
-export const AiPromptTypeEnum = {
-    Default: 'DEFAULT',
-    Custom: 'CUSTOM',
-} as const;
-
-export type AiPromptTypeEnum = typeof AiPromptTypeEnum[keyof typeof AiPromptTypeEnum];
-
 /**
  * Описание промта. Используется в списках и UI.
  */
@@ -127,11 +109,6 @@ export interface AiPromptDto {
      * Дата последнего обновления промта
      */
     'updatedAt'?: string;
-}
-export interface LlmUser {
-    'id'?: number;
-    'createdAt'?: string;
-    'uuid'?: string;
 }
 /**
  * Информация о заказе, полученном с внешнего сайта
@@ -395,8 +372,8 @@ export const PromptsApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
-         * @summary Создать или обновить промт пользователя
+         * Создаёт новый промт или обновляет существующий по имени. Если промт с таким именем уже существует у пользователя, он будет обновлён (версия увеличится). Иначе создаётся новый промт.
+         * @summary Создать или обновить промт
          * @param {PromptRequest} promptRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -464,7 +441,7 @@ export const PromptsApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * Возвращает глобальный DEFAULT_PROMPT.
+         * Возвращает глобальный DEFAULT_PROMPT (DTO). Используется, когда пользовательский промт не найден или ID невалидный.
          * @summary Получить промт по умолчанию
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -494,7 +471,7 @@ export const PromptsApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * Возвращает полную информацию о промте.
+         * Возвращает DTO промта по ID. Если промт не найден или недоступен пользователю, возвращается DEFAULT_PROMPT.
          * @summary Получить промт по ID
          * @param {number} id 
          * @param {*} [options] Override http request option.
@@ -528,7 +505,7 @@ export const PromptsApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * Возвращает список всех промтов, созданных пользователем.
+         * Возвращает список всех промтов, принадлежащих пользователю, включая системный DEFAULT_PROMPT.
          * @summary Получить все промты пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -580,8 +557,8 @@ export const PromptsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
-         * @summary Создать или обновить промт пользователя
+         * Создаёт новый промт или обновляет существующий по имени. Если промт с таким именем уже существует у пользователя, он будет обновлён (версия увеличится). Иначе создаётся новый промт.
+         * @summary Создать или обновить промт
          * @param {PromptRequest} promptRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -606,37 +583,37 @@ export const PromptsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Возвращает глобальный DEFAULT_PROMPT.
+         * Возвращает глобальный DEFAULT_PROMPT (DTO). Используется, когда пользовательский промт не найден или ID невалидный.
          * @summary Получить промт по умолчанию
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getDefaultPrompt(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+        async getDefaultPrompt(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AiPromptDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getDefaultPrompt(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PromptsApi.getDefaultPrompt']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Возвращает полную информацию о промте.
+         * Возвращает DTO промта по ID. Если промт не найден или недоступен пользователю, возвращается DEFAULT_PROMPT.
          * @summary Получить промт по ID
          * @param {number} id 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getPromptById(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AiPrompt>> {
+        async getPromptById(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AiPromptDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getPromptById(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PromptsApi.getPromptById']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Возвращает список всех промтов, созданных пользователем.
+         * Возвращает список всех промтов, принадлежащих пользователю, включая системный DEFAULT_PROMPT.
          * @summary Получить все промты пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getPromptsByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AiPromptDto>> {
+        async getPromptsByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<AiPromptDto>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getPromptsByUser(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PromptsApi.getPromptsByUser']?.[localVarOperationServerIndex]?.url;
@@ -662,8 +639,8 @@ export const PromptsApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.checkPromptExists(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
-         * @summary Создать или обновить промт пользователя
+         * Создаёт новый промт или обновляет существующий по имени. Если промт с таким именем уже существует у пользователя, он будет обновлён (версия увеличится). Иначе создаётся новый промт.
+         * @summary Создать или обновить промт
          * @param {PromptRequest} promptRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -682,31 +659,31 @@ export const PromptsApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.deletePrompt(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * Возвращает глобальный DEFAULT_PROMPT.
+         * Возвращает глобальный DEFAULT_PROMPT (DTO). Используется, когда пользовательский промт не найден или ID невалидный.
          * @summary Получить промт по умолчанию
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getDefaultPrompt(options?: RawAxiosRequestConfig): AxiosPromise<object> {
+        getDefaultPrompt(options?: RawAxiosRequestConfig): AxiosPromise<AiPromptDto> {
             return localVarFp.getDefaultPrompt(options).then((request) => request(axios, basePath));
         },
         /**
-         * Возвращает полную информацию о промте.
+         * Возвращает DTO промта по ID. Если промт не найден или недоступен пользователю, возвращается DEFAULT_PROMPT.
          * @summary Получить промт по ID
          * @param {number} id 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPromptById(id: number, options?: RawAxiosRequestConfig): AxiosPromise<AiPrompt> {
+        getPromptById(id: number, options?: RawAxiosRequestConfig): AxiosPromise<AiPromptDto> {
             return localVarFp.getPromptById(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * Возвращает список всех промтов, созданных пользователем.
+         * Возвращает список всех промтов, принадлежащих пользователю, включая системный DEFAULT_PROMPT.
          * @summary Получить все промты пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPromptsByUser(options?: RawAxiosRequestConfig): AxiosPromise<AiPromptDto> {
+        getPromptsByUser(options?: RawAxiosRequestConfig): AxiosPromise<Array<AiPromptDto>> {
             return localVarFp.getPromptsByUser(options).then((request) => request(axios, basePath));
         },
     };
@@ -728,8 +705,8 @@ export class PromptsApi extends BaseAPI {
     }
 
     /**
-     * Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически.
-     * @summary Создать или обновить промт пользователя
+     * Создаёт новый промт или обновляет существующий по имени. Если промт с таким именем уже существует у пользователя, он будет обновлён (версия увеличится). Иначе создаётся новый промт.
+     * @summary Создать или обновить промт
      * @param {PromptRequest} promptRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -750,7 +727,7 @@ export class PromptsApi extends BaseAPI {
     }
 
     /**
-     * Возвращает глобальный DEFAULT_PROMPT.
+     * Возвращает глобальный DEFAULT_PROMPT (DTO). Используется, когда пользовательский промт не найден или ID невалидный.
      * @summary Получить промт по умолчанию
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -760,7 +737,7 @@ export class PromptsApi extends BaseAPI {
     }
 
     /**
-     * Возвращает полную информацию о промте.
+     * Возвращает DTO промта по ID. Если промт не найден или недоступен пользователю, возвращается DEFAULT_PROMPT.
      * @summary Получить промт по ID
      * @param {number} id 
      * @param {*} [options] Override http request option.
@@ -771,7 +748,7 @@ export class PromptsApi extends BaseAPI {
     }
 
     /**
-     * Возвращает список всех промтов, созданных пользователем.
+     * Возвращает список всех промтов, принадлежащих пользователю, включая системный DEFAULT_PROMPT.
      * @summary Получить все промты пользователя
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -926,7 +903,7 @@ export const TemplatesApiAxiosParamCreator = function (configuration?: Configura
             };
         },
         /**
-         * Возвращает список всех шаблонов, созданных пользователем.
+         * Возвращает список всех шаблонов, созданных пользователем, включая системный DEFAULT_TEMPLATE.
          * @summary Получить шаблоны пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1017,12 +994,12 @@ export const TemplatesApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Возвращает список всех шаблонов, созданных пользователем.
+         * Возвращает список всех шаблонов, созданных пользователем, включая системный DEFAULT_TEMPLATE.
          * @summary Получить шаблоны пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getTemplatesByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TemplateResponse>> {
+        async getTemplatesByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<TemplateResponse>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getTemplatesByUser(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['TemplatesApi.getTemplatesByUser']?.[localVarOperationServerIndex]?.url;
@@ -1078,12 +1055,12 @@ export const TemplatesApiFactory = function (configuration?: Configuration, base
             return localVarFp.getTemplateById(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * Возвращает список всех шаблонов, созданных пользователем.
+         * Возвращает список всех шаблонов, созданных пользователем, включая системный DEFAULT_TEMPLATE.
          * @summary Получить шаблоны пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getTemplatesByUser(options?: RawAxiosRequestConfig): AxiosPromise<TemplateResponse> {
+        getTemplatesByUser(options?: RawAxiosRequestConfig): AxiosPromise<Array<TemplateResponse>> {
             return localVarFp.getTemplatesByUser(options).then((request) => request(axios, basePath));
         },
     };
@@ -1138,7 +1115,7 @@ export class TemplatesApi extends BaseAPI {
     }
 
     /**
-     * Возвращает список всех шаблонов, созданных пользователем.
+     * Возвращает список всех шаблонов, созданных пользователем, включая системный DEFAULT_TEMPLATE.
      * @summary Получить шаблоны пользователя
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}

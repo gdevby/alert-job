@@ -265,7 +265,7 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
             };
         },
         /**
-         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка). Возвращаются DTO с расширенной информацией (имена модулей, аккаунтов, шаблонов, промтов).
          * @summary Получить все привязки для текущего пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -442,19 +442,19 @@ export const AccountTemplateBindingsApiFp = function(configuration?: Configurati
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getAllBindingsForUser(moduleId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BindingResponse>> {
+        async getAllBindingsForUser(moduleId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<BindingResponse>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getAllBindingsForUser(moduleId, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.getAllBindingsForUser']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка). Возвращаются DTO с расширенной информацией (имена модулей, аккаунтов, шаблонов, промтов).
          * @summary Получить все привязки для текущего пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
+        async getByUser(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<BindingResponse>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getByUser(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.getByUser']?.[localVarOperationServerIndex]?.url;
@@ -544,16 +544,16 @@ export const AccountTemplateBindingsApiFactory = function (configuration?: Confi
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAllBindingsForUser(moduleId: number, options?: RawAxiosRequestConfig): AxiosPromise<BindingResponse> {
+        getAllBindingsForUser(moduleId: number, options?: RawAxiosRequestConfig): AxiosPromise<Array<BindingResponse>> {
             return localVarFp.getAllBindingsForUser(moduleId, options).then((request) => request(axios, basePath));
         },
         /**
-         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+         * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка). Возвращаются DTO с расширенной информацией (имена модулей, аккаунтов, шаблонов, промтов).
          * @summary Получить все привязки для текущего пользователя
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getByUser(options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
+        getByUser(options?: RawAxiosRequestConfig): AxiosPromise<Array<BindingResponse>> {
             return localVarFp.getByUser(options).then((request) => request(axios, basePath));
         },
         /**
@@ -641,7 +641,7 @@ export class AccountTemplateBindingsApi extends BaseAPI {
     }
 
     /**
-     * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка).
+     * Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка). Возвращаются DTO с расширенной информацией (имена модулей, аккаунтов, шаблонов, промтов).
      * @summary Получить все привязки для текущего пользователя
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -858,7 +858,7 @@ export const UserCredentialsApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getAllUserCredentials(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserSiteCredentialShortResponse>> {
+        async getAllUserCredentials(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<UserSiteCredentialShortResponse>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getAllUserCredentials(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.getAllUserCredentials']?.[localVarOperationServerIndex]?.url;
@@ -912,7 +912,7 @@ export const UserCredentialsApiFactory = function (configuration?: Configuration
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAllUserCredentials(options?: RawAxiosRequestConfig): AxiosPromise<UserSiteCredentialShortResponse> {
+        getAllUserCredentials(options?: RawAxiosRequestConfig): AxiosPromise<Array<UserSiteCredentialShortResponse>> {
             return localVarFp.getAllUserCredentials(options).then((request) => request(axios, basePath));
         },
         /**

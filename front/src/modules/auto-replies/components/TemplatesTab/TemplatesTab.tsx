@@ -11,6 +11,7 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import { TemplatesApi } from '@/apis/llmApi';
+import { FormState } from '@/lib/constants/FormState';
 import { TemplateDialog } from '@/modules/auto-replies/components/TemplatesTab/TemplateDialog';
 
 const templatesApi = new TemplatesApi();
@@ -18,6 +19,8 @@ const templatesApi = new TemplatesApi();
 export const TemplatesTab = () => {
   const queryClient = useQueryClient();
   const [isModalShown, setIsModalShown] = useState(false);
+  const [templateIdForEditing, setTemplateIdForEditing] = useState<number>();
+  const [formState, setFormState] = useState<FormState>(FormState.Creating);
 
   const { data, isFetching } = useQuery({
     queryKey: ['templatesApi.getTemplatesByUser'],
@@ -34,12 +37,22 @@ export const TemplatesTab = () => {
   });
 
   const handleCreateTemplateButton = () => {
+    setTemplateIdForEditing(undefined);
+    setFormState('creating');
+    setIsModalShown(true);
+  };
+
+  const handleEditButton = (id: number) => {
+    setTemplateIdForEditing(id);
+    setFormState('editing');
     setIsModalShown(true);
   };
 
   const handleRemoveButton = (id: number) => {
     removeTemplate(id);
   };
+
+  const initialFields = data?.data.find(({ id }) => id === templateIdForEditing);
 
   return (
     <div className="templates-tab">
@@ -60,7 +73,9 @@ export const TemplatesTab = () => {
                 <TableCell>{createdAt}</TableCell>
                 <TableCell align="right">
                   {/* TODO remove {' '} */}
-                  <Button variant="outlined">Изменить</Button>{' '}
+                  <Button variant="outlined" onClick={() => handleEditButton(id)}>
+                    Изменить
+                  </Button>{' '}
                   <Button variant="outlined" color="error" onClick={() => handleRemoveButton(id)}>
                     Удалить
                   </Button>
@@ -71,7 +86,12 @@ export const TemplatesTab = () => {
         </Table>
       </TableContainer>
 
-      <TemplateDialog isOpen={isModalShown} close={() => setIsModalShown(false)} />
+      <TemplateDialog
+        isOpen={isModalShown}
+        formState={formState}
+        initialFields={initialFields}
+        close={() => setIsModalShown(false)}
+      />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 export const FormState = {
   Creating: 'creating',
-  Updating: 'updating',
+  Editing: 'editing',
 } as const;
 
 export type FormState = (typeof FormState)[keyof typeof FormState];
