@@ -8,6 +8,7 @@ import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -33,8 +34,10 @@ public class UserCredentialController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Список учётных данных",
-            content = @Content(schema = @Schema(implementation = UserSiteCredentialShortResponse.class))
+            description = "Список DTO учётных данных",
+            content = @Content(
+                    array = @ArraySchema(schema = @Schema(implementation = UserSiteCredentialShortResponse.class))
+            )
     )
     @ApiResponse(
             responseCode = "400",

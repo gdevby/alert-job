@@ -8,6 +8,7 @@ import by.gdev.alert.job.core.service.ai.AccountTemplateBindingService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -96,12 +97,19 @@ public class AccountTemplateBindingController {
 
     @Operation(
             summary = "Получить все привязки для текущего пользователя",
-            description = "Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка)."
+            description = "Возвращает список всех привязок, принадлежащих пользователю (по UUID из заголовка). " +
+                    "Возвращаются DTO с расширенной информацией (имена модулей, аккаунтов, шаблонов, промтов)."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Список привязок",
-            content = @Content(schema = @Schema(implementation = AccountTemplateBinding.class))
+            description = "Список DTO привязок",
+            content = @Content(
+                    array = @ArraySchema(schema = @Schema(implementation = BindingResponse.class))
+            )
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Ошибка при получении"
     )
     @GetMapping("/user")
     public ResponseEntity<List<BindingResponse>> getByUser(
@@ -203,8 +211,10 @@ public class AccountTemplateBindingController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Список привязок (BindingResponse)",
-            content = @Content(schema = @Schema(implementation = BindingResponse.class))
+            description = "Список DTO привязок (BindingResponse)",
+            content = @Content(
+                    array = @ArraySchema(schema = @Schema(implementation = BindingResponse.class))
+            )
     )
     @ApiResponse(
             responseCode = "400",

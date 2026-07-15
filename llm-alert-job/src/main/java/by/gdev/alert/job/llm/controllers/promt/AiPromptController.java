@@ -7,6 +7,7 @@ import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,13 +29,19 @@ public class AiPromptController {
     private final AiPromptService promptService;
 
     @Operation(
-            summary = "Создать или обновить промт пользователя",
-            description = "Создаёт новый промт или обновляет существующий по имени. Версия увеличивается автоматически."
+            summary = "Создать или обновить промт",
+            description = "Создаёт новый промт или обновляет существующий по имени. " +
+                    "Если промт с таким именем уже существует у пользователя, он будет обновлён (версия увеличится). " +
+                    "Иначе создаётся новый промт."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Промт создан или обновлён",
+            description = "Промт создан или обновлён (возвращается ID)",
             content = @Content(schema = @Schema(implementation = Long.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Ошибка валидации (пустой текст, отсутствие имени и т.д.)"
     )
     @PostMapping("/create")
     public ResponseEntity<?> createOrUpdate(
@@ -54,12 +61,18 @@ public class AiPromptController {
 
     @Operation(
             summary = "Получить все промты пользователя",
-            description = "Возвращает список всех промтов, созданных пользователем."
+            description = "Возвращает список всех промтов, принадлежащих пользователю, включая системный DEFAULT_PROMPT."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Список промтов",
-            content = @Content(schema = @Schema(implementation = AiPromptDto.class))
+            description = "Список DTO промтов",
+            content = @Content(
+                    array = @ArraySchema(schema = @Schema(implementation = AiPromptDto.class))
+            )
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Ошибка при получении промтов"
     )
     @GetMapping("/user/my")
     public ResponseEntity<?> getPromptsByUser(
@@ -76,12 +89,16 @@ public class AiPromptController {
 
     @Operation(
             summary = "Получить промт по ID",
-            description = "Возвращает полную информацию о промте."
+            description = "Возвращает DTO промта по ID. Если промт не найден или недоступен пользователю, возвращается DEFAULT_PROMPT."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Промт найден",
-            content = @Content(schema = @Schema(implementation = AiPrompt.class))
+            description = "Промт найден (DTO)",
+            content = @Content(schema = @Schema(implementation = AiPromptDto.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Ошибка при получении промта"
     )
     @GetMapping("/{id}")
     public ResponseEntity<?> getPromptById(
@@ -97,11 +114,16 @@ public class AiPromptController {
 
     @Operation(
             summary = "Получить промт по умолчанию",
-            description = "Возвращает глобальный DEFAULT_PROMPT."
+            description = "Возвращает глобальный DEFAULT_PROMPT (DTO). Используется, когда пользовательский промт не найден или ID невалидный."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "DEFAULT_PROMPT"
+            description = "DEFAULT_PROMPT (DTO)",
+            content = @Content(schema = @Schema(implementation = AiPromptDto.class))
+    )
+    @ApiResponse(
+            responseCode = "500",
+            description = "DEFAULT_PROMPT не найден в базе данных"
     )
     @GetMapping("/default")
     public ResponseEntity<?> getDefaultPrompt() {
