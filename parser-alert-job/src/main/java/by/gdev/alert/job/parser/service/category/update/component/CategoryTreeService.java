@@ -26,33 +26,30 @@ public class CategoryTreeService {
     private final CategoryRepository categoryRepository;
 
     public SiteDTO buildTree(SiteSourceJob job) {
-
-        List<Category> categories =
-                categoryRepository.findAllWithSubcategoriesBySourceId(job.getId());
+        List<Category> categories = categoryRepository.findAllWithSubcategoriesBySourceId(job.getId());
         SiteDTO site = new SiteDTO();
         site.setId(job.getId());
         site.setName(job.getName());
-
-        Map<String, CategoryDTO> categoryMap = new HashMap<>();
+        Map<String, CategoryDTO> categoryMap = new LinkedHashMap<>();
         for (Category c : categories) {
             String catName = (c.getNativeLocName() != null && !c.getNativeLocName().isBlank())
                     ? c.getNativeLocName()
                     : c.getName();
 
             if (catName == null || catName.isBlank()) continue;
-            CategoryDTO catDto = categoryMap.computeIfAbsent(catName, n -> {
-                CategoryDTO dto = new CategoryDTO();
-                dto.setId(c.getId());
-                dto.setName(n);
-                dto.setSubcategories(new ArrayList<>());
-                return dto;
-            });
+
+            CategoryDTO catDto = categoryMap.get(catName);
+            if (catDto == null) {
+                catDto = new CategoryDTO();
+                catDto.setId(c.getId());
+                catDto.setName(catName);
+                catDto.setSubcategories(new ArrayList<>());
+                categoryMap.put(catName, catDto);
+            }
 
             if (c.getSubCategories() != null) {
                 for (Subcategory s : c.getSubCategories()) {
-
-                    if (s == null) continue;
-                    if (s.getId() == null) continue;
+                    if (s == null || s.getId() == null) continue;
 
                     String subName = (s.getNativeLocName() != null && !s.getNativeLocName().isBlank())
                             ? s.getNativeLocName()
@@ -62,7 +59,6 @@ public class CategoryTreeService {
 
                     boolean exists = catDto.getSubcategories().stream()
                             .anyMatch(x -> x.getName().equals(subName));
-
                     if (!exists) {
                         SubcategoryDTO sd = new SubcategoryDTO();
                         sd.setId(s.getId());
@@ -85,22 +81,28 @@ public class CategoryTreeService {
         for (Map.Entry<ParsedCategory, List<ParsedCategory>> entry : parsed.entrySet()) {
             ParsedCategory parsedCat = entry.getKey();
             List<ParsedCategory> parsedSubs = entry.getValue();
+
             String catName = (parsedCat.translatedName() != null && !parsedCat.translatedName().isBlank())
                     ? parsedCat.translatedName()
                     : parsedCat.name();
+
             if (catName == null || catName.isBlank()) continue;
-            CategoryDTO catDto = categoryMap.computeIfAbsent(catName, n -> {
-                CategoryDTO dto = new CategoryDTO();
-                dto.setName(n);
-                dto.setSubcategories(new ArrayList<>());
-                return dto;
-            });
+
+            CategoryDTO catDto = categoryMap.get(catName);
+            if (catDto == null) {
+                catDto = new CategoryDTO();
+                catDto.setName(catName);
+                catDto.setSubcategories(new ArrayList<>());
+                categoryMap.put(catName, catDto);
+            }
 
             for (ParsedCategory sub : parsedSubs) {
                 String subName = (sub.translatedName() != null && !sub.translatedName().isBlank())
                         ? sub.translatedName()
                         : sub.name();
+
                 if (subName == null || subName.isBlank()) continue;
+
                 boolean exists = catDto.getSubcategories().stream()
                         .anyMatch(x -> x.getName().equals(subName));
                 if (!exists) {

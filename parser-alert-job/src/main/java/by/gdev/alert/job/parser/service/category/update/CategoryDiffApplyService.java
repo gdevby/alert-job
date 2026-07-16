@@ -46,11 +46,15 @@ public class CategoryDiffApplyService {
                 catByName.putIfAbsent(name, c);
             }
         }
+
+        List<Subcategory> allSubcategories = new ArrayList<>();
+
         int catOrder = 1;
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
             Category cat = catByName.get(parsedCat.getName());
             if (cat == null) continue;
             cat.setOrder(catOrder++);
+
             Map<String, Subcategory> subByName = new HashMap<>();
             if (cat.getSubCategories() != null) {
                 for (Subcategory s : cat.getSubCategories()) {
@@ -59,15 +63,21 @@ public class CategoryDiffApplyService {
                     }
                 }
             }
+
             int subOrder = 1;
             for (SubcategoryDTO parsedSub : parsedCat.getSubcategories()) {
                 Subcategory sub = subByName.get(parsedSub.getName());
                 if (sub == null) continue;
-
                 sub.setOrder(subOrder++);
+                allSubcategories.add(sub);
             }
         }
+
         categoryRepository.saveAll(categories);
+
+        if (!allSubcategories.isEmpty()) {
+            subCategoryRepository.saveAll(allSubcategories);
+        }
     }
 
     private void deleteRemoved(SiteSourceJob job, CategoryDiffResult diff) {
