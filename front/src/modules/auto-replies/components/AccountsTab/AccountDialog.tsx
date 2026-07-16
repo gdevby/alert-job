@@ -96,7 +96,7 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
             {...register('password', { required: true })}
           />
           {!isLoading && (
-            <FormControl size="small" required error={Boolean(errors.siteId)}>
+            <FormControl variant="standard" size="small" required error={Boolean(errors.siteId)}>
               <InputLabel>Сайт</InputLabel>
               <Select defaultValue="" label="Сайт" {...register('siteId', { required: true })}>
                 {sites?.data.map(({ id, name }) => (
