@@ -2,18 +2,19 @@ import './accountDialog.scss';
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import TextField from '@mui/material/TextField';
 import DialogContent from '@mui/material/DialogContent';
 import { FormState } from '@/lib/constants/FormState';
-import { Button } from '@mui/material';
-import { UserCredentialsApi, type UserCredentialRequest } from '@/apis/coreApi';
+import { Button, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { AutoreplySitesSupportingApi, UserCredentialsApi, type UserCredentialRequest } from '@/apis/coreApi';
 
 type FormValues = Pick<UserCredentialRequest, 'name' | 'login' | 'password' | 'siteId'>;
 
 const userCredentialsApi = new UserCredentialsApi();
+const autoreplySitesSupportingApi = new AutoreplySitesSupportingApi();
 
 type Props = {
   isOpen: boolean;
@@ -30,6 +31,12 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
     handleSubmit,
     reset,
   } = useForm<FormValues>();
+
+  const { data: sites, isLoading } = useQuery({
+    queryKey: ['autoreplySitesSupportingApi.getSupportedSites'],
+    queryFn: () => autoreplySitesSupportingApi.getSupportedSites(),
+    placeholderData: data => data,
+  });
 
   const { mutate: createOrUpdateAccount, isPending } = useMutation({
     mutationFn: (data: UserCredentialRequest) => userCredentialsApi.createOrUpdate(data),
@@ -88,16 +95,18 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
             error={Boolean(errors.password)}
             {...register('password', { required: true })}
           />
-          {/* TODO select sites */}
-          <TextField
-            type="number"
-            label="Сайт"
-            variant="standard"
-            placeholder="Сайт"
-            required
-            error={Boolean(errors.siteId)}
-            {...register('siteId', { required: true })}
-          />
+          {!isLoading && (
+            <FormControl size="small" required error={Boolean(errors.siteId)}>
+              <InputLabel>Сайт</InputLabel>
+              <Select defaultValue="" label="Сайт" {...register('siteId', { required: true })}>
+                {sites?.data.map(({ id, name }) => (
+                  <MenuItem key={id} value={id}>
+                    {name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <div className="account-dialog__submit-button">
             <Button type="submit" variant="contained" disabled={isPending}>

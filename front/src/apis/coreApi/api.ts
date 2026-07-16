@@ -61,6 +61,10 @@ export interface BindingUpdateRequest {
     'promtId'?: number;
     'active'?: boolean;
 }
+export interface SiteDTO {
+    'id'?: number;
+    'name'?: string;
+}
 export interface UserCredentialEncrypted {
     'name'?: string;
     'login'?: string;
@@ -672,6 +676,100 @@ export class AccountTemplateBindingsApi extends BaseAPI {
      */
     public update(id: number, bindingUpdateRequest: BindingUpdateRequest, options?: RawAxiosRequestConfig) {
         return AccountTemplateBindingsApiFp(this.configuration).update(id, bindingUpdateRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * AutoreplySitesSupportingApi - axios parameter creator
+ */
+export const AutoreplySitesSupportingApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Возвращает список всех сайтов, для которых доступен парсер автоответов, с ID и названием.
+         * @summary Получить список поддерживаемых сайтов
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getSupportedSites: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/autoreply/supported-sites`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * AutoreplySitesSupportingApi - functional programming interface
+ */
+export const AutoreplySitesSupportingApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = AutoreplySitesSupportingApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Возвращает список всех сайтов, для которых доступен парсер автоответов, с ID и названием.
+         * @summary Получить список поддерживаемых сайтов
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getSupportedSites(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<SiteDTO>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getSupportedSites(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AutoreplySitesSupportingApi.getSupportedSites']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * AutoreplySitesSupportingApi - factory interface
+ */
+export const AutoreplySitesSupportingApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = AutoreplySitesSupportingApiFp(configuration)
+    return {
+        /**
+         * Возвращает список всех сайтов, для которых доступен парсер автоответов, с ID и названием.
+         * @summary Получить список поддерживаемых сайтов
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getSupportedSites(options?: RawAxiosRequestConfig): AxiosPromise<Array<SiteDTO>> {
+            return localVarFp.getSupportedSites(options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * AutoreplySitesSupportingApi - object-oriented interface
+ */
+export class AutoreplySitesSupportingApi extends BaseAPI {
+    /**
+     * Возвращает список всех сайтов, для которых доступен парсер автоответов, с ID и названием.
+     * @summary Получить список поддерживаемых сайтов
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getSupportedSites(options?: RawAxiosRequestConfig) {
+        return AutoreplySitesSupportingApiFp(this.configuration).getSupportedSites(options).then((request) => request(this.axios, this.basePath));
     }
 }
 
