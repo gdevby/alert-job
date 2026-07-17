@@ -141,7 +141,7 @@ public class OrderProcessor {
 
         Long siteId = sourceSite.getSiteSource();
 
-        // 1. Получаем все креды пользователя для этого сайта
+        // Получаем все креды пользователя для этого сайта
         List<UserSiteCredential> credentials = userSiteCredentialRepository.findByUserUuidAndSiteId(user.getUuid(), siteId);
         if (credentials.isEmpty()) {
             throw new RuntimeException("Нет аккаунтов для сайта " + siteId);

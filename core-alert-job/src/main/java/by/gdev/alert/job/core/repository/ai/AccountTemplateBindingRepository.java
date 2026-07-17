@@ -12,13 +12,14 @@ public interface AccountTemplateBindingRepository extends JpaRepository<AccountT
 
     List<AccountTemplateBinding> findAllByModuleId(Long moduleId);
 
-    List<AccountTemplateBinding> findAllByModuleIdAndUserUuid(Long moduleId, String userUuid);
-
-    List<AccountTemplateBinding> findAllByUserUuid(String userUuid);
-
     boolean existsByModuleIdAndAccountIdAndTemplateId(Long moduleId, Long accountId, Long templateId);
+
+    boolean existsByModuleIdAndAccountIdAndTemplateIdAndPromtId(Long moduleId, Long accountId, Long templateId, Long promtId);
 
     Optional<AccountTemplateBinding> findByModuleIdAndAccountIdAndActiveTrue(Long moduleId, Long accountId);
 
     List<AccountTemplateBinding> findByAccountId(Long accountId);
+
+    // Найти все биндинги по модулю и списку аккаунтов
+    List<AccountTemplateBinding> findByModuleIdAndAccountIdIn(Long moduleId, List<Long> accountIds);
 }

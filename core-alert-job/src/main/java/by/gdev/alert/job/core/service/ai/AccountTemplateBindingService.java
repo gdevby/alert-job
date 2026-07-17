@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Comparator;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,9 +38,12 @@ public class AccountTemplateBindingService {
             throw new OrderModuleNotFoundException("Модуль не найден с ид: " + moduleId);
         }
 
-        // проверка дубликатов
-        if (accountTemplateBindingRepository.existsByModuleIdAndAccountIdAndTemplateId(moduleId, accountId, templateId)) {
-            throw new BindingAlreadyExistsException("Связка аккаунта и шаблона существует");
+        // Проверка дубликатов по moduleId, accountId, templateId, promtId
+        if (accountTemplateBindingRepository.existsByModuleIdAndAccountIdAndTemplateIdAndPromtId(
+                moduleId, accountId, templateId, promtId)) {
+            throw new BindingAlreadyExistsException(
+                    "Связка с таким модулем, аккаунтом, шаблоном и промтом уже существует"
+            );
         }
 
         // проверка существования шаблона в LLM
@@ -55,11 +59,7 @@ public class AccountTemplateBindingService {
         if (!userSiteCredentialRepository.existsById(accountId)) {
             throw new UserCredentialNotFoundException("Учетные данные не найдены с ид: " + accountId);
         }
-
-        // Если создаём активный биндинг — выключаем остальные
-        if (active) {
-            deactivateOtherBindings(moduleId, null);
-        }
+        checkBindingExistsForSite(moduleId, accountId, null);
 
         AccountTemplateBinding b = AccountTemplateBinding.builder()
                 .moduleId(moduleId)
@@ -88,10 +88,11 @@ public class AccountTemplateBindingService {
         }
 
         // Проверка дубликата (кроме текущего)
-        boolean exists = accountTemplateBindingRepository.existsByModuleIdAndAccountIdAndTemplateId(moduleId, accountId, templateId);
+        boolean exists = accountTemplateBindingRepository.existsByModuleIdAndAccountIdAndTemplateIdAndPromtId(moduleId, accountId, templateId, promtId);
         if (exists && !(b.getModuleId().equals(moduleId)
                 && b.getAccountId().equals(accountId)
-                && b.getTemplateId().equals(templateId))) {
+                && b.getTemplateId().equals(templateId))
+                && b.getPromtId().equals(promtId)) {
             throw new BindingAlreadyExistsException("Связка аккаунта и шаблона существует");
         }
 
@@ -109,10 +110,7 @@ public class AccountTemplateBindingService {
             throw new UserCredentialNotFoundException("Учетные данные не найдены с ид: " + accountId);
         }
 
-        // Если обновляем и ставим active=true — выключаем остальные
-        if (active) {
-            deactivateOtherBindings(moduleId, id);
-        }
+        checkBindingExistsForSite(moduleId, accountId, id);
 
         // Обновление
         b.setModuleId(moduleId);
@@ -134,7 +132,6 @@ public class AccountTemplateBindingService {
         if (!uuid.equals(b.getUserUuid())) {
             throw new AccessDeniedException("Эта привязка не принадлежит текущему пользователю");
         }
-
         accountTemplateBindingRepository.delete(b);
     }
 
@@ -147,7 +144,7 @@ public class AccountTemplateBindingService {
             throw new AccessDeniedException("Эта привязка не принадлежит текущему пользователю");
         }
 
-        deactivateOtherBindings(b.getModuleId(), bindingId);
+        checkBindingExistsForSite(b.getModuleId(), b.getAccountId(), bindingId);
         b.setActive(true);
         AccountTemplateBinding saved = accountTemplateBindingRepository.save(b);
         return convertToBindingResponse(uuid, saved);
@@ -172,20 +169,6 @@ public class AccountTemplateBindingService {
         return active
                 ? activate(uuid, id)
                 : deactivate(uuid, id);
-    }
-
-    private void deactivateOtherBindings(Long moduleId, Long exceptId) {
-        List<AccountTemplateBinding> all =
-                accountTemplateBindingRepository.findAllByModuleId(moduleId);
-        if (all.isEmpty()) {
-            return; // нечего деактивировать
-        }
-        for (AccountTemplateBinding binding : all) {
-            if (exceptId == null || !binding.getId().equals(exceptId)) {
-                binding.setActive(false);
-            }
-        }
-        accountTemplateBindingRepository.saveAll(all);
     }
 
     @Transactional(readOnly = true)
@@ -252,4 +235,47 @@ public class AccountTemplateBindingService {
         );
         return dto;
     }
+
+    /**
+     * Проверяет, есть ли уже биндинг для этого модуля на этом сайте (кроме указанного).
+     * Если есть — выбрасывает исключение.
+     *
+     * @param moduleId  ID модуля
+     * @param accountId ID аккаунта (через него определяем siteId)
+     * @param exceptId  ID биндинга, который нужно исключить из проверки (может быть null)
+     */
+    private void checkBindingExistsForSite(Long moduleId, Long accountId, Long exceptId) {
+        // Берём аккаунт, узнаём его siteId
+        UserSiteCredential account = userSiteCredentialRepository.findById(accountId)
+                .orElseThrow(() -> new UserCredentialNotFoundException("Аккаунт не найден: " + accountId));
+
+        Long siteId = account.getSiteId();
+
+        // Находим ВСЕ аккаунты с этим siteId
+        List<UserSiteCredential> accountsOnSite = userSiteCredentialRepository.findBySiteId(siteId);
+        if (accountsOnSite.isEmpty()) {
+            return;
+        }
+
+        // Берём их ID
+        List<Long> accountIds = accountsOnSite.stream()
+                .map(UserSiteCredential::getId)
+                .collect(Collectors.toList());
+
+        // Проверяем биндинги для этого модуля и этих аккаунтов
+        List<AccountTemplateBinding> existingBindings = accountTemplateBindingRepository
+                .findByModuleIdAndAccountIdIn(moduleId, accountIds);
+
+        List<AccountTemplateBinding> otherBindings = existingBindings.stream()
+                .filter(b -> exceptId == null || !b.getId().equals(exceptId))
+                .toList();
+
+        // Если есть ХОТЯ БЫ ОДИН биндинг (любой статус) — кидаем 409
+        if (!otherBindings.isEmpty()) {
+            throw new BindingAlreadyExistsException(
+                    "Для модуля " + moduleId + " уже существует биндинг для сайта (siteId=" + siteId + ")"
+            );
+        }
+    }
+
 }

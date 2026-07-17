@@ -10,4 +10,5 @@ public interface UserSiteCredentialRepository extends JpaRepository<UserSiteCred
     List<UserSiteCredential> findByUserUuid(String userUuid);
     List<UserSiteCredential> findByUserUuidAndSiteId(String userUuid, Long siteId);
     Optional<UserSiteCredential> findByUserUuidAndSiteIdAndName(String userUuid, Long siteId, String name);
+    List<UserSiteCredential> findBySiteId(Long siteId);
 }
