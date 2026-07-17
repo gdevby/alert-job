@@ -3,6 +3,7 @@ import React from 'react'
 import Sources from '../../layouts/filtersPage/sources/Sources'
 import Orders from '../../layouts/filtersPage/orders/Orders'
 import CurrentFilter from '../../layouts/filtersPage/currentFilter/CurrentFilter';
+import { Bindings } from '@/modules/auto-replies/components/Bindings';
 
 import './filtersPage.scss'
 
@@ -11,6 +12,7 @@ const FiltersPage = () => {
 		<div className='container'>
 			<Sources />
 			<CurrentFilter />
+			<Bindings />
 			<Orders />
 		</div>
 	</div>

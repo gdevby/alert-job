@@ -10,12 +10,12 @@
         "output": "./src/apis/coreApi",
         "ignoreFileOverride": "./.openapi-generator-ignore"
       },
-       "llmApi": {
+      "llmApi": {
         "inputSpec": "http://alertjob.by/llm/v3/api-docs",
         "generatorName": "typescript-axios",
         "output": "./src/apis/llmApi",
         "ignoreFileOverride": "./.openapi-generator-ignore"
       }
     }
-  }  
+  }
 }
