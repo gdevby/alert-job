@@ -78,7 +78,6 @@ export const Bindings = () => {
         <Table sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow>
-              <TableCell>№</TableCell>
               <TableCell>Аккаунт</TableCell>
               <TableCell>Шаблон</TableCell>
               <TableCell>Промпт</TableCell>
@@ -88,9 +87,15 @@ export const Bindings = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {data?.data?.map(({ id, accountName, templateName, promtName, createdAt, active }, index) => (
+            {data?.data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  Нет данных
+                </TableCell>
+              </TableRow>
+            )}
+            {data?.data.map(({ id, accountName, templateName, promtName, createdAt, active }) => (
               <TableRow key={id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell>{index + 1}</TableCell>
                 <TableCell>{accountName}</TableCell>
                 <TableCell>{templateName}</TableCell>
                 <TableCell>{promtName}</TableCell>

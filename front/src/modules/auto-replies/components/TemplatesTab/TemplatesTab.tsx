@@ -61,14 +61,16 @@ export const TemplatesTab = () => {
         <Table sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow>
+              <TableCell>№</TableCell>
               <TableCell>Название</TableCell>
               <TableCell>Дата создания</TableCell>
               <TableCell align="right"></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {data?.data?.map(({ id, name, createdAt }) => (
+            {data?.data.map(({ id, name, createdAt }, index) => (
               <TableRow key={id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{name}</TableCell>
                 <TableCell>{createdAt}</TableCell>
                 <TableCell align="right">
