@@ -61,6 +61,7 @@ export const AccountsTab = () => {
         <Table sx={{ minWidth: 650 }}>
           <TableHead>
             <TableRow>
+              <TableCell>№</TableCell>
               <TableCell>Название</TableCell>
               <TableCell>Логин</TableCell>
               <TableCell>Дата создания</TableCell>
@@ -68,8 +69,16 @@ export const AccountsTab = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {data?.data?.map(({ id, name, createdAt, login }) => (
+            {data?.data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  Нет данных
+                </TableCell>
+              </TableRow>
+            )}
+            {data?.data.map(({ id, name, createdAt, login }, index) => (
               <TableRow key={id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{name}</TableCell>
                 <TableCell>{login}</TableCell>
                 <TableCell>{createdAt}</TableCell>

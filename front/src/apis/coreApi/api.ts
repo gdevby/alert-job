@@ -35,40 +35,124 @@ export interface AccountTemplateBinding {
     'updatedAt'?: string;
 }
 export interface BindingCreateRequest {
-    'moduleId'?: number;
-    'accountId'?: number;
-    'templateId'?: number;
-    'promtId'?: number;
+    /**
+     * ID модуля
+     */
+    'moduleId': number;
+    /**
+     * ID учётной записи (аккаунта)
+     */
+    'accountId': number;
+    /**
+     * ID шаблона
+     */
+    'templateId': number;
+    /**
+     * ID промта
+     */
+    'promtId': number;
+    /**
+     * Активна ли привязка
+     */
     'active'?: boolean;
 }
 export interface BindingResponse {
-    'id'?: number;
-    'moduleId'?: number;
-    'moduleName'?: string;
-    'accountId'?: number;
-    'accountName'?: string;
-    'templateId'?: number;
-    'templateName'?: string;
-    'promtId'?: number;
-    'promtName'?: string;
-    'active'?: boolean;
-    'createdAt'?: string;
+    /**
+     * ID привязки
+     */
+    'id': number;
+    /**
+     * ID модуля
+     */
+    'moduleId': number;
+    /**
+     * Название модуля
+     */
+    'moduleName': string;
+    /**
+     * ID учётной записи
+     */
+    'accountId': number;
+    /**
+     * Название учётной записи
+     */
+    'accountName': string;
+    /**
+     * ID шаблона
+     */
+    'templateId': number;
+    /**
+     * Название шаблона
+     */
+    'templateName': string;
+    /**
+     * ID промта
+     */
+    'promtId': number;
+    /**
+     * Название промта
+     */
+    'promtName': string;
+    /**
+     * Активна ли привязка
+     */
+    'active': boolean;
+    /**
+     * Дата создания
+     */
+    'createdAt': string;
 }
 export interface BindingUpdateRequest {
-    'moduleId'?: number;
-    'accountId'?: number;
-    'templateId'?: number;
-    'promtId'?: number;
-    'active'?: boolean;
+    /**
+     * ID модуля
+     */
+    'moduleId': number;
+    /**
+     * ID учётной записи (аккаунта)
+     */
+    'accountId': number;
+    /**
+     * ID шаблона
+     */
+    'templateId': number;
+    /**
+     * ID промта
+     */
+    'promtId': number;
+    /**
+     * Активна ли привязка
+     */
+    'active': boolean;
 }
+/**
+ * Информация о поддерживаемом сайте
+ */
 export interface SiteDTO {
-    'id'?: number;
-    'name'?: string;
+    /**
+     * ID сайта
+     */
+    'id': number;
+    /**
+     * Название сайта
+     */
+    'name': string;
 }
+/**
+ * Зашифрованные учётные данные пользователя
+ */
 export interface UserCredentialEncrypted {
-    'name'?: string;
-    'login'?: string;
-    'passwordEncrypted'?: string;
+    /**
+     * Название учётной записи
+     */
+    'name': string;
+    /**
+     * Логин
+     */
+    'login': string;
+    /**
+     * Зашифрованный пароль
+     */
+    'passwordEncrypted': string;
 }
 export interface UserCredentialRequest {
     'name'?: string;
@@ -86,11 +170,26 @@ export interface UserSiteCredential {
     'createdAt'?: string;
     'updatedAt'?: string;
 }
+/**
+ * Сокращённая информация об учётных данных пользователя
+ */
 export interface UserSiteCredentialShortResponse {
-    'id'?: number;
-    'name'?: string;
-    'login'?: string;
-    'createdAt'?: string;
+    /**
+     * ID учётной записи
+     */
+    'id': number;
+    /**
+     * Название учётной записи (например, \'Аккаунт для Kwork\')
+     */
+    'name': string;
+    /**
+     * Логин
+     */
+    'login': string;
+    /**
+     * Дата создания учётной записи
+     */
+    'createdAt': string;
 }
 
 /**
@@ -407,7 +506,7 @@ export const AccountTemplateBindingsApiFp = function(configuration?: Configurati
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async activate(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
+        async activate(id: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BindingResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.activate(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.activate']?.[localVarOperationServerIndex]?.url;
@@ -472,7 +571,7 @@ export const AccountTemplateBindingsApiFp = function(configuration?: Configurati
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async setActive(id: number, active: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AccountTemplateBinding>> {
+        async setActive(id: number, active: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<BindingResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.setActive(id, active, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AccountTemplateBindingsApi.setActive']?.[localVarOperationServerIndex]?.url;
@@ -518,7 +617,7 @@ export const AccountTemplateBindingsApiFactory = function (configuration?: Confi
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        activate(id: number, options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
+        activate(id: number, options?: RawAxiosRequestConfig): AxiosPromise<BindingResponse> {
             return localVarFp.activate(id, options).then((request) => request(axios, basePath));
         },
         /**
@@ -568,7 +667,7 @@ export const AccountTemplateBindingsApiFactory = function (configuration?: Confi
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        setActive(id: number, active: boolean, options?: RawAxiosRequestConfig): AxiosPromise<AccountTemplateBinding> {
+        setActive(id: number, active: boolean, options?: RawAxiosRequestConfig): AxiosPromise<BindingResponse> {
             return localVarFp.setActive(id, active, options).then((request) => request(axios, basePath));
         },
         /**

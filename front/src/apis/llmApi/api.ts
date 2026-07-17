@@ -88,27 +88,27 @@ export interface AiPromptDto {
     /**
      * ID промта в базе данных
      */
-    'id'?: number;
+    'id': number;
     /**
-     * Версия промта
+     * Версия промта (инкрементируется при обновлении)
      */
-    'version'?: number;
+    'version': number;
     /**
      * Имя промта
      */
-    'name'?: string;
+    'name': string;
     /**
      * Текст промта
      */
-    'text'?: string;
+    'text': string;
     /**
      * Дата создания промта
      */
-    'createdAt'?: string;
+    'createdAt': string;
     /**
      * Дата последнего обновления промта
      */
-    'updatedAt'?: string;
+    'updatedAt': string;
 }
 /**
  * Информация о заказе, полученном с внешнего сайта
@@ -158,9 +158,18 @@ export interface PriceDTO {
      */
     'value'?: number;
 }
+/**
+ * Запрос на создание или обновление промта
+ */
 export interface PromptRequest {
-    'name'?: string;
-    'text'?: string;
+    /**
+     * Название промта
+     */
+    'name': string;
+    /**
+     * Текст промта
+     */
+    'text': string;
 }
 /**
  * Информация об источнике заказа: сайт, категория и подкатегория
@@ -196,17 +205,17 @@ export interface SourceSiteDTO {
     'subCategoryName'?: string;
 }
 /**
- * Запрос на операции с шаблоном
+ * Запрос на создание или обновление шаблона
  */
 export interface TemplateRequest {
     /**
      * Название шаблона
      */
-    'name'?: string;
+    'name': string;
     /**
-     * Cодержимое шаблона
+     * Содержимое шаблона (HTML)
      */
-    'text'?: string;
+    'text': string;
 }
 /**
  * Ответ с информацией о шаблоне HTML для автоответов
@@ -215,19 +224,19 @@ export interface TemplateResponse {
     /**
      * Название шаблона
      */
-    'name'?: string;
+    'name': string;
     /**
      * Уникальный идентификатор шаблона
      */
-    'id'?: number;
+    'id': number;
     /**
-     * Cодержимое шаблона
+     * Cодержимое шаблона (HTML)
      */
-    'text'?: string;
+    'text': string;
     /**
      * Дата создания шаблона
      */
-    'createdAt'?: string;
+    'createdAt': string;
 }
 
 /**
