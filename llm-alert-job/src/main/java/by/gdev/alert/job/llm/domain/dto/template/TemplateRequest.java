@@ -4,11 +4,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "Запрос на операции с шаблоном")
+@Schema(description = "Запрос на создание или обновление шаблона")
 public class TemplateRequest {
-    @Schema(description = "Название шаблона", example = "Order Template #1")
+
+    @Schema(description = "Название шаблона", required = true, example = "Order Template #1")
     private String name;
-    @Schema(description = "Cодержимое шаблона")
+
+    @Schema(description = "Содержимое шаблона (HTML)", required = true, example = "<p>Здравствуйте! Я готов выполнить вашу задачу.</p>")
     private String text;
 }
-

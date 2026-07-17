@@ -146,7 +146,7 @@ public class AccountTemplateBindingController {
     @ApiResponse(
             responseCode = "200",
             description = "Привязка активирована",
-            content = @Content(schema = @Schema(implementation = AccountTemplateBinding.class))
+            content = @Content(schema = @Schema(implementation = BindingResponse.class))
     )
     @ApiResponse(
             responseCode = "400",
@@ -188,7 +188,7 @@ public class AccountTemplateBindingController {
     @ApiResponse(
             responseCode = "200",
             description = "Статус обновлён",
-            content = @Content(schema = @Schema(implementation = AccountTemplateBinding.class))
+            content = @Content(schema = @Schema(implementation = BindingResponse.class))
     )
     @ApiResponse(
             responseCode = "400",

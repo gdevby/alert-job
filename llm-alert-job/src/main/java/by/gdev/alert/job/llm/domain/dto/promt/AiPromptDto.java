@@ -18,28 +18,21 @@ import java.time.LocalDateTime;
 @Schema(description = "Описание промта. Используется в списках и UI.")
 public class AiPromptDto {
 
-    /** ID промта в БД */
-    @Schema(description = "ID промта в базе данных", example = "12")
+    @Schema(description = "ID промта в базе данных", required = true, example = "12")
     private Long id;
 
-    /** Версия промта (инкрементируется при обновлении) */
-    @Schema(description = "Версия промта", example = "3")
+    @Schema(description = "Версия промта (инкрементируется при обновлении)", required = true, example = "3")
     private Integer version;
 
-    /** Имя промта */
-    @Schema(description = "Имя промта")
+    @Schema(description = "Имя промта", required = true, example = "Мой промт")
     private String name;
 
-    /** Текст промта */
-    @Schema(description = "Текст промта")
+    @Schema(description = "Текст промта", required = true, example = "Ты — экспертный аналитик...")
     private String text;
 
-    /** Дата создания записи */
-    @Schema(description = "Дата создания промта", example = "2026-06-19T08:44:32")
+    @Schema(description = "Дата создания промта", required = true, example = "2026-06-19T08:44:32")
     private LocalDateTime createdAt;
 
-    /** Дата последнего обновления */
-    @Schema(description = "Дата последнего обновления промта", example = "2026-06-19T09:12:10")
+    @Schema(description = "Дата последнего обновления промта", required = true, example = "2026-06-19T09:12:10")
     private LocalDateTime updatedAt;
 }
-
