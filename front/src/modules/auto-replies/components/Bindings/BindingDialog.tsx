@@ -1,9 +1,10 @@
 import './bindingDialog.scss';
 
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { Button, FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -98,6 +99,11 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
                   </MenuItem>
                 ))}
               </Select>
+              {accounts?.data.length === 0 && (
+                <FormHelperText required>
+                  Нет добавленных<Link to="/page/auto-replies?tab=accounts">аккаунтов</Link>
+                </FormHelperText>
+              )}
             </FormControl>
           )}
           {!isTemplatesLoading && (
