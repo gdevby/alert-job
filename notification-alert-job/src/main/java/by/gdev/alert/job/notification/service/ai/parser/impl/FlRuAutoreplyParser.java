@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
+import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.CaptchaService;
 import by.gdev.common.service.playwright.PlaywrightManager;
@@ -34,8 +35,8 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         this.sendRequest = sendRequest;
     }
 
-    public FlRuAutoreplyParser(PlaywrightManager playwrightManager, CaptchaService captchaService) {
-        super(playwrightManager);
+    public FlRuAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService, CaptchaService captchaService) {
+        super(playwrightManager, assignedProxyService);
         this.captchaService = captchaService;
     }
 

@@ -1,6 +1,5 @@
-package by.gdev.alert.job.parser.scheduller;
+package by.gdev.common.service.proxy;
 
-import by.gdev.alert.job.parser.proxy.service.planner.ProxyCheckerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
