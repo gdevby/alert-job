@@ -30,6 +30,7 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
     register,
     handleSubmit,
     reset,
+    watch,
   } = useForm<FormValues>();
 
   const { data: sites, isLoading } = useQuery({
@@ -61,6 +62,8 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
   const submit = (formValues: FormValues) => {
     createOrUpdateAccount(formValues);
   };
+
+  const siteId = watch('siteId') ?? '';
 
   return (
     <Dialog className="account-dialog" fullWidth maxWidth="sm" open={isOpen} onClose={handleClose}>
@@ -98,7 +101,7 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
           {!isLoading && (
             <FormControl variant="standard" size="small" required error={Boolean(errors.siteId)}>
               <InputLabel>Сайт</InputLabel>
-              <Select defaultValue="" label="Сайт" {...register('siteId', { required: true })}>
+              <Select value={siteId} label="Сайт" {...register('siteId', { required: true })}>
                 {sites?.data.map(({ id, name }) => (
                   <MenuItem key={id} value={id}>
                     {name}

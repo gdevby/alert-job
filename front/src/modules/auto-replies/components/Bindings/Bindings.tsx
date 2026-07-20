@@ -105,7 +105,7 @@ export const Bindings = () => {
                 </TableCell>
                 <TableCell align="right">
                   {/* TODO remove {' '} */}
-                  <Button variant="outlined" disabled onClick={() => handleEditButton(id)}>
+                  <Button variant="outlined" onClick={() => handleEditButton(id)}>
                     Изменить
                   </Button>{' '}
                   <Button variant="outlined" color="error" onClick={() => handleRemoveButton(id)}>

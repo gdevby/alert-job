@@ -9,10 +9,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import { FormState } from '@/lib/constants/FormState';
-import { AccountTemplateBindingsApi, UserCredentialsApi, type BindingCreateRequest } from '@/apis/coreApi';
+import {
+  AccountTemplateBindingsApi,
+  UserCredentialsApi,
+  type BindingCreateRequest,
+  type BindingResponse,
+  type BindingUpdateRequest,
+} from '@/apis/coreApi';
 import { PromptsApi, TemplatesApi } from '@/apis/llmApi';
 
-type FormValues = Pick<BindingCreateRequest, 'accountId' | 'templateId' | 'promtId' | 'active' | 'moduleId'>;
+type FormValues = Pick<BindingUpdateRequest, 'accountId' | 'templateId' | 'promtId' | 'active' | 'moduleId'>;
 
 const accountTemplateBindingsApi = new AccountTemplateBindingsApi();
 const userCredentialsApi = new UserCredentialsApi();
@@ -22,7 +28,7 @@ const promptsApi = new PromptsApi();
 type Props = {
   isOpen: boolean;
   formState: FormState;
-  initialFields?: BindingCreateRequest;
+  initialFields?: BindingResponse;
   moduleId: number;
   close: () => void;
 };
@@ -34,6 +40,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
     register,
     handleSubmit,
     reset,
+    watch,
   } = useForm<FormValues>({ defaultValues: { moduleId, active: false } });
 
   const { data: accounts, isLoading: isAccountsLoading } = useQuery({
@@ -54,8 +61,18 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
     placeholderData: data => data,
   });
 
-  const { mutate: createOrUpdateTemplate, isPending } = useMutation({
+  const { mutate: createBinding, isPending: isCreatingPending } = useMutation({
     mutationFn: (data: BindingCreateRequest) => accountTemplateBindingsApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accountTemplateBindingsApi.getAllBindingsForUser'] });
+      close();
+    },
+    onError: () => {},
+  });
+
+  const { mutate: updateBinding, isPending: isUpdatingPending } = useMutation({
+    mutationFn: ({ bindingId, data }: { bindingId: number; data: BindingUpdateRequest }) =>
+      accountTemplateBindingsApi.update(bindingId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accountTemplateBindingsApi.getAllBindingsForUser'] });
       close();
@@ -81,8 +98,20 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
   };
 
   const submit = (formValues: FormValues) => {
-    createOrUpdateTemplate(formValues);
+    if (formState === 'creating') {
+      createBinding(formValues);
+    } else {
+      if (!initialFields?.id) {
+        console.error('bindingId is undefined');
+        return;
+      }
+      updateBinding({ data: formValues, bindingId: initialFields.id });
+    }
   };
+
+  const accountId = watch('accountId') ?? '';
+  const templateId = watch('templateId') ?? '';
+  const promptId = watch('promtId') ?? '';
 
   return (
     <Dialog className="binding-dialog" fullWidth maxWidth="sm" open={isOpen} onClose={handleClose}>
@@ -92,7 +121,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
           {!isAccountsLoading && (
             <FormControl variant="standard" size="small" required error={Boolean(errors.accountId)}>
               <InputLabel>Аккаунт</InputLabel>
-              <Select defaultValue="" label="Аккаунт" {...register('accountId', { required: true })}>
+              <Select value={accountId} label="Аккаунт" {...register('accountId', { required: true })}>
                 {accounts?.data.map(({ id, name }) => (
                   <MenuItem key={id} value={id}>
                     {name}
@@ -109,7 +138,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
           {!isTemplatesLoading && (
             <FormControl variant="standard" size="small" required error={Boolean(errors.templateId)}>
               <InputLabel>Шаблон</InputLabel>
-              <Select defaultValue="" label="Шаблон" {...register('templateId', { required: true })}>
+              <Select value={templateId} label="Шаблон" {...register('templateId', { required: true })}>
                 {templates?.data.map(({ id, name }) => (
                   <MenuItem key={id} value={id}>
                     {name}
@@ -121,7 +150,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
           {!isPromptsLoading && (
             <FormControl variant="standard" size="small" required error={Boolean(errors.promtId)}>
               <InputLabel>Промпт</InputLabel>
-              <Select defaultValue="" label="Промпт" {...register('promtId', { required: true })}>
+              <Select value={promptId} label="Промпт" {...register('promtId', { required: true })}>
                 {prompts?.data.map(({ id, name }) => (
                   <MenuItem key={id} value={id}>
                     {name}
@@ -132,7 +161,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
           )}
 
           <div className="binding-dialog__submit-button">
-            <Button type="submit" variant="contained" disabled={isPending}>
+            <Button type="submit" variant="contained" disabled={isCreatingPending || isUpdatingPending}>
               {formState === 'creating' ? 'Добавить' : 'Изменить'}
             </Button>
           </div>
