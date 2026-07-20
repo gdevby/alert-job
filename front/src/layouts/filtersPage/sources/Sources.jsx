@@ -77,13 +77,13 @@ const Sources = () => {
 			.finally(() => setIsFetching(false))
 	}, [])
 
-	return <>
+	return <div>
 		<LimitPopup handleClose={() => setIsLimit(false)}
 			open={isLimit} />
 		<SourcePanel addSource={addSource} module_id={id} />
 		<Alert open={alert} content={'Такой источник уже существует'} type={'warning'} />
 		{isFetching ? <div style={{ 'textAlign': 'center' }}><CircularProgress /></div> : <SourceList setSources={setSources} sources={sourse} />}
-	</>
+	</div>
 }
 
 export default Sources

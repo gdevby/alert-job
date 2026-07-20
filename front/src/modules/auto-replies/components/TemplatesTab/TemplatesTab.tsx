@@ -65,7 +65,7 @@ export const TemplatesTab = () => {
               <TableCell>№</TableCell>
               <TableCell>Название</TableCell>
               <TableCell>Дата создания</TableCell>
-              <TableCell align="right"></TableCell>
+              <TableCell width={256} align="right"></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

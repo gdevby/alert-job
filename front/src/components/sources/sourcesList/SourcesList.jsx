@@ -38,7 +38,7 @@ const SourceList = ({ sources, setSources }) => {
 	}, [sources])
 
 	return <div className='show-sources'>
-		<Btn  onClick={handleshowingSources} text={isShowingSources ? 'Скрыть источники' : 'Показать источники'} variant='contained' className='mt-1' />
+		<Btn  onClick={handleshowingSources} text={isShowingSources ? 'Скрыть источники' : 'Показать источники'} variant='contained' />
 		{isShowingSources &&
 			<TableContainer component={Paper} className='source-list'><Table sx={{ minWidth: 650 }} aria-label="simple table">
 				<TableHead>
