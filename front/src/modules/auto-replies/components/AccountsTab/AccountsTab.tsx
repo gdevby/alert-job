@@ -13,6 +13,7 @@ import Button from '@mui/material/Button';
 import { FormState } from '@/lib/constants/FormState';
 import { UserCredentialsApi } from '@/apis/coreApi';
 import { AccountDialog } from '@/modules/auto-replies/components/AccountsTab/AccountDialog';
+import { FormattedDate } from '@/components/FormattedDate';
 
 const userCredentialsApi = new UserCredentialsApi();
 
@@ -81,7 +82,9 @@ export const AccountsTab = () => {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{name}</TableCell>
                 <TableCell>{login}</TableCell>
-                <TableCell>{createdAt}</TableCell>
+                <TableCell>
+                  <FormattedDate date={createdAt} />
+                </TableCell>
                 <TableCell align="right">
                   {/* TODO remove {' '} */}
                   <Button variant="outlined" onClick={() => handleEditButton(id)}>

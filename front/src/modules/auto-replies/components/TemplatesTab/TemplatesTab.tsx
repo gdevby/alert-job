@@ -13,6 +13,7 @@ import Button from '@mui/material/Button';
 import { TemplatesApi } from '@/apis/llmApi';
 import { FormState } from '@/lib/constants/FormState';
 import { TemplateDialog } from '@/modules/auto-replies/components/TemplatesTab/TemplateDialog';
+import { FormattedDate } from '@/components/FormattedDate';
 
 const templatesApi = new TemplatesApi();
 
@@ -72,7 +73,9 @@ export const TemplatesTab = () => {
               <TableRow key={id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{name}</TableCell>
-                <TableCell>{createdAt}</TableCell>
+                <TableCell>
+                  <FormattedDate date={createdAt} />
+                </TableCell>
                 <TableCell align="right">
                   {/* TODO remove {' '} */}
                   <Button variant="outlined" onClick={() => handleEditButton(id)}>

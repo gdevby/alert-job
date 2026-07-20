@@ -15,6 +15,7 @@ import { FormState } from '@/lib/constants/FormState';
 import { AccountTemplateBindingsApi } from '@/apis/coreApi';
 import { BindingDialog } from '@/modules/auto-replies/components/Bindings/BindingDialog';
 import { Switch } from '@mui/material';
+import { FormattedDate } from '@/components/FormattedDate';
 
 const accountTemplateBindingsApi = new AccountTemplateBindingsApi();
 
@@ -99,7 +100,9 @@ export const Bindings = () => {
                 <TableCell>{accountName}</TableCell>
                 <TableCell>{templateName}</TableCell>
                 <TableCell>{promtName}</TableCell>
-                <TableCell>{createdAt}</TableCell>
+                <TableCell>
+                  <FormattedDate date={createdAt} />
+                </TableCell>
                 <TableCell>
                   <Switch checked={active} onChange={event => handleActiveSwitchChange(id, event.target.checked)} />
                 </TableCell>
