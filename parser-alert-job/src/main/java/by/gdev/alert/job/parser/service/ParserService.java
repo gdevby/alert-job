@@ -80,6 +80,10 @@ public class ParserService {
 		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link);
 	}
 
+	public boolean isExistsOrder(String link) {
+		return !orderRepository.existsByLink(link);
+	}
+
 	public void saveOrderLinks(Category category, Subcategory subCategory, String link) {
 		OrderLinks ol = new OrderLinks();
 		ol.setCategory(category);

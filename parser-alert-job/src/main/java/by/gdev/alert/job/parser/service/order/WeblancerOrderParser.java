@@ -146,7 +146,7 @@ public class WeblancerOrderParser extends PlaywrightSiteParser {
         orders.forEach(order ->
                 log.debug("*** {} ORDER: {} , existsInDB={}", getSiteName(),
                         order.getTitle(),
-                        getParserService().isExistsOrder(category, subCategory, order.getLink()))
+                        getParserService().isExistsOrder(order.getLink()))
         );
         return orders;
     }

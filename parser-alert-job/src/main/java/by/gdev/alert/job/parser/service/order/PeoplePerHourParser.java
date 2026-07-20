@@ -96,7 +96,7 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
         if (orderLink == null || orderLink.isBlank())
             return null;
 
-        if (!getParserService().isExistsOrder(category, subCategory, orderLink))
+        if (!getParserService().isExistsOrder(orderLink))
             return null;
 
         Order order = getOrderRepository().findByLink(orderLink).orElse(new Order());

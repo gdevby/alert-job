@@ -87,7 +87,7 @@ public class WorkanaOrderParser extends AbsctractSiteParser {
 
         String fullLink = baseURL + linkPostfix;
 
-        if (!getParserService().isExistsOrder(category, subCategory, fullLink))
+        if (!getParserService().isExistsOrder(fullLink))
             return null;
 
         Order order = getOrderRepository().findByLink(fullLink).orElse(new Order());
