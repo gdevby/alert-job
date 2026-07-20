@@ -7,9 +7,12 @@ import by.gdev.alert.job.notification.service.ai.queue.step.RetrySupport;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.NotificationType;
+import by.gdev.common.model.NotificationTypeEnum;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
@@ -28,15 +31,25 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
         return retrySupport.retry(3, 1500, () -> {
             try {
                 var user = payload.getUser();
+                NotificationTypeEnum type = payload.getNotificationType();
+
+                if (type == null || type == NotificationTypeEnum.NONE) {
+                    return StepResult.ok(null);
+                }
 
                 UserNotification n = new UserNotification();
                 n.setType(NotificationType.AUTO_REPLY);
 
-                if (user.isDefaultSendType()) {
+                if (NotificationTypeEnum.EMAIL.equals(type)) {
                     String html = buildAiReplyEmailTemplate(payload);
                     n.setMessage(html);
                     n.setToMail(user.getEmail());
-                    mailService.sendMessage(n).subscribe();
+
+                    // ✅ СОЗДАЁМ ВЛОЖЕНИЕ В ПАМЯТИ
+                    String attachmentContent = buildAttachmentContent(payload);
+                    mailService.sendMessageWithAttachment(n, "response_ai.txt", attachmentContent.getBytes(StandardCharsets.UTF_8))
+                            .subscribe();
+
                 } else {
                     n.setMessage(payload.getDecision().reply());
                     n.setToMail(user.getTelegram().toString());
@@ -52,7 +65,6 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
     }
 
     private String buildAiReplyEmailTemplate(AiNotificationPayload payload) {
-
         String replyHtml = payload.getDecision().reply()
                 .replace("\n", "<br>");
 
@@ -82,6 +94,10 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
                             <div style="padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px;">
                                 %s
                             </div>
+                            
+                            <p style="margin-top: 12px; color: #666; font-size: 12px;">
+                                📎 Полный ответ приложен к письму как файл response_ai.txt
+                            </p>
                         </div>
                         """,
                 payload.getModule().getName(),
@@ -91,5 +107,36 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
                 replyHtml
         );
     }
-}
 
+    /**
+     * Формирует содержимое для вложения с полным ответом AI.
+     */
+    private String buildAttachmentContent(AiNotificationPayload payload) {
+        return String.format("""
+                ======================================
+                ОТВЕТ AI НА ЗАКАЗ
+                ======================================
+
+                Модуль: %s
+                Название заказа: %s
+                Ссылка: %s
+                Дата: %s
+
+                ======================================
+                ТЕКСТ ОТВЕТА
+                ======================================
+
+                %s
+
+                ======================================
+                КОНЕЦ СООБЩЕНИЯ
+                ======================================
+                """,
+                payload.getModule().getName(),
+                payload.getOrder().getTitle(),
+                payload.getOrder().getLink(),
+                java.time.LocalDateTime.now(),
+                payload.getDecision().reply()
+        );
+    }
+}

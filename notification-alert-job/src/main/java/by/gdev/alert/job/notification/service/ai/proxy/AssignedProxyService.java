@@ -50,7 +50,7 @@ public class AssignedProxyService {
             return;
         }
 
-        log.info("Доступно рабочих прокси: {}", availableProxies.size());
+        log.debug("Доступно рабочих прокси: {}", availableProxies.size());
 
         // ПЕРЕМЕШИВАЕМ список для случайного распределения
         Collections.shuffle(availableProxies);
@@ -63,7 +63,7 @@ public class AssignedProxyService {
                     users.get(i), proxy.getHost(), proxy.getState());
         }
 
-        log.info("Назначено {} прокси для {} пользователей", userProxyMap.size(), users.size());
+        log.debug("Назначено {} прокси для {} пользователей", userProxyMap.size(), users.size());
     }
 
     public ProxyCredentials getProxyForUser(String userUuid) {

@@ -4,6 +4,7 @@ import by.gdev.alert.job.llm.domain.dto.AiDecision;
 import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.common.model.NotificationTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -91,7 +92,8 @@ public class DummyReplySender implements ReplySender {
             AiAppUserDTO user,
             AiOrderModulesDTO module,
             AiDecision decision,
-            Long credentialId
+            Long credentialId,
+            NotificationTypeEnum notificationType
     ) {
         // no-op
     }

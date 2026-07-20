@@ -1,6 +1,7 @@
 package by.gdev.alert.job.core.model.db.ai;
 
 import by.gdev.alert.job.core.model.db.BasicId;
+import by.gdev.common.model.NotificationTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -32,6 +33,10 @@ public class AccountTemplateBinding extends BasicId {
 
     @Column(name = "user_uuid", nullable = false, columnDefinition = "CHAR(36)")
     private String userUuid;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "notification_type", nullable = false)
+    private NotificationTypeEnum notificationType = NotificationTypeEnum.NONE;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

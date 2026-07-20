@@ -5,6 +5,7 @@ import by.gdev.alert.job.core.model.ai.AiOrderModulesDTO;
 import by.gdev.alert.job.core.model.ai.AiOrderRequest;
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.OrderModules;
+import by.gdev.common.model.NotificationTypeEnum;
 import by.gdev.common.model.OrderDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiOrderRequestMapper {
 
-    public AiOrderRequest build(AppUser user, OrderModules orderModule, Long credentialId, Long templateId, Long promtId,  List<OrderDTO> orders) {
+    public AiOrderRequest build(AppUser user, OrderModules orderModule, Long credentialId, Long templateId,
+                                Long promtId, List<OrderDTO> orders, NotificationTypeEnum notificationType) {
 
         AiOrderRequest req = new AiOrderRequest();
 
@@ -40,6 +42,8 @@ public class AiOrderRequestMapper {
 
         // Заказы
         req.setOrders(orders);
+
+        req.setNotificationType(notificationType);
 
         return req;
     }

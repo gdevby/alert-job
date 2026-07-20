@@ -13,6 +13,7 @@ import by.gdev.alert.job.core.model.template.dto.TemplateResponse;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
 import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
+import by.gdev.common.model.NotificationTypeEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +33,8 @@ public class AccountTemplateBindingService {
     private final LlmClient llmClient;
 
     @Transactional
-    public BindingResponse create(String uuid, Long moduleId, Long accountId, Long templateId, Long promtId, boolean active) {
+    public BindingResponse create(String uuid, Long moduleId, Long accountId,
+                                  Long templateId, Long promtId, boolean active, NotificationTypeEnum notificationType) {
 
         if (!orderModulesRepository.existsById(moduleId)) {
             throw new OrderModuleNotFoundException("Модуль не найден с ид: " + moduleId);
@@ -68,6 +70,7 @@ public class AccountTemplateBindingService {
                 .promtId(promtId)
                 .active(active)
                 .userUuid(uuid)
+                .notificationType(notificationType != null ? notificationType : NotificationTypeEnum.NONE)
                 .build();
 
         AccountTemplateBinding saved = accountTemplateBindingRepository.save(b);
@@ -75,7 +78,8 @@ public class AccountTemplateBindingService {
     }
 
     @Transactional
-    public BindingResponse update(String uuid, Long id, Long moduleId, Long accountId, Long templateId, Long promtId, boolean active) {
+    public BindingResponse update(String uuid, Long id, Long moduleId,
+                                  Long accountId, Long templateId, Long promtId, boolean active, NotificationTypeEnum notificationType) {
         if (!orderModulesRepository.existsById(moduleId)) {
             throw new OrderModuleNotFoundException("Модуль не найден с ид: " + moduleId);
         }
@@ -118,6 +122,10 @@ public class AccountTemplateBindingService {
         b.setTemplateId(templateId);
         b.setPromtId(promtId);
         b.setActive(active);
+
+        b.setNotificationType(notificationType != null
+                ? notificationType
+                : NotificationTypeEnum.NONE);
 
         AccountTemplateBinding saved = accountTemplateBindingRepository.save(b);
         return convertToBindingResponse(uuid, saved);

@@ -91,6 +91,32 @@ public class MailService {
                 });
     }
 
+    public Mono<Void> sendMessageWithAttachment(UserNotification userMail, String fileName, byte[] content) {
+        Counter positiveMailCounter = context.getBean(MetricsConfig.COUNTER_MAIL_POSITIVE, Counter.class);
+        Counter negativeMailCounter = context.getBean(MetricsConfig.COUNTER_MAIL_NEGATIVE, Counter.class);
+
+        return Mono.defer(() -> {
+                    Email mail = EmailBuilder.startingBlank()
+                            .from(property.getFromAddress())
+                            .to(userMail.getToMail())
+                            .withSubject(resolveSubject(userMail))
+                            .withHTMLText(userMail.getMessage())
+                            .withAttachment(fileName, content, "text/plain; charset=UTF-8")
+                            .buildEmail();
+                    mailer.sendMail(mail);
+                    return Mono.empty();
+                })
+                .doOnSuccess(r -> {
+                    log.info("sent message with attachment for user email {}, fileName: {}", userMail.getToMail(), fileName);
+                    positiveMailCounter.increment();
+                })
+                .doOnError(throwable -> {
+                    log.error("can't send message with attachment for user email {}, fileName: {}", userMail.getToMail(), fileName, throwable);
+                    negativeMailCounter.increment();
+                })
+                .then();
+    }
+
     private String resolveSubject(UserNotification n) {
         return switch (n.getType()) {
             case AUTO_REPLY -> "Автоответ от AI";

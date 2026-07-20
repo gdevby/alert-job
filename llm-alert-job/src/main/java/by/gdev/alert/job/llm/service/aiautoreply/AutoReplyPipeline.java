@@ -114,7 +114,7 @@ public class AutoReplyPipeline {
                 getDummyReplySender().send(order, reply, decision);
                 getNotificationyReplySender()
                         .sendToNotificationService(order, request.getUser(), request.getModule(),
-                                decision, request.getCredentialId());
+                                decision, request.getCredentialId(), request.getNotificationType());
             }
         }
     }

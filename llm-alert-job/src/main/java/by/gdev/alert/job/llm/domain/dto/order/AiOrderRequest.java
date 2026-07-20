@@ -1,5 +1,6 @@
     package by.gdev.alert.job.llm.domain.dto.order;
 
+    import by.gdev.common.model.NotificationTypeEnum;
     import io.swagger.v3.oas.annotations.media.Schema;
     import lombok.Data;
 
@@ -45,4 +46,6 @@
                 implementation = OrderDTO.class
         )
         private List<OrderDTO> orders;
+
+        private NotificationTypeEnum notificationType;
     }
