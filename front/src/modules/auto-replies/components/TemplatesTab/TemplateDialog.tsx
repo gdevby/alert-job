@@ -41,6 +41,8 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
   });
 
   useEffect(() => {
+    reset({ name: '', text: '' });
+
     if (isOpen && formState === 'editing' && initialFields) {
       reset(initialFields);
     }
@@ -48,7 +50,6 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
 
   const handleClose = () => {
     close();
-    reset({ name: '', text: '' });
   };
 
   const submit = (formValues: FormValues) => {

@@ -41,6 +41,8 @@ export const PromptDialog = ({ isOpen, formState, initialFields, close }: Props)
   });
 
   useEffect(() => {
+    reset({ name: '', text: '' });
+
     if (isOpen && formState === 'editing' && initialFields) {
       reset(initialFields);
     }
@@ -48,7 +50,6 @@ export const PromptDialog = ({ isOpen, formState, initialFields, close }: Props)
 
   const handleClose = () => {
     close();
-    reset({ name: '', text: '' });
   };
 
   const submit = (formValues: FormValues) => {

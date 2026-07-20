@@ -81,6 +81,13 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
   });
 
   useEffect(() => {
+    reset({
+      accountId: undefined,
+      templateId: undefined,
+      promtId: undefined,
+      active: false,
+    });
+
     if (isOpen && formState === 'editing' && initialFields) {
       console.log('initialFields', initialFields);
       reset(initialFields);
@@ -89,12 +96,6 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
 
   const handleClose = () => {
     close();
-    reset({
-      accountId: undefined,
-      templateId: undefined,
-      promtId: undefined,
-      active: false,
-    });
   };
 
   const submit = (formValues: FormValues) => {

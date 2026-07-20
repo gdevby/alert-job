@@ -49,6 +49,8 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
   });
 
   useEffect(() => {
+    reset({ name: '', login: '', password: '', siteId: undefined });
+
     if (isOpen && formState === 'editing' && initialFields) {
       reset(initialFields);
     }
@@ -56,7 +58,6 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
 
   const handleClose = () => {
     close();
-    reset({ name: '', login: '', password: '', siteId: undefined });
   };
 
   const submit = (formValues: FormValues) => {
