@@ -56,7 +56,8 @@ public class AccountTemplateBindingController {
                         request.getAccountId(),
                         request.getTemplateId(),
                         request.getPromtId(),
-                        request.getActive() != null ? request.getActive() : true
+                        request.getActive() != null ? request.getActive() : true,
+                        request.getNotificationType()
                 )
         );
     }
@@ -89,7 +90,8 @@ public class AccountTemplateBindingController {
                         request.getAccountId(),
                         request.getTemplateId(),
                         request.getPromtId(),
-                        request.getActive()
+                        request.getActive(),
+                        request.getNotificationType()
                 )
         );
     }

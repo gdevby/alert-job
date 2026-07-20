@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
+import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
@@ -29,8 +30,8 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         this.sendRequest = sendRequest;
     }
 
-    public KworkAutoreplyParser(PlaywrightManager playwrightManager) {
-        super(playwrightManager);
+    public KworkAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
+        super(playwrightManager, assignedProxyService);
     }
 
     @Override

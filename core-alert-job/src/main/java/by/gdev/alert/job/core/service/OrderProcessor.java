@@ -170,7 +170,8 @@ public class OrderProcessor {
         Long promtId = selectedBinding.getPromtId();
 
         // Формируем и отправляем запрос
-        AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule, credentialId, templateId, promtId, orders);
+        AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule,
+                credentialId, templateId, promtId, orders, selectedBinding.getNotificationType());
         llmClient.sendAiOrderRequest(aiOrderRequest);
     }
 

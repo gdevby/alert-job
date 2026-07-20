@@ -52,4 +52,8 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 
     List<OrderModules> findByUserIdAndSources_Id(Long userId, Long sourceSiteId);
 
+	@Query("SELECT DISTINCT u.uuid FROM AppUser u WHERE EXISTS " +
+			"(SELECT om FROM OrderModules om WHERE om.user = u AND om.autoReplyEnabled = true)")
+	List<String> findDistinctUserUuidsWithAutoReplyEnabled();
+
 }

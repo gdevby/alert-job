@@ -2,6 +2,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
+import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.PlaywrightManager;
@@ -26,8 +27,11 @@ public abstract class AutoreplyParser {
     @Value("${parser.autoreply.default.days:1}")
     protected int defaultDays;
 
-    protected AutoreplyParser(PlaywrightManager playwrightManager) {
+    protected AssignedProxyService assignedProxyService;
+
+    protected AutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
         this.playwrightManager = playwrightManager;
+        this.assignedProxyService = assignedProxyService;
     }
 
     public final boolean sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload) {
@@ -37,9 +41,14 @@ public abstract class AutoreplyParser {
         Page page = null;
         try {
             playwright = playwrightManager.createPlaywright();
-            ProxyCredentials proxyCred = proxy
-                    ? playwrightManager.getProxyWithRetry(3, 500)
-                    : null;
+            String userUuid = payload.getUser().getUuid();
+            ProxyCredentials proxyCred = assignedProxyService.getProxyForUser(userUuid);
+
+            // Если закреплённого нет, но proxy=true – пробуем взять случайный
+            if (proxyCred == null && proxy) {
+                proxyCred = playwrightManager.getProxyWithRetry(3, 500);
+                log.debug("Для пользователя {} нет закреплённого прокси, взят случайный", userUuid);
+            }
 
             browser = playwrightManager.createBrowser(
                     playwright,

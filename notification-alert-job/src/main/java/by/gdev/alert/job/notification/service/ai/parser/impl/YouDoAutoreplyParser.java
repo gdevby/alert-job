@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
+import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
@@ -33,8 +34,8 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         this.sendRequest = sendRequest;
     }
 
-    public YouDoAutoreplyParser(PlaywrightManager playwrightManager, OtpService otpService) {
-        super(playwrightManager);
+    public YouDoAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService, OtpService otpService) {
+        super(playwrightManager, assignedProxyService);
         this.otpService = otpService;
     }
 

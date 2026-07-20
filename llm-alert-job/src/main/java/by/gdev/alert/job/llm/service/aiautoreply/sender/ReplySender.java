@@ -4,6 +4,7 @@ import by.gdev.alert.job.llm.domain.dto.AiDecision;
 import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.common.model.NotificationTypeEnum;
 
 /**
  * Базовый интерфейс для отправщиков автоответов.
@@ -37,5 +38,5 @@ public interface ReplySender {
      * @param decision     решение AI
      * @param credentialId ID учётных данных пользователя
      */
-    void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId);
+    void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId, NotificationTypeEnum notificationType);
 }

@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.proxy.service;
+package by.gdev.common.service.proxy;
 
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.proxy.supplier.ProxySupplier;
@@ -16,8 +16,9 @@ import java.util.List;
 public class ProxyUpdateScheduler {
 
     private final ProxySupplier proxySupplier;
+    private final ProxyCheckerService proxyCheckerService;
 
-    @Value("${parser.proxy.refresh-interval-hours:24}")
+    @Value("${proxy.refresh-interval-hours:24}")
     private int refreshIntervalHours;
 
     @Scheduled(fixedDelayString = "#{${parser.proxy.refresh-interval-hours:24} * 60 * 60 * 1000}")
@@ -34,6 +35,7 @@ public class ProxyUpdateScheduler {
             proxySupplier.replaceProxies(fresh);
             log.warn("Список прокси успешно обновлён ({} → {})",
                     current.size(), fresh.size());
+            proxyCheckerService.checkAllProxies();
         } else {
             log.debug("Список прокси не изменился");
         }

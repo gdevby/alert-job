@@ -1,4 +1,4 @@
-package by.gdev.alert.job.parser.proxy.service.planner;
+package by.gdev.common.service.proxy;
 
 
 import by.gdev.common.model.proxy.ProxyCredentials;
@@ -18,7 +18,6 @@ import java.net.Socket;
 public class ProxyCheckerService {
 
     private final ProxySupplier proxySupplier;
-
 
     @PostConstruct
     public void initializeProxiesOnStartup() {

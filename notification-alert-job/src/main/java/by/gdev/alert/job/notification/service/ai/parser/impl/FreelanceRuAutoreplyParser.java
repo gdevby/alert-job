@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
+import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.Locator;
@@ -31,8 +32,8 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
         this.sendRequest = sendRequest;
     }
 
-    public FreelanceRuAutoreplyParser(PlaywrightManager playwrightManager) {
-        super(playwrightManager);
+    public FreelanceRuAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
+        super(playwrightManager, assignedProxyService);
     }
 
     @Override

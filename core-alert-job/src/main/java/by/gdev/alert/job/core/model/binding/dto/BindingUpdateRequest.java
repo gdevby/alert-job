@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.model.binding.dto;
 
+import by.gdev.common.model.NotificationTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -20,4 +21,7 @@ public class BindingUpdateRequest {
 
     @Schema(description = "Активна ли привязка", required = true, example = "true")
     private Boolean active;
+
+    @Schema(description = "Тип уведомления", required = true, example = "NONE")
+    private NotificationTypeEnum notificationType;
 }

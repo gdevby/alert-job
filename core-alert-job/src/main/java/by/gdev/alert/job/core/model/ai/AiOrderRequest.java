@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.model.ai;
 
+import by.gdev.common.model.NotificationTypeEnum;
 import by.gdev.common.model.OrderDTO;
 import lombok.Data;
 
@@ -13,5 +14,6 @@ public class AiOrderRequest {
     private Long templateId;
     private Long promtId;
     private List<OrderDTO> orders;
+    private NotificationTypeEnum notificationType;
 }
 

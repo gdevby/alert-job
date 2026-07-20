@@ -3,6 +3,7 @@ package by.gdev.alert.job.llm.domain.dto;
 import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.common.model.NotificationTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,4 +42,7 @@ public class NotificationPayload {
     /** Решение AI по автоответу */
     @Schema(description = "Решение AI о необходимости ответа", implementation = AiDecision.class)
     private AiDecision decision;
+
+    @Schema(description = "Тип уведомления", implementation = NotificationTypeEnum.class)
+    private NotificationTypeEnum notificationType;
 }

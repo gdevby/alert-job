@@ -5,6 +5,7 @@ import by.gdev.alert.job.llm.domain.dto.NotificationPayload;
 import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.common.model.NotificationTypeEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -60,8 +61,8 @@ public class NotificationReplySender implements ReplySender {
      * @param credentialId ID учётных данных пользователя
      */
     @Override
-    public void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId) {
-        NotificationPayload payload = new NotificationPayload(user, module, order, credentialId, decision);
+    public void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId, NotificationTypeEnum notificationType) {
+        NotificationPayload payload = new NotificationPayload(user, module, order, credentialId, decision, notificationType);
 
         log.debug("NOTIFICATION → отправка запроса: url={}, user={}, module={}, orderId={}, credentialId={}",
                 notificationUrl,
