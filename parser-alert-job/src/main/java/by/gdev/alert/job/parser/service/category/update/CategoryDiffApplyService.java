@@ -37,20 +37,28 @@ public class CategoryDiffApplyService {
 
     @Transactional
     public void applyOrder(SiteSourceJob job, SiteDTO parsedTree) {
-        List<Category> categories =
-                categoryRepository.findAllWithSubcategoriesBySourceId(job.getId());
+        List<Category> categories = categoryRepository.findAllWithSubcategoriesBySourceId(job.getId());
+
+        // Маппим категории по nativeLocName
         Map<String, Category> catByName = new HashMap<>();
         for (Category c : categories) {
-            String name = c.getNativeLocName();
-            if (name != null) {
-                catByName.putIfAbsent(name, c);
+            if (c.getNativeLocName() != null) {
+                catByName.putIfAbsent(c.getNativeLocName(), c);
             }
         }
+
+        // Собираем все подкатегории для массового сохранения
+        List<Subcategory> allSubcategories = new ArrayList<>();
+
         int catOrder = 1;
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
             Category cat = catByName.get(parsedCat.getName());
-            if (cat == null) continue;
+            if (cat == null) {
+                continue; // категория будет добавлена отдельно
+            }
             cat.setOrder(catOrder++);
+
+            // Маппим подкатегории категории
             Map<String, Subcategory> subByName = new HashMap<>();
             if (cat.getSubCategories() != null) {
                 for (Subcategory s : cat.getSubCategories()) {
@@ -59,15 +67,24 @@ public class CategoryDiffApplyService {
                     }
                 }
             }
+
             int subOrder = 1;
             for (SubcategoryDTO parsedSub : parsedCat.getSubcategories()) {
                 Subcategory sub = subByName.get(parsedSub.getName());
-                if (sub == null) continue;
-
+                if (sub == null) {
+                    continue;
+                }
                 sub.setOrder(subOrder++);
+                allSubcategories.add(sub);
             }
         }
+
+        // Сохраняем категории
         categoryRepository.saveAll(categories);
+        // Сохраняем подкатегории
+        if (!allSubcategories.isEmpty()) {
+            subCategoryRepository.saveAll(allSubcategories);
+        }
     }
 
     private void deleteRemoved(SiteSourceJob job, CategoryDiffResult diff) {
@@ -113,7 +130,7 @@ public class CategoryDiffApplyService {
             c.setNativeLocName(dto.getName());
             c.setLink(null);
             c.setParse(true);
-            c.setSiteSourceJob(managedJob); // ← теперь OK
+            c.setSiteSourceJob(managedJob);
             categoryRepository.save(c);
             created.put(dto.getName(), c.getId());
         }
@@ -127,7 +144,7 @@ public class CategoryDiffApplyService {
             Map<String, Long> createdCategories){
         for (CategoryDiffResult.SubcategoryWithParentDTO dto : diff.getNewSubcategories()) {
             Long parentId = dto.getParentId();
-            // Новая категория → parentId = null → ищем по имени
+            // Новая категория - parentId = null → ищем по имени
             if (parentId == null) {
                 parentId = createdCategories.get(dto.getParentName());
             }
@@ -188,7 +205,4 @@ public class CategoryDiffApplyService {
             subCategoryRepository.save(sc);
         }
     }
-
-
-
 }
