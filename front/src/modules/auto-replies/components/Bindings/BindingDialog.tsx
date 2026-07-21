@@ -1,5 +1,4 @@
 import './bindingDialog.scss';
-
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -17,6 +16,7 @@ import {
   type BindingUpdateRequest,
 } from '@/apis/coreApi';
 import { PromptsApi, TemplatesApi } from '@/apis/llmApi';
+import { getErrorMessage } from '@/lib/utils/getErrorMessage';
 
 type FormValues = Pick<BindingUpdateRequest, 'accountId' | 'templateId' | 'promtId' | 'active' | 'moduleId'>;
 
@@ -61,27 +61,34 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
     placeholderData: data => data,
   });
 
-  const { mutate: createBinding, isPending: isCreatingPending } = useMutation({
+  const {
+    mutate: createBinding,
+    isPending: isCreatingPending,
+    error: creatingError,
+  } = useMutation({
     mutationFn: (data: BindingCreateRequest) => accountTemplateBindingsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accountTemplateBindingsApi.getAllBindingsForUser'] });
       close();
     },
-    onError: () => {},
   });
 
-  const { mutate: updateBinding, isPending: isUpdatingPending } = useMutation({
+  const {
+    mutate: updateBinding,
+    isPending: isUpdatingPending,
+    error: updatingError,
+  } = useMutation({
     mutationFn: ({ bindingId, data }: { bindingId: number; data: BindingUpdateRequest }) =>
       accountTemplateBindingsApi.update(bindingId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accountTemplateBindingsApi.getAllBindingsForUser'] });
       close();
     },
-    onError: () => {},
   });
 
   useEffect(() => {
     reset({
+      moduleId,
       accountId: undefined,
       templateId: undefined,
       promtId: undefined,
@@ -113,6 +120,8 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
   const accountId = watch('accountId') ?? '';
   const templateId = watch('templateId') ?? '';
   const promptId = watch('promtId') ?? '';
+
+  const errorMessage = getErrorMessage(creatingError) || getErrorMessage(updatingError);
 
   return (
     <Dialog className="binding-dialog" fullWidth maxWidth="sm" open={isOpen} onClose={handleClose}>
@@ -160,6 +169,8 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
               </Select>
             </FormControl>
           )}
+
+          {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
 
           <div className="binding-dialog__submit-button">
             <Button type="submit" variant="contained" disabled={isCreatingPending || isUpdatingPending}>

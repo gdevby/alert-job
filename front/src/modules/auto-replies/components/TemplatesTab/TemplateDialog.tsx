@@ -8,8 +8,9 @@ import Dialog from '@mui/material/Dialog';
 import TextField from '@mui/material/TextField';
 import DialogContent from '@mui/material/DialogContent';
 import { FormState } from '@/lib/constants/FormState';
-import { Button } from '@mui/material';
+import { Button, FormHelperText } from '@mui/material';
 import { TemplatesApi, type TemplateRequest } from '@/apis/llmApi';
+import { getErrorMessage } from '@/lib/utils/getErrorMessage';
 
 type FormValues = Pick<TemplateRequest, 'name' | 'text'>;
 
@@ -31,7 +32,11 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
     reset,
   } = useForm<FormValues>();
 
-  const { mutate: createOrUpdateTemplate, isPending } = useMutation({
+  const {
+    mutate: createOrUpdateTemplate,
+    isPending,
+    error,
+  } = useMutation({
     mutationFn: (data: TemplateRequest) => templatesApi.createOrUpdate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templatesApi.getTemplatesByUser'] });
@@ -55,6 +60,8 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
   const submit = (formValues: FormValues) => {
     createOrUpdateTemplate(formValues);
   };
+
+  const errorMessage = getErrorMessage(error);
 
   return (
     <Dialog className="template-dialog" fullWidth maxWidth="lg" open={isOpen} onClose={handleClose}>
@@ -80,6 +87,8 @@ export const TemplateDialog = ({ isOpen, formState, initialFields, close }: Prop
             error={Boolean(errors.text)}
             {...register('text', { required: true })}
           />
+
+          {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
 
           <div className="template-dialog__submit-button">
             <Button type="submit" variant="contained" disabled={isPending}>

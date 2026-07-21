@@ -8,8 +8,9 @@ import Dialog from '@mui/material/Dialog';
 import TextField from '@mui/material/TextField';
 import DialogContent from '@mui/material/DialogContent';
 import { FormState } from '@/lib/constants/FormState';
-import { Button, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { Button, FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
 import { AutoreplySitesSupportingApi, UserCredentialsApi, type UserCredentialRequest } from '@/apis/coreApi';
+import { getErrorMessage } from '@/lib/utils/getErrorMessage';
 
 type FormValues = Pick<UserCredentialRequest, 'name' | 'login' | 'password' | 'siteId'>;
 
@@ -39,7 +40,11 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
     placeholderData: data => data,
   });
 
-  const { mutate: createOrUpdateAccount, isPending } = useMutation({
+  const {
+    mutate: createOrUpdateAccount,
+    isPending,
+    error,
+  } = useMutation({
     mutationFn: (data: UserCredentialRequest) => userCredentialsApi.createOrUpdate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userCredentialsApi.getAllUserCredentials'] });
@@ -65,6 +70,7 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
   };
 
   const siteId = watch('siteId') ?? '';
+  const errorMessage = getErrorMessage(error);
 
   return (
     <Dialog className="account-dialog" fullWidth maxWidth="sm" open={isOpen} onClose={handleClose}>
@@ -111,6 +117,8 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
               </Select>
             </FormControl>
           )}
+
+          {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
 
           <div className="account-dialog__submit-button">
             <Button type="submit" variant="contained" disabled={isPending}>

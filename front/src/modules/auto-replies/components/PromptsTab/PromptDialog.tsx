@@ -8,8 +8,9 @@ import Dialog from '@mui/material/Dialog';
 import TextField from '@mui/material/TextField';
 import DialogContent from '@mui/material/DialogContent';
 import { FormState } from '@/lib/constants/FormState';
-import { Button } from '@mui/material';
+import { Button, FormHelperText } from '@mui/material';
 import { PromptsApi, type PromptRequest } from '@/apis/llmApi';
+import { getErrorMessage } from '@/lib/utils/getErrorMessage';
 
 type FormValues = Pick<PromptRequest, 'name' | 'text'>;
 
@@ -31,7 +32,11 @@ export const PromptDialog = ({ isOpen, formState, initialFields, close }: Props)
     reset,
   } = useForm<FormValues>();
 
-  const { mutate: createOrUpdatePrompt, isPending } = useMutation({
+  const {
+    mutate: createOrUpdatePrompt,
+    isPending,
+    error,
+  } = useMutation({
     mutationFn: (data: PromptRequest) => promptsApi.createOrUpdate1(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promptsApi.getPromptsByUser'] });
@@ -55,6 +60,8 @@ export const PromptDialog = ({ isOpen, formState, initialFields, close }: Props)
   const submit = (formValues: FormValues) => {
     createOrUpdatePrompt(formValues);
   };
+
+  const errorMessage = getErrorMessage(error);
 
   return (
     <Dialog className="prompt-dialog" fullWidth maxWidth="lg" open={isOpen} onClose={handleClose}>
@@ -80,6 +87,8 @@ export const PromptDialog = ({ isOpen, formState, initialFields, close }: Props)
             error={Boolean(errors.text)}
             {...register('text', { required: true })}
           />
+
+          {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
 
           <div className="prompt-dialog__submit-button">
             <Button type="submit" variant="contained" disabled={isPending}>
