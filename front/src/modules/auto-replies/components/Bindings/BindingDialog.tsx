@@ -15,10 +15,13 @@ import {
   type BindingResponse,
   type BindingUpdateRequest,
 } from '@/apis/coreApi';
-import { PromptsApi, TemplatesApi } from '@/apis/llmApi';
+import { AiOrderRequestNotificationTypeEnum, PromptsApi, TemplatesApi } from '@/apis/llmApi';
 import { getErrorMessage } from '@/lib/utils/getErrorMessage';
 
-type FormValues = Pick<BindingUpdateRequest, 'accountId' | 'templateId' | 'promtId' | 'active' | 'moduleId'>;
+type FormValues = Pick<
+  BindingUpdateRequest,
+  'accountId' | 'templateId' | 'promtId' | 'active' | 'moduleId' | 'notificationType'
+>;
 
 const accountTemplateBindingsApi = new AccountTemplateBindingsApi();
 const userCredentialsApi = new UserCredentialsApi();
@@ -41,7 +44,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
     handleSubmit,
     reset,
     watch,
-  } = useForm<FormValues>({ defaultValues: { moduleId, active: false } });
+  } = useForm<FormValues>({ defaultValues: { moduleId, active: false, notificationType: 'NONE' } });
 
   const { data: accounts, isLoading: isAccountsLoading } = useQuery({
     queryKey: ['userCredentialsApi.getAllUserCredentials'],
@@ -93,6 +96,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
       templateId: undefined,
       promtId: undefined,
       active: false,
+      notificationType: 'NONE',
     });
 
     if (isOpen && formState === 'editing' && initialFields) {
@@ -120,6 +124,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
   const accountId = watch('accountId') ?? '';
   const templateId = watch('templateId') ?? '';
   const promptId = watch('promtId') ?? '';
+  const notificationType = watch('notificationType') ?? '';
 
   const errorMessage = getErrorMessage(creatingError) || getErrorMessage(updatingError);
 
@@ -169,6 +174,21 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
               </Select>
             </FormControl>
           )}
+
+          <FormControl variant="standard" size="small" required error={Boolean(errors.promtId)}>
+            <InputLabel>Тип уведомлений</InputLabel>
+            <Select
+              value={notificationType}
+              label="Тип уведомлений"
+              {...register('notificationType', { required: true })}
+            >
+              <MenuItem value={AiOrderRequestNotificationTypeEnum.None} defaultChecked>
+                Не отправлять уведомления
+              </MenuItem>
+              <MenuItem value={AiOrderRequestNotificationTypeEnum.Telegram}>Telegram</MenuItem>
+              <MenuItem value={AiOrderRequestNotificationTypeEnum.Email}>Email</MenuItem>
+            </Select>
+          </FormControl>
 
           {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
 

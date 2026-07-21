@@ -80,7 +80,17 @@ export interface AiOrderRequest {
      */
     'promtId'?: number;
     'orders'?: OrderDTO;
+    'notificationType'?: AiOrderRequestNotificationTypeEnum;
 }
+
+export const AiOrderRequestNotificationTypeEnum = {
+    None: 'NONE',
+    Email: 'EMAIL',
+    Telegram: 'TELEGRAM',
+} as const;
+
+export type AiOrderRequestNotificationTypeEnum = typeof AiOrderRequestNotificationTypeEnum[keyof typeof AiOrderRequestNotificationTypeEnum];
+
 /**
  * Описание промта. Используется в списках и UI.
  */

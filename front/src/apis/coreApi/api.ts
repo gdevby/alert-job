@@ -31,9 +31,19 @@ export interface AccountTemplateBinding {
     'promtId'?: number;
     'active'?: boolean;
     'userUuid'?: string;
+    'notificationType'?: AccountTemplateBindingNotificationTypeEnum;
     'createdAt'?: string;
     'updatedAt'?: string;
 }
+
+export const AccountTemplateBindingNotificationTypeEnum = {
+    None: 'NONE',
+    Email: 'EMAIL',
+    Telegram: 'TELEGRAM',
+} as const;
+
+export type AccountTemplateBindingNotificationTypeEnum = typeof AccountTemplateBindingNotificationTypeEnum[keyof typeof AccountTemplateBindingNotificationTypeEnum];
+
 export interface BindingCreateRequest {
     /**
      * ID модуля
@@ -55,7 +65,20 @@ export interface BindingCreateRequest {
      * Активна ли привязка
      */
     'active'?: boolean;
+    /**
+     * Тип уведомления
+     */
+    'notificationType'?: BindingCreateRequestNotificationTypeEnum;
 }
+
+export const BindingCreateRequestNotificationTypeEnum = {
+    None: 'NONE',
+    Email: 'EMAIL',
+    Telegram: 'TELEGRAM',
+} as const;
+
+export type BindingCreateRequestNotificationTypeEnum = typeof BindingCreateRequestNotificationTypeEnum[keyof typeof BindingCreateRequestNotificationTypeEnum];
+
 export interface BindingResponse {
     /**
      * ID привязки
@@ -123,6 +146,32 @@ export interface BindingUpdateRequest {
      * Активна ли привязка
      */
     'active': boolean;
+    /**
+     * Тип уведомления
+     */
+    'notificationType': BindingUpdateRequestNotificationTypeEnum;
+}
+
+export const BindingUpdateRequestNotificationTypeEnum = {
+    None: 'NONE',
+    Email: 'EMAIL',
+    Telegram: 'TELEGRAM',
+} as const;
+
+export type BindingUpdateRequestNotificationTypeEnum = typeof BindingUpdateRequestNotificationTypeEnum[keyof typeof BindingUpdateRequestNotificationTypeEnum];
+
+/**
+ * DTO типа уведомления
+ */
+export interface NotificationTypeDto {
+    /**
+     * Код типа уведомления
+     */
+    'code': string;
+    /**
+     * Описание типа уведомления
+     */
+    'description': string;
 }
 /**
  * Информация о поддерживаемом сайте
@@ -869,6 +918,100 @@ export class AutoreplySitesSupportingApi extends BaseAPI {
      */
     public getSupportedSites(options?: RawAxiosRequestConfig) {
         return AutoreplySitesSupportingApiFp(this.configuration).getSupportedSites(options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * ModulesApi - axios parameter creator
+ */
+export const ModulesApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Возвращает все доступные типы уведомлений с кодами и описаниями. Используется при создании/обновлении биндинга для выбора способа уведомления.
+         * @summary Получить список типов уведомлений
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getNotificationTypes: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/modules/notification-types`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * ModulesApi - functional programming interface
+ */
+export const ModulesApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = ModulesApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Возвращает все доступные типы уведомлений с кодами и описаниями. Используется при создании/обновлении биндинга для выбора способа уведомления.
+         * @summary Получить список типов уведомлений
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getNotificationTypes(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<NotificationTypeDto>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getNotificationTypes(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['ModulesApi.getNotificationTypes']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * ModulesApi - factory interface
+ */
+export const ModulesApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = ModulesApiFp(configuration)
+    return {
+        /**
+         * Возвращает все доступные типы уведомлений с кодами и описаниями. Используется при создании/обновлении биндинга для выбора способа уведомления.
+         * @summary Получить список типов уведомлений
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getNotificationTypes(options?: RawAxiosRequestConfig): AxiosPromise<Array<NotificationTypeDto>> {
+            return localVarFp.getNotificationTypes(options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * ModulesApi - object-oriented interface
+ */
+export class ModulesApi extends BaseAPI {
+    /**
+     * Возвращает все доступные типы уведомлений с кодами и описаниями. Используется при создании/обновлении биндинга для выбора способа уведомления.
+     * @summary Получить список типов уведомлений
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getNotificationTypes(options?: RawAxiosRequestConfig) {
+        return ModulesApiFp(this.configuration).getNotificationTypes(options).then((request) => request(this.axios, this.basePath));
     }
 }
 
