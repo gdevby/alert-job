@@ -10,5 +10,6 @@ public class SubCategoryDTO {
 	private String nativeLocName;
 	private String link;
 	private boolean parse;
+	private Integer order;
 
 }

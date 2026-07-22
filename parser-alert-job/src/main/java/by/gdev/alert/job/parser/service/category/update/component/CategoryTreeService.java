@@ -5,6 +5,7 @@ import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.service.category.ParsedCategory;
+import by.gdev.alert.job.parser.service.category.update.CategoryDiffApplyService;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryDiffResult;
 import by.gdev.alert.job.parser.service.category.update.dto.tree.CategoryDTO;
 import by.gdev.alert.job.parser.service.category.update.dto.tree.SiteDTO;
@@ -44,6 +45,8 @@ public class CategoryTreeService {
                 CategoryDTO dto = new CategoryDTO();
                 dto.setId(c.getId());
                 dto.setName(n);
+                dto.setLink(c.getLink());
+                dto.setSourceId(CategoryDiffApplyService.extractCategoryIdFromLink(c.getLink()));
                 dto.setSubcategories(new ArrayList<>());
                 return dto;
             });
@@ -67,6 +70,8 @@ public class CategoryTreeService {
                         SubcategoryDTO sd = new SubcategoryDTO();
                         sd.setId(s.getId());
                         sd.setName(subName);
+                        sd.setLink(s.getLink());
+                        sd.setSourceId(CategoryDiffApplyService.extractSubcategoryIdFromLink(s.getLink()));
                         catDto.getSubcategories().add(sd);
                     }
                 }
@@ -82,6 +87,7 @@ public class CategoryTreeService {
         site.setId(job.getId());
         site.setName(job.getName());
         Map<String, CategoryDTO> categoryMap = new LinkedHashMap<>();
+        int catOrder = 1;
         for (Map.Entry<ParsedCategory, List<ParsedCategory>> entry : parsed.entrySet()) {
             ParsedCategory parsedCat = entry.getKey();
             List<ParsedCategory> parsedSubs = entry.getValue();
@@ -89,12 +95,23 @@ public class CategoryTreeService {
                     ? parsedCat.translatedName()
                     : parsedCat.name();
             if (catName == null || catName.isBlank()) continue;
-            CategoryDTO catDto = categoryMap.computeIfAbsent(catName, n -> {
-                CategoryDTO dto = new CategoryDTO();
-                dto.setName(n);
-                dto.setSubcategories(new ArrayList<>());
-                return dto;
-            });
+            CategoryDTO catDto = categoryMap.get(catName);
+            if (catDto == null) {
+                catDto = new CategoryDTO();
+                catDto.setName(catName);
+                catDto.setOrder(catOrder++);
+                catDto.setSourceId(parsedCat.id());
+                catDto.setLink(parsedCat.rss());
+                catDto.setSubcategories(new ArrayList<>());
+                categoryMap.put(catName, catDto);
+            }
+
+            int subOrder = catDto.getSubcategories().stream()
+                    .map(SubcategoryDTO::getOrder)
+                    .filter(Objects::nonNull)
+                    .max(Integer::compareTo)
+                    .map(max -> max + 1)
+                    .orElse(1);
 
             for (ParsedCategory sub : parsedSubs) {
                 String subName = (sub.translatedName() != null && !sub.translatedName().isBlank())
@@ -106,6 +123,9 @@ public class CategoryTreeService {
                 if (!exists) {
                     SubcategoryDTO sd = new SubcategoryDTO();
                     sd.setName(subName);
+                    sd.setOrder(subOrder++);
+                    sd.setSourceId(sub.id());
+                    sd.setLink(sub.rss());
                     catDto.getSubcategories().add(sd);
                 }
             }
@@ -135,29 +155,31 @@ public class CategoryTreeService {
     }
 
     private void compareCategories(SiteDTO parsedTree, SiteDTO dbTree, CategoryDiffResult diff) {
-        // категории в БД по имени
         Set<String> dbNames = dbTree.getCategories().stream()
                 .map(CategoryDTO::getName)
                 .collect(Collectors.toSet());
+        Set<Long> dbCategorySourceIds = dbTree.getCategories().stream()
+                .map(this::resolveCategorySourceId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
-            // Пропускаем служебную категорию "Все категории".
             if (ALL_CATEGORIES.equals(parsedCat.getName())) continue;
-            // новая категория
-            if (!dbNames.contains(parsedCat.getName())) {
-                diff.getNewCategories().add(parsedCat);
-                // ВСЕ её подкатегории — также новые
-                for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
-                    // Пропускаем пустые и мусорные субкатегории.
-                    if (sub.getName() == null || sub.getName().isBlank()) continue;
-                    diff.getNewSubcategories().add(
-                            new CategoryDiffResult.SubcategoryWithParentDTO(
-                                    null,                 // parentId = null - новая категория
-                                    parsedCat.getName(),  // имя новой категории
-                                    sub
-                            )
-                    );
-                }
+
+            Long parsedSourceId = resolveCategorySourceId(parsedCat);
+            if (dbNames.contains(parsedCat.getName())) continue;
+            if (parsedSourceId != null && dbCategorySourceIds.contains(parsedSourceId)) continue;
+
+            diff.getNewCategories().add(parsedCat);
+            for (SubcategoryDTO sub : parsedCat.getSubcategories()) {
+                if (sub.getName() == null || sub.getName().isBlank()) continue;
+                diff.getNewSubcategories().add(
+                        new CategoryDiffResult.SubcategoryWithParentDTO(
+                                null,
+                                parsedCat.getName(),
+                                sub
+                        )
+                );
             }
         }
     }
@@ -167,14 +189,19 @@ public class CategoryTreeService {
 
         Map<String, CategoryDTO> parsedByName = parsedTree.getCategories().stream()
                 .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
-                .collect(Collectors.toMap(CategoryDTO::getName, c -> c));
+                .collect(Collectors.toMap(CategoryDTO::getName, c -> c, (a, b) -> a));
 
         for (CategoryDTO dbCat : dbTree.getCategories()) {
             if (ALL_CATEGORIES.equals(dbCat.getName())) continue;
 
             CategoryDTO parsedCat = parsedByName.get(dbCat.getName());
+            if (parsedCat == null) {
+                Long dbSourceId = resolveCategorySourceId(dbCat);
+                if (dbSourceId != null) {
+                    parsedCat = findParsedCategoryBySourceId(parsedTree, dbSourceId);
+                }
+            }
 
-            // Категория удалена
             if (parsedCat == null) {
                 diff.getRemovedCategories().add(dbCat);
 
@@ -190,24 +217,56 @@ public class CategoryTreeService {
                 continue;
             }
 
-            // Удалённые подкатегории
             Map<String, SubcategoryDTO> parsedSubs = parsedCat.getSubcategories().stream()
                     .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s, (a, b) -> a));
+            Set<Long> parsedSubSourceIds = parsedCat.getSubcategories().stream()
+                    .map(this::resolveSubcategorySourceId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
 
             for (SubcategoryDTO sub : dbCat.getSubcategories()) {
-                if (!parsedSubs.containsKey(sub.getName())) {
-                    diff.getRemovedSubcategories().add(
-                            new CategoryDiffResult.SubcategoryWithParentDTO(
-                                    dbCat.getId(),
-                                    dbCat.getName(),
-                                    sub
-                            )
-                    );
+                if (parsedSubs.containsKey(sub.getName())) {
+                    continue;
                 }
+                Long dbSubSourceId = resolveSubcategorySourceId(sub);
+                if (dbSubSourceId != null && parsedSubSourceIds.contains(dbSubSourceId)) {
+                    continue;
+                }
+                diff.getRemovedSubcategories().add(
+                        new CategoryDiffResult.SubcategoryWithParentDTO(
+                                dbCat.getId(),
+                                dbCat.getName(),
+                                sub
+                        )
+                );
             }
         }
 
         return diff;
+    }
+
+    private CategoryDTO findParsedCategoryBySourceId(SiteDTO parsedTree, Long sourceId) {
+        for (CategoryDTO parsedCat : parsedTree.getCategories()) {
+            Long parsedSourceId = resolveCategorySourceId(parsedCat);
+            if (sourceId.equals(parsedSourceId)) {
+                return parsedCat;
+            }
+        }
+        return null;
+    }
+
+    private Long resolveCategorySourceId(CategoryDTO dto) {
+        if (dto.getSourceId() != null) {
+            return dto.getSourceId();
+        }
+        return CategoryDiffApplyService.extractCategoryIdFromLink(dto.getLink());
+    }
+
+    private Long resolveSubcategorySourceId(SubcategoryDTO dto) {
+        if (dto.getSourceId() != null) {
+            return dto.getSourceId();
+        }
+        return CategoryDiffApplyService.extractSubcategoryIdFromLink(dto.getLink());
     }
 
 
