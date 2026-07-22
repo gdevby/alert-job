@@ -51,7 +51,7 @@ public class ParserService {
 				.map(el -> mapper.map(el, CategoryDTO.class))
                 .sorted(Comparator.comparing(
                         CategoryDTO::getOrder,
-                        Comparator.nullsFirst(Integer::compareTo)
+                        Comparator.nullsLast(Integer::compareTo)
                 ))
 				.toList();
 		if (list.isEmpty()) {
