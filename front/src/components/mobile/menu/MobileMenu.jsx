@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAutoReplyStatus } from '@/hooks/useAutoReplyStatus';
 import Menu from '@mui/material/Menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -8,6 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
 
 const MobileMenu = ({ isAuth, openLoginForm }) => {
+	const autoReplyStatus = useAutoReplyStatus();
 	const [anchorElNav, setAnchorElNav] = useState(null);
 	const [anchorElUser, setAnchorElUser] = useState(null);
 
@@ -63,7 +65,7 @@ const MobileMenu = ({ isAuth, openLoginForm }) => {
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/order-history'>История заказов</Link></MenuItem>}
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/modules'>Модули</Link></MenuItem>}
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/notifications'>Уведомления</Link></MenuItem>}
-			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/auto-replies'>Автоответы</Link></MenuItem>}
+			{isAuth && autoReplyStatus && <MenuItem onClick={handleCloseNavMenu}><Link to='/page/auto-replies'>Автоответы</Link></MenuItem>}
 			{isAuth && <MenuItem onClick={handleCloseNavMenu}><Link to='/logout' target='_parent'>Выйти</Link></MenuItem>}
 			{!isAuth && <MenuItem onClick={openLoginForm}><span>Регистрация и <br /> Авторизация</span></MenuItem>}
 		</Menu>
