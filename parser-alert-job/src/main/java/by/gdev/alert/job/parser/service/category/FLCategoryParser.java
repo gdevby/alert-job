@@ -48,12 +48,12 @@ public class FLCategoryParser extends PlaywrightCategoryParser implements Catego
             context = createBrowserContext(browser, proxy, proxyActive);
             page = context.newPage();
 
-            // 1. Загружаем главную страницу
+            // Загружаем главную страницу
             log.debug("Загрузка главной страницы fl.ru...");
             page.navigate(BASE_URL, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
             page.waitForLoadState();
 
-            // 2. Ищем все категории верхнего уровня
+            // Ищем все категории верхнего уровня
             Locator categoryItems = page.locator("div.fl-home-page__spec-item > a");
             int catCount = categoryItems.count();
             log.debug("Найдено категорий на {}: {}", getSiteName(), catCount);
@@ -73,10 +73,10 @@ public class FLCategoryParser extends PlaywrightCategoryParser implements Catego
 
                 log.debug("Обработка категории: {}", catName);
 
-                // 3. Переходим на страницу категории и получаем подкатегории
+                // Переходим на страницу категории и получаем подкатегории
                 List<ParsedCategory> subcategories = parseSubcategories(page, fullCatUrl, catName);
 
-                // 4. Сохраняем категорию с подкатегориями
+                // Сохраняем категорию с подкатегориями
                 ParsedCategory category = new ParsedCategory(
                         null,
                         catName,
