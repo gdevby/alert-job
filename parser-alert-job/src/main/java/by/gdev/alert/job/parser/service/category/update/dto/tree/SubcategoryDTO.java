@@ -6,5 +6,8 @@ import lombok.Data;
 public class SubcategoryDTO {
     private Long id;
     private String name;
+    private Integer order;
+    private Long sourceId;
+    private String link;
 }
 

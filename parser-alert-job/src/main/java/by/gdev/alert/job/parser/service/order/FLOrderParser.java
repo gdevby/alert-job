@@ -78,7 +78,7 @@ public class FLOrderParser extends AbsctractSiteParser {
     }
 
     private Order buildOrder(Item item, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        if (!getParserService().isExistsOrder(category, subCategory, item.getLink()))
+        if (!getParserService().isExistsOrder(item.getLink()))
             return null;
 
         Order order = getOrderRepository().findByLink(item.getLink()).orElse(new Order());

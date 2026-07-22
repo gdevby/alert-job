@@ -12,9 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.AbstractMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -49,7 +49,8 @@ public class WorkanaCategoryParser implements CategoryParser {
         List<Locator> categories = page.locator("ul.search-category > li").all();
         categories.remove(0); // to delete "all categories" category
 
-        return categories.stream()
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        categories.stream()
                 .map(categoryLocator -> {
 
                     String categoryName = categoryLocator.textContent();
@@ -80,7 +81,8 @@ public class WorkanaCategoryParser implements CategoryParser {
                     checkbox.click();
                     return new AbstractMap.SimpleEntry<>(parsedCategory, subCategories);
                 })
-                .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
+                .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
+        return result;
     }
 
     @Override

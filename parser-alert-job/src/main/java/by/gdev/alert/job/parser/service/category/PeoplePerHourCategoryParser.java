@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -27,7 +27,8 @@ public class PeoplePerHourCategoryParser implements CategoryParser{
 
         Elements elementCategories = categoriesDocument.getElementsByClass("small dropdown__link⤍Megamenu⤚Tqs7l");
 
-        return elementCategories.stream()
+        Map<ParsedCategory, List<ParsedCategory>> result = new LinkedHashMap<>();
+        elementCategories.stream()
                 .map(categoryElement -> {
                     String categoryName = categoryElement.text();
                     String link = categoryElement.attr("href");
@@ -46,7 +47,10 @@ public class PeoplePerHourCategoryParser implements CategoryParser{
                                 .toList();
                     }
                     return new AbstractMap.SimpleEntry<>(category, subCategories);
-                }).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));    }
+                })
+                .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
+        return result;
+    }
 
     @Override
     public SiteName getSiteName() {
