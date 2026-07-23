@@ -1412,3 +1412,181 @@ export class UserCredentialsApi extends BaseAPI {
 
 
 
+/**
+ * UserFiltersApi - axios parameter creator
+ */
+export const UserFiltersApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Возвращает true, если автоответ включен для указанного модуля, иначе false.
+         * @summary Получить статус автоответа для модуля
+         * @param {number} moduleId ID модуля
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAutoReplyStatus: async (moduleId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'moduleId' is not null or undefined
+            assertParamExists('getAutoReplyStatus', 'moduleId', moduleId)
+            const localVarPath = `/api/user/module/{module_id}/autoreply`
+                .replace('{module_id}', encodeURIComponent(String(moduleId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Устанавливает статус автоответа для указанного модуля.
+         * @summary Включить/выключить автоответ для модуля
+         * @param {number} moduleId ID модуля
+         * @param {boolean} enabled Включить автоответ
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        setAutoReplyStatus: async (moduleId: number, enabled: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'moduleId' is not null or undefined
+            assertParamExists('setAutoReplyStatus', 'moduleId', moduleId)
+            // verify required parameter 'enabled' is not null or undefined
+            assertParamExists('setAutoReplyStatus', 'enabled', enabled)
+            const localVarPath = `/api/user/module/{module_id}/autoreply`
+                .replace('{module_id}', encodeURIComponent(String(moduleId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (enabled !== undefined) {
+                localVarQueryParameter['enabled'] = enabled;
+            }
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * UserFiltersApi - functional programming interface
+ */
+export const UserFiltersApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = UserFiltersApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Возвращает true, если автоответ включен для указанного модуля, иначе false.
+         * @summary Получить статус автоответа для модуля
+         * @param {number} moduleId ID модуля
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAutoReplyStatus(moduleId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<boolean>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAutoReplyStatus(moduleId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserFiltersApi.getAutoReplyStatus']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Устанавливает статус автоответа для указанного модуля.
+         * @summary Включить/выключить автоответ для модуля
+         * @param {number} moduleId ID модуля
+         * @param {boolean} enabled Включить автоответ
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async setAutoReplyStatus(moduleId: number, enabled: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.setAutoReplyStatus(moduleId, enabled, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserFiltersApi.setAutoReplyStatus']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * UserFiltersApi - factory interface
+ */
+export const UserFiltersApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = UserFiltersApiFp(configuration)
+    return {
+        /**
+         * Возвращает true, если автоответ включен для указанного модуля, иначе false.
+         * @summary Получить статус автоответа для модуля
+         * @param {number} moduleId ID модуля
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAutoReplyStatus(moduleId: number, options?: RawAxiosRequestConfig): AxiosPromise<boolean> {
+            return localVarFp.getAutoReplyStatus(moduleId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Устанавливает статус автоответа для указанного модуля.
+         * @summary Включить/выключить автоответ для модуля
+         * @param {number} moduleId ID модуля
+         * @param {boolean} enabled Включить автоответ
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        setAutoReplyStatus(moduleId: number, enabled: boolean, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.setAutoReplyStatus(moduleId, enabled, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * UserFiltersApi - object-oriented interface
+ */
+export class UserFiltersApi extends BaseAPI {
+    /**
+     * Возвращает true, если автоответ включен для указанного модуля, иначе false.
+     * @summary Получить статус автоответа для модуля
+     * @param {number} moduleId ID модуля
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getAutoReplyStatus(moduleId: number, options?: RawAxiosRequestConfig) {
+        return UserFiltersApiFp(this.configuration).getAutoReplyStatus(moduleId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Устанавливает статус автоответа для указанного модуля.
+     * @summary Включить/выключить автоответ для модуля
+     * @param {number} moduleId ID модуля
+     * @param {boolean} enabled Включить автоответ
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public setAutoReplyStatus(moduleId: number, enabled: boolean, options?: RawAxiosRequestConfig) {
+        return UserFiltersApiFp(this.configuration).setAutoReplyStatus(moduleId, enabled, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+

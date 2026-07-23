@@ -16,6 +16,7 @@ import { AccountTemplateBindingsApi } from '@/apis/coreApi';
 import { BindingDialog } from '@/modules/auto-replies/components/Bindings/BindingDialog';
 import { Switch } from '@mui/material';
 import { FormattedDate } from '@/components/FormattedDate';
+import { AutoRepliesSwitch } from '@/modules/auto-replies/components/Bindings/AutoRepliesSwitch';
 
 const accountTemplateBindingsApi = new AccountTemplateBindingsApi();
 
@@ -72,9 +73,14 @@ export const Bindings = () => {
 
   return (
     <div className="bindings">
-      <Button variant="contained" onClick={handleCreateBindingButton}>
-        Добавить связку
-      </Button>
+      <div className="bindings__header">
+        <AutoRepliesSwitch />
+
+        <Button variant="contained" onClick={handleCreateBindingButton}>
+          Добавить связку
+        </Button>
+      </div>
+
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }}>
           <TableHead>
