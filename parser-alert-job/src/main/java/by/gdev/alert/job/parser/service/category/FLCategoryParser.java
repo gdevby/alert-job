@@ -2,7 +2,7 @@ package by.gdev.alert.job.parser.service.category;
 
 import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.common.model.SiteName;
-import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -87,21 +87,18 @@ public class FLCategoryParser extends PlaywrightCategoryParser implements Catego
                 result.put(category, subcategories);
                 log.debug("Добавлена категория: {} с {} подкатегориями", catName, subcategories.size());
 
-                // 5. Возвращаемся на главную страницу
+                // Возвращаемся на главную страницу
                 page.navigate(BASE_URL, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
                 page.waitForLoadState();
                 page.waitForTimeout(500);
             }
-
             log.debug("Успешно распаршено {} категорий с fl.ru", result.size());
-
         } catch (Exception e) {
             log.error("Ошибка при парсинге категорий fl.ru", e);
             throw new RuntimeException("Не удалось распарсить категории fl.ru", e);
         } finally {
             closeResources(page, context, browser, playwright);
         }
-
         return result;
     }
 
