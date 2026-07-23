@@ -46,7 +46,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         this.headless = headless;
     }
 
-    // ========== ВЫБОР КАТЕГОРИИ ==========
+    // Клик на категорию
     public void clickCategory(Page page, Category category) {
         String categoryName = category.getNativeLocName();
         Locator multiselect = page.locator(".multiselect");
@@ -68,7 +68,7 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         log.debug("Категория '{}' выбрана", categoryName);
     }
 
-    // ========== ПАРСИНГ ОДНОГО ЗАКАЗА (новые селекторы) ==========
+    // Парсинг одного элемента заказа
     private Order parseOrder(Locator item, Long siteSourceJobId, Category category, Subcategory subCategory) {
         try {
             // Заголовок и ссылка
@@ -238,11 +238,36 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
 
     private boolean tasksLoading(Page page, boolean reset) {
         page.waitForTimeout(2000);
+
+        // Проверка на Cloudflare
+        if (isSecurityCheckPage(page)) {
+            log.warn("Обнаружена страница проверки безопасности Cloudflare, пропускаем парсинг");
+            return true;
+        }
+
+        // Обработка 403 с попыткой нажать "Повторить"
+        if (isError403(page)) {
+            boolean recovered = handle403Error(page, 1);
+            if (recovered) {
+                // После успешного восстановления проверяем загрузку списка ещё раз
+                try {
+                    page.waitForSelector("div.widget", new Page.WaitForSelectorOptions().setTimeout(10000));
+                    log.debug("Список задач загружен после обработки 403");
+                    return false;
+                } catch (Exception e) {
+                    log.warn("Не дождались списка задач после обработки 403");
+                    return true;
+                }
+            } else {
+                log.warn("Не удалось восстановить загрузку после 403, пропускаем");
+                return true;
+            }
+        }
+
         if (!reset && isEmptyTaskList(page)) {
             return true;
         }
         try {
-            // Ждём появления хотя бы одного виджета
             page.waitForSelector("div.widget", new Page.WaitForSelectorOptions().setTimeout(10000));
             log.debug("Список задач загружен");
             return false;
@@ -252,7 +277,75 @@ public class FreelancehuntOrderParser extends PlaywrightSiteParser {
         }
     }
 
-    // ========== ПРОВЕРКА ПУСТОГО СПИСКА ==========
+    private boolean handle403Error(Page page, int attempts) {
+        log.warn("Обнаружена ошибка 403. Попытка {} из {}", attempts, 3);
+        if (attempts > 3) {
+            log.error("Превышено число попыток обработки 403, пропускаем парсинг");
+            return false; // не удалось восстановить
+        }
+        try {
+            // Ищем кнопку "Повторить"
+            Locator retryButton = page.locator("button.button--secondary:has-text('Повторить')");
+            if (retryButton.count() > 0 && retryButton.isVisible()) {
+                retryButton.click();
+                log.debug("Кнопка 'Повторить' нажата");
+                page.waitForTimeout(2000); // даём время на обновление
+                // Проверяем, загрузился ли список задач
+                if (!isEmptyTaskList(page)) {
+                    log.info("После нажатия кнопки список задач загружен");
+                    return true; // успех
+                } else {
+                    log.warn("После нажатия кнопки список всё ещё пуст, пробуем ещё раз");
+                    return handle403Error(page, attempts + 1); // рекурсивно повторить
+                }
+            } else {
+                log.warn("Кнопка 'Повторить' не найдена или невидима");
+                return false;
+            }
+        } catch (Exception e) {
+            log.warn("Ошибка при обработке 403: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isError403(Page page) {
+        try {
+            // Ищем текст "Request failed with status code 403" на странице
+            Locator errorLocator = page.locator("text=Request failed with status code 403");
+            return errorLocator.count() > 0;
+        } catch (Exception e) {
+            // Если не нашли – ошибки нет
+            return false;
+        }
+    }
+
+    /**
+     * Проверяет, не находится ли страница на проверке безопасности Cloudflare.
+     */
+    private boolean isSecurityCheckPage(Page page) {
+        try {
+            // Проверяем наличие характерного текста
+            Locator securityText = page.locator("text=Этот веб-сайт использует сервис безопасности для защиты от вредоносных ботов");
+            if (securityText.count() > 0) {
+                return true;
+            }
+            // Проверяем по заголовку
+            String title = page.title();
+            if (title != null && title.contains("Один момент…")) {
+                return true;
+            }
+            // Проверяем наличие контейнера с капчей
+            Locator captchaContainer = page.locator("#ncOB5");
+            if (captchaContainer.count() > 0) {
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Проверка пустой ли список задач
     private boolean isEmptyTaskList(Page page) {
         Locator counter = page.locator("span.badge.badge--counter");
         if (counter.count() == 0) {
