@@ -1,6 +1,6 @@
 package by.gdev.alert.job.parser.service.category.check;
 
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

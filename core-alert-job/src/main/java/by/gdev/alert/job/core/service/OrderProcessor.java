@@ -6,23 +6,31 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import by.gdev.alert.job.core.client.LlmClient;
+import by.gdev.alert.job.core.client.NotificationClient;
+import by.gdev.alert.job.core.model.ai.AiOrderRequest;
+import by.gdev.alert.job.core.model.db.*;
+import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
+import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
+import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
+import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
+import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
 import by.gdev.common.model.NotificationType;
+import by.gdev.common.model.SiteName;
+import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import by.gdev.alert.job.core.configuration.ApplicationProperty;
-import by.gdev.alert.job.core.model.db.AppUser;
-import by.gdev.alert.job.core.model.db.DelayOrderNotification;
-import by.gdev.alert.job.core.model.db.SourceSite;
-import by.gdev.alert.job.core.model.db.UserFilter;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DelayOrderNotificationRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -36,30 +44,135 @@ public class OrderProcessor {
     private final UserFilterRepository filterRepository;
     private final MailSenderService mailSenderService;
 
+    private final AccountTemplateBindingRepository accountTemplateBindingRepository;
+    private final UserSiteCredentialRepository userSiteCredentialRepository;
+    private final LlmClient llmClient;
+    private final NotificationClient notificationClient;
+    private final AiOrderRequestMapper aiOrderRequestMapper;
+
+    @Value("${autoreply.enabled:false}")
+    @Getter
+    private boolean autoReplyEnabled;
+
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
-        orders.forEach(orderDTO -> statisticService.statisticTitleWord(orderDTO.getTitle(), orderDTO.getSourceSite()));
+        for (OrderDTO order : orders) {
+            try {
+                statisticService.statisticTitleWord(order.getTitle(), order.getSourceSite());
+            } catch (Exception e) {
+                log.warn("Ошибка при статистике для заказа {}: {}", order.getLink(), e.getMessage());
+            }
+        }
+
         Map<Long, UserFilter> map = filterRepository.findByIdEagerAllWordsAll().stream()
                 .collect(Collectors.toMap(e -> e.getId(), Function.identity()));
-        users.stream().filter(AppUser::isSwitchOffAlerts).forEach(user -> {
-            List<OrderDTO> orderListToSend = user.getOrderModules().stream().filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
-                    .map(orderModule -> {
-                        UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
-                        return orderModule.getSources().stream().map(s -> {
-                            List<OrderDTO> list = orders.parallelStream()
-                                    .peek(orderDTO -> {})
-                                    .filter(f -> compareSiteSources(f.getSourceSite(), s))
-                                    .filter(f -> isMatchUserFilter(f, currentFilter))
-                                    .map(order -> {
-                                        order.setModuleName(orderModule.getName());
-                                        return order;
-                                    }).collect(Collectors.toList());
-                            return list;
-                        }).flatMap(Collection::stream).toList();
-                    }).flatMap(Collection::stream).toList();
-            if (!orderListToSend.isEmpty()) {
-                sendOrderToUser(user, orderListToSend);
+
+        users.stream()
+                .filter(AppUser::isSwitchOffAlerts)
+                .forEach(user -> {
+                    List<OrderDTO> orderListToSend = user.getOrderModules().stream()
+                            .filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
+                            .flatMap(orderModule -> {
+                                UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
+                                return orderModule.getSources().stream()
+                                        .flatMap(s -> orders.parallelStream()
+                                                .filter(f -> compareSiteSources(f.getSourceSite(), s))
+                                                .filter(f -> isMatchUserFilter(f, currentFilter))
+                                                .map(order -> {
+                                                    order.setModuleName(orderModule.getName());
+                                                    return order;
+                                                })
+                                        );
+                            })
+                            .collect(Collectors.toList());
+
+                    if (!orderListToSend.isEmpty()) {
+                        sendOrderToUser(user, orderListToSend);
+                        if (autoReplyEnabled) {
+                            forEachLLm(user, orderListToSend);
+                        } else {
+                            log.debug("Автоответы отключены через property (autoreply.enabled=false)");
+                        }
+                    }
+                });
+    }
+
+    private void forEachLLm(AppUser user, List<OrderDTO> orders){
+        for (OrderModules orderModule : user.getOrderModules()) {
+            if (!Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
+                continue;
             }
-        });
+
+            Map<Long, List<OrderDTO>> bySite = orders.stream()
+                    .collect(Collectors.groupingBy(o -> o.getSourceSite().getSource()));
+
+            for (Map.Entry<Long, List<OrderDTO>> entry : bySite.entrySet()) {
+                Long siteId = entry.getKey();
+                List<OrderDTO> siteOrders = entry.getValue();
+                boolean subscribed = orderModule.getSources().stream()
+                        .anyMatch(s -> s.getSiteSource().equals(siteId));
+                if (!subscribed) continue;
+
+                SiteName siteName = SiteName.fromId(siteId);
+                boolean supported = notificationClient.canParse(siteName.name());
+
+                if (!supported) {
+                    log.debug("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
+                    continue;
+                }
+                try {
+                    buildAndsSndLlmRequest(user, orderModule,
+                            orderModule.getSources().stream()
+                                    .filter(s -> s.getSiteSource().equals(siteId))
+                                    .findFirst()
+                                    .orElseThrow(), siteOrders);
+                }
+                catch (Exception e) {
+                    log.debug("Ошибка при отправке автоответа для пользователя {} на сайте {}: {}",
+                            user.getUuid(), siteName, e.getMessage(), e);
+                }
+            }
+        }
+    }
+
+    private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders) {
+        if (orders.isEmpty()) {
+            return;
+        }
+
+        Long siteId = sourceSite.getSiteSource();
+
+        // Получаем все креды пользователя для этого сайта
+        List<UserSiteCredential> credentials = userSiteCredentialRepository.findByUserUuidAndSiteId(user.getUuid(), siteId);
+        if (credentials.isEmpty()) {
+            throw new RuntimeException("Нет аккаунтов для сайта " + siteId);
+        }
+
+        // Ищем кред, для которого есть активный биндинг с данным модулем
+        UserSiteCredential selectedCredential = null;
+        AccountTemplateBinding selectedBinding = null;
+
+        for (UserSiteCredential cred : credentials) {
+            Optional<AccountTemplateBinding> optBinding = accountTemplateBindingRepository
+                    .findByModuleIdAndAccountIdAndActiveTrue(orderModule.getId(), cred.getId());
+            if (optBinding.isPresent()) {
+                selectedCredential = cred;
+                selectedBinding = optBinding.get();
+                break;
+            }
+        }
+
+        if (selectedBinding == null) {
+            throw new RuntimeException("Нет активного биндинга для модуля " + orderModule.getId() + " и сайта " + siteId);
+        }
+
+        Long credentialId = selectedCredential.getId();
+        Long templateId = selectedBinding.getTemplateId();
+        Long promtId = selectedBinding.getPromtId();
+
+        // Формируем и отправляем запрос
+        AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule,
+                credentialId, templateId, promtId, orders, selectedBinding.getNotificationType());
+        llmClient.sendAiOrderRequest(aiOrderRequest);
     }
 
     private void sendOrderToUser(AppUser user, List<OrderDTO> list) {

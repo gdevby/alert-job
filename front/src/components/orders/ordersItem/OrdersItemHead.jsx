@@ -1,7 +1,7 @@
 import React from 'react'
 
 import Typography from '@mui/material/Typography';
-import OrderDate from './OrderDate';
+import { FormattedDate } from '@/components/FormattedDate';
 
 const OrdersItemHead = (props) => {
 
@@ -13,7 +13,7 @@ const OrdersItemHead = (props) => {
 				{title}
 			</Typography>
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
-				Дата: <OrderDate date={dateTime} />
+				Дата: <FormattedDate date={dateTime} />
 			</Typography>
 			<Typography sx={{ wordBreak: 'break-word', userSelect: 'text' }} component='div'>
 				Источник: {sourceSite.sourceName}

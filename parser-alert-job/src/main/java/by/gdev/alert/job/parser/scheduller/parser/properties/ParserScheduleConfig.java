@@ -1,6 +1,6 @@
 package by.gdev.alert.job.parser.scheduller.parser.properties;
 
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 

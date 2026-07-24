@@ -1,0 +1,11 @@
+.account-dialog {
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  &__submit-button {
+    margin-left: auto;
+  }
+}

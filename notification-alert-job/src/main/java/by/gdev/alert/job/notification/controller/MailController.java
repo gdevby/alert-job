@@ -15,13 +15,13 @@ import reactor.core.publisher.Mono;
 @RequestMapping
 @RequiredArgsConstructor
 public class MailController {
-
 	private final MailService service;
 
 	@PostMapping("mail")
 	public ResponseEntity<Mono<Void>> mailMessage(@RequestBody UserNotification userMail) {
 		return ResponseEntity.ok(service.sendMessage(userMail));
 	}
+
 
 	@PostMapping("telegram")
 	public ResponseEntity<Mono<Void>> sendTelegram(@RequestBody UserNotification userMail) {

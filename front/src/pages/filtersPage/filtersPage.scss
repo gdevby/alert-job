@@ -1,11 +1,10 @@
-.current_filter__list {
-	//width: 20% !important;
+.filtersPage > .sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: stretch;
 }
 
 .source-list {
-	margin-top: 1rem;
-}
-
-.current_filter {
-	margin-top: 1rem;
+  margin-top: 1rem;
 }

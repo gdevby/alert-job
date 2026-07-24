@@ -1,0 +1,261 @@
+package by.gdev.alert.job.llm.service.aiautoreply;
+
+import by.gdev.alert.job.llm.constants.LlmConstants;
+import by.gdev.alert.job.llm.domain.AiReplyTemplate;
+import by.gdev.alert.job.llm.domain.dto.AiDecision;
+import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.alert.job.llm.domain.dto.promt.AiPromptDto;
+import by.gdev.alert.job.llm.domain.promt.AiPrompt;
+import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
+import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
+
+/**
+ * Сервис анализа заказов с использованием LLM.
+ * <p>
+ * Отвечает за:
+ * <ul>
+ *     <li>формирование промта на основе данных заказа;</li>
+ *     <li>выбор шаблона письма (пользовательский, модульный или дефолтный);</li>
+ *     <li>вызов LLM и парсинг результата в {@link AiDecision};</li>
+ *     <li>подстановку сгенерированного текста в HTML‑шаблон;</li>
+ *     <li>загрузку шаблонов из classpath;</li>
+ *     <li>определение типа проекта (front/back/mobile/dev).</li>
+ * </ul>
+ * <p>
+ * Все вызовы LLM выполняются через отдельный {@link ExecutorService},
+ * чтобы избежать блокировки основного потока.
+ */
+@Service
+@Slf4j
+public class AiOrderAnalysisService {
+
+    /**
+     * Клиент для общения с LLM.
+     */
+    private final ChatClient chatClient;
+
+    /**
+     * JSON‑маппер для десериализации ответа модели.
+     */
+    private final ObjectMapper mapper;
+    //private final TokenBucket tokenBucket;
+    //private final TimeRateLimiter timeRateLimiter;
+    /**
+     * Исполнитель для асинхронных вызовов LLM.
+     */
+    private final ExecutorService llmExecutor;
+
+    /**
+     * Сервис для получения HTML‑шаблонов ответов.
+     */
+    private final AiReplyTemplateService templateService;
+
+    /**
+     * Сервис для получения текстовых промтов.
+     */
+    private final AiPromptService aiPromptService;
+
+    /**
+     * Конструктор, инициализирующий зависимости.
+     *
+     * @param builder          фабрика ChatClient
+     * @param mapper           JSON‑маппер
+     * @param llmExecutor      executor для LLM‑вызовов
+     * @param templateService  сервис шаблонов ответов
+     * @param aiPromptService  сервис текстовых промтов
+     */
+    @Autowired
+    public AiOrderAnalysisService(ChatClient.Builder builder, ObjectMapper mapper,
+                                  ExecutorService llmExecutor, AiReplyTemplateService templateService,
+                                  AiPromptService aiPromptService) {
+        this.chatClient = builder.build();
+        this.mapper = mapper;
+        this.llmExecutor = llmExecutor;
+        this.templateService = templateService;
+        this.aiPromptService = aiPromptService;
+    }
+
+    /**
+     * Основной метод анализа заказа.
+     * <p>
+     * Логика:
+     * <ul>
+     *     <li>определяет тип проекта;</li>
+     *     <li>загружает HTML‑шаблон;</li>
+     *     <li>формирует промт;</li>
+     *     <li>выполняет вызов LLM в отдельном потоке;</li>
+     *     <li>парсит JSON‑ответ в {@link AiDecision};</li>
+     *     <li>подставляет сгенерированный текст в HTML‑шаблон.</li>
+     * </ul>
+     *
+     * @return решение AI с текстом ответа
+     */
+    public AiDecision analyze(OrderDTO order, Long templateId, Long promtId, String uuid){
+
+        String orderTitle = order.getTitle();
+        String orderContent = order.getMessage();
+        String orderLink = order.getLink();
+        String priceText = order.getPrice() != null ? order.getPrice().getPrice() : "не указана";
+        int priceValue = order.getPrice() != null ? order.getPrice().getValue() : 0;
+        String siteName = order.getSourceSite() != null ? order.getSourceSite().getSourceName() : null;
+        String categoryName = order.getSourceSite() != null ? order.getSourceSite().getCategoryName() : null;
+        String subcategoryName = order.getSourceSite() != null ? order.getSourceSite().getSubCategoryName() : null;
+        String orderDate = order.getDateTime() != null ? order.getDateTime().toString() : "не указана";
+        List<String> keywords = List.of();
+
+        AiPromptDto promptEntity = aiPromptService.getPromptByIdOrDefault(uuid, promtId);
+        String promptText = promptEntity.getText();
+        String safePromptText = promptText.replace(LlmConstants.AUTO_GENERATED_PLACEHOLDER,
+                LlmConstants.ESCAPED_AUTO_GENERATED_PLACEHOLDER
+        );
+
+            // Загружаем шаблон письма
+            String replyTemplate;
+            if (templateId != null) {
+                AiReplyTemplate t = templateService.getTemplateById(uuid, templateId);
+                replyTemplate = t.getText();
+            } else {
+                // DEFAULT TEMPLATE
+                AiReplyTemplate t = templateService.getDefaultTemplate();
+                replyTemplate = t.getText();
+            }
+
+        // Экранируем проблемный фрагмент
+
+        // 5. Формируем prompt
+        String prompt = safePromptText.formatted(
+                orderTitle,
+                orderContent,
+                priceText,
+                priceValue,
+                orderLink,
+                orderDate,
+                siteName,
+                categoryName,
+                subcategoryName,
+                keywords,
+                replyTemplate
+        );
+
+        Future<AiDecision> future = llmExecutor.submit(() -> {
+            try {
+                // Вызов LLM
+                String raw = chatClient.prompt()
+                        .system(LlmConstants.SYSTEM_PROMT)
+                        .user(prompt)
+                        .call()
+                        .content();
+
+                //НЕ РАБОТАЕТ - StringTemplate v4- подходит для мелких шаблонов типа
+                /*
+                Hello <name>
+                <if(condition)> ... <endif>
+                 <list:{x|...}>*/
+                /*2026-03-30T12:31:45.903+03:00 ERROR 25588 --- [llm] [pool-3-thread-1] b.g.a.j.l.s.a.AiOrderAnalysisService     : Unexpected LLM error
+                java.lang.IllegalArgumentException: The template string is not valid.
+                at org.springframework.ai.chat.prompt.PromptTemplate.<init>(PromptTemplate.java:86)
+                at org.springframework.ai.chat.client.advisor.api.AdvisedRequest.toPrompt(AdvisedRequest.java:171)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultChatClientRequestSpec$1.aroundCall(DefaultChatClient.java:680)
+                at org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain.lambda$nextAroundCall$1(DefaultAroundAdvisorChain.java:98)
+                at io.micrometer.observation.Observation.observe(Observation.java:565)
+                at org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain.nextAroundCall(DefaultAroundAdvisorChain.java:98)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.doGetChatResponse(DefaultChatClient.java:493)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.lambda$doGetObservableChatResponse$1(DefaultChatClient.java:482)
+                at io.micrometer.observation.Observation.observe(Observation.java:565)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.doGetObservableChatResponse(DefaultChatClient.java:482)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.doSingleWithBeanOutputConverter(DefaultChatClient.java:456)
+                at org.springframework.ai.chat.client.DefaultChatClient$DefaultCallResponseSpec.entity(DefaultChatClient.java:451)
+                at by.gdev.alert.job.llm.service.aiautoreply.AiOrderAnalysisService.lambda$analyze$0(AiOrderAnalysisService.java:186)
+                at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+                at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+                at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+                at java.base/java.lang.Thread.run(Thread.java:1583)
+                Caused by: org.stringtemplate.v4.compiler.STException: null
+                at org.stringtemplate.v4.compiler.Compiler.reportMessageAndThrowSTException(Compiler.java:224)
+                at org.stringtemplate.v4.compiler.Compiler.compile(Compiler.java:154)
+                at org.stringtemplate.v4.STGroup.compile(STGroup.java:514)
+                at org.stringtemplate.v4.ST.<init>(ST.java:162)
+                at org.stringtemplate.v4.ST.<init>(ST.java:156)
+                at org.springframework.ai.chat.prompt.PromptTemplate.<init>(PromptTemplate.java:80)
+	... 16 common frames omitted
+
+                2026-03-30T12:31:45.905+03:00  INFO 25588 --- [llm] [nio-8033-exec-8] b.g.a.j.l.s.a.AiOrderAnalysisService     : AI ANALYSIS PROMPT FILE: prompts/analysis_default.txt
+                2026-03-30T12:31:45.906+03:00  INFO 25588 --- [llm] [nio-8033-exec-8] b.g.a.j.l.s.a.AiOrderAnalysisService     : AI ANALYSIS PROMPT FILE: prompts/analysis_default.txt, estimatedTokens: 1253
+                106:17: 'true' came as a complete surprise to me*/
+                /*AiDecision decision = chatClient.prompt()
+                        .user(prompt)
+                        .call()
+                        .entity(AiDecision.class);
+                 */
+
+
+                log.debug("RAW LLM RESPONSE:\n{}", raw);
+                raw = raw.replace("```json", "")
+                        .replace("```", "")
+                        .trim();
+                String json = extractJson(raw);
+                return mapper.readValue(json, AiDecision.class);
+
+            } catch (org.springframework.ai.retry.NonTransientAiException e) {
+                // Это 429, 400, 50
+                log.error("API error: {}", e.getMessage());
+
+                return new AiDecision(
+                        false,
+                        0.0,
+                        "API error: " + e.getMessage(),
+                        null, null, null, null, null
+                );
+
+            } catch (Exception e) {
+                log.error("Unexpected LLM error", e);
+
+                return new AiDecision(
+                        false,
+                        0.0,
+                        "Unexpected LLM error: " + e.getMessage(),
+                        null, null, null, null, null
+                );
+            }
+        });
+
+        try {
+            AiDecision decision = future.get();
+            if (replyTemplate.contains("%auto_generated_text%") && decision.getReply() != null) {
+                String finalReply = replyTemplate.replace("%auto_generated_text%", decision.getReply());
+                decision.setReply(finalReply);
+            }
+            return decision;
+        } catch (Exception e) {
+            log.error("Executor error", e);
+
+            return new AiDecision(
+                    false,
+                    0.0,
+                    "Executor error: " + e.getMessage(),
+                    null, null, null, null, null
+            );
+        }
+    }
+
+    private String extractJson(String raw) {
+        int start = raw.indexOf('{');
+        int end = raw.lastIndexOf('}');
+        if (start == -1 || end == -1 || end < start) {
+            throw new IllegalArgumentException("No JSON object found in response");
+        }
+        return raw.substring(start, end + 1);
+    }
+
+
+}

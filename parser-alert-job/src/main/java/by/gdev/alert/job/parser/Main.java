@@ -5,11 +5,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "by.gdev")
 @EnableAsync
 public class Main {
 
-	public static void main(String[] args) {
-		SpringApplication.run(Main.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(Main.class, args);
+    }
 }

@@ -19,6 +19,7 @@ import { removeCurrentFilter } from '../../store/slices/filterSlice';
 
 import './modulesPage.scss'
 
+
 const ModulesPage = () => {
 	const [moduleName, setModuleName] = useState('')
 	const [modules, setModules] = useState([])

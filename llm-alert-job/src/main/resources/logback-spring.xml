@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+	 <springProperty scope="context" name="application_name" source="spring.application.name"/>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="by.gdev" level="TRACE"/>
+</configuration>

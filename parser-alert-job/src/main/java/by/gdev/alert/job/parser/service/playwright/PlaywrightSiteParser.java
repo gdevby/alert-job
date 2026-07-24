@@ -3,8 +3,10 @@ package by.gdev.alert.job.parser.service.playwright;
 
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SourceSiteDTO;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.playwright.PlaywrightManager;
 import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import jakarta.annotation.PostConstruct;

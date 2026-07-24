@@ -8,6 +8,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Btn from '../../components/common/button/Button'
 import MobileMenu from '../../components/mobile/menu/MobileMenu';
+import { useAutoReplyStatus } from '@/hooks/useAutoReplyStatus';
 
 import './header.scss'
 
@@ -15,6 +16,7 @@ import './header.scss'
 
 const Header = () => {
 	const { isAuth } = useAuth()
+	const autoReplyStatus = useAutoReplyStatus();
 
 	const openLoginForm = () => {
 		window.open(`${window.location.origin}/oauth2/authorization/keycloak-spring-gateway-client`, '_parent')
@@ -37,6 +39,7 @@ const Header = () => {
 				<Btn text={'История заказов'} onClick={() => navigate('/page/order-history')} styles={{ color: '#fff', marginRight: 5 }} />
 					<Btn text={'Модули'} onClick={() => navigate('/page/modules')} styles={{ color: '#fff' }} />
 					<Btn text={'Уведомления'} onClick={() => navigate('/page/notifications')} styles={{ color: '#fff' }} />
+					{autoReplyStatus && <Btn text={'Автоответы'} onClick={() => navigate('/page/auto-replies')} styles={{ color: '#fff' }} />}
 					<Btn text={'Выйти'}
 						onClick={() => window.open(`${window.location.origin}/logout`, '_parent')}
 						styles={{ color: '#fff' }} />

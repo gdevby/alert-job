@@ -14,7 +14,7 @@ import by.gdev.alert.job.parser.service.category.check.client.CoreClient;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryDiffResult;
 import by.gdev.alert.job.parser.service.category.update.dto.changes.CategoryUpdateSummary;
 import by.gdev.alert.job.parser.service.category.update.dto.tree.SiteDTO;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
