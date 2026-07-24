@@ -20,17 +20,17 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
 
     private final CaptchaService captchaService;
 
-    @Value("${parser.autoreply.headless.fl.ru}")
+    @Value("${parser.autoreply.headless.fl.ru:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
     }
 
-    @Value("${parser.autoreply.proxy.fl.ru}")
+    @Value("${parser.autoreply.proxy.fl.ru:false}")
     private void setProxy(boolean proxy) {
         this.proxy = proxy;
     }
 
-    @Value("${parser.autoreply.send.request.fl.ru}")
+    @Value("${parser.autoreply.send.request.fl.ru:true}")
     private void setOnSendRequest(boolean sendRequest) {
         this.sendRequest = sendRequest;
     }

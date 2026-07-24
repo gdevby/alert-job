@@ -1,6 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.proxy;
 
-import by.gdev.alert.job.notification.client.CoreClient;
+import by.gdev.alert.job.notification.client.CoreUnifiedClient;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.model.proxy.ProxyState;
 import by.gdev.common.service.proxy.supplier.ProxySupplier;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class AssignedProxyService {
 
     private final ProxySupplier proxySupplier;
-    private final CoreClient coreClient;
+    private final CoreUnifiedClient coreClient;
 
     private final Map<String, ProxyCredentials> userProxyMap = new ConcurrentHashMap<>();
 

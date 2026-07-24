@@ -17,12 +17,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class WeblancerAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
 
-    @Value("${parser.autoreply.headless.weblancer.net}")
+    @Value("${parser.autoreply.headless.weblancer.net:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
     }
 
-    @Value("${parser.autoreply.send.request.weblancer.net}")
+    @Value("${parser.autoreply.send.request.weblancer.net:true}")
     private void setOnSendRequest(boolean sendRequest) {
         this.sendRequest = sendRequest;
     }

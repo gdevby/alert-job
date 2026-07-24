@@ -15,17 +15,17 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
-    @Value("${parser.autoreply.headless.kwork.ru}")
+    @Value("${parser.autoreply.headless.kwork.ru:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
     }
 
-    @Value("${parser.autoreply.proxy.kwork.ru}")
+    @Value("${parser.autoreply.proxy.kwork.ru:false}")
     private void setProxy(boolean proxy) {
         this.proxy = proxy;
     }
 
-    @Value("${parser.autoreply.send.request.kwork.ru}")
+    @Value("${parser.autoreply.send.request.kwork.ru:true}")
     private void setOnSendRequest(boolean sendRequest) {
         this.sendRequest = sendRequest;
     }

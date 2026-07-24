@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.credential;
 
+import by.gdev.alert.job.notification.client.CoreUnifiedClient;
 import by.gdev.alert.job.notification.model.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserCredentialService {
 
-    private final CredentialClient credentialClient;
+    private final CoreUnifiedClient credentialClient;
     private final EncryptionService encryptionService;
 
 

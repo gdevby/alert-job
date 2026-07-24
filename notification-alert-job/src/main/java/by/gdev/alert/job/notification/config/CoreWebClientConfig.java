@@ -1,6 +1,6 @@
 package by.gdev.alert.job.notification.config;
 
-import by.gdev.alert.job.notification.service.ai.credential.CoreWebClient;
+import by.gdev.alert.job.notification.client.CoreUnifiedClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,11 +13,11 @@ public class CoreWebClientConfig {
     private String coreServiceUrl;
 
     @Bean
-    public CoreWebClient coreWebClient() {
+    public CoreUnifiedClient coreWebClient() {
         WebClient client = WebClient.builder()
                 .baseUrl(coreServiceUrl)
                 .build();
 
-        return new CoreWebClient(client);
+        return new CoreUnifiedClient(client);
     }
 }

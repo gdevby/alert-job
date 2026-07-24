@@ -17,17 +17,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class FreelanceRuAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
 
-    @Value("${parser.autoreply.headless.freelance.ru}")
+    @Value("${parser.autoreply.headless.freelance.ru:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
     }
 
-    @Value("${parser.autoreply.proxy.freelance.ru}")
+    @Value("${parser.autoreply.proxy.freelance.ru:false}")
     private void setProxy(boolean proxy) {
         this.proxy = proxy;
     }
 
-    @Value("${parser.autoreply.send.request.freelance.ru}")
+    @Value("${parser.autoreply.send.request.freelance.ru:true}")
     private void setOnSendRequest(boolean sendRequest) {
         this.sendRequest = sendRequest;
     }

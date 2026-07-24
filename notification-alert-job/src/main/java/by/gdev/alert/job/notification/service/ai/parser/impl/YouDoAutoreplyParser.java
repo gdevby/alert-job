@@ -19,17 +19,17 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
     private final OtpService otpService;
 
-    @Value("${parser.autoreply.headless.youdo.com}")
+    @Value("${parser.autoreply.headless.youdo.com:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
     }
 
-    @Value("${parser.autoreply.proxy.youdo.com}")
+    @Value("${parser.autoreply.proxy.youdo.com:false}")
     private void setProxy(boolean proxy) {
         this.proxy = proxy;
     }
 
-    @Value("${parser.autoreply.send.request.youdo.com}")
+    @Value("${parser.autoreply.send.request.youdo.com:true}")
     private void setOnSendRequest(boolean sendRequest) {
         this.sendRequest = sendRequest;
     }
