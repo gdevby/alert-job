@@ -21,7 +21,6 @@ public class CoreUnifiedClient {
     private String coreUrl;
 
     // ---------- Credentials ----------
-
     public UserCredentialEncrypted getEncryptedCredentials(
             String userUuid,
             Long siteId,
@@ -68,7 +67,6 @@ public class CoreUnifiedClient {
     }
 
     // ---------- Auto-reply users ----------
-
     public List<String> getUsersWithAutoReplyEnabled() {
         try {
             return webClient.get()

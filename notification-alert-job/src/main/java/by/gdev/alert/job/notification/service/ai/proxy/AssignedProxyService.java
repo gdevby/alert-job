@@ -31,7 +31,7 @@ public class AssignedProxyService {
     }
 
     public void reassignProxies() {
-        // Получаем пользователей с автоответом из Core
+        // Получаем актуальный список пользователей с автоответом
         List<String> users = coreClient.getUsersWithAutoReplyEnabled();
         if (users.isEmpty()) {
             userProxyMap.clear();
@@ -39,7 +39,7 @@ public class AssignedProxyService {
             return;
         }
 
-        // Берём только рабочие прокси
+        // Доступные рабочие прокси
         List<ProxyCredentials> availableProxies = proxySupplier.getProxies().stream()
                 .filter(p -> p.getState() == ProxyState.ACTIVE || p.getState() == ProxyState.WARMING_UP)
                 .collect(Collectors.toList());
@@ -50,20 +50,39 @@ public class AssignedProxyService {
             return;
         }
 
-        log.debug("Доступно рабочих прокси: {}", availableProxies.size());
+        // Сохраняем старые назначения для пользователей, у которых прокси всё ещё рабочий
+        Map<String, ProxyCredentials> oldMap = new HashMap<>(userProxyMap);
+        Map<String, ProxyCredentials> newMap = new HashMap<>();
 
-        // ПЕРЕМЕШИВАЕМ список для случайного распределения
-        Collections.shuffle(availableProxies);
-
-        userProxyMap.clear();
-        for (int i = 0; i < users.size(); i++) {
-            ProxyCredentials proxy = availableProxies.get(i % availableProxies.size());
-            userProxyMap.put(users.get(i), proxy);
-            log.debug("Пользователю {} назначен РАБОЧИЙ прокси {} (state={})",
-                    users.get(i), proxy.getHost(), proxy.getState());
+        for (String user : users) {
+            ProxyCredentials oldProxy = oldMap.get(user);
+            if (oldProxy != null && (oldProxy.getState() == ProxyState.ACTIVE || oldProxy.getState() == ProxyState.WARMING_UP)) {
+                newMap.put(user, oldProxy);
+                log.trace("Пользователь {} оставлен с прежним РАБОЧИМ прокси {}", user, oldProxy.getHost());
+            }
         }
 
-        log.debug("Назначено {} прокси для {} пользователей", userProxyMap.size(), users.size());
+        // Пользователи, которым нужен новый прокси (новые или с нерабочим)
+        List<String> usersWithoutProxy = users.stream()
+                .filter(u -> !newMap.containsKey(u))
+                .toList();
+
+        if (!usersWithoutProxy.isEmpty()) {
+            Collections.shuffle(availableProxies); // случайное распределение
+            for (int i = 0; i < usersWithoutProxy.size(); i++) {
+                ProxyCredentials proxy = availableProxies.get(i % availableProxies.size());
+                newMap.put(usersWithoutProxy.get(i), proxy);
+                log.debug("Пользователю {} назначен новый РАБОЧИЙ прокси {} (state={})",
+                        usersWithoutProxy.get(i), proxy.getHost(), proxy.getState());
+            }
+        }
+
+        // Заменяем карту
+        userProxyMap.clear();
+        userProxyMap.putAll(newMap);
+
+        log.debug("Назначено {} прокси для {} пользователей (сохранено старых: {})",
+                userProxyMap.size(), users.size(), newMap.size() - usersWithoutProxy.size());
     }
 
     public ProxyCredentials getProxyForUser(String userUuid) {
