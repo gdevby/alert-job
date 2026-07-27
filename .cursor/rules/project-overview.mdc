@@ -1,0 +1,54 @@
+---
+description: Обзор проекта alert-job — архитектура, модули, запуск
+alwaysApply: true
+---
+
+# alert-job — обзор проекта
+
+Сервис уведомлений о заказах с фриланс-бирж по пользовательским фильтрам (позитивные + негативные).
+
+## Стек
+
+Java 17 · Maven · Spring Boot 3.3.4 · Spring Cloud 2023.0.3 · WebFlux · JPA · MariaDB · Keycloak · Docker · React (Vite) · ELK/Prometheus/Grafana
+
+## Модули Maven (корневой `pom.xml`)
+
+| Модуль | Порт | Назначение |
+|--------|------|------------|
+| `alert-job-config` | 8011 | Spring Cloud Config Server |
+| `alert-job-eureka` | 8012 | Service discovery |
+| `alert-job-gateway` | 8015 | API Gateway, OAuth2/Keycloak |
+| `parser-alert-job` | 8017 | Парсинг бирж |
+| `core-alert-job` | 8018 | Бизнес-логика, фильтры, пользователи |
+| `notification-alert-job` | 8019 | Уведомления (email, Telegram и др.) |
+| `llm-alert-job` | 8033 | AI-автоответы |
+| `common-alert-job` | — | Общие DTO, proxy, Playwright |
+
+Фронтенд: `front/` (React + Vite + MUI). Конфигурация сервисов — внешний репозиторий `alert-job-config-repo`.
+
+## Порядок запуска (IDE / dev)
+
+1. config → 2. eureka → 3. gateway → 4. parser → 5. core → 6. notification → 7. llm
+
+## Локальная разработка
+
+- Добавить в `/etc/hosts`: `127.0.0.1 config eureka keycloak gateway notification parser core` и `127.0.0.1 alertjob.by`
+- `localhost` для gateway **не работает** — нужен домен `alertjob.by`
+- Сборка: `mvn clean install` из корня
+- Тестовый аккаунт: `test` / `test`
+- Документация: `README_RU.md`, `README_FOR_DEVELOPERS_LINUX_RU.md`
+
+## Секреты и конфигурация
+
+- **Не коммитить** `.env`, пароли, API-ключи
+- Шаблон prod-переменных: `env_sample.properties`
+- Prod compose: `docker-compose-prod.yml` (читает `.env`)
+- Dev compose: `docker-compose.yml`
+- Docker-образы: `rg.gdev.by/alert-job/<module>:1.0`
+
+## Принципы для агента
+
+- Минимальный diff, без рефакторинга «заодно»
+- Сохранять существующие опечатки в именах (`AbsctractSiteParser`, `exeption`) — не исправлять без запроса
+- Комментарии и документация в коде часто на русском — следовать этому стилю
+- Не создавать markdown-файлы без явного запроса пользователя

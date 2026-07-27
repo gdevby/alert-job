@@ -1,0 +1,40 @@
+---
+description: Docker, compose и деплой alert-job
+globs: "docker-compose*.yml,config/**,env_sample.properties"
+alwaysApply: false
+---
+
+# Docker и деплой
+
+## Compose-файлы
+
+- `docker-compose.yml` — локальная разработка (образы `rg.gdev.by`, профиль `dev`)
+- `docker-compose-prod.yml` — production (переменные из `.env`, HTTPS через acme-companion)
+
+## Prod-переменные (`env_sample.properties`)
+
+Ключевые: `domain`, `database_user_password`, `keycloak_admin_password`, `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `MAILBOX_*`, `APP_ENCRYPTION_KEY`, `local_config_directory`, `parser_config_directory`
+
+Скопировать в `.env` и заполнить реальными значениями. **`.env` в git не коммитить.**
+
+## Сервисы в compose
+
+nginx-proxy → keycloak → config → eureka → gateway → (parser, core, notification, llm) → front, prometheus, grafana, adminer, db (prod)
+
+## Healthcheck-зависимости
+
+Сервисы ждут `config` и `eureka` с `condition: service_healthy`. При изменении compose сохранять порядок `depends_on`.
+
+## Сборка образов
+
+```bash
+mvn clean install   # из корня — собирает JAR + Docker-образы
+```
+
+Образы пушатся в `rg.gdev.by/alert-job/<artifactId>:1.0`.
+
+## Известные проблемы
+
+- Docker-контейнеры могут терять сеть — освободить порты перед `docker compose start`
+- Keycloak dev: `alert-job/alert-job-keycloak:0.1`, prod: `quay.io/keycloak/keycloak`
+- Часовой пояс: `Europe/Moscow`

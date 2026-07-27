@@ -1,0 +1,53 @@
+---
+description: Java/Spring конвенции для backend-модулей alert-job
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# Java backend
+
+## Пакеты и структура
+
+- Базовый пакет: `by.gdev.alert.job.<module>` (gateway: `by.gdev.gateway`, config: `by.gdev.config`)
+- Общий код: `common-alert-job` → пакет `by.gdev.common`
+- Зависимость на `common-alert-job` обязательна для DTO (`OrderDTO`, `SiteName`, `UserNotification` и др.)
+
+## Spring-паттерны проекта
+
+- `@SpringBootApplication` — точка входа в каждом модуле
+- Конфигурация: `bootstrap.properties` / `bootstrap.yml` + Spring Cloud Config (`http://config:8011`)
+- Профиль по умолчанию: `dev`
+- Lombok (`@Slf4j`, `@Getter`, `@Autowired` на полях — существующий стиль)
+- API: `@RestController` + `@RequestMapping("/api/...")`
+- Ошибки: `@RestControllerAdvice` / `@ControllerAdvice` в каждом модуле
+- OpenAPI: springdoc (`@Hidden` для внутренних endpoint'ов)
+- Метрики: Micrometer + Prometheus
+
+## WebFlux vs WebMVC
+
+- `core-alert-job`, `alert-job-gateway` — **WebFlux** (reactive)
+- `parser-alert-job`, `notification-alert-job`, `llm-alert-job` — servlet stack
+
+## Сборка и Docker
+
+- Версия: `${revision}` (сейчас `1.0`) через flatten-maven-plugin
+- Docker: `dockerfile-maven-plugin`, registry `${private.registry.url}/${docker.image.prefix}/`
+- Тесты минимальны — добавлять только по запросу или для нетривиальной логики
+
+## Пример добавления endpoint
+
+```java
+@RestController
+@RequestMapping("/api/example")
+@Slf4j
+public class ExampleController {
+
+    @Autowired
+    private ExampleService exampleService;
+
+    @GetMapping
+    public ResponseEntity<List<ExampleDTO>> list() {
+        return ResponseEntity.ok(exampleService.findAll());
+    }
+}
+```
