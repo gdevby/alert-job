@@ -8,6 +8,7 @@
 	<artifactId>llm-alert-job</artifactId>
 	<properties>
 		<spring-ai.version>1.0.0-M6</spring-ai.version>
+		<docker.server.port>8033</docker.server.port>
 	</properties>
 	<dependencies>
 
@@ -113,26 +114,6 @@
 			<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>dockerfile-maven-plugin</artifactId>
-				<version>1.4.13</version>
-				<configuration>
-					<skip>${docker.skip}</skip>
-					<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
-					<username>${registry.username}</username>
-					<password>${registry.password}</password>
-					<tag>${project.version}</tag>
-					<buildArgs>
-						<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
-					</buildArgs>
-				</configuration>
-				<executions>
-					<execution>
-						<id>default</id>
-						<phase>install</phase>
-						<goals>
-							<goal>build</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 
 			<!-- Компиляция JAR -->
@@ -290,14 +271,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

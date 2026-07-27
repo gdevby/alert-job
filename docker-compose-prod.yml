@@ -209,7 +209,8 @@ services:
         condition: service_started
     mem_limit: 2g
   llm:
-    image: rg.gdev.by/alert-job/llm-alert-job:1.0
+    restart: always
+    image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
     ports:
       - "8033:8033"
     env_file:

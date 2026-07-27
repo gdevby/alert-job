@@ -30,7 +30,7 @@ pipeline {
                 }
                 stage('Maven modules') {
                     steps {
-                        bat 'mvn -Drevision=%REVISION% -T 1C clean install'
+                        bat 'mvn -Drevision=%REVISION% -Ddocker.skip=true -T 1C clean install'
                     }
                 }
             }
@@ -57,6 +57,9 @@ pipeline {
                             },
                             'parser': {
                                 bat 'cd parser-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                            },
+                            'llm': {
+                                bat 'cd llm-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
                             },
                             'front': {
                                 bat 'docker image push rg.gdev.by/alert-job/front:%REVISION%'
