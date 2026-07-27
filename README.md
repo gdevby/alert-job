@@ -58,6 +58,10 @@ cd keycloak
 ./build.sh
 ```
 
+In the docker-compose file for the llm container, you need to fill in the AI_API_KEY, AI_BASE_URL, AI_MODEL properties 
+to specify the parameters for interaction with AI and fill in the APP_ENCRYPTION_KEY property to specify 
+the key with which the credentials will be encrypted for organizing an automatic response on websites.
+
 Next, you need to return to the parent directory to start the front
 ```
 cd ..

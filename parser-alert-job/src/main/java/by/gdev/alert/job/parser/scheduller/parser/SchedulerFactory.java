@@ -4,7 +4,7 @@ import by.gdev.alert.job.parser.scheduller.SiteParserSchedulerBeanRegistrar;
 import by.gdev.alert.job.parser.scheduller.parser.properties.ParserScheduleConfig;
 import by.gdev.alert.job.parser.scheduller.parser.properties.ParserScheduleProperties;
 import by.gdev.alert.job.parser.service.order.SiteParser;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.common.model.SiteName;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

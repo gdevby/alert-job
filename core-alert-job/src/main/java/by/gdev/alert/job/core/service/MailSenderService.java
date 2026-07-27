@@ -129,7 +129,6 @@ public class MailSenderService {
 
     private boolean sendSingleMessage(AppUser user, String uri, String message, NotificationType type) {
         UserNotification un;
-
         if (uri.equals(SEND_MESSAGE_URL_MAIL)) {
             un = new UserNotification(user.getEmail(), message, type);
         } else {

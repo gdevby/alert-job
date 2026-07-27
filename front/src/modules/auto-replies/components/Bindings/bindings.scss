@@ -1,0 +1,13 @@
+.bindings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: end;
+
+  &__header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}

@@ -8,8 +8,9 @@ import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.truelancer.TreuelancerProjects;
 import by.gdev.alert.job.parser.domain.truelancer.TrueLancerRoot;
 import by.gdev.alert.job.parser.domain.truelancer.TruelancerOrder;
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SiteName;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
