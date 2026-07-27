@@ -8,18 +8,13 @@ import lombok.Data;
 @Data
 public class ApplicationProperty {
 
-	@Value("${mail.login}")
-	private String mailLogin;
-	
-	@Value("${mail.password}")
-	private String mailPassword;
 	@Value("${telegram.chat.token}")
 	private String telegramChatToken;
-	
+
 	@Value("${mail.from.address}")
 	private String fromAddress;
 	@Value("${mail.smtp.username}")
-	private String smtpMailUsername;	
+	private String smtpMailUsername;
 	@Value("${mail.smtp.password}")
 	private String smtpMailPassword;
 	@Value("${mail.smtp.host}")
@@ -28,5 +23,5 @@ public class ApplicationProperty {
 	private Integer smtpPort;
 	@Value("${mail.smtp.transport.strategy}")
 	private TransportStrategy transportStrategy;
-	
+
 }

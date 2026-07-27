@@ -83,6 +83,8 @@ services:
   config:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-config:$alert_job_version
+    env_file:
+      - .env
     environment:
       - "SPRING_PROFILES_ACTIVE=dev,native"
       - "spring.cloud.config.server.native.search-locations=file:///alert-job-config-repo"
@@ -168,13 +170,12 @@ services:
   notification:
     restart: always
     image: rg.gdev.by/alert-job/notification-alert-job:$alert_job_version
+    env_file:
+      - .env
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - TZ=Europe/Moscow
        - CORE_URL=http://core:8018
-       - MAILBOX_HOST=
-       - MAILBOX_USERNAME=
-       - MAILBOX_PWD=
        - APP_ENCRYPTION_KEY=
     depends_on:
       config:
@@ -219,12 +220,11 @@ services:
     image: rg.gdev.by/alert-job/llm-alert-job:1.0
     ports:
       - "8033:8033"
+    env_file:
+      - .env
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
-       - AI_API_KEY=
-       - AI_BASE_URL=
-       - AI_MODEL=
        - NOTIFICATION_URL=http://notification:8019/notification/api/ai/decision
        - CORE_URL=http://core:8018
     depends_on:

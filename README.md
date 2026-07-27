@@ -139,3 +139,9 @@ sudo apt-get install docker-ce docker-ce-cli [containerd.io](http://containerd.i
 Add user `docker` in your group `sudo usermod -a -G $USER docker`<br>
 Reboot PC
 
+
+# For prod
+1) copy env_sample.properties to .env and change. need to add it where env params is used.
+
+2) use comand to run  docker compose -f docker-compose-prod.yml ...
+ 
