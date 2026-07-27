@@ -37,3 +37,4 @@ front/bundle-visualizer.html
 # IntelliJ IDEA
 .idea/
 *.iml
+/.env
