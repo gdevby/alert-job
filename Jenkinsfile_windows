@@ -2,39 +2,69 @@
 pipeline {
     agent any
     //java should be 17
-    tools{
-    	jdk 'jdk_17'
+    tools {
+        jdk 'jdk_17'
     }
- 	environment {
+    environment {
         REVISION = "1.0.${BUILD_ID}"
         APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
     }
-    
+
     stages {
-    	stage("build parent and dependencies"){
-            steps{
-             	  bat 'cd front && docker build --build-arg REVISION=%REVISION% -t rg.gdev.by/alert-job/front:%REVISION% .'
-             	  bat 'git reset --hard'
-           	      script {
-	                 config = readFile "${APP_CONFIG_FILENAME}"
-	                 newconfig = config.replaceAll("build_version","${REVISION}")
-	                 writeFile file: "${APP_CONFIG_FILENAME}", text: "${newconfig}"
-	              }
-                  bat 'mvn -Drevision=%REVISION% clean install'
+        stage('Prepare') {
+            steps {
+                bat 'git reset --hard'
+                script {
+                    config = readFile "${APP_CONFIG_FILENAME}"
+                    newconfig = config.replaceAll("build_version", "${REVISION}")
+                    writeFile file: "${APP_CONFIG_FILENAME}", text: "${newconfig}"
+                }
+            }
+        }
+        stage('Build') {
+            parallel {
+                stage('Front image') {
+                    steps {
+                        bat 'cd front && docker build --build-arg REVISION=%REVISION% -t rg.gdev.by/alert-job/front:%REVISION% .'
+                    }
+                }
+                stage('Maven modules') {
+                    steps {
+                        bat 'mvn -Drevision=%REVISION% -T 1C clean install'
+                    }
+                }
             }
         }
         stage('Push images to docker repo') {
-          steps {
-              withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
-              	  bat 'cd alert-job-config && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
-              	  bat 'cd alert-job-eureka && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
-              	  bat 'cd alert-job-gateway && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
-              	  bat 'cd core-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
-              	  bat 'cd notification-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
-              	  bat 'cd parser-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
-              	  bat 'docker image push rg.gdev.by/alert-job/front:%REVISION%'
-              }
-          }
+            steps {
+                script {
+                    withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
+                        parallel(
+                            'config': {
+                                bat 'cd alert-job-config && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                            },
+                            'eureka': {
+                                bat 'cd alert-job-eureka && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                            },
+                            'gateway': {
+                                bat 'cd alert-job-gateway && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                            },
+                            'core': {
+                                bat 'cd core-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                            },
+                            'notification': {
+                                bat 'cd notification-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                            },
+                            'parser': {
+                                bat 'cd parser-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                            },
+                            'front': {
+                                bat 'docker image push rg.gdev.by/alert-job/front:%REVISION%'
+                            }
+                        )
+                    }
+                }
+            }
         }
-   	}
+    }
 }

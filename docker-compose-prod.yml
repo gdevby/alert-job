@@ -68,7 +68,6 @@ services:
       VIRTUAL_HOST: $domain
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /keycloak
-      LETSENCRYPT_HOST: $domain
 #      KC_HOSTNAME_STRICT_HTTPS: false
       KC_HTTP_ENABLED: true
       KC_PROXY: edge
@@ -146,8 +145,6 @@ services:
     environment:
       VIRTUAL_HOST: $domain
       VIRTUAL_PATH: /front
-      LETSENCRYPT_HOST: $domain
-      LETSENCRYPT_EMAIL: $acme_email
       TZ: Europe/Moscow
     mem_limit: 256m
   gateway:
@@ -175,8 +172,6 @@ services:
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - TZ=Europe/Moscow
-       - CORE_URL=http://core:8018
-       - APP_ENCRYPTION_KEY=
     depends_on:
       config:
         condition: service_healthy
@@ -198,16 +193,13 @@ services:
         condition: service_healthy
       db:
         condition: service_started
-    mem_limit: 5g
+    mem_limit: 10g
   core:
     restart: always
     image: rg.gdev.by/alert-job/core-alert-job:$alert_job_version
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
-       - LLM_MODULE_URL=http://llm:8033
-       - NOTIFICATION_MODULE_URL=http://notification:8019
-       - APP_ENCRYPTION_KEY=
     depends_on:
       config:
         condition: service_healthy
@@ -275,7 +267,6 @@ services:
       VIRTUAL_HOST: $domain
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /db
-      LETSENCRYPT_HOST: $domain
   # blackbox_exporter:
   #   image: prom/blackbox-exporter
   #   container_name: blackbox
@@ -292,4 +283,4 @@ volumes:
   loki-data: {}
 networks:
   alert-job:
-    driver: bridge      
+    driver: bridge
