@@ -8,7 +8,7 @@ ARG JAR_FILE
 # Working directory for extraction.
 WORKDIR /workspace
 # Copy the built JAR from the module target/ directory.
-COPY target/${JAR_FILE} application.jar
+COPY ${JAR_FILE} application.jar
 # Split the fat JAR into layers for better image layer caching on rebuild.
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 

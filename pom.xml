@@ -24,6 +24,8 @@
 		<java.version>17</java.version>
 		<spring-cloud.version>2023.0.3</spring-cloud.version>
 		<revision>1.0</revision>
+		<!-- JDK 23+ requires Lombok >= 1.18.36 and explicit annotation processing. -->
+		<lombok.version>1.18.40</lombok.version>
 		<docker.image.prefix>alert-job</docker.image.prefix>
 		<private.registry.url>rg.gdev.by</private.registry.url>
 		<dockerfile.maven.plugin.version>1.4.13</dockerfile.maven.plugin.version>
@@ -68,13 +70,15 @@
 					<version>${dockerfile.maven.plugin.version}</version>
 					<configuration>
 						<skip>${docker.skip}</skip>
+						<!-- Dockerfile must be inside build context for Docker Remote API (Docker 29+). -->
+						<contextDirectory>${project.basedir}/..</contextDirectory>
 						<dockerfile>${project.basedir}/../docker/java-service.Dockerfile</dockerfile>
 						<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
 						<username>${registry.username}</username>
 						<password>${registry.password}</password>
 						<tag>${project.version}</tag>
 						<buildArgs>
-							<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+							<JAR_FILE>${project.artifactId}/target/${project.build.finalName}.jar</JAR_FILE>
 							<SERVER_PORT>${docker.server.port}</SERVER_PORT>
 						</buildArgs>
 					</configuration>
@@ -87,6 +91,19 @@
 							</goals>
 						</execution>
 					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<annotationProcessorPaths>
+							<path>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+								<version>${lombok.version}</version>
+							</path>
+						</annotationProcessorPaths>
+					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.springframework.boot</groupId>
@@ -106,6 +123,10 @@
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>flatten-maven-plugin</artifactId>
