@@ -9,6 +9,7 @@
 	<properties>
 		<jsoup>1.15.3</jsoup>
 		<docker.server.port>8017</docker.server.port>
+		<docker.dockerfile.name>java-playwright.Dockerfile</docker.dockerfile.name>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -125,9 +126,6 @@
 			<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>dockerfile-maven-plugin</artifactId>
-				<configuration>
-					<dockerfile>${project.basedir}/../docker/java-playwright.Dockerfile</dockerfile>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

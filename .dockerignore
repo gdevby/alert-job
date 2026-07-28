@@ -1,7 +1,0 @@
-# Minimal context for dockerfile-maven-plugin (contextDirectory = repo root).
-# Ignore everything by default, then allow only Dockerfiles and built JARs.
-**
-!docker/
-!docker/**
-!*/target/
-!*/target/*.jar
