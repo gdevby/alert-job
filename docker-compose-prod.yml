@@ -53,9 +53,11 @@ services:
       - TZ=Europe/Moscow
   keycloak:
     restart: always
-    image: quay.io/keycloak/keycloak
+    # Local image (Keycloak 20) — latest quay.io dropped --hostname-url
+    image: alert-job/alert-job-keycloak:0.1
     command:
       - "start"
+      - "--import-realm"
       - "--hostname-url=https://$domain/keycloak"
       - "--hostname-admin-url=https://$domain/keycloak"
       - "--db mariadb"
@@ -82,19 +84,23 @@ services:
   config:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-config:$alert_job_version
+    # Current images are thin-jar layout; JarLauncher entrypoint from Dockerfile does not apply
+    entrypoint: ["sh", "-c", "exec java $$JAVA_OPTS -jar /app/application.jar"]
     env_file:
       - .env
     environment:
-      - "SPRING_PROFILES_ACTIVE=dev,native"
-      - "spring.cloud.config.server.native.search-locations=file:///alert-job-config-repo"
-      - "spring.cloud.config.server.overrides.logging.level.by.gdev=$logger_level"
+      # Underscore form required: dotted env keys are ignored by Spring Boot binding
+      - SPRING_PROFILES_ACTIVE=dev,native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///alert-job-config-repo
+      - SPRING_CLOUD_CONFIG_SERVER_OVERRIDES_LOGGING_LEVEL_BY_GDEV=$logger_level
       - TZ=Europe/Moscow
     volumes:
       - "$local_config_directory:/alert-job-config-repo"
     mem_limit: 512m
   eureka:
     restart: always
-    image: rg.gdev.by/alert-job/alert-job-eureka:$alert_job_version 
+    image: rg.gdev.by/alert-job/alert-job-eureka:$alert_job_version
+    entrypoint: ["sh", "-c", "exec java $$JAVA_OPTS -jar /app/application.jar"]
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
        - TZ=Europe/Moscow
@@ -150,6 +156,7 @@ services:
   gateway:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-gateway:$alert_job_version
+    entrypoint: ["sh", "-c", "exec java $$JAVA_OPTS -jar /app/application.jar"]
     environment:
       VIRTUAL_HOST: $domain
       VIRTUAL_PATH: /
@@ -167,11 +174,14 @@ services:
   notification:
     restart: always
     image: rg.gdev.by/alert-job/notification-alert-job:$alert_job_version
+    entrypoint: ["sh", "-c", "exec java $$JAVA_OPTS -jar /app/application.jar"]
     env_file:
       - .env
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - TZ=Europe/Moscow
+    volumes:
+       - "$parser_config_directory:/etc/parser/config:ro"
     depends_on:
       config:
         condition: service_healthy
@@ -181,6 +191,7 @@ services:
   parser:
     restart: always
     image: rg.gdev.by/alert-job/parser-alert-job:$alert_job_version
+    entrypoint: ["sh", "-c", "exec java $$JAVA_OPTS -jar /app/application.jar"]
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
@@ -197,6 +208,7 @@ services:
   core:
     restart: always
     image: rg.gdev.by/alert-job/core-alert-job:$alert_job_version
+    entrypoint: ["sh", "-c", "exec java $$JAVA_OPTS -jar /app/application.jar"]
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
@@ -211,6 +223,7 @@ services:
   llm:
     restart: always
     image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
+    entrypoint: ["sh", "-c", "exec java $$JAVA_OPTS -jar /app/application.jar"]
     ports:
       - "8033:8033"
     env_file:
