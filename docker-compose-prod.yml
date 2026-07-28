@@ -177,6 +177,8 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+      core:
+        condition: service_healthy
     mem_limit: 512m
   parser:
     restart: always
