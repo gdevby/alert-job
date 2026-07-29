@@ -8,6 +8,7 @@ pipeline {
     environment {
         REVISION = "1.0.${BUILD_ID}"
         APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
+        DOCKER_PUSH_CMD = 'mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests package dockerfile:build dockerfile:push'
     }
 
     stages {
@@ -41,25 +42,25 @@ pipeline {
                     withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
                         parallel(
                             'config': {
-                                bat 'cd alert-job-config && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                                bat 'cd alert-job-config && %DOCKER_PUSH_CMD%'
                             },
                             'eureka': {
-                                bat 'cd alert-job-eureka && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                                bat 'cd alert-job-eureka && %DOCKER_PUSH_CMD%'
                             },
                             'gateway': {
-                                bat 'cd alert-job-gateway && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                                bat 'cd alert-job-gateway && %DOCKER_PUSH_CMD%'
                             },
                             'core': {
-                                bat 'cd core-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                                bat 'cd core-alert-job && %DOCKER_PUSH_CMD%'
                             },
                             'notification': {
-                                bat 'cd notification-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                                bat 'cd notification-alert-job && %DOCKER_PUSH_CMD%'
                             },
                             'parser': {
-                                bat 'cd parser-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                                bat 'cd parser-alert-job && %DOCKER_PUSH_CMD%'
                             },
                             'llm': {
-                                bat 'cd llm-alert-job && mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% dockerfile:push'
+                                bat 'cd llm-alert-job && %DOCKER_PUSH_CMD%'
                             },
                             'front': {
                                 bat 'docker image push rg.gdev.by/alert-job/front:%REVISION%'

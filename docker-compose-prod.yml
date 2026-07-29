@@ -86,8 +86,6 @@ services:
     environment:
       - "SPRING_PROFILES_ACTIVE=${profile}"
       - TZ=Europe/Moscow
-    volumes:
-      - "$local_config_directory:/alert-job-config-repo"
     mem_limit: 512m
   eureka:
     restart: always
