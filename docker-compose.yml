@@ -83,6 +83,8 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+      core:
+        condition: service_healthy
   llm:
     image: rg.gdev.by/alert-job/llm-alert-job:1.0
     ports:
