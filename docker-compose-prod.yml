@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   nginx-proxy:
     restart: always
@@ -68,7 +67,6 @@ services:
       VIRTUAL_HOST: $domain
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /keycloak
-      LETSENCRYPT_HOST: $domain
 #      KC_HOSTNAME_STRICT_HTTPS: false
       KC_HTTP_ENABLED: true
       KC_PROXY: edge
@@ -83,10 +81,10 @@ services:
   config:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-config:$alert_job_version
+    env_file:
+      - .env
     environment:
-      - "SPRING_PROFILES_ACTIVE=dev,native"
-      - "spring.cloud.config.server.native.search-locations=file:///alert-job-config-repo"
-      - "spring.cloud.config.server.overrides.logging.level.by.gdev=$logger_level"
+      - "SPRING_PROFILES_ACTIVE=${profile}"
       - TZ=Europe/Moscow
     volumes:
       - "$local_config_directory:/alert-job-config-repo"
@@ -95,7 +93,7 @@ services:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-eureka:$alert_job_version 
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=${profile}"
        - TZ=Europe/Moscow
     depends_on:
       config:
@@ -144,8 +142,6 @@ services:
     environment:
       VIRTUAL_HOST: $domain
       VIRTUAL_PATH: /front
-      LETSENCRYPT_HOST: $domain
-      LETSENCRYPT_EMAIL: $acme_email
       TZ: Europe/Moscow
     mem_limit: 256m
   gateway:
@@ -168,6 +164,8 @@ services:
   notification:
     restart: always
     image: rg.gdev.by/alert-job/notification-alert-job:$alert_job_version
+    env_file:
+      - .env
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - TZ=Europe/Moscow
@@ -192,13 +190,15 @@ services:
         condition: service_healthy
       db:
         condition: service_started
-    mem_limit: 5g
+    mem_limit: 10g
   core:
     restart: always
     image: rg.gdev.by/alert-job/core-alert-job:$alert_job_version
     environment:
        - "SPRING_PROFILES_ACTIVE=prod"
        - TZ=Europe/Moscow
+    env_file:
+      - .env
     depends_on:
       config:
         condition: service_healthy
@@ -206,7 +206,24 @@ services:
         condition: service_healthy
       db:
         condition: service_started
-    mem_limit: 2g  
+    mem_limit: 2g
+  llm:
+    restart: always
+    image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
+    ports:
+      - "8033:8033"
+    env_file:
+      - .env
+    environment:
+       - "SPRING_PROFILES_ACTIVE=prod"
+       - TZ=Europe/Moscow
+       - NOTIFICATION_URL=http://notification:8019/notification/api/ai/decision
+       - CORE_URL=http://core:8018
+    depends_on:
+      config:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
   prometheus:
     restart: always
     container_name: prometheus
@@ -250,7 +267,6 @@ services:
       VIRTUAL_HOST: $domain
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /db
-      LETSENCRYPT_HOST: $domain
   # blackbox_exporter:
   #   image: prom/blackbox-exporter
   #   container_name: blackbox
@@ -267,4 +283,4 @@ volumes:
   loki-data: {}
 networks:
   alert-job:
-    driver: bridge      
+    driver: bridge

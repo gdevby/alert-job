@@ -137,3 +137,8 @@ sudo apt-get install docker-ce docker-ce-cli [containerd.io](http://containerd.i
 Добавьте пользователя `docker` в вашу группу `sudo usermod -a -G $USER docker`<br>
 Перезагрузите ПК
 
+# Для прода
+1) копируйте env_sample.properties в .env и измените, переменный доступны будут в сервисах, необходимо этот файл добавлять туда, где они нижны в переменные среды
+
+2) используй команду для запуска  docker compose -f docker-compose-prod.yml ...
+

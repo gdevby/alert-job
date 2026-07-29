@@ -1,0 +1,37 @@
+---
+description: Паттерны парсеров фриланс-бирж в parser-alert-job
+globs: "parser-alert-job/**"
+alwaysApply: false
+---
+
+# Модуль parser-alert-job
+
+Парсит заказы с бирж и отправляет в `core` через REST.
+
+## Добавление новой биржи
+
+1. Добавить значение в `SiteName` (`common-alert-job`)
+2. Создать `*OrderParser` extends `AbsctractSiteParser` implements `SiteParser`
+3. Создать `*CategoryParser` для дерева категорий
+4. Зарегистрировать в фабриках/конфигурации (`CategoryParserFactory`, `ParserScheduleConfig`)
+5. Добавить источник в БД (SQL в `src/main/resources/`)
+
+## Ключевые классы
+
+- `SiteParser` — контракт: `parse()`, `getSiteName()`, `isActive()`
+- `AbsctractSiteParser` — общий lifecycle: категории → `mapItems()` → сохранение → `OrderDTO`
+- `ParserService` / `OrderDispatcher` — оркестрация и отправка в core
+- `PlaywrightSiteParser` / `JsoupClient` — headless browser vs HTML parsing
+- Proxy: `by.gdev.common.service.proxy.ProxyService`
+
+## Конфигурация
+
+- `delay.reply.request` — задержка retry при сетевых ошибках
+- `PROXY_FILE` / `PROXY_URL` — прокси для обхода блокировок
+- Парсер отключается флагом `active` в реализации
+
+## Важно
+
+- Не ломать существующие парсеры при добавлении нового
+- Сетевые вызовы — через `RestTemplateFactory` с proxy
+- Логировать количество полученных заказов: `log.info("Принято {} заказов от {}", ...)`

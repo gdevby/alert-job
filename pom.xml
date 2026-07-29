@@ -12,6 +12,7 @@
 		<module>core-alert-job</module>
 		<module>common-alert-job</module>
 		<module>notification-alert-job</module>
+		<module>llm-alert-job</module>
 	</modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -23,8 +24,14 @@
 		<java.version>17</java.version>
 		<spring-cloud.version>2023.0.3</spring-cloud.version>
 		<revision>1.0</revision>
+		<!-- JDK 23+ requires Lombok >= 1.18.36 and explicit annotation processing. -->
+		<lombok.version>1.18.40</lombok.version>
 		<docker.image.prefix>alert-job</docker.image.prefix>
 		<private.registry.url>rg.gdev.by</private.registry.url>
+		<dockerfile.maven.plugin.version>1.4.13</dockerfile.maven.plugin.version>
+		<docker.server.port>8080</docker.server.port>
+		<docker.skip>false</docker.skip>
+		<docker.dockerfile.name>java-service.Dockerfile</docker.dockerfile.name>
 	</properties>
 
 	<dependencies>
@@ -56,7 +63,98 @@
 		</dependencies>
 	</dependencyManagement>
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>com.spotify</groupId>
+					<artifactId>dockerfile-maven-plugin</artifactId>
+					<version>${dockerfile.maven.plugin.version}</version>
+					<configuration>
+						<skip>${docker.skip}</skip>
+						<contextDirectory>${project.basedir}</contextDirectory>
+						<dockerfile>${project.build.directory}/docker/${docker.dockerfile.name}</dockerfile>
+						<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
+						<username>${registry.username}</username>
+						<password>${registry.password}</password>
+						<tag>${project.version}</tag>
+						<buildArgs>
+							<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+							<SERVER_PORT>${docker.server.port}</SERVER_PORT>
+						</buildArgs>
+					</configuration>
+					<executions>
+						<execution>
+							<id>default</id>
+							<phase>install</phase>
+							<goals>
+								<goal>build</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<annotationProcessorPaths>
+							<path>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+								<version>${lombok.version}</version>
+							</path>
+						</annotationProcessorPaths>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<executions>
+						<execution>
+							<id>copy-dockerfile</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/docker</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${project.basedir}/../docker</directory>
+										<includes>
+											<include>${docker.dockerfile.name}</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-maven-plugin</artifactId>
+					<configuration>
+						<layers>
+							<enabled>true</enabled>
+						</layers>
+						<excludes>
+							<exclude>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+							</exclude>
+						</excludes>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>flatten-maven-plugin</artifactId>

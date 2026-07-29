@@ -46,4 +46,5 @@ public interface OrderRepository extends CrudRepository<Order, Long> {
     @Transactional(timeout = 500)
     long deleteByDateTimeBefore(Date cutoff);
 
+    boolean existsByLink(String link);
 }

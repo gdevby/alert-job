@@ -8,6 +8,8 @@
 	<artifactId>parser-alert-job</artifactId>
 	<properties>
 		<jsoup>1.15.3</jsoup>
+		<docker.server.port>8017</docker.server.port>
+		<docker.dockerfile.name>java-playwright.Dockerfile</docker.dockerfile.name>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -121,40 +123,13 @@
 	</dependencies>
 	<build>
 		<plugins>
-		<plugin>
+			<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>dockerfile-maven-plugin</artifactId>
-				<version>1.4.13</version>
-				<configuration>
-					<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
-					<username>${registry.username}</username>
-        			<password>${registry.password}</password>
-					<tag>${project.version}</tag>
-					<buildArgs>
-						<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
-					</buildArgs>
-				</configuration>
-				<executions>
-					<execution>
-						<id>default</id>
-						<phase>install</phase>
-						<goals>
-							<goal>build</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

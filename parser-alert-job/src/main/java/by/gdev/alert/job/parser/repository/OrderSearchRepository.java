@@ -23,10 +23,7 @@ public interface OrderSearchRepository extends CrudRepository<Order, Long> {
     JOIN parser_order_source ps ON ps.id = o.source_site_id
     WHERE ps.source IN (:sites)
       AND (
-            -- 1) Нет ни booleanQuery, ни likeQuery → вернуть всё
             (:booleanQuery IS NULL AND :likeQuery IS NULL)
-
-            -- 2) MATCH (если booleanQuery есть)
             OR (
                 :booleanQuery IS NOT NULL AND (
                     CASE
@@ -36,15 +33,13 @@ public interface OrderSearchRepository extends CrudRepository<Order, Long> {
                     END
                 )
             )
-
-            -- 3) LIKE (если likeQuery есть)
             OR (
                 :likeQuery IS NOT NULL AND (
                     CASE
-                        WHEN :mode = 'TITLE' THEN o.title LIKE CONCAT('%', :likeQuery, '%')
-                        WHEN :mode = 'DESCRIPTION' THEN o.message LIKE CONCAT('%', :likeQuery, '%')
-                        ELSE (o.title LIKE CONCAT('%', :likeQuery, '%') 
-                           OR o.message LIKE CONCAT('%', :likeQuery, '%'))
+                        WHEN :mode = 'TITLE' THEN o.title LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%')
+                        WHEN :mode = 'DESCRIPTION' THEN o.message LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%')
+                        ELSE (o.title LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%') 
+                           OR o.message LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%'))
                     END
                 )
             )
@@ -69,7 +64,6 @@ public interface OrderSearchRepository extends CrudRepository<Order, Long> {
     WHERE ps.source IN (:sites)
       AND (
             (:booleanQuery IS NULL AND :likeQuery IS NULL)
-
             OR (
                 :booleanQuery IS NOT NULL AND (
                     CASE
@@ -79,14 +73,13 @@ public interface OrderSearchRepository extends CrudRepository<Order, Long> {
                     END
                 )
             )
-
             OR (
                 :likeQuery IS NOT NULL AND (
                     CASE
-                        WHEN :mode = 'TITLE' THEN o.title LIKE CONCAT('%', :likeQuery, '%')
-                        WHEN :mode = 'DESCRIPTION' THEN o.message LIKE CONCAT('%', :likeQuery, '%')
-                        ELSE (o.title LIKE CONCAT('%', :likeQuery, '%') 
-                           OR o.message LIKE CONCAT('%', :likeQuery, '%'))
+                        WHEN :mode = 'TITLE' THEN o.title LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%')
+                        WHEN :mode = 'DESCRIPTION' THEN o.message LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%')
+                        ELSE (o.title LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%') 
+                           OR o.message LIKE CONCAT('%', REPLACE(:likeQuery, ' ', '%'), '%'))
                     END
                 )
             )

@@ -10,8 +10,11 @@ import org.springframework.security.oauth2.client.registration.ReactiveClientReg
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
-//@EnableWebSecurity
 @EnableMethodSecurity(jsr250Enabled = true)
 public class SecurityConfig {
 
@@ -20,12 +23,7 @@ public class SecurityConfig {
                                                             ServerLogoutSuccessHandler handler) {
         http.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(req ->
-                        req.pathMatchers("/logout.html",
-                                        "/",
-                                        "/favicon.png",
-                                        "/actuator/**",
-                                        "/core-alert-job/api/user/test",
-                                        "/parser/api/orders/statistics")
+                        req.pathMatchers(getPermittedPaths("llm", "core"))
                                 .permitAll()
                                 .pathMatchers("/core-alert-job/api/orders",
                                         "/core-alert-job/api/cleanup")
@@ -36,6 +34,42 @@ public class SecurityConfig {
                 .oauth2Login(Customizer.withDefaults())
                 .logout(logout -> logout.logoutSuccessHandler(handler));
         return http.build();
+    }
+
+    /**
+     * Возвращает массив путей, которые должны быть доступны без аутентификации.
+     * Включает базовые общедоступные пути и Swagger-пути для указанных модулей.
+     *
+     * @param swaggerModules имена модулей, для которых нужно разрешить Swagger-документацию
+     * @return массив строк с путями для permitAll
+     */
+    private String[] getPermittedPaths(String... swaggerModules) {
+        List<String> paths = new ArrayList<>();
+
+        // Базовые общедоступные пути
+        paths.addAll(Arrays.asList(
+                "/logout.html",
+                "/",
+                "/favicon.png",
+                "/actuator/**",
+                "/core-alert-job/api/user/test",
+                "/parser/api/orders/statistics"
+        ));
+
+        // Добавляем Swagger-пути для каждого переданного модуля
+        for (String module : swaggerModules) {
+            paths.addAll(Arrays.asList(swaggerPaths(module)));
+        }
+        return paths.toArray(new String[0]);
+    }
+
+    private String[] swaggerPaths(String moduleName) {
+        return new String[]{
+                "/" + moduleName + "/swagger-ui.html",
+                "/" + moduleName + "/swagger-ui/**",
+                "/" + moduleName + "/webjars/**",
+                "/" + moduleName + "/v3/api-docs/**"
+        };
     }
 
     @Bean

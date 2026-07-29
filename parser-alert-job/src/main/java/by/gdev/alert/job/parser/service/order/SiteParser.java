@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.service.order;
 
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SiteName;
 
 import java.util.List;
 

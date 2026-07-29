@@ -1,7 +1,7 @@
 package by.gdev.alert.job.parser.factory;
 
-import by.gdev.alert.job.parser.util.proxy.ProxyCredentials;
-import by.gdev.alert.job.parser.util.proxy.ProxySupplier;
+import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;

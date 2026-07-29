@@ -1,0 +1,43 @@
+---
+description: React/Vite фронтенд alert-job
+globs: "front/**"
+alwaysApply: false
+---
+
+# Frontend (`front/`)
+
+## Стек
+
+React 18 · TypeScript (частично) · Vite · MUI 5 · Redux Toolkit · TanStack Query · React Router 6 · Sass · Axios
+
+## Структура
+
+- `src/pages/` — страницы (фильтры, уведомления, модули, автоответы)
+- `src/layouts/` — layout-компоненты
+- `src/components/` — переиспользуемые UI
+- `src/modules/auto-replies/` — модуль AI-автоответов (TypeScript)
+- `src/apis/` — OpenAPI SDK (`coreApi`, `llmApi`) — генерируются, не редактировать вручную
+- `src/hooks/` — кастомные хуки (`useAuth`, `useAutoReplyStatus`)
+
+## Команды
+
+```bash
+cd front
+npm i
+npm run dev          # dev-сервер
+npm run build        # prod-сборка с base=/front/
+npm run openapi:sdk  # регенерация API-клиентов
+```
+
+## Конвенции
+
+- Новый код — предпочитать **TypeScript** (`.tsx`), существующий JSX не мигрировать без запроса
+- Стили: colocated `.scss` рядом с компонентом
+- API-вызовы через сгенерированные SDK или axios, base path `/front/`
+- Auth через Keycloak (хук `useAuth`)
+
+## Не делать
+
+- Не редактировать файлы в `src/apis/*/generated/`
+- Не менять `vite.config.ts` без необходимости
+- Не коммитить `dist/`, `node_modules/`

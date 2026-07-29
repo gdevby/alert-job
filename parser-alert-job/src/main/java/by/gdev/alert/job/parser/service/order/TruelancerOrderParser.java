@@ -8,8 +8,9 @@ import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.truelancer.TreuelancerProjects;
 import by.gdev.alert.job.parser.domain.truelancer.TrueLancerRoot;
 import by.gdev.alert.job.parser.domain.truelancer.TruelancerOrder;
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SiteName;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,7 +81,7 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
     }
 
     private Order buildOrder(TruelancerOrder tr, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        if (!getParserService().isExistsOrder(category, subCategory, tr.getLink()))
+        if (!getParserService().isExistsOrder(tr.getLink()))
             return null;
         Order order = getOrderRepository().findOrdersByLink(tr.getLink()).stream().findFirst().orElseGet(Order::new);
         order.setTitle(tr.getTitle());

@@ -3,8 +3,8 @@ package by.gdev.alert.job.parser.service.order;
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
 import by.gdev.alert.job.parser.service.playwright.CaptchaService;
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SiteName;
 import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
@@ -149,7 +149,7 @@ public class WorkspaceOrderParser extends PlaywrightSiteParser {
         //Ccылка на заказ
         String fullLink = baseUrl + postfixLink;
         // Проверка уникальности
-        if (!getParserService().isExistsOrder(category, subCategory, fullLink))
+        if (!getParserService().isExistsOrder(fullLink))
             return null;
         Order order = getOrderRepository().findOrdersByLink(fullLink)
                 .stream().findFirst().orElseGet(Order::new);

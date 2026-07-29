@@ -38,17 +38,25 @@ const SourceList = ({ sources, setSources }) => {
 	}, [sources])
 
 	return <div className='show-sources'>
-		<Btn  onClick={handleshowingSources} text={isShowingSources ? 'Скрыть источники' : 'Показать источники'} variant='contained' className='mt-1' />
-		{(isShowingSources && items.length > 0) &&
+		<Btn  onClick={handleshowingSources} text={isShowingSources ? 'Скрыть источники' : 'Показать источники'} variant='contained' />
+		{isShowingSources &&
 			<TableContainer component={Paper} className='source-list'><Table sx={{ minWidth: 650 }} aria-label="simple table">
 				<TableHead>
 					<TableRow>
 						<TableCell>Сайт</TableCell>
 						<TableCell align="right">Категория</TableCell>
 						<TableCell align="right">Подкатегория</TableCell>
+						<TableCell align="right"></TableCell>
 					</TableRow>
 				</TableHead>
 				<TableBody>
+					{items.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  Нет данных
+                </TableCell>
+              </TableRow>
+            )}
 					{items.map((item, index) => <SourceCard key={index} removeCard={deleteSource} item={item} />)}
 				</TableBody>
 			</Table>

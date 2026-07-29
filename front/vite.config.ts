@@ -1,7 +1,7 @@
+import { join, resolve } from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { join } from 'node:path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), visualizer({ filename: 'bundle-visualizer.html' })],
     server: { port: 3001, strictPort: true, allowedHosts: true },
+    base: '/front',
     preview: {
       port: 3001,
     },
@@ -17,6 +18,7 @@ export default defineConfig(({ mode }) => {
       mainFields: [],
       alias: {
         axios: join(__dirname, 'node_modules', 'axios', 'dist', 'esm', 'axios.js'),
+        '@': resolve(__dirname, './src'),
       },
     },
     build: {

@@ -58,6 +58,10 @@ cd keycloak
 ./build.sh
 ```
 
+In the docker-compose file for the llm container, you need to fill in the AI_API_KEY, AI_BASE_URL, AI_MODEL properties 
+to specify the parameters for interaction with AI and fill in the APP_ENCRYPTION_KEY property to specify 
+the key with which the credentials will be encrypted for organizing an automatic response on websites.
+
 Next, you need to return to the parent directory to start the front
 ```
 cd ..
@@ -135,3 +139,9 @@ sudo apt-get install docker-ce docker-ce-cli [containerd.io](http://containerd.i
 Add user `docker` in your group `sudo usermod -a -G $USER docker`<br>
 Reboot PC
 
+
+# For prod
+1) copy env_sample.properties to .env and change. need to add it where env params is used.
+
+2) use comand to run  docker compose -f docker-compose-prod.yml ...
+ 

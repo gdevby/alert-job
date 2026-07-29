@@ -7,9 +7,9 @@ import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.alert.job.parser.domain.rss.Item;
 import by.gdev.alert.job.parser.domain.rss.Rss;
-import by.gdev.alert.job.parser.service.order.jsoup.JsoupClient;
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SiteName;
+import by.gdev.alert.job.parser.service.order.jsoup.JsoupClient;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +78,7 @@ public class FLOrderParser extends AbsctractSiteParser {
     }
 
     private Order buildOrder(Item item, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        if (!getParserService().isExistsOrder(category, subCategory, item.getLink()))
+        if (!getParserService().isExistsOrder(item.getLink()))
             return null;
 
         Order order = getOrderRepository().findByLink(item.getLink()).orElse(new Order());

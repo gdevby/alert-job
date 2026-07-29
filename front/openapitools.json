@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@openapitools/openapi-generator-cli/config.schema.json",
+  "spaces": 2,
+  "generator-cli": {
+    "version": "7.23.0",
+    "generators": {
+      "coreApi": {
+        "inputSpec": "http://alertjob.by/core/v3/api-docs",
+        "generatorName": "typescript-axios",
+        "output": "./src/apis/coreApi",
+        "ignoreFileOverride": "./.openapi-generator-ignore"
+      },
+      "llmApi": {
+        "inputSpec": "http://alertjob.by/llm/v3/api-docs",
+        "generatorName": "typescript-axios",
+        "output": "./src/apis/llmApi",
+        "ignoreFileOverride": "./.openapi-generator-ignore"
+      }
+    }
+  }
+}

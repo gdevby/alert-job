@@ -5,8 +5,8 @@ import by.gdev.alert.job.parser.domain.db.Order;
 import by.gdev.alert.job.parser.domain.db.ParserSource;
 import by.gdev.alert.job.parser.domain.db.Price;
 import by.gdev.alert.job.parser.domain.db.Subcategory;
-import by.gdev.alert.job.parser.util.SiteName;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.HttpStatusException;
@@ -96,7 +96,7 @@ public class PeoplePerHourParser extends AbsctractSiteParser {
         if (orderLink == null || orderLink.isBlank())
             return null;
 
-        if (!getParserService().isExistsOrder(category, subCategory, orderLink))
+        if (!getParserService().isExistsOrder(orderLink))
             return null;
 
         Order order = getOrderRepository().findByLink(orderLink).orElse(new Order());

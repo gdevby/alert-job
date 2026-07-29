@@ -211,7 +211,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	/**
 	 * Обрабатывает список заказов:
 	 *  - фильтрует невалидные;
-	 *  - проверяет уникальность через {@link ParserService#isExistsOrder(Category, Subcategory, String)};
+	 *  - проверяет уникальность через {@link ParserService#isExistsOrder(String)};
 	 *  - сохраняет в БД;
 	 *  - преобразует в {@link OrderDTO}.
 	 *
@@ -224,7 +224,7 @@ public abstract class AbsctractSiteParser implements SiteParser{
 		return orders.stream()
 				.filter(Objects::nonNull)
 				.filter(Order::isValidOrder)
-				.filter(order -> getParserService().isExistsOrder(category, subCategory, order.getLink()))
+				.filter(order -> getParserService().isExistsOrder(order.getLink()))
 				.map(order -> saveOrder(order, category, subCategory))
 				.peek(order -> {
 					log.info("*** save order: site {},  title {} , link {}",

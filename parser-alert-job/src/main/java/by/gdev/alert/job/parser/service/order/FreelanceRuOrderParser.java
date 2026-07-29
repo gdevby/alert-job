@@ -1,9 +1,13 @@
 package by.gdev.alert.job.parser.service.order;
 
-import by.gdev.alert.job.parser.domain.db.*;
-import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
-import by.gdev.alert.job.parser.util.SiteName;
+import by.gdev.alert.job.parser.domain.db.Category;
+import by.gdev.alert.job.parser.domain.db.Order;
+import by.gdev.alert.job.parser.domain.db.ParserSource;
+import by.gdev.alert.job.parser.domain.db.Price;
+import by.gdev.alert.job.parser.domain.db.Subcategory;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.SiteName;
+import by.gdev.alert.job.parser.service.playwright.PlaywrightSiteParser;
 import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitForSelectorState;

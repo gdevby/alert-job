@@ -2,11 +2,7 @@ package by.gdev.alert.job.core.model.db;
 
 import java.util.Set;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,7 +16,9 @@ public class OrderModules extends BasicId {
 	
 	private String name;
 	private boolean available;
-	@ManyToOne
+    @Column(name = "auto_reply_enabled")
+    private Boolean autoReplyEnabled = true;
+    @ManyToOne
 	private AppUser user;
 	@ManyToMany
 	private Set<SourceSite> sources;

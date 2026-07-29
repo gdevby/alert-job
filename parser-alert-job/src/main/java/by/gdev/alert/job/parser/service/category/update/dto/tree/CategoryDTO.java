@@ -8,5 +8,8 @@ import java.util.List;
 public class CategoryDTO {
     private Long id;
     private String name;
+    private Integer order;
+    private Long sourceId;
+    private String link;
     private List<SubcategoryDTO> subcategories;
 }
