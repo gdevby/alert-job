@@ -3,7 +3,7 @@ CREATE DATABASE IF NOT EXISTS core_db;
 CREATE DATABASE IF NOT EXISTS parser_db;
 CREATE DATABASE IF NOT EXISTS llm_db;
 
-CREATE USER IF NOT EXISTS 'alert_job_user'@'%' IDENTIFIED BY '191261';
+CREATE USER IF NOT EXISTS 'alert_job_user'@'%' IDENTIFIED BY 'password_replace';
 
 GRANT ALL PRIVILEGES ON `keycloak`.* to alert_job_user@'%';
 GRANT ALL PRIVILEGES ON `core_db`.* to alert_job_user@'%';

@@ -24,7 +24,7 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.securit
 
 # Create a non-root user and install curl for health checks.
 RUN groupadd -r app \
-    && useradd -r -g app app \
+    && useradd -r -m -d /home/app -g app app \
     && apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
