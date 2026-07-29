@@ -52,7 +52,7 @@ services:
     ports:
       - "8015:8015"
     environment:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: $profile
       TZ: Europe/Moscow
       VIRTUAL_HOST: alertjob.by
       VIRTUAL_PORT: 8015
@@ -67,43 +67,45 @@ services:
       keycloak:
         condition: service_healthy
   notification:
-    image: rg.gdev.by/alert-job/notification-alert-job:1.0
+    image: rg.gdev.by/alert-job/notification-alert-job:$alert_job_version
     ports:
       - "8019:8019"
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=$profile"
        - TZ=Europe/Moscow
-       - CORE_URL=http://core:8018
-       - MAILBOX_HOST=
-       - MAILBOX_USERNAME=
-       - MAILBOX_PWD=
-       - APP_ENCRYPTION_KEY=
+    env_file:
+      - .env
     depends_on:
       config:
         condition: service_healthy
       eureka:
+        condition: service_healthy
+      core:
         condition: service_healthy
   llm:
-    image: rg.gdev.by/alert-job/llm-alert-job:1.0
+    image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
     ports:
       - "8033:8033"
+    env_file:
+      - .env
     environment:
-       - "SPRING_PROFILES_ACTIVE=dev"
+       - "SPRING_PROFILES_ACTIVE=$profile"
        - TZ=Europe/Moscow
-       - AI_API_KEY=
-       - AI_BASE_URL=
-       - AI_MODEL=
-       - NOTIFICATION_URL=http://notification:8019/notification/api/ai/decision
-       - CORE_URL=http://core:8018
     depends_on:
       config:
         condition: service_healthy
       eureka:
         condition: service_healthy
+      core:
+        condition: service_healthy
+      notification:
+        condition: service_healthy
   parser:
-    image: rg.gdev.by/alert-job/parser-alert-job:1.0
+    image: rg.gdev.by/alert-job/parser-alert-job:$alert_job_version
     ports:
       - "8017:8017"
+    env_file:
+      - .env
     environment:
        - "SPRING_PROFILES_ACTIVE=dev"
        - TZ=Europe/Moscow

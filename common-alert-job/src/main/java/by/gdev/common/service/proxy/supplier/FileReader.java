@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -28,7 +29,8 @@ public class FileReader {
             return listOfLines;
         } catch (IOException e) {
             log.error("Cannot read file: {}", resource);
-            throw new RuntimeException(e);
+            //service should restart. Example with empty proxies list 
+            return new ArrayList<String>();
         }
     }
 }

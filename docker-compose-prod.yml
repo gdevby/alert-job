@@ -47,7 +47,7 @@ services:
       - ./config/database:/docker-entrypoint-initdb.d
     environment:
       - MYSQL_ROOT_PASSWORD=$database_user_password
-      - MYSQL_USER=alert_job_user
+      - MYSQL_USER=$database_user
       - MYSQL_PASSWORD=$database_user_password
       - TZ=Europe/Moscow
   keycloak:
@@ -59,7 +59,7 @@ services:
       - "--hostname-admin-url=https://$domain/keycloak"
       - "--db mariadb"
       - "--db-url-host db"
-      - "--db-username alert_job_user"
+      - "--db-username $database_user"
       - "--db-password $database_user_password"
       #- health-enabled=true
       #- metrics-enabled=true
@@ -91,7 +91,7 @@ services:
     mem_limit: 512m
   eureka:
     restart: always
-    image: rg.gdev.by/alert-job/alert-job-eureka:$alert_job_version 
+    image: rg.gdev.by/alert-job/alert-job-eureka:$alert_job_version
     environment:
        - "SPRING_PROFILES_ACTIVE=${profile}"
        - TZ=Europe/Moscow
@@ -153,8 +153,10 @@ services:
       LETSENCRYPT_HOST: $domain
       LETSENCRYPT_EMAIL: $acme_email
       VIRTUAL_PORT: 8015
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: $profile
       TZ: Europe/Moscow
+    env_file:
+      - .env
     depends_on:
       config:
         condition: service_healthy
@@ -174,12 +176,16 @@ services:
         condition: service_healthy
       eureka:
         condition: service_healthy
+      core:
+        condition: service_healthy
     mem_limit: 512m
   parser:
     restart: always
     image: rg.gdev.by/alert-job/parser-alert-job:$alert_job_version
+    env_file:
+      - .env
     environment:
-       - "SPRING_PROFILES_ACTIVE=prod"
+       - "SPRING_PROFILES_ACTIVE=$profile"
        - TZ=Europe/Moscow
     volumes:
        - "$parser_config_directory:/etc/parser/config"
@@ -210,19 +216,19 @@ services:
   llm:
     restart: always
     image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
-    ports:
-      - "8033:8033"
     env_file:
       - .env
     environment:
-       - "SPRING_PROFILES_ACTIVE=prod"
+       - "SPRING_PROFILES_ACTIVE=$profile"
        - TZ=Europe/Moscow
-       - NOTIFICATION_URL=http://notification:8019/notification/api/ai/decision
-       - CORE_URL=http://core:8018
     depends_on:
       config:
         condition: service_healthy
       eureka:
+        condition: service_healthy
+      core:
+        condition: service_healthy
+      notification:
         condition: service_healthy
   prometheus:
     restart: always
@@ -236,7 +242,7 @@ services:
       TZ: Europe/Moscow
   grafana:
     restart: always
-    container_name: grafana 
+    container_name: grafana
     image: "grafana/grafana:latest"
     volumes:
     - grafana-volume:/var/lib/grafana
@@ -275,7 +281,7 @@ services:
 volumes:
   database-volume: {}
   grafana-volume: {}
-  certs: {}      
+  certs: {}
   vhost: {}
   html: {}
   nginx-conf-d: {}
