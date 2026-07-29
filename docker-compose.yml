@@ -14,6 +14,12 @@ services:
       VIRTUAL_HOST: alertjob.by
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ready || curl -fsS http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
   nginx-proxy:
     container_name: nginx-proxy
     image: nginxproxy/nginx-proxy
@@ -36,6 +42,12 @@ services:
     environment:
        - "SPRING_PROFILES_ACTIVE=${profile}"
        - TZ=Europe/Moscow
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8011/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   eureka:
     image: rg.gdev.by/alert-job/alert-job-eureka:1.0
     ports:
@@ -46,6 +58,12 @@ services:
     depends_on:
       config:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8012/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   #set directory rules chmod 777 public
   gateway:
     image: rg.gdev.by/alert-job/alert-job-gateway:1.0
@@ -82,6 +100,12 @@ services:
         condition: service_healthy
       core:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8019/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   llm:
     image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
     ports:
@@ -130,6 +154,12 @@ services:
         condition: service_healthy
       db:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8018/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   prometheus:
     container_name: prometheus
     image: prom/prometheus:latest

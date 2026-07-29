@@ -89,6 +89,12 @@ services:
       - "SPRING_PROFILES_ACTIVE=${profile}"
       - TZ=Europe/Moscow
     mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8011/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   eureka:
     restart: always
     image: rg.gdev.by/alert-job/alert-job-eureka:$alert_job_version
@@ -99,6 +105,12 @@ services:
       config:
         condition: service_healthy
     mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8012/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   loki:
     image: grafana/loki:latest
     container_name: loki
@@ -177,6 +189,12 @@ services:
       core:
         condition: service_healthy
     mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8019/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   parser:
     restart: always
     image: rg.gdev.by/alert-job/parser-alert-job:$alert_job_version
@@ -211,6 +229,12 @@ services:
       db:
         condition: service_started
     mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8018/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
   llm:
     restart: always
     image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
