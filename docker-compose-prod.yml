@@ -67,6 +67,8 @@ services:
       VIRTUAL_HOST: $domain
       VIRTUAL_PORT: 8080
       VIRTUAL_PATH: /keycloak
+      LETSENCRYPT_HOST: $domain
+      LETSENCRYPT_EMAIL: $acme_email
 #      KC_HOSTNAME_STRICT_HTTPS: false
       KC_HTTP_ENABLED: true
       KC_PROXY: edge
@@ -148,8 +150,6 @@ services:
     environment:
       VIRTUAL_HOST: $domain
       VIRTUAL_PATH: /
-      LETSENCRYPT_HOST: $domain
-      LETSENCRYPT_EMAIL: $acme_email
       VIRTUAL_PORT: 8015
       SPRING_PROFILES_ACTIVE: $profile
       TZ: Europe/Moscow

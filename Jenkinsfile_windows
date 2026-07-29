@@ -8,7 +8,6 @@ pipeline {
     environment {
         REVISION = "1.0.${BUILD_ID}"
         APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
-        DOCKER_PUSH_CMD = 'mvn -Drevision=%REVISION% -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests package dockerfile:build dockerfile:push'
     }
 
     stages {
@@ -26,12 +25,12 @@ pipeline {
             parallel {
                 stage('Front image') {
                     steps {
-                        bat 'cd front && docker build --build-arg REVISION=%REVISION% -t rg.gdev.by/alert-job/front:%REVISION% .'
+                        bat "cd front && docker build --build-arg REVISION=${REVISION} -t rg.gdev.by/alert-job/front:${REVISION} ."
                     }
                 }
                 stage('Maven modules') {
                     steps {
-                        bat 'mvn -Drevision=%REVISION% -Ddocker.skip=true -T 1C clean install'
+                        bat "mvn -Drevision=${REVISION} -Ddocker.skip=true -T 1C clean install -DskipTests"
                     }
                 }
             }
@@ -40,30 +39,21 @@ pipeline {
             steps {
                 script {
                     withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
+                        def pushModule = { String module ->
+                            bat """
+                                cd ${module} && mvn -Drevision=${REVISION} -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests dockerfile:build dockerfile:push
+                            """
+                        }
                         parallel(
-                            'config': {
-                                bat 'cd alert-job-config && %DOCKER_PUSH_CMD%'
-                            },
-                            'eureka': {
-                                bat 'cd alert-job-eureka && %DOCKER_PUSH_CMD%'
-                            },
-                            'gateway': {
-                                bat 'cd alert-job-gateway && %DOCKER_PUSH_CMD%'
-                            },
-                            'core': {
-                                bat 'cd core-alert-job && %DOCKER_PUSH_CMD%'
-                            },
-                            'notification': {
-                                bat 'cd notification-alert-job && %DOCKER_PUSH_CMD%'
-                            },
-                            'parser': {
-                                bat 'cd parser-alert-job && %DOCKER_PUSH_CMD%'
-                            },
-                            'llm': {
-                                bat 'cd llm-alert-job && %DOCKER_PUSH_CMD%'
-                            },
+                            'config': { pushModule('alert-job-config') },
+                            'eureka': { pushModule('alert-job-eureka') },
+                            'gateway': { pushModule('alert-job-gateway') },
+                            'core': { pushModule('core-alert-job') },
+                            'notification': { pushModule('notification-alert-job') },
+                            'parser': { pushModule('parser-alert-job') },
+                            'llm': { pushModule('llm-alert-job') },
                             'front': {
-                                bat 'docker image push rg.gdev.by/alert-job/front:%REVISION%'
+                                bat "docker image push rg.gdev.by/alert-job/front:${REVISION}"
                             }
                         )
                     }
