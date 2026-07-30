@@ -27,6 +27,6 @@ public class BindingResponse {
     private Boolean active;
     @Schema(description = "Дата создания", required = true, example = "2026-07-02T18:50:12.340107")
     private String createdAt;
-    @Schema(description = "Дата создания", required = true, example = "2026-07-02T18:50:12.340107")
+    @Schema(description = "Тип уведомления", required = true, example = "TELEGRAM")
     private String notificationType;
 }
