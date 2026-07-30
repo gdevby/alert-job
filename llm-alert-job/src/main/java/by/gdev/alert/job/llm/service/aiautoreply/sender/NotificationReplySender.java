@@ -34,6 +34,8 @@ public class NotificationReplySender implements ReplySender {
     @Value("${notification.service.url}")
     private String notificationUrl;
 
+    private static final String DECISION_PATH = "/notification/api/ai/decision";
+
     /**
      * Метод не используется для Notification‑сервиса.
      * Реальная отправка выполняется через {@link #sendToNotificationService}.
@@ -64,6 +66,9 @@ public class NotificationReplySender implements ReplySender {
     public void sendToNotificationService(OrderDTO order, AiAppUserDTO user, AiOrderModulesDTO module, AiDecision decision, Long credentialId, NotificationTypeEnum notificationType) {
         NotificationPayload payload = new NotificationPayload(user, module, order, credentialId, decision, notificationType);
 
+        // Формируем полный URL
+        String fullUrl = notificationUrl + DECISION_PATH;
+
         log.debug("NOTIFICATION → отправка запроса: url={}, user={}, module={}, orderId={}, credentialId={}",
                 notificationUrl,
                 user.getEmail(),
@@ -73,7 +78,7 @@ public class NotificationReplySender implements ReplySender {
         );
 
         Mono.fromCallable(() ->
-                        restTemplate.postForEntity(notificationUrl, payload, Void.class)
+                        restTemplate.postForEntity(fullUrl, payload, Void.class)
                 )
                 .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
