@@ -39,8 +39,8 @@ pipeline {
         stage('Push images to docker repo') {
             steps {
                 withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
-                    // Последовательный reactor build — parallel dockerfile:build падает на Docker Desktop (Windows)
-                    bat "mvn -Drevision=${REVISION} -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests -pl alert-job-config,alert-job-eureka,alert-job-gateway,core-alert-job,notification-alert-job,parser-alert-job,llm-alert-job -am dockerfile:build dockerfile:push"
+                    // Без -am: parent (pom) не имеет Dockerfile; JAR уже собраны в Build
+                    bat "mvn -Drevision=${REVISION} -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests -pl alert-job-config,alert-job-eureka,alert-job-gateway,core-alert-job,notification-alert-job,parser-alert-job,llm-alert-job dockerfile:build dockerfile:push"
                     bat "docker image push rg.gdev.by/alert-job/front:${REVISION}"
                 }
             }
