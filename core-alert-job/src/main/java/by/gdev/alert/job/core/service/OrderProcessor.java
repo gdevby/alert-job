@@ -90,27 +90,27 @@ public class OrderProcessor {
                                 user.getEmail(), orderListToSend.size(), autoReplyEnabled);
                         sendOrderToUser(user, orderListToSend);
                         if (autoReplyEnabled) {
-                            log.debug("АВТООТВЕТ: пользователь {} -> автоответ включен, запуск обработки", user.getEmail());
+                            log.info("АВТООТВЕТ: пользователь {} -> автоответ включен, запуск обработки", user.getEmail());
                             forEachLLm(user, orderListToSend);
                         } else {
-                            log.debug("Автоответы отключены через property (autoreply.enabled=false)");
+                            log.info("Автоответы отключены через property (autoreply.enabled=false)");
                         }
                     }
                     else {
-                        log.debug("Пользователь {} -> нет заказов для отправки", user.getEmail());
+                        log.info("Пользователь {} -> нет заказов для отправки", user.getEmail());
                     }
                 });
     }
 
     private void forEachLLm(AppUser user, List<OrderDTO> orders){
-        log.debug("АВТООТВЕТ: пользователь {} -> началась обработка {} заказов", user.getEmail(), orders.size());
+        log.info("АВТООТВЕТ: пользователь {} -> началась обработка {} заказов", user.getEmail(), orders.size());
         for (OrderModules orderModule : user.getOrderModules()) {
             if (!Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
                 log.debug("АВТООТВЕТ: пользователь {} -> модуль {} отключен", user.getEmail(), orderModule.getName());
                 continue;
             }
 
-            log.debug("АВТООТВЕТ: пользователь {} -> модуль {} активен", user.getEmail(), orderModule.getName());
+            log.info("АВТООТВЕТ: пользователь {} -> модуль {} активен", user.getEmail(), orderModule.getName());
 
             Map<Long, List<OrderDTO>> bySite = orders.stream()
                     .collect(Collectors.groupingBy(o -> o.getSourceSite().getSource()));
@@ -121,7 +121,7 @@ public class OrderProcessor {
                 boolean subscribed = orderModule.getSources().stream()
                         .anyMatch(s -> s.getSiteSource().equals(siteId));
                 if (!subscribed) {
-                    log.debug("АВТООТВЕТ: пользователь {} -> сайт {} не подписан в модуле {}", user.getEmail(), SiteName.fromId(siteId), orderModule.getName());
+                    log.info("АВТООТВЕТ: пользователь {} -> сайт {} не подписан в модуле {}", user.getEmail(), SiteName.fromId(siteId), orderModule.getName());
                     continue;
                 }
 
@@ -129,10 +129,10 @@ public class OrderProcessor {
                 boolean supported = notificationClient.canParse(siteName.name());
 
                 if (!supported) {
-                    log.debug("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
+                    log.info("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
                     continue;
                 }
-                log.debug("АВТООТВЕТ: пользователь {} -> отправка {} заказов на сайт {}", user.getEmail(), siteOrders.size(), siteName);
+                log.info("АВТООТВЕТ: пользователь {} -> отправка {} заказов на сайт {}", user.getEmail(), siteOrders.size(), siteName);
                 try {
                     buildAndsSndLlmRequest(user, orderModule,
                             orderModule.getSources().stream()
@@ -141,7 +141,7 @@ public class OrderProcessor {
                                     .orElseThrow(), siteOrders);
                 }
                 catch (Exception e) {
-                    log.debug("Ошибка при отправке автоответа для пользователя {} на сайте {}: {}",
+                    log.info("Ошибка при отправке автоответа для пользователя {} на сайте {}: {}",
                             user.getUuid(), siteName, e.getMessage(), e);
                 }
             }
@@ -155,17 +155,17 @@ public class OrderProcessor {
         }
 
         Long siteId = sourceSite.getSiteSource();
-        log.debug("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ: пользователь={}, сайт={}, заказов={}",
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ: пользователь={}, сайт={}, заказов={}",
                 orderModule.getName(), user.getEmail(), siteId, orders.size());
 
         // Получаем все креды пользователя для этого сайта
         List<UserSiteCredential> credentials = userSiteCredentialRepository.findByUserUuidAndSiteId(user.getUuid(), siteId);
         if (credentials.isEmpty()) {
-            log.debug("АВТООТВЕТ: {} -> НЕТ АККАУНТОВ для пользователя {} на сайте {}",
+            log.info("АВТООТВЕТ: {} -> НЕТ АККАУНТОВ для пользователя {} на сайте {}",
                     orderModule.getName(), user.getEmail(), siteId);
             throw new RuntimeException("Нет аккаунтов для сайта " + siteId);
         }
-        log.debug("АВТООТВЕТ: {} -> найдено аккаунтов для пользователя: {}", orderModule.getName(), credentials.size());
+        log.info("АВТООТВЕТ: {} -> найдено аккаунтов для пользователя: {}", orderModule.getName(), credentials.size());
 
         // Ищем кред, для которого есть активный биндинг с данным модулем
         UserSiteCredential selectedCredential = null;
@@ -177,14 +177,14 @@ public class OrderProcessor {
             if (optBinding.isPresent()) {
                 selectedCredential = cred;
                 selectedBinding = optBinding.get();
-                log.debug("АВТООТВЕТ: {} -> найден активный биндинг для аккаунта id={}, templateId={}, promtId={}",
+                log.info("АВТООТВЕТ: {} -> найден активный биндинг для аккаунта id={}, templateId={}, promtId={}",
                         orderModule.getName(), cred.getId(), selectedBinding.getTemplateId(), selectedBinding.getPromtId());
                 break;
             }
         }
 
         if (selectedBinding == null) {
-            log.debug("АВТООТВЕТ: {} -> НЕТ АКТИВНОГО БИНДИНГА для модуля {} и сайта {}",
+            log.info("АВТООТВЕТ: {} -> НЕТ АКТИВНОГО БИНДИНГА для модуля {} и сайта {}",
                     orderModule.getName(), orderModule.getId(), siteId);
             throw new RuntimeException("Нет активного биндинга для модуля " + orderModule.getId() + " и сайта " + siteId);
         }
@@ -193,13 +193,13 @@ public class OrderProcessor {
         Long templateId = selectedBinding.getTemplateId();
         Long promtId = selectedBinding.getPromtId();
 
-        log.debug("АВТООТВЕТ: {} -> ОТПРАВКА ЗАПРОСА В LLM: credentialId={}, templateId={}, promtId={}, заказов={}",
+        log.info("АВТООТВЕТ: {} -> ОТПРАВКА ЗАПРОСА В LLM: credentialId={}, templateId={}, promtId={}, заказов={}",
                 orderModule.getName(), credentialId, templateId, promtId, orders.size());
 
         // Формируем и отправляем запрос
         AiOrderRequest aiOrderRequest = aiOrderRequestMapper.build(user, orderModule,
                 credentialId, templateId, promtId, orders, selectedBinding.getNotificationType());
-        log.debug("АВТООТВЕТ: {} -> запрос сформирован, отправка в llmClient", orderModule.getName());
+        log.info("АВТООТВЕТ: {} -> запрос сформирован, отправка в llmClient", orderModule.getName());
         llmClient.sendAiOrderRequest(aiOrderRequest);
     }
 
