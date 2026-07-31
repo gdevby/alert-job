@@ -71,6 +71,7 @@
 					<version>${dockerfile.maven.plugin.version}</version>
 					<configuration>
 						<skip>${docker.skip}</skip>
+						<pullNewerImage>false</pullNewerImage>
 						<contextDirectory>${project.basedir}</contextDirectory>
 						<dockerfile>${project.build.directory}/docker/${docker.dockerfile.name}</dockerfile>
 						<repository>${private.registry.url}/${docker.image.prefix}/${project.artifactId}</repository>
