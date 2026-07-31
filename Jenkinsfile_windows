@@ -8,6 +8,9 @@ pipeline {
     environment {
         REVISION = "1.0.${BUILD_ID}"
         APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
+        // dockerfile-maven-plugin 1.4.x не парсит вывод BuildKit на Windows
+        DOCKER_BUILDKIT = '0'
+        COMPOSE_DOCKER_CLI_BUILD = '0'
     }
 
     stages {
