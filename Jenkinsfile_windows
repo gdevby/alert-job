@@ -8,15 +8,27 @@ pipeline {
     environment {
         REVISION = "1.0.${BUILD_ID}"
         APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
+        GIT_REPO_URL = 'git@github.com:gdevby/alert-job.git'
+        GIT_BRANCH = 'main'
+        GIT_CREDENTIALS_ID = 'github.com_robert_makrytski'
     }
 
     stages {
         stage('Prepare') {
             steps {
-                bat 'git reset --hard'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${GIT_BRANCH}"]],
+                    extensions: [[$class: 'CleanBeforeCheckout']],
+                    userRemoteConfigs: [[
+                        url: "${GIT_REPO_URL}",
+                        credentialsId: "${GIT_CREDENTIALS_ID}"
+                    ]]
+                ])
+                bat 'git log -1 --oneline'
                 script {
                     config = readFile "${APP_CONFIG_FILENAME}"
-                    newconfig = config.replaceAll("build_version", "${REVISION}")
+                    newconfig = config.replaceAll('build_version', "${REVISION}")
                     writeFile file: "${APP_CONFIG_FILENAME}", text: "${newconfig}"
                 }
             }
@@ -58,6 +70,12 @@ pipeline {
                         )
                     }
                 }
+            }
+        }
+        stage('replace and restart') {
+            steps {
+                bat "ssh server \"sed -i 's/alert_job_version=.*/alert_job_version=${REVISION}/' /home/app/service/aj/.env\""
+                bat 'ssh server "cd /home/app/service/aj && /home/app/service/aj/now_up.sh"'
             }
         }
     }
