@@ -70,7 +70,7 @@ public class NotificationReplySender implements ReplySender {
         String fullUrl = notificationUrl + DECISION_PATH;
 
         log.debug("NOTIFICATION → отправка запроса: url={}, user={}, module={}, orderId={}, credentialId={}",
-                notificationUrl,
+                fullUrl,
                 user.getEmail(),
                 module.getName(),
                 order.getMessage(),

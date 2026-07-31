@@ -86,6 +86,8 @@ public class OrderProcessor {
                             .collect(Collectors.toList());
 
                     if (!orderListToSend.isEmpty()) {
+                        log.info("АВТООТВЕТ: пользователь {} -> отправка {} новых заказов, autoReplyEnabled={}",
+                                user.getEmail(), orderListToSend.size(), autoReplyEnabled);
                         sendOrderToUser(user, orderListToSend);
                         if (autoReplyEnabled) {
                             log.debug("АВТООТВЕТ: пользователь {} -> автоответ включен, запуск обработки", user.getEmail());
