@@ -8,15 +8,12 @@ pipeline {
     environment {
         REVISION = "1.0.${BUILD_ID}"
         APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
-        // dockerfile-maven-plugin 1.4.x не парсит вывод BuildKit на Windows
-        DOCKER_BUILDKIT = '0'
-        COMPOSE_DOCKER_CLI_BUILD = '0'
+        REGISTRY = 'rg.gdev.by/alert-job'
     }
 
     stages {
         stage('Prepare') {
             steps {
-                // SCM checkout уже выполнен (Declarative: Checkout SCM / Pipeline from SCM)
                 bat 'git log -1 --oneline'
                 script {
                     config = readFile "${APP_CONFIG_FILENAME}"
@@ -29,7 +26,7 @@ pipeline {
             parallel {
                 stage('Front image') {
                     steps {
-                        bat "cd front && docker build --build-arg REVISION=${REVISION} -t rg.gdev.by/alert-job/front:${REVISION} ."
+                        bat "cd front && docker build --build-arg REVISION=${REVISION} -t ${REGISTRY}/front:${REVISION} ."
                     }
                 }
                 stage('Maven modules') {
@@ -42,9 +39,44 @@ pipeline {
         stage('Push images to docker repo') {
             steps {
                 withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
-                    // Без -am: parent (pom) не имеет Dockerfile; JAR уже собраны в Build
-                    bat "mvn -Drevision=${REVISION} -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests -pl alert-job-config,alert-job-eureka,alert-job-gateway,core-alert-job,notification-alert-job,parser-alert-job,llm-alert-job dockerfile:build dockerfile:push"
-                    bat "docker image push rg.gdev.by/alert-job/front:${REVISION}"
+                    script {
+                        bat 'docker login rg.gdev.by -u %usernameVariable% -p %passwordVariable%'
+
+                        def buildAndPush = { String moduleDir, String imageName, String jarFile, String port, String dockerfile ->
+                            bat """
+                                cd ${moduleDir}
+                                docker build -f target/docker/${dockerfile} -t ${REGISTRY}/${imageName}:${REVISION} --build-arg JAR_FILE=${jarFile} --build-arg SERVER_PORT=${port} .
+                                docker push ${REGISTRY}/${imageName}:${REVISION}
+                            """
+                        }
+
+                        parallel(
+                            'config': {
+                                buildAndPush('alert-job-config', 'alert-job-config', "alert-job-config-${REVISION}.jar", '8011', 'java-service.Dockerfile')
+                            },
+                            'eureka': {
+                                buildAndPush('alert-job-eureka', 'alert-job-eureka', "alert-job-eureka-${REVISION}.jar", '8012', 'java-service.Dockerfile')
+                            },
+                            'gateway': {
+                                buildAndPush('alert-job-gateway', 'alert-job-gateway', "alert-job-gateway-${REVISION}.jar", '8015', 'java-service.Dockerfile')
+                            },
+                            'core': {
+                                buildAndPush('core-alert-job', 'core-alert-job', "core-alert-job-${REVISION}.jar", '8018', 'java-service.Dockerfile')
+                            },
+                            'notification': {
+                                buildAndPush('notification-alert-job', 'notification-alert-job', "notification-alert-job-${REVISION}.jar", '8019', 'java-service.Dockerfile')
+                            },
+                            'parser': {
+                                buildAndPush('parser-alert-job', 'parser-alert-job', "parser-alert-job-${REVISION}.jar", '8017', 'java-playwright.Dockerfile')
+                            },
+                            'llm': {
+                                buildAndPush('llm-alert-job', 'llm-alert-job', "llm-alert-job-${REVISION}.jar", '8033', 'java-service.Dockerfile')
+                            },
+                            'front': {
+                                bat "docker push ${REGISTRY}/front:${REVISION}"
+                            }
+                        )
+                    }
                 }
             }
         }
