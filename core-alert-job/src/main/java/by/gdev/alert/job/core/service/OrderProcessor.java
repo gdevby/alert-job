@@ -69,83 +69,44 @@ public class OrderProcessor {
         users.stream()
                 .filter(AppUser::isSwitchOffAlerts)
                 .forEach(user -> {
-                    List<OrderDTO> orderListToSend = user.getOrderModules().stream()
+                    user.getOrderModules().stream()
                             .filter(orderModule -> Objects.nonNull(orderModule.getCurrentFilter()))
-                            .flatMap(orderModule -> {
+                            .forEach(orderModule -> {
                                 UserFilter currentFilter = map.get(orderModule.getCurrentFilter().getId());
-                                return orderModule.getSources().stream()
-                                        .flatMap(s -> orders.parallelStream()
-                                                .filter(f -> compareSiteSources(f.getSourceSite(), s))
-                                                .filter(f -> isMatchUserFilter(f, currentFilter))
-                                                .map(order -> {
-                                                    order.setModuleName(orderModule.getName());
-                                                    return order;
-                                                })
-                                        );
-                            })
-                            .collect(Collectors.toList());
+                                if (currentFilter == null) return;
 
-                    if (!orderListToSend.isEmpty()) {
-                        log.info("АВТООТВЕТ: пользователь {} -> отправка {} новых заказов, autoReplyEnabled={}",
-                                user.getEmail(), orderListToSend.size(), autoReplyEnabled);
-                        sendOrderToUser(user, orderListToSend);
-                        if (autoReplyEnabled) {
-                            log.info("АВТООТВЕТ: пользователь {} -> автоответ включен, запуск обработки", user.getEmail());
-                            forEachLLm(user, orderListToSend);
-                        } else {
-                            log.info("Автоответы отключены через property (autoreply.enabled=false)");
-                        }
-                    }
-                    else {
-                        log.info("Пользователь {} -> нет заказов для отправки", user.getEmail());
-                    }
+                                orderModule.getSources().forEach(sourceSite -> {
+                                    List<OrderDTO> matchedOrders = orders.parallelStream()
+                                            .filter(order -> compareSiteSources(order.getSourceSite(), sourceSite))
+                                            .filter(order -> isMatchUserFilter(order, currentFilter))
+                                            .collect(Collectors.toList());
+
+                                    if (matchedOrders.isEmpty()) return;
+
+                                    matchedOrders.forEach(order -> order.setModuleName(orderModule.getName()));
+
+                                    sendOrderToUser(user, matchedOrders);
+
+                                    if (!autoReplyEnabled || !Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
+                                        return;
+                                    }
+
+                                    SiteName siteName = SiteName.fromId(sourceSite.getSiteSource());
+                                    if (!notificationClient.canParse(siteName.name())) {
+                                        log.warn("АВТООТВЕТ: пользователь {} -> сайт {} НЕ ПОДДЕРЖИВАЕТСЯ",
+                                                user.getEmail(), siteName);
+                                        return;
+                                    }
+
+                                    try {
+                                        buildAndsSndLlmRequest(user, orderModule, sourceSite, matchedOrders);
+                                    } catch (Exception e) {
+                                        log.error("АВТООТВЕТ: пользователь {} -> ОШИБКА в модуле {}: {}",
+                                                user.getEmail(), orderModule.getName(), e.getMessage(), e);
+                                    }
+                                });
+                            });
                 });
-    }
-
-    private void forEachLLm(AppUser user, List<OrderDTO> orders){
-        log.info("АВТООТВЕТ: пользователь {} -> началась обработка {} заказов", user.getEmail(), orders.size());
-        for (OrderModules orderModule : user.getOrderModules()) {
-            if (!Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
-                log.debug("АВТООТВЕТ: пользователь {} -> модуль {} отключен", user.getEmail(), orderModule.getName());
-                continue;
-            }
-
-            log.info("АВТООТВЕТ: пользователь {} -> модуль {} активен", user.getEmail(), orderModule.getName());
-
-            Map<Long, List<OrderDTO>> bySite = orders.stream()
-                    .collect(Collectors.groupingBy(o -> o.getSourceSite().getSource()));
-
-            for (Map.Entry<Long, List<OrderDTO>> entry : bySite.entrySet()) {
-                Long siteId = entry.getKey();
-                List<OrderDTO> siteOrders = entry.getValue();
-                boolean subscribed = orderModule.getSources().stream()
-                        .anyMatch(s -> s.getSiteSource().equals(siteId));
-                if (!subscribed) {
-                    log.info("АВТООТВЕТ: пользователь {} -> сайт {} не подписан в модуле {}", user.getEmail(), SiteName.fromId(siteId), orderModule.getName());
-                    continue;
-                }
-
-                SiteName siteName = SiteName.fromId(siteId);
-                boolean supported = notificationClient.canParse(siteName.name());
-
-                if (!supported) {
-                    log.info("Сайт {} не поддерживается парсером автоответов — пропускаем", siteName);
-                    continue;
-                }
-                log.info("АВТООТВЕТ: пользователь {} -> отправка {} заказов на сайт {}", user.getEmail(), siteOrders.size(), siteName);
-                try {
-                    buildAndsSndLlmRequest(user, orderModule,
-                            orderModule.getSources().stream()
-                                    .filter(s -> s.getSiteSource().equals(siteId))
-                                    .findFirst()
-                                    .orElseThrow(), siteOrders);
-                }
-                catch (Exception e) {
-                    log.info("Ошибка при отправке автоответа для пользователя {} на сайте {}: {}",
-                            user.getUuid(), siteName, e.getMessage(), e);
-                }
-            }
-        }
     }
 
     private void buildAndsSndLlmRequest(AppUser user, OrderModules orderModule, SourceSite sourceSite, List<OrderDTO> orders) {
