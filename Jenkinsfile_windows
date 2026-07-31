@@ -8,23 +8,12 @@ pipeline {
     environment {
         REVISION = "1.0.${BUILD_ID}"
         APP_CONFIG_FILENAME = "alert-job-gateway/src/main/resources/static/index.html"
-        GIT_REPO_URL = 'git@github.com:gdevby/alert-job.git'
-        GIT_BRANCH = 'main'
-        GIT_CREDENTIALS_ID = 'github.com_robert_makrytski'
     }
 
     stages {
         stage('Prepare') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: "*/${GIT_BRANCH}"]],
-                    extensions: [[$class: 'CleanBeforeCheckout']],
-                    userRemoteConfigs: [[
-                        url: "${GIT_REPO_URL}",
-                        credentialsId: "${GIT_CREDENTIALS_ID}"
-                    ]]
-                ])
+                // SCM checkout уже выполнен (Declarative: Checkout SCM / Pipeline from SCM)
                 bat 'git log -1 --oneline'
                 script {
                     config = readFile "${APP_CONFIG_FILENAME}"
@@ -49,26 +38,10 @@ pipeline {
         }
         stage('Push images to docker repo') {
             steps {
-                script {
-                    withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
-                        def pushModule = { String module ->
-                            bat """
-                                cd ${module} && mvn -Drevision=${REVISION} -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests dockerfile:build dockerfile:push
-                            """
-                        }
-                        parallel(
-                            'config': { pushModule('alert-job-config') },
-                            'eureka': { pushModule('alert-job-eureka') },
-                            'gateway': { pushModule('alert-job-gateway') },
-                            'core': { pushModule('core-alert-job') },
-                            'notification': { pushModule('notification-alert-job') },
-                            'parser': { pushModule('parser-alert-job') },
-                            'llm': { pushModule('llm-alert-job') },
-                            'front': {
-                                bat "docker image push rg.gdev.by/alert-job/front:${REVISION}"
-                            }
-                        )
-                    }
+                withCredentials(bindings: [usernamePassword(credentialsId: 'registryuser', usernameVariable: 'usernameVariable', passwordVariable: 'passwordVariable')]) {
+                    // Последовательный reactor build — parallel dockerfile:build падает на Docker Desktop (Windows)
+                    bat "mvn -Drevision=${REVISION} -Dregistry.username=%usernameVariable% -Dregistry.password=%passwordVariable% -DskipTests -pl alert-job-config,alert-job-eureka,alert-job-gateway,core-alert-job,notification-alert-job,parser-alert-job,llm-alert-job -am dockerfile:build dockerfile:push"
+                    bat "docker image push rg.gdev.by/alert-job/front:${REVISION}"
                 }
             }
         }
