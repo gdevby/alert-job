@@ -8,6 +8,7 @@
 	<artifactId>notification-alert-job</artifactId>
 	<properties>
 		<docker.server.port>8019</docker.server.port>
+		<docker.dockerfile.name>java-playwright.Dockerfile</docker.dockerfile.name>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -29,7 +30,6 @@
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
-            <version>1.45.1</version>
         </dependency>
 
         <dependency>
