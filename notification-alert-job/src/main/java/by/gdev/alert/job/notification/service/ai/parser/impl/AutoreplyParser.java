@@ -47,7 +47,7 @@ public abstract class AutoreplyParser {
             // Если закреплённого нет, но proxy=true – пробуем взять случайный
             if (proxyCred == null && proxy) {
                 proxyCred = playwrightManager.getProxyWithRetry(3, 500);
-                log.debug("Для пользователя {} нет закреплённого прокси, взят случайный", userUuid);
+                log.info("Для пользователя {} нет закреплённого прокси, взят случайный", userUuid);
             }
 
             browser = playwrightManager.createBrowser(
@@ -71,7 +71,7 @@ public abstract class AutoreplyParser {
                 return false;
             }
 
-            log.debug("Автоответ успешно отправлен пользователем {}", creds.login());
+            log.info("Автоответ успешно отправлен пользователем {}", creds.login());
             return true;
 
         } catch (Exception e) {

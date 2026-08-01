@@ -41,23 +41,23 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
     @Override
     protected boolean  login(Page page, DecryptedCredential creds) {
-        log.debug("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
         page.navigate("https://kwork.ru/login");
         page.waitForLoadState(LoadState.NETWORKIDLE);
-        log.debug("АВТООТВЕТ: {} -> страница логина загружена", getSiteName());
+        log.info("АВТООТВЕТ: {} -> страница логина загружена", getSiteName());
         // Логин
         page.waitForSelector("input[placeholder='Электронная почта или логин']");
         page.fill("input[placeholder='Электронная почта или логин']", creds.login());
-        log.debug("АВТООТВЕТ: {} -> логин заполнен", getSiteName());
+        log.info("АВТООТВЕТ: {} -> логин заполнен", getSiteName());
         // Пароль
         page.fill("input[placeholder='Пароль']", creds.password());
-        log.debug("АВТООТВЕТ: {} -> пароль заполнен", getSiteName());
+        log.info("АВТООТВЕТ: {} -> пароль заполнен", getSiteName());
         // Кнопка "Войти"
         Locator loginBtn = page.locator("button.auth-form__button");
         page.waitForCondition(loginBtn::isEnabled);
         loginBtn.click();
         page.waitForLoadState(LoadState.NETWORKIDLE);
-        log.debug("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН", getSiteName());
+        log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН", getSiteName());
         return true;
     }
 
@@ -65,13 +65,13 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     @Override
     protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
         String link = payload.getOrder().getLink();
-        log.debug("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}", getSiteName(), link);
-        log.debug("Переход на заказ: {}", link);
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}", getSiteName(), link);
+        log.info("Переход на заказ: {}", link);
 
         try {
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);
-            log.debug("АВТООТВЕТ: {} -> страница заказа открыта", getSiteName());
+            log.info("АВТООТВЕТ: {} -> страница заказа открыта", getSiteName());
         } catch (Exception e) {
             log.warn("Не удалось открыть заказ {}", link);
             return false;
@@ -83,19 +83,19 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу'", getSiteName());
             return false;
         }
-        log.debug("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата", getSiteName());
+        log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата", getSiteName());
 
         // Ждём редактор
         if (!waitOrFail(page, "div.trumbowyg-editor", 8000, "Редактор ответа")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН РЕДАКТОР", getSiteName());
             return false;
         }
-        log.warn("АВТООТВЕТ: {} -> редактор найден", getSiteName());
+        log.info("АВТООТВЕТ: {} -> редактор найден", getSiteName());
 
         // Текст автоответа
         try {
             page.fill("div.trumbowyg-editor", payload.getDecision().reply());
-            log.debug("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}", getSiteName(),
+            log.info("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}", getSiteName(),
                     payload.getDecision().reply() != null ? payload.getDecision().reply().length() : 0);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ: {}", getSiteName(), e.getMessage());
@@ -116,7 +116,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ СПИСОК СРОКОВ", getSiteName());
             return false;
         }
-        log.debug("АВТООТВЕТ: {} -> список сроков открыт", getSiteName());
+        log.info("АВТООТВЕТ: {} -> список сроков открыт", getSiteName());
 
         if (!waitOrFail(page, "ul.vs__dropdown-menu li", 5000, "Список сроков")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН СПИСОК СРОКОВ", getSiteName());
@@ -125,7 +125,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
         try {
             page.locator("ul.vs__dropdown-menu li").first().click();
-            log.debug("АВТООТВЕТ: {} -> срок выполнения выбран", getSiteName());
+            log.info("АВТООТВЕТ: {} -> срок выполнения выбран", getSiteName());
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ВЫБРАТЬ СРОК: {}", getSiteName(), e.getMessage());
             return false;
@@ -134,12 +134,12 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         // Кнопка "Предложить"
         if (!waitOrFail(page, "button.kw-button--green:has-text('Предложить')",
                 8000, "Кнопка отправки")) return false;
-        log.debug("АВТООТВЕТ: {} -> кнопка 'Предложить' найдена", getSiteName());
+        log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' найдена", getSiteName());
 
         Locator sendBtn = page.locator("button.kw-button--green:has-text('Предложить')");
         try {
             page.waitForCondition(sendBtn::isEnabled, new Page.WaitForConditionOptions().setTimeout(5000));
-            log.debug("АВТООТВЕТ: {} -> кнопка 'Предложить' активна", getSiteName());
+            log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' активна", getSiteName());
         } catch (Exception e) {
             log.warn("Кнопка 'Предложить' не активна");
             return false;
@@ -154,7 +154,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             }
         }
         page.waitForTimeout(2000);
-        log.debug("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА", getSiteName());
+        log.info("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА", getSiteName());
         return true;
     }
 }

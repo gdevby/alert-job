@@ -45,7 +45,6 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
                     n.setMessage(html);
                     n.setToMail(user.getEmail());
 
-                    // ✅ СОЗДАЁМ ВЛОЖЕНИЕ В ПАМЯТИ
                     String attachmentContent = buildAttachmentContent(payload);
                     mailService.sendMessageWithAttachment(n, "response_ai.txt", attachmentContent.getBytes(StandardCharsets.UTF_8))
                             .subscribe();

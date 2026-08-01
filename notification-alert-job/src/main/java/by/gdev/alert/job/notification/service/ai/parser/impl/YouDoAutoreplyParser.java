@@ -111,7 +111,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     @Override
     protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
         String link = payload.getOrder().getLink();
-        log.debug("Переход на заказ: {}", link);
+        log.info("Переход на заказ: {}", link);
 
         // Переходим на заказ
         try {
