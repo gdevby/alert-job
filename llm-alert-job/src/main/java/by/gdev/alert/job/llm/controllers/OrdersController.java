@@ -47,7 +47,7 @@ public class OrdersController {
     @PostMapping(value = "/context", produces = "application/json")
     public ResponseEntity<Map<String, String>> receiveAiOrderRequest(
             @RequestBody AiOrderRequest request) {
-        log.debug(
+        log.info(
                 "AI получил {} заказов от пользователя {} (модуль: {})",
                 request.getOrders().size(),
                 request.getUser().getEmail(),

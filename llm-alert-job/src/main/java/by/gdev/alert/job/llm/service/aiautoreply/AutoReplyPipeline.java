@@ -123,6 +123,7 @@ public class AutoReplyPipeline {
      * Выполняет анализ одного заказа с учётом контекста.
      */
     private AiDecision processItem(OrderDTO order, Long templateId, Long promtId, String uuid) {
+        log.info("АВТООТВЕТ: анализ заказа id={}, templateId={}, promtId={}", order.getLink(), templateId, promtId);
         return analysisService.analyze(order, templateId, promtId, uuid);
     }
 

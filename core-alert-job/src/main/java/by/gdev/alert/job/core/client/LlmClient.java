@@ -43,19 +43,17 @@ public class LlmClient {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-
             HttpEntity<AiOrderRequest> entity = new HttpEntity<>(request, headers);
-
             String url = llmModuleUrl + ordersContextApi;
-
-            log.debug("Отправляю {} заказов в LLM для пользователя {} / модуля {}",
+            log.info("Отправляю на {} {} заказов в LLM для пользователя {} / модуля {}",
+                    url,
                     request.getOrders().size(),
                     request.getUser().getEmail(),
                     request.getModule().getName()
             );
 
             restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
-            log.debug("LLM успешно принял заказы");
+            log.info("LLM успешно принял заказы");
 
         } catch (Exception e) {
             log.error("Ошибка при отправке AiOrderRequest в LLM: {}", e.getMessage(), e);

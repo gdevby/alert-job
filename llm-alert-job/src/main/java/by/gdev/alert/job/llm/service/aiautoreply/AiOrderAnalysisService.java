@@ -132,7 +132,7 @@ public class AiOrderAnalysisService {
 
         // Экранируем проблемный фрагмент
 
-        // 5. Формируем prompt
+        // Формируем prompt
         String prompt = safePromptText.formatted(
                 orderTitle,
                 orderContent,
@@ -199,7 +199,7 @@ public class AiOrderAnalysisService {
                  */
 
 
-                log.debug("RAW LLM RESPONSE:\n{}", raw);
+                log.info("RAW LLM RESPONSE:\n{}", raw);
                 raw = raw.replace("```json", "")
                         .replace("```", "")
                         .trim();

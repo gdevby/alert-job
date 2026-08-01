@@ -41,7 +41,7 @@ public class AiNotificationController {
         // позволить повторно обработать этот же заказ, если он придёт позже,
         // не блокировать повторную отправку, если предыдущая попытка упала.
         Schedulers.boundedElastic().schedule(() -> dedup.remove(key), 5, TimeUnit.MINUTES);
-        log.debug("QUEUE: accepted AI decision {}", key);
+        log.info("QUEUE: accepted AI decision {}", key);
         //кладем пайлоад в очередь обработки пользователя
         userQueueManager.submit(payload);
         // получаем размер очереди для пользователя
@@ -92,7 +92,7 @@ public class AiNotificationController {
     @GetMapping("/queue-size")
     public ResponseEntity<Integer> getQueueSize(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
         int size = userQueueManager.size(uuid);
-        log.debug("Queue size for user {}: {}", uuid, size);
+        log.info("Queue size for user {}: {}", uuid, size);
         return ResponseEntity.ok(size);
     }
 }

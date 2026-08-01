@@ -39,39 +39,45 @@ public class AiDecisionWorker {
     );
 
     void process(AiNotificationPayload payload) {
-        log.debug("Processing payload for order: {}", payload.getOrder().getLink());
+        log.info("Processing payload for order: {}", payload.getOrder().getLink());
         SiteName site = null;
         AutoreplyPlaywrightParser parser = null;
         DecryptedCredential creds = null;
 
         for (StepType type : PIPELINE) {
+            log.info("АВТООТВЕТ: этап {} -> НАЧАЛО", type);
             switch (type) {
                 case RESOLVE_SITE -> {
                     var step = (AiStep<AiNotificationPayload, SiteName>) stepMap.get(type);
                     var r = step.execute(payload);
                     if (r.failed()) return;
                     site = r.value();
+                    log.debug("АВТООТВЕТ: этап {} -> сайт определен: {}", type, site);
                 }
                 case GET_PARSER -> {
                     var step = (AiStep<SiteName, AutoreplyPlaywrightParser>) stepMap.get(type);
                     var r = step.execute(site);
                     if (r.failed()) return;
                     parser = r.value();
+                    log.info("АВТООТВЕТ: этап {} -> парсер получен: {}", type, parser.getSiteName());
                 }
                 case GET_CREDENTIALS -> {
                     var step = (AiStep<AiNotificationPayload, DecryptedCredential>) stepMap.get(type);
                     var r = step.execute(payload);
                     if (r.failed()) return;
                     creds = r.value();
+                    log.info("АВТООТВЕТ: этап {} -> учетные данные получены для пользователя: {}", type, creds.login());
                 }
                 case SEND_AUTOREPLY -> {
                     var step = (AiStep<SendAutoreplyInput, Boolean>) stepMap.get(type);
                     var r = step.execute(new SendAutoreplyInput(parser, creds, payload));
                     if (r.failed()) return;
+                    log.info("АВТООТВЕТ: этап {} -> автоответ отправлен успешно", type);
                 }
                 case SEND_NOTIFICATION -> {
                     var step = (AiStep<AiNotificationPayload, Void>) stepMap.get(type);
                     step.execute(payload);
+                    log.info("АВТООТВЕТ: этап {} -> уведомление отправлено", type);
                 }
             }
         }
