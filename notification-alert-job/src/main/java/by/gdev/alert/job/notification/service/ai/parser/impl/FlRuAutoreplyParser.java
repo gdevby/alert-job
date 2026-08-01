@@ -91,7 +91,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
-    protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
+    protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         String link = payload.getOrder().getLink();
         log.debug("{}: переход на заказ {}", getSiteName(), link);
         //Переходим на заказ

@@ -93,7 +93,7 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
 
 
     @Override
-    protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
+    protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         String link = payload.getOrder().getLink();
         log.debug("Переход на заказ: {}", link);
 

@@ -10,10 +10,12 @@ import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.NotificationTypeEnum;
 import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayload, Void> {
@@ -28,12 +30,15 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
 
     @Override
     public StepResult<Void> execute(AiNotificationPayload payload) {
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОТПРАВКИ УВЕДОМЛЕНИЯ, пользователь: {}, тип уведомления: {}",
+                payload.getModule().getName(), payload.getUser().getEmail(), payload.getNotificationType());
         return retrySupport.retry(3, 1500, () -> {
             try {
                 var user = payload.getUser();
                 NotificationTypeEnum type = payload.getNotificationType();
 
                 if (type == null || type == NotificationTypeEnum.NONE) {
+                    log.info("АВТООТВЕТ: {} -> тип уведомления NONE, пропускаем отправку", payload.getModule().getName());
                     return StepResult.ok(null);
                 }
 
@@ -41,23 +46,36 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
                 n.setType(NotificationType.AUTO_REPLY);
 
                 if (NotificationTypeEnum.EMAIL.equals(type)) {
+                    log.info("АВТООТВЕТ: {} -> подготовка EMAIL для: {}", payload.getModule().getName(), user.getEmail());
                     String html = buildAiReplyEmailTemplate(payload);
+                    String plainText = payload.getDecision().reply();
+                    log.info("АВТООТВЕТ: {} -> EMAIL ТЕКСТ: {}", payload.getModule().getName(), plainText);
+                    log.info("АВТООТВЕТ: {} -> EMAIL HTML: {}", payload.getModule().getName(), html);
                     n.setMessage(html);
                     n.setToMail(user.getEmail());
 
                     String attachmentContent = buildAttachmentContent(payload);
+                    log.info("АВТООТВЕТ: {} -> отправка email с вложением, размер вложения: {} байт",
+                            payload.getModule().getName(), attachmentContent.getBytes(StandardCharsets.UTF_8).length);
                     mailService.sendMessageWithAttachment(n, "response_ai.txt", attachmentContent.getBytes(StandardCharsets.UTF_8))
                             .subscribe();
 
+                    log.info("АВТООТВЕТ: {} -> EMAIL отправлен на {}", payload.getModule().getName(), user.getEmail());
+
                 } else {
-                    n.setMessage(payload.getDecision().reply());
+                    String telegramText = payload.getDecision().reply();
+                    log.info("АВТООТВЕТ: {} -> TELEGRAM ТЕКСТ: {}", payload.getModule().getName(), telegramText);
+                    log.info("АВТООТВЕТ: {} -> подготовка TELEGRAM для: {}", payload.getModule().getName(), user.getTelegram());
+                    n.setMessage(telegramText);
                     n.setToMail(user.getTelegram().toString());
                     mailService.sendMessageToTelegram(n);
+                    log.info("АВТООТВЕТ: {} -> TELEGRAM отправлен на {}", payload.getModule().getName(), user.getTelegram());
                 }
-
+                log.info("АВТООТВЕТ: {} -> УВЕДОМЛЕНИЕ УСПЕШНО ОТПРАВЛЕНО", payload.getModule().getName());
                 return StepResult.ok(null);
 
             } catch (Exception e) {
+                log.warn("АВТООТВЕТ: {} -> ОШИБКА ОТПРАВКИ УВЕДОМЛЕНИЯ: {}", payload.getModule().getName(), e.getMessage(), e);
                 return StepResult.fail();
             }
         });

@@ -37,7 +37,7 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
     }
 
     @Override
-    protected boolean processAutoReply(Page page, AiNotificationPayload payload) {
+    protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         // Переходим на страницу заказа
         String link = payload.getOrder().getLink();
         log.info("Переход на заказ: {}", link);

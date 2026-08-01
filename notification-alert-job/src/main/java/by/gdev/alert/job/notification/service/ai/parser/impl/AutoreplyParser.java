@@ -66,7 +66,7 @@ public abstract class AutoreplyParser {
                 return false;
             }
             page.waitForTimeout(1000);
-            if (!processAutoReply(page, payload)) {
+            if (!processAutoReply(page, payload, creds)) {
                 log.warn("Автоответ НЕ отправлен пользователем {}", creds.login());
                 return false;
             }
@@ -120,7 +120,7 @@ public abstract class AutoreplyParser {
 
     protected abstract boolean login(Page page, DecryptedCredential creds);
 
-    protected abstract boolean processAutoReply(Page page, AiNotificationPayload payload);
+    protected abstract boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds);
 
     protected abstract SiteName getSiteName();
 
