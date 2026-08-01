@@ -100,12 +100,13 @@ services:
         condition: service_healthy
       core:
         condition: service_healthy
+    mem_limit: 2g
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8019/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
   llm:
     image: rg.gdev.by/alert-job/llm-alert-job:$alert_job_version
     ports:

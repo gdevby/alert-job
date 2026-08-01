@@ -118,7 +118,6 @@
 		<dependency>
 			<groupId>com.microsoft.playwright</groupId>
 			<artifactId>playwright</artifactId>
-			<version>1.45.1</version>
 		</dependency>
 	</dependencies>
 	<build>

@@ -32,6 +32,7 @@
 		<docker.server.port>8080</docker.server.port>
 		<docker.skip>false</docker.skip>
 		<docker.dockerfile.name>java-service.Dockerfile</docker.dockerfile.name>
+		<playwright.version>1.61.0</playwright.version>
 	</properties>
 
 	<dependencies>
@@ -60,6 +61,11 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<dependency>
+				<groupId>com.microsoft.playwright</groupId>
+				<artifactId>playwright</artifactId>
+				<version>${playwright.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	<build>
@@ -81,6 +87,7 @@
 						<buildArgs>
 							<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
 							<SERVER_PORT>${docker.server.port}</SERVER_PORT>
+							<PLAYWRIGHT_VERSION>${playwright.version}</PLAYWRIGHT_VERSION>
 						</buildArgs>
 					</configuration>
 					<executions>

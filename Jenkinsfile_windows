@@ -64,7 +64,7 @@ pipeline {
                                 buildAndPush('core-alert-job', 'core-alert-job', "core-alert-job-${REVISION}.jar", '8018', 'java-service.Dockerfile')
                             },
                             'notification': {
-                                buildAndPush('notification-alert-job', 'notification-alert-job', "notification-alert-job-${REVISION}.jar", '8019', 'java-service.Dockerfile')
+                                buildAndPush('notification-alert-job', 'notification-alert-job', "notification-alert-job-${REVISION}.jar", '8019', 'java-playwright.Dockerfile')
                             },
                             'parser': {
                                 buildAndPush('parser-alert-job', 'parser-alert-job', "parser-alert-job-${REVISION}.jar", '8017', 'java-playwright.Dockerfile')

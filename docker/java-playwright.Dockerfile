@@ -1,4 +1,7 @@
-# parser-alert-job image: Playwright + layered Spring Boot JAR.
+# parser-alert-job / notification-alert-job image: Playwright + layered Spring Boot JAR.
+
+# Must be before any FROM — used in stage 2 base image tag (build-arg from pom.xml / Jenkins).
+ARG PLAYWRIGHT_VERSION=1.61.0
 
 # Stage 1: unpack the JAR into layers (same logic as java-service.Dockerfile).
 FROM eclipse-temurin:17-jre-jammy AS extractor
@@ -13,9 +16,9 @@ COPY target/${JAR_FILE} application.jar
 RUN java -Djarmode=tools -jar application.jar extract --layers --launcher --destination extracted
 
 # Stage 2: runtime with pre-installed Playwright browsers.
-FROM mcr.microsoft.com/playwright/java:v1.45.1-jammy
+FROM mcr.microsoft.com/playwright/java:v${PLAYWRIGHT_VERSION}-jammy
 
-# Parser port (8017) — build-arg from pom.xml.
+# Service port (8017 parser, 8019 notification) — build-arg from pom.xml.
 ARG SERVER_PORT=8017
 # Persist the port in an environment variable for HEALTHCHECK.
 ENV SERVER_PORT=${SERVER_PORT}
