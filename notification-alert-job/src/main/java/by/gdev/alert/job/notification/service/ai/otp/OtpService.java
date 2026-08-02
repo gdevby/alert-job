@@ -33,7 +33,7 @@ public class OtpService {
 
         synchronized (lockFor(key)) {
             storage.put(key, new OtpEntry(otp));
-            log.debug("OTP SAVED: {} for {}", otp, key);
+            log.info("OTP SAVED: {} for {}", otp, key);
             lockFor(key).notifyAll();
         }
     }
@@ -41,7 +41,7 @@ public class OtpService {
     public void invalidateOtp(String site, String userEmail) {
         String key = site + ":" + userEmail;
         storage.remove(key);
-        log.debug("OTP INVALIDATED for {}", key);
+        log.info("OTP INVALIDATED for {}", key);
     }
 
     public String waitForOtp(String site, String userEmail, long timeoutMs) {

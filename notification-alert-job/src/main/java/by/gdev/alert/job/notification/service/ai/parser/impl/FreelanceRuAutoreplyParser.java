@@ -43,123 +43,135 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
 
     @Override
     protected boolean login(Page page, DecryptedCredential creds) {
-        // Открываем главную
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
+
         try {
             safeNavigate(page, "https://freelance.ru/");
+            log.info("АВТООТВЕТ: {} -> главная страница загружена, пользователь: {}", getSiteName(), creds.login());
         } catch (Exception e) {
-            log.warn("Не удалось открыть главную страницу Freelance.ru");
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ГЛАВНУЮ СТРАНИЦУ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
             return false;
         }
 
-        // Кнопка Вход
-        if (!clickOrFail(page, "a[href='/auth/login']", 8000, "Кнопка 'Вход'"))
+        if (!clickOrFail(page, "a[href='/auth/login']", 8000, "Кнопка 'Вход'")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Вход', пользователь: {}", getSiteName(), creds.login());
             return false;
+        }
+        log.info("АВТООТВЕТ: {} -> кнопка 'Вход' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        // Ждём форму
-        if (!waitOrFail(page, "input[placeholder='логин или email']", 8000, "Поле логина"))
+        if (!waitOrFail(page, "input[placeholder='логин или email']", 8000, "Поле логина")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
             return false;
+        }
 
-        // Вводим логин
         try {
             page.fill("input[placeholder='логин или email']", creds.login());
+            log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
         } catch (Exception e) {
-            log.warn("Не удалось заполнить логин");
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ЛОГИН, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
             return false;
         }
 
-        // Вводим пароль
         try {
             page.fill("input[type='password']", creds.password());
+            log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
         } catch (Exception e) {
-            log.warn("Не удалось заполнить пароль");
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ПАРОЛЬ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
             return false;
         }
 
-        // Кнопка "Войти"
-        if (!clickOrFail(page, "button:has-text('Войти')", 8000, "Кнопка 'Войти'"))
+        if (!clickOrFail(page, "button:has-text('Войти')", 8000, "Кнопка 'Войти'")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: {}", getSiteName(), creds.login());
             return false;
+        }
+        log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        // Ждём загрузку
         try {
             page.waitForLoadState(LoadState.NETWORKIDLE);
+            log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
         } catch (Exception e) {
-            log.warn("Не удалось дождаться загрузки после входа");
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ДОЖДАТЬСЯ ЗАГРУЗКИ ПОСЛЕ ВХОДА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
             return false;
         }
 
-        log.debug("Успешный вход в аккаунт {}", creds.login());
+        log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
         return true;
     }
-
 
     @Override
     protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         String link = payload.getOrder().getLink();
-        log.debug("Переход на заказ: {}", link);
+        String login = creds.login();
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}, пользователь: {}", getSiteName(), link, login);
 
-        // Переходим на заказ
         try {
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);
+            log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
         } catch (Exception e) {
-            log.warn("Не удалось открыть заказ {}", link);
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
         }
 
-        // Кнопка "Откликнуться"
         if (!clickOrFail(page,
                 "button.btn.btn--success.btn--lg.btn--block:has-text('Откликнуться')",
                 8000,
-                "Кнопка 'Откликнуться'"))
+                "Кнопка 'Откликнуться'")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Откликнуться', пользователь: {}", getSiteName(), login);
             return false;
+        }
+        log.info("АВТООТВЕТ: {} -> кнопка 'Откликнуться' нажата, пользователь: {}", getSiteName(), login);
 
-        // Ждём textarea
         if (!waitOrFail(page,
                 "textarea#replyText[name='TaskReply[text]']",
                 8000,
-                "Поле ответа"))
-            return false;
-
-        // Вставляем текст автоответа
-        try {
-            page.fill("textarea#replyText[name='TaskReply[text]']", payload.getDecision().reply());
-        } catch (Exception e) {
-            log.warn("Не удалось заполнить текст ответа");
+                "Поле ответа")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ОТВЕТА, пользователь: {}", getSiteName(), login);
             return false;
         }
 
-        // Ждём кнопку отправки
+        try {
+            page.fill("textarea#replyText[name='TaskReply[text]']", payload.getDecision().reply());
+            log.info("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}, пользователь: {}", getSiteName(),
+                    payload.getDecision().reply() != null ? payload.getDecision().reply().length() : 0, login);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ ОТВЕТА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            return false;
+        }
+
         if (!waitOrFail(page,
                 "button#createReply.btn.btn--success.btn--sm",
                 8000,
-                "Кнопка отправки"))
+                "Кнопка отправки")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА ОТПРАВКИ, пользователь: {}", getSiteName(), login);
             return false;
+        }
+        log.info("АВТООТВЕТ: {} -> кнопка отправки найдена, пользователь: {}", getSiteName(), login);
 
         Locator sendBtn = page.locator("button#createReply.btn.btn--success.btn--sm");
-
-        // Проверяем, что кнопка активна
         try {
             page.waitForCondition(sendBtn::isEnabled,
                     new Page.WaitForConditionOptions().setTimeout(5000));
+            log.info("АВТООТВЕТ: {} -> кнопка отправки активна, пользователь: {}", getSiteName(), login);
         } catch (Exception e) {
-            log.warn("Кнопка отправки не активна");
+            log.warn("АВТООТВЕТ: {} -> КНОПКА ОТПРАВКИ НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
         }
 
-        // Отправляем отклик
         if (sendRequest) {
             try {
                 sendBtn.click();
+                log.info("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА, пользователь: {}", getSiteName(), login);
             } catch (Exception e) {
-                log.warn("Не удалось нажать кнопку отправки");
+                log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ НАЖАТЬ КНОПКУ ОТПРАВКИ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
                 return false;
             }
+        } else {
+            log.info("АВТООТВЕТ: {} -> ЗАЯВКА НЕ ОТПРАВЛЕНА (sendRequest=false), пользователь: {}", getSiteName(), login);
         }
 
         page.waitForTimeout(2000);
-        log.debug("Отклик успешно отправлен на Freelance.ru");
+        log.info("АВТООТВЕТ: {} -> ОТКЛИК УСПЕШНО ЗАВЕРШЁН, пользователь: {}", getSiteName(), login);
         return true;
     }
-
-
 }

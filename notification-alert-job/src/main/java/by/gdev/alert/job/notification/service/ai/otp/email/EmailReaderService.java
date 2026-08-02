@@ -29,15 +29,20 @@ public class EmailReaderService {
 
             Session session = Session.getInstance(props);
             Store store = session.getStore("imaps");
+            log.info("АВТООТВЕТ: EMAIL -> подключение к почтовому ящику: {}", gdevEmailConfig.getUsername());
+            log.info("АВТООТВЕТ: EMAIL -> хост: {}, порт: по умолчанию (993)", gdevEmailConfig.getHost());
             store.connect(
                     gdevEmailConfig.getHost(),
                     gdevEmailConfig.getUsername(),
                     gdevEmailConfig.getPassword()
             );
+            log.info("АВТООТВЕТ: EMAIL -> подключение успешно");
 
             Folder inbox = store.getFolder(gdevEmailConfig.getFolder());
             inbox.open(Folder.READ_WRITE); // чтобы мы могли менять флаги у писем
+            log.info("АВТООТВЕТ: EMAIL -> папка '{}' открыта, режим READ_WRITE", gdevEmailConfig.getFolder());
             Message[] messages = inbox.getMessages();
+            log.info("АВТООТВЕТ: EMAIL -> всего писем в папке: {}", messages.length);
             for (Message msg : messages) {
                 // Берём только НЕпрочитанные письма
                 if (msg.isSet(Flags.Flag.SEEN)) {
@@ -50,11 +55,12 @@ public class EmailReaderService {
                 String to = recipients != null ? recipients[0].toString() : "";
                 Date sentDate = msg.getSentDate();
                 String body = extractBody(msg);
-
+                log.info("АВТООТВЕТ: EMAIL -> найдено непрочитанное письмо UID={}, от: {}, тема: {}", uid, from, subject);
                 newMessages.add(new MailDto(uid, subject, from, to, sentDate, body));
                 // Помечаем это письмо как прочитанное
                 msg.setFlag(Flags.Flag.SEEN, true);
                 log.debug("Обработано новое письмо UID={} (SEEN=true)", uid);
+                log.info("АВТООТВЕТ: EMAIL -> письмо UID={} помечено как прочитанное", uid);
             }
             inbox.close(true);
             store.close();

@@ -37,87 +37,129 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
     }
 
     @Override
-    protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
-        // Переходим на страницу заказа
-        String link = payload.getOrder().getLink();
-        log.info("Переход на заказ: {}", link);
+    protected boolean login(Page page, DecryptedCredential creds) {
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
-        page.navigate(link);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        try {
+            page.navigate("https://www.weblancer.net/?lang=ru");
+            log.info("АВТООТВЕТ: {} -> главная страница загружена, пользователь: {}", getSiteName(), creds.login());
 
-        // Ждём кнопку "Добавить заявку"
-        Locator openFormBtn = page.locator("button:has-text('Добавить заявку')");
-        page.waitForCondition(openFormBtn::isVisible);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Вход"))
+                    .click();
+            log.info("АВТООТВЕТ: {} -> кнопка 'Вход' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        // Нажимаем кнопку "Добавить заявку"
-        openFormBtn.click();
+            page.waitForSelector("input[name='login']");
+            log.debug("АВТООТВЕТ: {} -> форма логина загружена, пользователь: {}", getSiteName(), creds.login());
 
-        // Ждём появления формы подачи заявки
-        page.waitForSelector("textarea[placeholder='Комментарий']");
+            page.getByPlaceholder("Ваш логин, телефон или email")
+                    .fill(creds.login());
+            log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
 
-        // Вставляем текст автоответа
-        String reply = payload.getDecision().reply();
-        page.fill("textarea[placeholder='Комментарий']", reply);
+            page.getByPlaceholder("Ваш пароль")
+                    .fill(creds.password());
+            log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
 
-        page.waitForTimeout(10000);
+            Locator loginBtn = page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Войти в аккаунт")
+            );
 
-        // вставляем цену
-        //page.fill("input[name='amount']", "5");
+            page.waitForCondition(() -> loginBtn.isEnabled());
+            log.debug("АВТООТВЕТ: {} -> кнопка 'Войти в аккаунт' активна, пользователь: {}", getSiteName(), creds.login());
 
-        // 7. Ждём активации кнопки "Добавить"
-        Locator addBtn = page.getByRole(
-                AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Добавить")
-        );
-        page.waitForCondition(addBtn::isEnabled);
+            loginBtn.click();
+            log.info("АВТООТВЕТ: {} -> кнопка 'Войти в аккаунт' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        // 8. Нажимаем кнопку "Добавить"
-        if (sendRequest){
-            addBtn.click();
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
+
+            log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
+            return true;
+
+        } catch (Exception e) {
+            log.error("АВТООТВЕТ: {} -> ОШИБКА ПРИ ЛОГИНЕ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage(), e);
+            return false;
         }
-
-        // 9. Даем время увидеть отправку
-        page.waitForTimeout(10000);
-
-        log.debug("Заявка успешно отправлена");
-        return true;
     }
 
     @Override
-    protected boolean login(Page page, DecryptedCredential creds) {
-        // Переходим на сайт
-        page.navigate("https://www.weblancer.net/?lang=ru");
+    protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
+        String link = payload.getOrder().getLink();
+        String login = creds.login();
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}, пользователь: {}", getSiteName(), link, login);
 
-        // Кликаем "Вход"
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Вход"))
-                .click();
+        try {
+            page.navigate(link);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            return false;
+        }
 
-        // Ждём появления формы
-        page.waitForSelector("input[name='login']");
+        try {
+            Locator openFormBtn = page.locator("button:has-text('Добавить заявку')");
+            page.waitForCondition(openFormBtn::isVisible);
+            log.debug("АВТООТВЕТ: {} -> кнопка 'Добавить заявку' видна, пользователь: {}", getSiteName(), login);
 
-        // Вводим логин
-        page.getByPlaceholder("Ваш логин, телефон или email")
-                .fill(creds.login());
+            openFormBtn.click();
+            log.info("АВТООТВЕТ: {} -> кнопка 'Добавить заявку' нажата, пользователь: {}", getSiteName(), login);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ НАЖАТЬ КНОПКУ 'Добавить заявку', пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            return false;
+        }
 
-        // Вводим пароль
-        page.getByPlaceholder("Ваш пароль")
-                .fill(creds.password());
+        try {
+            page.waitForSelector("textarea[placeholder='Комментарий']");
+            log.debug("АВТООТВЕТ: {} -> форма подачи заявки загружена, пользователь: {}", getSiteName(), login);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ ДОЖДАЛИСЬ ФОРМЫ ПОДАЧИ ЗАЯВКИ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            return false;
+        }
 
-        // Находим кнопку
-        Locator loginBtn = page.getByRole(
-                AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Войти в аккаунт")
-        );
+        try {
+            String reply = payload.getDecision().reply();
+            page.fill("textarea[placeholder='Комментарий']", reply);
+            log.info("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}, пользователь: {}", getSiteName(),
+                    reply != null ? reply.length() : 0, login);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ ОТВЕТА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            return false;
+        }
 
-        // Ждём, пока кнопка станет активной
-        page.waitForCondition(() -> loginBtn.isEnabled());
+        page.waitForTimeout(10000);
+        log.debug("АВТООТВЕТ: {} -> ожидание 10 секунд перед отправкой, пользователь: {}", getSiteName(), login);
 
-        // Кликаем
-        loginBtn.click();
+        try {
+            Locator addBtn = page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Добавить")
+            );
+            page.waitForCondition(addBtn::isEnabled);
+            log.debug("АВТООТВЕТ: {} -> кнопка 'Добавить' активна, пользователь: {}", getSiteName(), login);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> КНОПКА 'Добавить' НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            return false;
+        }
 
-        // Ждём загрузки
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        log.debug("Успешный вход в аккаунт {}", creds.login());
+        if (sendRequest) {
+            try {
+                Locator addBtn = page.getByRole(
+                        AriaRole.BUTTON,
+                        new Page.GetByRoleOptions().setName("Добавить")
+                );
+                addBtn.click();
+                log.info("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА, пользователь: {}", getSiteName(), login);
+            } catch (Exception e) {
+                log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+                return false;
+            }
+        } else {
+            log.info("АВТООТВЕТ: {} -> ЗАЯВКА НЕ ОТПРАВЛЕНА (sendRequest=false), пользователь: {}", getSiteName(), login);
+        }
+
+        page.waitForTimeout(10000);
+        log.info("АВТООТВЕТ: {} -> ОТКЛИК УСПЕШНО ЗАВЕРШЁН, пользователь: {}", getSiteName(), login);
         return true;
     }
 }
