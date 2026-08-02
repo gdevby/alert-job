@@ -71,8 +71,11 @@ public class AiDecisionWorker {
                 case SEND_AUTOREPLY -> {
                     var step = (AiStep<SendAutoreplyInput, Boolean>) stepMap.get(type);
                     var r = step.execute(new SendAutoreplyInput(parser, creds, payload));
-                    if (r.failed()) return;
-                    log.info("АВТООТВЕТ: этап {} -> автоответ отправлен успешно", type);
+                    if (r.failed()) {
+                        log.warn("АВТООТВЕТ: этап {} -> ОШИБКА при отправке автоответа", type);
+                    } else {
+                        log.info("АВТООТВЕТ: этап {} -> автоответ отправлен успешно", type);
+                    }
                 }
                 case SEND_NOTIFICATION -> {
                     var step = (AiStep<AiNotificationPayload, Void>) stepMap.get(type);
