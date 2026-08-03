@@ -124,6 +124,10 @@ export interface BindingResponse {
      * Дата создания
      */
     'createdAt': string;
+    /**
+     * Тип уведомления
+     */
+    'notificationType': string;
 }
 export interface BindingUpdateRequest {
     /**
@@ -239,6 +243,7 @@ export interface UserSiteCredentialShortResponse {
      * Дата создания учётной записи
      */
     'createdAt': string;
+    'site': SiteDTO;
 }
 
 /**
