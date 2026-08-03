@@ -9,7 +9,12 @@ import TextField from '@mui/material/TextField';
 import DialogContent from '@mui/material/DialogContent';
 import { FormState } from '@/lib/constants/FormState';
 import { Button, FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
-import { AutoreplySitesSupportingApi, UserCredentialsApi, type UserCredentialRequest, type UserSiteCredentialShortResponse } from '@/apis/coreApi';
+import {
+  AutoreplySitesSupportingApi,
+  UserCredentialsApi,
+  type UserCredentialRequest,
+  type UserSiteCredentialShortResponse,
+} from '@/apis/coreApi';
 import { getErrorMessage } from '@/lib/utils/getErrorMessage';
 
 type FormValues = Pick<UserCredentialRequest, 'name' | 'login' | 'password' | 'siteId'>;
@@ -57,7 +62,7 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
     reset({ name: '', login: '', password: '', siteId: undefined });
 
     if (isOpen && formState === 'editing' && initialFields) {
-      reset({...initialFields, siteId: initialFields.site.id});
+      reset({ ...initialFields, siteId: initialFields.site.id });
     }
   }, [isOpen, formState]);
 
@@ -65,8 +70,8 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
     close();
   };
 
-  const submit = (formValues: FormValues) => {
-    createOrUpdateAccount(formValues);
+  const submit = ({ login, name, password, siteId }: FormValues) => {
+    createOrUpdateAccount({ login, name, password, siteId });
   };
 
   const siteId = watch('siteId') ?? '';
