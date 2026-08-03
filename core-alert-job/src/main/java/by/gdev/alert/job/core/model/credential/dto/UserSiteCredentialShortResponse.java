@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.model.credential.dto;
 
+import by.gdev.alert.job.core.model.SiteDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -18,4 +19,7 @@ public class UserSiteCredentialShortResponse {
 
     @Schema(description = "Дата создания учётной записи", required = true, example = "2026-07-02T18:50:12.340107")
     private String createdAt;
+
+    @Schema(description = "Информация о сайте", required = true)
+    private SiteDTO site;
 }

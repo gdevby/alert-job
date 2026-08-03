@@ -1,11 +1,13 @@
 package by.gdev.alert.job.core.controller;
 
+import by.gdev.alert.job.core.model.SiteDTO;
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
 import by.gdev.alert.job.core.model.credential.dto.UserCredentialRequest;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.model.credential.dto.UserSiteCredentialShortResponse;
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import by.gdev.common.model.HeaderName;
+import by.gdev.common.model.SiteName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -54,6 +56,11 @@ public class UserCredentialController {
                 dto.setId(c.getId());
                 dto.setName(c.getName());
                 dto.setLogin(c.getLogin());
+
+                SiteName siteName = SiteName.fromId(c.getSiteId());
+                SiteDTO siteDTO = new SiteDTO(siteName.getId(), siteName.name());
+                dto.setSite(siteDTO);
+
                 dto.setCreatedAt(
                         c.getCreatedAt() != null ? c.getCreatedAt().toString() : null
                 );
