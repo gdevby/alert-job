@@ -113,7 +113,7 @@ export const AccountDialog = ({ isOpen, formState, initialFields, close }: Props
           {!isLoading && (
             <FormControl variant="standard" size="small" required error={Boolean(errors.siteId)}>
               <InputLabel>Сайт</InputLabel>
-              <Select value={siteId} label="Сайт" {...register('siteId', { required: true })}>
+              <Select value={siteId} label="Сайт" {...register('siteId', { required: true })} disabled>
                 {sites?.data.map(({ id, name }) => (
                   <MenuItem key={id} value={id}>
                     {name}
