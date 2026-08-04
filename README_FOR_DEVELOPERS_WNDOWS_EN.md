@@ -9,7 +9,21 @@ git clone https://github.com/gdevby/alert-job.git
 git clone https://github.com/gdevby/alert-job-config-repo.git
 ```
 
-### 2. Set Windows Execution Policy
+### 2. Environment variables
+
+Create a `.env` file with environment variables
+
+```
+cp env_sample.properties .env
+```
+
+Generate the key and changing the `APP_ENCRYPTION_KEY` variable
+
+```
+openssl rand -hex 16
+```
+
+### 3. Set Windows Execution Policy
 
 Open PowerShell with administrator access and execute
 ```bash
@@ -23,14 +37,14 @@ Set-ExecutionPolicy -ExecutionPolicy Remotesigned
 ```
 Pass A parameter (Yes to everyone). <b> Return that setting to your default by using upper command with replaced Remotesigned to your default parameter after completing tutorial. You will be reminded about it at the very end of tutorial.</b>
 
-### 3. Keycloak
+### 4. Keycloak
 
 Enter to keycloak folder inside of project folder and execute script
 ```bash
 cd (path_to_project)\alert-job\keycloak
 build.sh
 ```
-### 4. Node installing
+### 5. Node installing
 Go to link https://github.com/coreybutler/nvm-windows/releases and download nvm setup.
 
 Install the nvm with no changes at properties through installing.
@@ -56,14 +70,14 @@ nvm use YOUR_VERION_NUMBER
 npm run build
 ```
 
-### 5. Docker 
+### 6. Docker 
 Go to parent directory, create images and run containers 
 ```bash
 cd ..
 docker compose up -d keycloak
 ```
 
-### 6. Config repo
+### 7. Config repo
 There are two ways wo setup config:
 
 1. Inside of alert-job-config service find application.properties at resource folder and uncomment next
@@ -84,7 +98,7 @@ This is needed to use local configuration
 
 2. You may add Environment Variables in Running configuration in your IDE.
 
-### 7. Hosts
+### 8. Hosts
 
 Go by path and open file for edit 
 ```bash
@@ -97,7 +111,7 @@ Add next lines to the end of file
 127.0.0.1 auth.alertjob.by alertjob.by
 ```
 
-### 8. Nginx
+### 9. Nginx
 
 Open link https://nginx.org/en/download.html and download Stable version of Nginx. Unzip it to convenient place. Open that folder and proceed to configure file
 ```bash
@@ -149,7 +163,7 @@ nginx -t
 
  Then you need to execute nginx.exe. You may need to execute that file for project run after every computer restart.
 
-### 9. Run project
+### 10. Run project
 Run project services using your IDE in next order: 
 1. config 
 2. eureka 
@@ -160,6 +174,6 @@ Run project services using your IDE in next order:
 
 After that project available on [alertjob.by](http://alertjob.by/). If everything is alright then you can return to step #2 and change ExecutionPolicy to your default value.
 
-### 9. Test account
+### 11. Test account
 * Login: test
 * Password: test

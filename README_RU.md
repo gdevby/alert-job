@@ -45,6 +45,18 @@ sudo nano /etc/hosts
 git clone https://github.com/gdevby/alert-job.git
 ```
 
+Создаем `.env` файл с переменными окружения
+
+```
+cp env_sample.properties .env
+```
+
+Генерируем ключ и изменяем переменную `APP_ENCRYPTION_KEY`
+
+```
+openssl rand -hex 16
+```
+
 Переходим в директорию и собираем проект
 
 ```

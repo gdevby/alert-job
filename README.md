@@ -45,6 +45,18 @@ Cloning the project
 git clone https://github.com/gdevby/alert-job.git
 ```
 
+Create a `.env` file with environment variables
+
+```
+cp env_sample.properties .env
+```
+
+Generate the key and changing the `APP_ENCRYPTION_KEY` variable
+
+```
+openssl rand -hex 16
+```
+
 Go to the directory and build the project
 ```
 cd alert-job

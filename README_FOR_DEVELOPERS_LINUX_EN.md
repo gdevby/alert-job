@@ -9,7 +9,21 @@ git clone https://github.com/gdevby/alert-job.git
 git clone https://github.com/gdevby/alert-job-config-repo.git
 ```
 
-### 2. Keycloak
+### 2. Environment variables
+
+Create a `.env` file with environment variables
+
+```
+cp env_sample.properties .env
+```
+
+Generate the key and changing the `APP_ENCRYPTION_KEY` variable
+
+```
+openssl rand -hex 16
+```
+
+### 3. Keycloak
 
 Enter project folder and after that enter keycloak folder
 ```bash
@@ -18,7 +32,7 @@ cd keycloak
 ./build.sh
 ```
 
-### 3. Node installing
+### 4. Node installing
 
 Go to parent directory and after that enter front folder, and run next commands
 ```bash
@@ -29,7 +43,7 @@ npm i
 npm run build
 ```
 
-### 4. Docker 
+### 5. Docker 
 
 Go to parent directory, create images and run containers 
 ```bash
@@ -38,7 +52,7 @@ docker compose up -d keycloak
 sudo chmod 777 public
 ```
 
-### 5. Config repo
+### 6. Config repo
 
 There are two ways wo setup config:
 1) In config module, in resource folder in `application.properties` file uncomment `#spring.cloud.config.server.native.search-locations=file:///....../alert-job-config-repo` specify the local path to the config project.
@@ -47,7 +61,7 @@ Should look like this:
 Add `native` profile to the `spring.profiles.active=dev`. This is needed to use local configuration
 2) You may add Environment Variables in Running configuration in your IDE.
 
-### 6. Hosts
+### 7. Hosts
 
 Then open terminal and alter hosts file
 ```bash
@@ -58,7 +72,7 @@ add next lines
 127.0.0.1 auth.alertjob.by alertjob.by
 ```
 
-### 7. Nginx
+### 8. Nginx
 
 Downloading nginx
 ```bash
@@ -121,7 +135,7 @@ Then adding user www-data to yours group
 sudo usermod -aG $USER www-data 
 ```
 
-### 8. Run project
+### 9. Run project
 
 Run project services using your IDE in next order: 
 1. config 
@@ -133,6 +147,6 @@ Run project services using your IDE in next order:
 
 After that project available on [alertjob.by](http://alertjob.by/)
 
-### 9. Test account
+### 10. Test account
 * Login: test
 * Password: test

@@ -2,14 +2,28 @@
 
 ### 1. Клонирование проектов
 
-Откройте коммандную строку (cmd) и склонируйте проекты
+Откройте командную строку (cmd) и склонируйте проекты
 
 ```bash
 git clone https://github.com/gdevby/alert-job.git
 git clone https://github.com/gdevby/alert-job-config-repo.git
 ```
 
-### 2. Установка параметра Windows Execution Policy
+### 2. Переменные окружения
+
+Создайте `.env` файл с переменными окружения
+
+```
+cp env_sample.properties .env
+```
+
+Сгенерируйте ключ и измените переменную `APP_ENCRYPTION_KEY`
+
+```
+openssl rand -hex 16
+```
+
+### 3. Установка параметра Windows Execution Policy
 
 Откройте PowerShell с правами администратора и выполните
 ```bash
@@ -23,14 +37,14 @@ Set-ExecutionPolicy -ExecutionPolicy Remotesigned
 ```
 Передайте параметр А (Да для всех). <b> Верните значение этой настройки на прежнее используя команду выше, заменив параметр Remotesigned на ваше прежнее значение после выполнения этого руководства. Напоминание об этом будет в самом конце руководства.</b>
 
-### 3. Keycloak
+### 4. Keycloak
 
 Перейдите в папку keycloak внутри папки проекта и выполните скрипт
 ```bash
 cd (path_to_project)\alert-job\keycloak
 build.sh
 ```
-### 4. Установка Node
+### 5. Установка Node
 Перейдите по ссылке https://github.com/coreybutler/nvm-windows/releases и скачайте установщик nvm.
 
 Установите nvm без изменения параметров во время установки.
@@ -56,14 +70,14 @@ nvm use YOUR_VERION_NUMBER
 npm run build
 ```
 
-### 5. Docker 
+### 6. Docker 
 Перейдите в родительскую директорию, создайте образы и запустите контейнеры
 ```bash
 cd ..
 docker compose up -d keycloak
 ```
 
-### 6. Config repo
+### 7. Config repo
 
 Существует два способа настроить конфиг:
 
@@ -85,7 +99,7 @@ spring.profiles.active=dev,native
 
 2. Вы можете добавить переменные окружения в Running configuration вашей IDE 
 
-### 7. Hosts
+### 8. Hosts
 
 Перейдите по пути и откройте файл для редактирования
 ```bash
@@ -98,7 +112,7 @@ c:\Windows\System32\drivers\etc\hosts
 127.0.0.1 auth.alertjob.by alertjob.by
 ```
 
-### 8. Nginx
+### 9. Nginx
 
 Откройте ссылку https://nginx.org/en/download.html и скачайте Stable версию Nginx. Распакуйте в удобное место. Откройте эту папку и перейдите к файлу конфигурации.
 ```bash
@@ -150,7 +164,7 @@ nginx -t
 
 Далее, запустите файл nginx.exe. Скорее всего, вам потребуется исполнять этот файл для запуска проекта после каждой перезагрузки компьютера.
 
-### 9. Запуск проекта
+### 10. Запуск проекта
 Запустите сервисы проекта используя вашу IDE в следующем порядке:
 1. config 
 2. eureka 
@@ -161,6 +175,6 @@ nginx -t
 
 После этого, проект доступен по [alertjob.by](http://alertjob.by/). Если все в порядке, тогда вы можете вернуться к шагу №2 и изменить ExecutionPolicy к вашему прежнему значению.
 
-### 9. Тестовый аккаунт
+### 11. Тестовый аккаунт
 * Логин: test
 * Пароль: test

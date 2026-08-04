@@ -9,7 +9,21 @@ git clone https://github.com/gdevby/alert-job.git
 git clone https://github.com/gdevby/alert-job-config-repo.git
 ```
 
-### 2. Keycloak
+### 2. Переменные окружения
+
+Создайте `.env` файл с переменными окружения
+
+```
+cp env_sample.properties .env
+```
+
+Сгенерируйте ключ и измените переменную `APP_ENCRYPTION_KEY`
+
+```
+openssl rand -hex 16
+```
+
+### 3. Keycloak
 
 Перейдите в папку проекта, затем в папку keycloak и запустите скрипт
 
@@ -19,7 +33,7 @@ cd keycloak
 ./build.sh
 ```
 
-### 3. Установка Node
+### 4. Установка Node
 
 Перейдите в корневую директорию, а затем в папку front и запустите следующие команды
 
@@ -31,7 +45,7 @@ npm i
 npm run build
 ```
 
-### 4. Docker 
+### 5. Docker 
 
 Перейдите в корневую директорию и запустите следующие команды
 
@@ -41,7 +55,7 @@ docker compose up -d keycloak
 sudo chmod 777 public
 ```
 
-### 5. Config repo
+### 6. Config repo
 
 Есть два способа настроить конфиг
 1) В модуле config в папке resources в файле application.properties раскоментировать `#spring.cloud.config.server.native.search-locations=file:///....../alert-job-config-repo` и указать в ней локальный путь до проекта с конфигурацией.
@@ -49,7 +63,7 @@ sudo chmod 777 public
 `spring.cloud.config.server.native.search-locations=/home/username/IdeaProjects/alert-job-config-repo`. Добавить к `spring.profiles.active=dev` профиль `native`. Это нужно для того, чтобы не пушить конфиг на гитхаб, а использовать локальный. 
 2) Либо можно указать эти параметры в переменных окружения в IDE
 
-### 6. Hosts
+### 7. Hosts
 
 Далее открываем терминал и вводим
 
@@ -62,7 +76,7 @@ sudo nano /etc/hosts
 
 ```
 
-### 7. Nginx
+### 8. Nginx
 
 Устанавливаем nginx
 
@@ -130,7 +144,7 @@ sudo systemctl status nginx.service
 sudo usermod -aG $USER www-data 
 ```
 
-### 8. Запуск проекта
+### 9. Запуск проекта
 
 Запустите сервисы проекта используя вашу IDE в следующем порядке:
 1. config 
@@ -142,6 +156,6 @@ sudo usermod -aG $USER www-data
 
 Заходим в браузер и пишем [alertjob.by](http://alertjob.by/)
 
-### 9. Тестовый аккаунт
+### 10. Тестовый аккаунт
 * Логин: test
 * Пароль: test
