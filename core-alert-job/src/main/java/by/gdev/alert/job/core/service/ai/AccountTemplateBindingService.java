@@ -216,7 +216,7 @@ public class AccountTemplateBindingService {
         dto.setTemplateId(b.getTemplateId());
         dto.setPromtId(b.getPromtId());
         dto.setActive(b.isActive());
-        dto.setNotificationType(b.getNotificationType().name());
+        dto.setNotificationType(b.getNotificationType());
 
         // Аккаунт пользователя для входа в парсер автоответов
         UserSiteCredential cred = userSiteCredentialRepository

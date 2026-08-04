@@ -127,8 +127,17 @@ export interface BindingResponse {
     /**
      * Тип уведомления
      */
-    'notificationType': string;
+    'notificationType': BindingResponseNotificationTypeEnum;
 }
+
+export const BindingResponseNotificationTypeEnum = {
+    None: 'NONE',
+    Email: 'EMAIL',
+    Telegram: 'TELEGRAM',
+} as const;
+
+export type BindingResponseNotificationTypeEnum = typeof BindingResponseNotificationTypeEnum[keyof typeof BindingResponseNotificationTypeEnum];
+
 export interface BindingUpdateRequest {
     /**
      * ID модуля

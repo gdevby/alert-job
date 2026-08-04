@@ -100,7 +100,6 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
     });
 
     if (isOpen && formState === 'editing' && initialFields) {
-      console.log('initialFields', initialFields);
       reset(initialFields);
     }
   }, [isOpen, formState]);
