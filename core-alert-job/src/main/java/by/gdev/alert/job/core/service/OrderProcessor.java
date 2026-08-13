@@ -116,17 +116,12 @@ public class OrderProcessor {
         }
 
         Long siteId = sourceSite.getSiteSource();
-        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ: пользователь={}, сайт={}, заказов={}",
-                orderModule.getName(), user.getEmail(), siteId, orders.size());
 
         // Получаем все креды пользователя для этого сайта
         List<UserSiteCredential> credentials = userSiteCredentialRepository.findByUserUuidAndSiteId(user.getUuid(), siteId);
         if (credentials.isEmpty()) {
-            log.info("АВТООТВЕТ: {} -> НЕТ АККАУНТОВ для пользователя {} на сайте {}",
-                    orderModule.getName(), user.getEmail(), siteId);
-            throw new RuntimeException("Нет аккаунтов для сайта " + siteId);
+            return;
         }
-        log.info("АВТООТВЕТ: {} -> найдено аккаунтов для пользователя: {}", orderModule.getName(), credentials.size());
 
         // Ищем кред, для которого есть активный биндинг с данным модулем
         UserSiteCredential selectedCredential = null;
@@ -138,17 +133,19 @@ public class OrderProcessor {
             if (optBinding.isPresent()) {
                 selectedCredential = cred;
                 selectedBinding = optBinding.get();
-                log.info("АВТООТВЕТ: {} -> найден активный биндинг для аккаунта id={}, templateId={}, promtId={}",
-                        orderModule.getName(), cred.getId(), selectedBinding.getTemplateId(), selectedBinding.getPromtId());
                 break;
             }
         }
 
         if (selectedBinding == null) {
-            log.info("АВТООТВЕТ: {} -> НЕТ АКТИВНОГО БИНДИНГА для модуля {} и сайта {}",
-                    orderModule.getName(), orderModule.getId(), siteId);
-            throw new RuntimeException("Нет активного биндинга для модуля " + orderModule.getId() + " и сайта " + siteId);
+            return;
         }
+
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ: пользователь={}, сайт={}, заказов={}",
+                orderModule.getName(), user.getEmail(), siteId, orders.size());
+        log.info("АВТООТВЕТ: {} -> найдено аккаунтов для пользователя: {}", orderModule.getName(), credentials.size());
+        log.info("АВТООТВЕТ: {} -> найден активный биндинг для аккаунта id={}, templateId={}, promtId={}",
+                orderModule.getName(), selectedCredential.getId(), selectedBinding.getTemplateId(), selectedBinding.getPromtId());
 
         Long credentialId = selectedCredential.getId();
         Long templateId = selectedBinding.getTemplateId();
