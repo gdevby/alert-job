@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -211,7 +212,8 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	/**
 	 * Обрабатывает список заказов:
 	 *  - фильтрует невалидные;
-	 *  - проверяет уникальность через {@link ParserService#isExistsOrder(String)};
+	 *  - убирает дубли {@code link} внутри одного батча (одна категория/подкатегория, не между ними);
+	 *  - проверяет уникальность через {@link ParserService#shouldSaveOrder(Category, Subcategory, String)};
 	 *  - сохраняет в БД;
 	 *  - преобразует в {@link OrderDTO}.
 	 *
@@ -221,10 +223,13 @@ public abstract class AbsctractSiteParser implements SiteParser{
 	 * @return список DTO
 	 */
 	protected List<OrderDTO> getOrdersData(List<Order> orders, Category category, Subcategory subCategory){
+		// Только внутри текущего вызова (одна категория/подкатегория); между категориями не действует
+		Set<String> seenLinks = new HashSet<>();
 		return orders.stream()
 				.filter(Objects::nonNull)
 				.filter(Order::isValidOrder)
-				.filter(order -> getParserService().isExistsOrder(order.getLink()))
+				.filter(order -> seenLinks.add(order.getLink()))
+				.filter(order -> getParserService().shouldSaveOrder(category, subCategory, order.getLink()))
 				.map(order -> saveOrder(order, category, subCategory))
 				.peek(order -> {
 					log.info("*** save order: site {},  title {} , link {}",

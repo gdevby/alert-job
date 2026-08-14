@@ -44,7 +44,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
     handleSubmit,
     reset,
     watch,
-  } = useForm<FormValues>({ defaultValues: { moduleId, active: false, notificationType: 'NONE' } });
+  } = useForm<FormValues>({ defaultValues: { moduleId, active: true, notificationType: 'NONE' } });
 
   const { data: accounts, isLoading: isAccountsLoading } = useQuery({
     queryKey: ['userCredentialsApi.getAllUserCredentials'],
@@ -95,7 +95,7 @@ export const BindingDialog = ({ isOpen, formState, initialFields, moduleId, clos
       accountId: undefined,
       templateId: undefined,
       promtId: undefined,
-      active: false,
+      active: true,
       notificationType: 'NONE',
     });
 

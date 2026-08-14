@@ -70,15 +70,39 @@ public class ParserService {
 				.toList();
 	}
 
-    public boolean isExistsOrder(Category category, Subcategory subCategory, String link) {
-		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link);
+	/**
+	 * Проверяет, нужно ли сохранять заказ для данной категории/подкатегории.
+	 * Возвращает {@code true}, если ссылку ещё можно обрабатывать в этом контексте.
+	 * <p>
+	 * Один и тот же {@code link} может встретиться в разных категориях — проверка
+	 * всегда в рамках пары {@code (category, subCategory)}, без глобального отсечения по link.
+	 * <ul>
+	 *   <li>{@code order_links} — UK {@code (category_id, sub_category_id, links)}</li>
+	 *   <li>{@code parser_order} — уже сохранён для этой же категории/подкатегории</li>
+	 * </ul>
+	 */
+	public boolean shouldSaveOrder(Category category, Subcategory subCategory, String link) {
+		Long subCategoryId = subCategory != null ? subCategory.getId() : null;
+		return !linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link)
+				&& !orderRepository.existsByLinkCategoryAndSubCategory(link, category.getId(), subCategoryId);
 	}
 
-	public boolean isExistsOrder(String link) {
+	/**
+	 * @deprecated не используется; дедупликация — через {@link #shouldSaveOrder(Category, Subcategory, String)}.
+	 */
+	@Deprecated
+	public boolean shouldSaveOrder(String link) {
 		return !orderRepository.existsByLink(link);
 	}
 
+	/**
+	 * Сохраняет ссылку в {@code order_links}. Идемпотентен: повторный вызов с тем же
+	 * {@code (category, subCategory, link)} не создаёт дубль и не бросает UK-ошибку.
+	 */
 	public void saveOrderLinks(Category category, Subcategory subCategory, String link) {
+		if (linkRepository.existsByCategoryAndSubCategoryAndLinks(category, subCategory, link)) {
+			return;
+		}
 		OrderLinks ol = new OrderLinks();
 		ol.setCategory(category);
 		ol.setSubCategory(subCategory);

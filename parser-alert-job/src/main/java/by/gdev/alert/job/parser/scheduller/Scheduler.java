@@ -70,7 +70,14 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 		});
 	}
 
+	/**
+	 * Удаляет устаревшие заказы и связанные с ними записи в {@code order_links}.
+	 * Критерий по {@code order.dateTime}; для links синхронно удаляется пара
+	 * {@code (link, category_id, sub_category_id)} — иначе cleanup рассинхронизируется
+	 * с {@link #removeParsedLinks()} (там критерий по {@code order_links.createdDate}).
+	 */
 	@Scheduled(cron = "0 0 1 * * *")
+	@Transactional
 	public void removeOrders() {
 		Lists.newArrayList(orderRepository.findAll()).stream().filter(f -> {
 			LocalDateTime ldt = f.getDateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
@@ -78,6 +85,12 @@ public class Scheduler implements ApplicationListener<ContextRefreshedEvent> {
 			LocalDateTime now = LocalDateTime.now();
 			return now.isAfter(plusLdt);
 		}).forEach(e -> {
+			if (e.getSourceSite() != null) {
+				linkRepository.deleteByLinksAndCategoryIdAndSubCategoryId(
+						e.getLink(),
+						e.getSourceSite().getCategory(),
+						e.getSourceSite().getSubCategory());
+			}
 			orderRepository.delete(e);
 			log.debug("removed order with title" + e.getTitle());
 		});

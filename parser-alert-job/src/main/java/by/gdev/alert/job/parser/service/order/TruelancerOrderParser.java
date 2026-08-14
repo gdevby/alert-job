@@ -81,7 +81,7 @@ public class TruelancerOrderParser extends AbsctractSiteParser {
     }
 
     private Order buildOrder(TruelancerOrder tr, Long siteSourceJobId, Category category, Subcategory subCategory) {
-        if (!getParserService().isExistsOrder(tr.getLink()))
+        if (!getParserService().shouldSaveOrder(category, subCategory, tr.getLink()))
             return null;
         Order order = getOrderRepository().findOrdersByLink(tr.getLink()).stream().findFirst().orElseGet(Order::new);
         order.setTitle(tr.getTitle());

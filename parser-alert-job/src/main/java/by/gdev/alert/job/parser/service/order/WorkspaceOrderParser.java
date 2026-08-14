@@ -149,7 +149,7 @@ public class WorkspaceOrderParser extends PlaywrightSiteParser {
         //Ccылка на заказ
         String fullLink = baseUrl + postfixLink;
         // Проверка уникальности
-        if (!getParserService().isExistsOrder(fullLink))
+        if (!getParserService().shouldSaveOrder(category, subCategory, fullLink))
             return null;
         Order order = getOrderRepository().findOrdersByLink(fullLink)
                 .stream().findFirst().orElseGet(Order::new);
