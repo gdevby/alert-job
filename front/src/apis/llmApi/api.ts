@@ -248,6 +248,171 @@ export interface TemplateResponse {
      */
     'createdAt': string;
 }
+/**
+ * Запрос на тестирование автоответа
+ */
+export interface TestAutoreplyRequest {
+    /**
+     * ID шаблона письма
+     */
+    'templateId': number;
+    /**
+     * ID промта
+     */
+    'promptId': number;
+    /**
+     * Описание заказа (текст для анализа)
+     */
+    'orderDescription': string;
+}
+/**
+ * Ответ тестирования автоответа
+ */
+export interface TestAutoreplyResponse {
+    /**
+     * Успешно ли выполнен запрос
+     */
+    'success'?: boolean;
+    /**
+     * Сообщение об ошибке (если success=false)
+     */
+    'error'?: string;
+    /**
+     * Отвечать ли на заказ
+     */
+    'shouldReply'?: boolean;
+    /**
+     * Сгенерированный текст ответа
+     */
+    'reply'?: string;
+    /**
+     * Уверенность AI (0.0-1.0)
+     */
+    'confidence'?: number;
+    /**
+     * Причина принятия решения
+     */
+    'reason'?: string;
+    /**
+     * Найденные ключевые слова
+     */
+    'matchedKeywords'?: Array<string>;
+    /**
+     * Пропущенные ключевые слова
+     */
+    'missedKeywords'?: Array<string>;
+    /**
+     * Причина соответствия категории
+     */
+    'categoryMatchReason'?: string;
+    /**
+     * Причина соответствия подкатегории
+     */
+    'subcategoryMatchReason'?: string;
+    'testOrder'?: OrderDTO;
+}
+
+/**
+ * AIApi - axios parameter creator
+ */
+export const AIApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Проверяет, как текущий шаблон + промт отработают на тестовом заказе
+         * @summary Тестирование автоответа
+         * @param {TestAutoreplyRequest} testAutoreplyRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        testAutoreply: async (testAutoreplyRequest: TestAutoreplyRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'testAutoreplyRequest' is not null or undefined
+            assertParamExists('testAutoreply', 'testAutoreplyRequest', testAutoreplyRequest)
+            const localVarPath = `/api/ai/test/autoreply`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(testAutoreplyRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * AIApi - functional programming interface
+ */
+export const AIApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = AIApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Проверяет, как текущий шаблон + промт отработают на тестовом заказе
+         * @summary Тестирование автоответа
+         * @param {TestAutoreplyRequest} testAutoreplyRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async testAutoreply(testAutoreplyRequest: TestAutoreplyRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TestAutoreplyResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.testAutoreply(testAutoreplyRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AIApi.testAutoreply']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * AIApi - factory interface
+ */
+export const AIApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = AIApiFp(configuration)
+    return {
+        /**
+         * Проверяет, как текущий шаблон + промт отработают на тестовом заказе
+         * @summary Тестирование автоответа
+         * @param {TestAutoreplyRequest} testAutoreplyRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        testAutoreply(testAutoreplyRequest: TestAutoreplyRequest, options?: RawAxiosRequestConfig): AxiosPromise<TestAutoreplyResponse> {
+            return localVarFp.testAutoreply(testAutoreplyRequest, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * AIApi - object-oriented interface
+ */
+export class AIApi extends BaseAPI {
+    /**
+     * Проверяет, как текущий шаблон + промт отработают на тестовом заказе
+     * @summary Тестирование автоответа
+     * @param {TestAutoreplyRequest} testAutoreplyRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public testAutoreply(testAutoreplyRequest: TestAutoreplyRequest, options?: RawAxiosRequestConfig) {
+        return AIApiFp(this.configuration).testAutoreply(testAutoreplyRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
 
 /**
  * OrdersApi - axios parameter creator

@@ -1,0 +1,33 @@
+.testing-tab {
+  width: 100%;
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+  align-items: end;
+
+  &__header {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  &__header select {
+    width: 100%;
+  }
+
+  &__header button {
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    &__header {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  &__order-description,
+  &__answer {
+    width: 100%;
+  }
+}
