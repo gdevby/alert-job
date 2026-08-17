@@ -11,6 +11,7 @@ import by.gdev.alert.job.llm.repository.promt.AiPromptRepository;
 import by.gdev.alert.job.llm.service.aiautoreply.AiOrderAnalysisService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,13 +35,14 @@ public class AiTestController {
     @PostMapping("/autoreply")
     @Operation(summary = "Тестирование автоответа", description = "Проверяет, как текущий шаблон + промт отработают на тестовом заказе")
     public ResponseEntity<TestAutoreplyResponse> testAutoreply(
+            @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @Valid @RequestBody TestAutoreplyRequest request) {
 
         log.info("АВТООТВЕТ: TEST -> получен запрос на тестирование, uuid={}, templateId={}, promptId={}",
                 uuid, request.getTemplateId(), request.getPromptId());
 
-        // ===== ПРОВЕРКА СУЩЕСТВОВАНИЯ ПРОМТА =====
+        // ПРОВЕРКА СУЩЕСТВОВАНИЯ ПРОМТА
         AiPrompt prompt = promptRepository.findById(request.getPromptId())
                 .orElse(null);
 
@@ -54,7 +56,7 @@ public class AiTestController {
                             .build());
         }
 
-        // ===== ПРОВЕРКА СУЩЕСТВОВАНИЯ ШАБЛОНА =====
+        // ПРОВЕРКА СУЩЕСТВОВАНИЯ ШАБЛОНА
         AiReplyTemplate template = templateRepository.findById(request.getTemplateId())
                 .orElse(null);
 
