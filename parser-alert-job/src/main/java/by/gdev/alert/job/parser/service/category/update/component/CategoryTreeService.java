@@ -137,6 +137,7 @@ public class CategoryTreeService {
     public CategoryDiffResult compareTrees(SiteDTO parsedTree, SiteDTO dbTree) {
         CategoryDiffResult result = new CategoryDiffResult();
         CategoryDiffResult added   = compareAdded(parsedTree, dbTree);
+        compareNewSubcategories(parsedTree, dbTree, added);
         CategoryDiffResult removed = compareRemoved(parsedTree, dbTree);
         CategoryDiffResult moved   = compareMoved(parsedTree, dbTree);
 
@@ -184,6 +185,56 @@ public class CategoryTreeService {
         }
     }
 
+    private void compareNewSubcategories(SiteDTO parsedTree, SiteDTO dbTree, CategoryDiffResult diff) {
+        Map<String, CategoryDTO> dbByName = dbTree.getCategories().stream()
+                .filter(c -> !ALL_CATEGORIES.equals(c.getName()))
+                .collect(Collectors.toMap(CategoryDTO::getName, c -> c, (a, b) -> a));
+
+        for (CategoryDTO parsedCat : parsedTree.getCategories()) {
+            if (ALL_CATEGORIES.equals(parsedCat.getName())) continue;
+
+            CategoryDTO dbCat = dbByName.get(parsedCat.getName());
+            if (dbCat == null) {
+                Long parsedSourceId = resolveCategorySourceId(parsedCat);
+                if (parsedSourceId != null) {
+                    dbCat = findDbCategoryBySourceId(dbTree, parsedSourceId);
+                }
+            }
+            if (dbCat == null) {
+                continue;
+            }
+
+            Set<String> dbSubNames = dbCat.getSubcategories().stream()
+                    .map(SubcategoryDTO::getName)
+                    .filter(name -> name != null && !name.isBlank())
+                    .collect(Collectors.toSet());
+            Set<Long> dbSubSourceIds = dbCat.getSubcategories().stream()
+                    .map(this::resolveSubcategorySourceId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            for (SubcategoryDTO parsedSub : parsedCat.getSubcategories()) {
+                if (parsedSub.getName() == null || parsedSub.getName().isBlank()) {
+                    continue;
+                }
+                if (dbSubNames.contains(parsedSub.getName())) {
+                    continue;
+                }
+                Long parsedSubSourceId = resolveSubcategorySourceId(parsedSub);
+                if (parsedSubSourceId != null && dbSubSourceIds.contains(parsedSubSourceId)) {
+                    continue;
+                }
+                diff.getNewSubcategories().add(
+                        new CategoryDiffResult.SubcategoryWithParentDTO(
+                                dbCat.getId(),
+                                dbCat.getName(),
+                                parsedSub
+                        )
+                );
+            }
+        }
+    }
+
     private CategoryDiffResult compareRemoved(SiteDTO parsedTree, SiteDTO dbTree) {
         CategoryDiffResult diff = new CategoryDiffResult();
 
@@ -217,6 +268,11 @@ public class CategoryTreeService {
                 continue;
             }
 
+            if (isKworkSite(parsedTree.getName())
+                    && shouldSkipKworkSubRemoval(parsedCat, dbCat)) {
+                continue;
+            }
+
             Map<String, SubcategoryDTO> parsedSubs = parsedCat.getSubcategories().stream()
                     .collect(Collectors.toMap(SubcategoryDTO::getName, s -> s, (a, b) -> a));
             Set<Long> parsedSubSourceIds = parsedCat.getSubcategories().stream()
@@ -245,11 +301,55 @@ public class CategoryTreeService {
         return diff;
     }
 
+    private boolean shouldSkipKworkSubRemoval(CategoryDTO parsedCat, CategoryDTO dbCat) {
+        int parsedCount = parsedCat.getSubcategories().size();
+        int dbCount = dbCat.getSubcategories().size();
+        if (dbCount == 0) {
+            return false;
+        }
+        if (parsedCount == 0) {
+            log.error(
+                    "Kwork: parsed subs пусты для '{}', пропускаем удаление {} subs",
+                    dbCat.getName(),
+                    dbCount
+            );
+            return true;
+        }
+        if (parsedCount < dbCount) {
+            log.warn(
+                    "Kwork: parsed subs ({}) < db ({}) для '{}', пропускаем удаление subs",
+                    parsedCount,
+                    dbCount,
+                    dbCat.getName()
+            );
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isKworkSite(String siteName) {
+        if (siteName == null || siteName.isBlank()) {
+            return false;
+        }
+        String normalized = siteName.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        return normalized.equals("KWORK") || normalized.startsWith("KWORK");
+    }
+
     private CategoryDTO findParsedCategoryBySourceId(SiteDTO parsedTree, Long sourceId) {
         for (CategoryDTO parsedCat : parsedTree.getCategories()) {
             Long parsedSourceId = resolveCategorySourceId(parsedCat);
             if (sourceId.equals(parsedSourceId)) {
                 return parsedCat;
+            }
+        }
+        return null;
+    }
+
+    private CategoryDTO findDbCategoryBySourceId(SiteDTO dbTree, Long sourceId) {
+        for (CategoryDTO dbCat : dbTree.getCategories()) {
+            Long dbSourceId = resolveCategorySourceId(dbCat);
+            if (sourceId.equals(dbSourceId)) {
+                return dbCat;
             }
         }
         return null;

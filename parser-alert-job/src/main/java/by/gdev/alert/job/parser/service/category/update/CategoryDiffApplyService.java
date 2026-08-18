@@ -26,6 +26,7 @@ public class CategoryDiffApplyService {
 
     private static final Pattern CATEGORY_ID_IN_LINK = Pattern.compile("[?&]category=(\\d+)");
     private static final Pattern SUBCATEGORY_ID_IN_LINK = Pattern.compile("[?&]subcategory=(\\d+)");
+    private static final Pattern KWORK_ID_IN_LINK = Pattern.compile("[?&]c=(\\d+)");
 
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
@@ -224,11 +225,19 @@ public class CategoryDiffApplyService {
     }
 
     public static Long extractCategoryIdFromLink(String link) {
-        return extractIdFromLink(link, CATEGORY_ID_IN_LINK);
+        Long id = extractIdFromLink(link, CATEGORY_ID_IN_LINK);
+        if (id != null) {
+            return id;
+        }
+        return extractIdFromLink(link, KWORK_ID_IN_LINK);
     }
 
     public static Long extractSubcategoryIdFromLink(String link) {
-        return extractIdFromLink(link, SUBCATEGORY_ID_IN_LINK);
+        Long id = extractIdFromLink(link, SUBCATEGORY_ID_IN_LINK);
+        if (id != null) {
+            return id;
+        }
+        return extractIdFromLink(link, KWORK_ID_IN_LINK);
     }
 
     private static Long extractIdFromLink(String link, Pattern pattern) {
