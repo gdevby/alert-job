@@ -61,18 +61,8 @@ public class DummyReplySender implements ReplySender {
         }
 
         sb.append("\n--- Решение AI ---\n");
-        appendIfNotNull(sb, "shouldReply", decision.isShouldReply());
         appendIfNotNull(sb, "confidence", decision.getConfidence());
         appendIfNotNull(sb, "reason", decision.getReason());
-        appendIfNotNull(sb, "categoryMatchReason", decision.getCategoryMatchReason());
-        appendIfNotNull(sb, "subcategoryMatchReason", decision.getSubcategoryMatchReason());
-
-        if (decision.getMatchedKeywords() != null && !decision.getMatchedKeywords().isEmpty()) {
-            appendIfNotNull(sb, "matchedKeywords", decision.getMatchedKeywords());
-        }
-        if (decision.getMissedKeywords() != null && !decision.getMissedKeywords().isEmpty()) {
-            appendIfNotNull(sb, "missedKeywords", decision.getMissedKeywords());
-        }
 
         sb.append("\n--- Автоответ ---\n");
         sb.append(replyText).append("\n");
@@ -95,6 +85,5 @@ public class DummyReplySender implements ReplySender {
             Long credentialId,
             NotificationTypeEnum notificationType
     ) {
-        // no-op
     }
 }
