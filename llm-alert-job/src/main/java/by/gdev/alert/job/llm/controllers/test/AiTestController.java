@@ -87,18 +87,13 @@ public class AiTestController {
 
             TestAutoreplyResponse response = TestAutoreplyResponse.builder()
                     .success(true)
-                    .shouldReply(decision.isShouldReply())
                     .reply(decision.getReply())
                     .confidence(decision.getConfidence())
                     .reason(decision.getReason())
-                    .matchedKeywords(decision.getMatchedKeywords())
-                    .missedKeywords(decision.getMissedKeywords())
-                    .categoryMatchReason(decision.getCategoryMatchReason())
-                    .subcategoryMatchReason(decision.getSubcategoryMatchReason())
                     .testOrder(testOrder)
                     .build();
 
-            log.info("АВТООТВЕТ: TEST -> тест завершён успешно, shouldReply={}", decision.isShouldReply());
+            log.info("АВТООТВЕТ: TEST -> тест завершён успешно, shouldReply={}", decision.getConfidence());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
