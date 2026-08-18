@@ -309,7 +309,7 @@ public class CategoryTreeService {
         }
         if (parsedCount == 0) {
             log.error(
-                    "Kwork: parsed subs пусты для '{}', пропускаем удаление {} subs из БД",
+                    "Kwork: parsed subs пусты для '{}', пропускаем удаление {} subs",
                     dbCat.getName(),
                     dbCount
             );
