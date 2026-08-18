@@ -1,7 +1,9 @@
 package by.gdev.alert.job.core.model.db;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 
@@ -28,4 +30,9 @@ public class AppUser extends BasicId {
     @OneToMany(mappedBy = "user")
     private Set<DelayOrderNotification> delayOrderNotifications;
     private Integer telegramFailCount = 0;
+    @Column(name = "premium")
+    private boolean premium = false;
+
+    @Column(name = "premium_started_at")
+    private LocalDateTime premiumStartedAt;
 }

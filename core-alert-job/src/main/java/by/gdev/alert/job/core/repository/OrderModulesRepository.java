@@ -2,6 +2,7 @@ package by.gdev.alert.job.core.repository;
 
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.SourceSite;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -55,5 +56,11 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 	@Query("SELECT DISTINCT u.uuid FROM AppUser u WHERE EXISTS " +
 			"(SELECT om FROM OrderModules om WHERE om.user = u AND om.autoReplyEnabled = true)")
 	List<String> findDistinctUserUuidsWithAutoReplyEnabled();
+
+	boolean existsByUserUuidAndAutoReplyEnabledTrue(String uuid);
+
+	@Modifying
+	@Query("UPDATE OrderModules om SET om.autoReplyEnabled = :enabled WHERE om.user.uuid = :uuid")
+	void updateAutoReplyEnabledByUserUuid(@Param("uuid") String uuid, @Param("enabled") boolean enabled);
 
 }

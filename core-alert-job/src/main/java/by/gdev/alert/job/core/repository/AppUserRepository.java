@@ -35,5 +35,6 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 """)
     List<AppUser> findUsersBySourceSiteId(Long sourceSiteId);
 
+	List<AppUser> findAllByPremiumTrue();
 
 }

@@ -253,4 +253,10 @@ public class UserFilterController {
 		aiFilterService.setAutoReplyStatus(uuid, moduleId, enabled);
 		return ResponseEntity.ok().build();
 	}
+
+	// Проверка статуса премиума
+	@GetMapping("/premium-status")
+	public ResponseEntity<Boolean> getPremiumStatus(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid) {
+		return ResponseEntity.ok(aiFilterService.isPremium(uuid));
+	}
 }
