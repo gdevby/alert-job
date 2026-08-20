@@ -392,4 +392,86 @@ public final class MessageTemplates {
             return sb.toString();
         }
     }
+
+    public static final class Premium {
+
+        private Premium() {}
+
+        /**
+         * Формирует HTML-письмо об истечении премиума
+         */
+        public static String buildExpiredHtml(
+                String userEmail,
+                String premiumStartedAt,
+                String modulesList,
+                String expiredAt
+        ) {
+            return String.format("""
+                    <div style="font-family: Arial, sans-serif; padding: 16px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa;">
+                        <h2 style="color: #d32f2f; margin: 0 0 16px 0;">⚠️ Премиум-доступ истёк</h2>
+                        
+                        <p style="margin: 4px 0;"><strong>Уважаемый(ая) %s!</strong></p>
+                        
+                        <p style="margin: 4px 0;">Ваш премиум-доступ, активированный <strong>%s</strong>, истёк <strong>%s</strong>.</p>
+                        
+                        <p style="margin: 4px 0;">
+                            <strong>Активные модули автоответов:</strong> %s
+                        </p>
+                        
+                        <p style="margin: 4px 0;"><strong>Что это значит:</strong></p>
+                        <ul style="margin: 4px 0 12px 20px;">
+                            <li>Все автоответы были отключены</li>
+                            <li>Вы больше не будете получать автоматические отклики на заказы</li>
+                        </ul>
+                        
+                        <p style="margin: 4px 0;">
+                            Для восстановления доступа, пожалуйста, <a href="https://aj.gdev.by" style="color: #1a73e8;">оплатите дальнейшее использование</a>.
+                        </p>
+                        
+                        <p style="margin: 12px 0 4px 0; color: #666; font-size: 12px;">
+                            Это автоматическое сообщение. Пожалуйста, не отвечайте на него.
+                        </p>
+                    </div>
+                    """,
+                    userEmail != null ? userEmail : "Пользователь",
+                    premiumStartedAt != null ? premiumStartedAt : "неизвестно",
+                    expiredAt != null ? expiredAt : "сегодня",
+                    modulesList != null && !modulesList.isEmpty() ? modulesList : "нет активных модулей"
+            );
+        }
+
+        /**
+         * Формирует Telegram-сообщение об истечении премиума
+         */
+        public static String buildExpiredTelegram(
+                String userEmail,
+                String premiumStartedAt,
+                String modulesList,
+                String expiredAt
+        ) {
+            return String.format("""
+                    ⚠️ ПРЕМИУМ-ДОСТУП ИСТЁК
+                    
+                    Уважаемый(ая) %s!
+                    
+                    Ваш премиум-доступ, активированный %s, истёк %s.
+                    
+                    Активные модули автоответов: %s
+                    
+                    Что это значит:
+                    ❌ Все автоответы отключены
+                    ❌ Вы больше не будете получать автоматические отклики
+                    
+                    Для восстановления доступа оплатите дальнейшее использование:
+                    https://aj.gdev.by
+                    
+                    Это автоматическое сообщение. Не отвечайте на него.
+                    """,
+                    userEmail != null ? userEmail : "Пользователь",
+                    premiumStartedAt != null ? premiumStartedAt : "неизвестно",
+                    expiredAt != null ? expiredAt : "сегодня",
+                    modulesList != null && !modulesList.isEmpty() ? modulesList : "нет активных модулей"
+            );
+        }
+    }
 }

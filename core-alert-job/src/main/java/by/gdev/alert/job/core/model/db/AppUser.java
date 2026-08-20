@@ -31,8 +31,7 @@ public class AppUser extends BasicId {
     private Set<DelayOrderNotification> delayOrderNotifications;
     private Integer telegramFailCount = 0;
     @Column(name = "premium")
-    private boolean premium = false;
-
+    private Boolean premium = false;
     @Column(name = "premium_started_at")
     private LocalDateTime premiumStartedAt;
 }

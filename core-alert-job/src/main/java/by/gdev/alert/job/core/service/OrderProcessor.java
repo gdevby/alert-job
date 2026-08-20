@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,8 @@ import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 @Service
 @Slf4j
@@ -40,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderProcessor {
     private final StatisticService statisticService;
     private final AppUserRepository userRepository;
+    private final AppUserService appUserService;
     private final DelayOrderNotificationRepository delayOrderRepository;
     private final ApplicationProperty property;
     private final UserFilterRepository filterRepository;
@@ -51,11 +55,16 @@ public class OrderProcessor {
     private final NotificationClient notificationClient;
     private final AiOrderRequestMapper aiOrderRequestMapper;
 
+
     @Value("${autoreply.enabled:false}")
     @Getter
     private boolean autoReplyEnabled;
 
-    private final Set<String> sentLinks = ConcurrentHashMap.newKeySet();
+    // Создаём кеш
+    private final Cache<String, Boolean> sentLinks = Caffeine.newBuilder()
+            .expireAfterWrite(24, TimeUnit.HOURS) // живёт 24 часа
+            .maximumSize(50000)                    // максимум 50 000 записей
+            .build();
 
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
         for (OrderDTO order : orders) {
@@ -90,16 +99,24 @@ public class OrderProcessor {
                                     List<OrderDTO> filtered = matchedOrders.stream()
                                             .filter(order -> {
                                                 String key = user.getUuid() + "|" + order.getLink();
-                                                boolean isNew = sentLinks.add(key);
-                                                if (!isNew) {
+                                                if (sentLinks.getIfPresent(key) != null) {
                                                     log.info("Дубликат заказа {} для пользователя {}, пропускаем", key, user.getEmail());
+                                                    return false;
                                                 }
-                                                return isNew;
+                                                sentLinks.put(key, true);
+                                                return true;
                                             })
                                             .toList();
 
                                     if (!filtered.isEmpty()) {
                                         sendOrderToUser(user, filtered);
+                                    }
+
+
+                                    //Проверка является ли пользователь премиум и не истек ли у него этот премиум
+                                    if (!appUserService.isPremiumUser(user)) {
+                                        log.debug("АВТООТВЕТ: пользователь {} НЕ премиум, пропускаем LLM", user.getEmail());
+                                        return;
                                     }
 
                                     if (!autoReplyEnabled || !Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {

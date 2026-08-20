@@ -125,6 +125,7 @@ public class MailService {
             case TEST -> "Тестовое сообщение";
             case CATEGORY_CHANGE_ADMIN -> "Администратор: уведомление об изменении категорий на сайтах";
             case CATEGORY_CHANGE_USER -> "Уведомление об изменении категорий на сайтах";
+            case PREMIUM_EXPIRED -> "Истечение срока пользования премиум доступом";
         };
     }
 }

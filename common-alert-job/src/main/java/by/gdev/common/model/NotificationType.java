@@ -6,5 +6,6 @@ public enum NotificationType {
     TEST,           //тестовое сообщение
     CLEANUP,        //очистка сайта
     CATEGORY_CHANGE_ADMIN, //обновление категорий для администратора
-    CATEGORY_CHANGE_USER //обновление категорий для пользователя
+    CATEGORY_CHANGE_USER, //обновление категорий для пользователя
+    PREMIUM_EXPIRED //у пользователя истек срок премиум
 }

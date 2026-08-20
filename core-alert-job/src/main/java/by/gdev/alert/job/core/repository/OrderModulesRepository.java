@@ -63,4 +63,10 @@ public interface OrderModulesRepository extends CrudRepository<OrderModules, Lon
 	@Query("UPDATE OrderModules om SET om.autoReplyEnabled = :enabled WHERE om.user.uuid = :uuid")
 	void updateAutoReplyEnabledByUserUuid(@Param("uuid") String uuid, @Param("enabled") boolean enabled);
 
+	/**
+	 * Возвращает все модули пользователя с включенным автоответом
+	 */
+	@Query("SELECT om FROM OrderModules om WHERE om.user.uuid = :uuid AND om.autoReplyEnabled = true")
+	List<OrderModules> findByUserUuidAndAutoReplyEnabledTrue(@Param("uuid") String uuid);
+
 }

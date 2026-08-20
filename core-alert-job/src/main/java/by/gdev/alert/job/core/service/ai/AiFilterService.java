@@ -4,6 +4,7 @@ import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
+import by.gdev.alert.job.core.service.AppUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,13 +20,10 @@ import java.util.Optional;
 public class AiFilterService {
 
     private final OrderModulesRepository orderModulesRepository;
-    private final AppUserRepository appUserRepository;
-
-    @Value("${premium.duration.days:30}")
-    private int premiumDurationDays;
+    private final AppUserService appUserService;
 
     public boolean getAutoReplyStatus(String uuid, Long moduleId) {
-        Optional<OrderModules> orderModule = orderModulesRepository.findById(moduleId);
+        Optional<OrderModules> orderModule = orderModulesRepository.findByIdAndUserUuid(moduleId, uuid);
         return orderModule.isPresent() && Boolean.TRUE.equals(orderModule.get().getAutoReplyEnabled());
     }
 
@@ -35,9 +33,24 @@ public class AiFilterService {
         if (orderModuleOptional.isPresent()) {
             OrderModules orderModule = orderModuleOptional.get();
             if (orderModule.isAvailable()) {
+                // Если пытается включить автоответ, проверяем премиум
+                if (status) {
+                    // Проверяем, активен ли премиум (не истек)
+                    if (!appUserService.isPremiumUser(uuid)) {
+                        log.warn("АВТООТВЕТ: пользователь {} пытается включить автоответ, но премиум истек", uuid);
+                        return;
+                    }
+
+                    // Проверяем, не включен ли уже автоответ
+                    if (Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
+                        log.warn("АВТООТВЕТ: пользователь {} пытается повторно включить автоответ на модуле {}, уже включен",
+                                uuid, moduleId);
+                        return;
+                    }
+                }
+
                 orderModule.setAutoReplyEnabled(status);
                 orderModulesRepository.save(orderModule);
-                // Обновляем премиум статус
                 updatePremiumStatus(uuid);
                 log.info("АВТООТВЕТ: пользователь {} {} автоответ на модуле {}",
                         uuid, status ? "включил" : "отключил", moduleId);
@@ -46,30 +59,24 @@ public class AiFilterService {
     }
 
     private void updatePremiumStatus(String uuid) {
-        AppUser user = appUserRepository.findByUuid(uuid)
+        AppUser user = appUserService.findByUuid(uuid)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
         boolean anyAutoReplyEnabled = orderModulesRepository.existsByUserUuidAndAutoReplyEnabledTrue(uuid);
 
-        if (anyAutoReplyEnabled && !user.isPremium()) {
+        if (anyAutoReplyEnabled && !Boolean.TRUE.equals(user.getPremium())) {
             user.setPremium(true);
             user.setPremiumStartedAt(LocalDateTime.now());
             log.info("АВТООТВЕТ: пользователь {} стал премиумом", uuid);
-        } else if (!anyAutoReplyEnabled && user.isPremium()) {
+        } else if (!anyAutoReplyEnabled && Boolean.TRUE.equals(user.getPremium())) {
             user.setPremium(false);
             user.setPremiumStartedAt(null);
             log.info("АВТООТВЕТ: пользователь {} потерял премиум (все автоответы выключены)", uuid);
         }
-        appUserRepository.save(user);
+        appUserService.save(user);
     }
 
     public boolean isPremium(String uuid) {
-        AppUser user = appUserRepository.findByUuid(uuid).orElse(null);
-        if (user == null) return false;
-        if (!user.isPremium()) return false;
-        if (user.getPremiumStartedAt() == null) return false;
-        // Проверяем, не истек ли премиум
-        LocalDateTime expiresAt = user.getPremiumStartedAt().plusDays(premiumDurationDays);
-        return expiresAt.isAfter(LocalDateTime.now());
+        return appUserService.isPremiumUser(uuid);
     }
 }

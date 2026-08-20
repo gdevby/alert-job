@@ -55,7 +55,7 @@ public class AiPrompt extends BasicId {
      * Полный текст промта, который используется LLM.
      */
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String promptText;
 
     /**
