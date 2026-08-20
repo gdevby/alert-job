@@ -11,13 +11,9 @@ import java.util.List;
 
 /**
  * Решение AI по поводу автоответа:
- *  - содержит флаг необходимости ответа;
  *  - уверенность модели;
  *  - причину выбора;
  *  - текст ответа;
- *  - найденные/ненайденные ключевые слова;
- *  - объяснение выбора категории и подкатегории.
- *
  * Используется для логирования и анализа поведения LLM.
  */
 @Setter
@@ -26,11 +22,6 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Schema(description = "Решение AI о необходимости автоответа и объяснение выбора")
 public class AiDecision {
-
-        /** Нужно ли отвечать на сообщение */
-        @JsonPropertyDescription("Нужно ли вообще отвечать на сообщение (true — отвечаем, false — игнорируем)")
-        @Schema(description = "Флаг необходимости ответа", example = "true")
-        private boolean shouldReply;
 
         /** Уверенность модели в своём решении */
         @JsonPropertyDescription("Уверенность модели в своём решении (числовой коэффициент)")
@@ -47,39 +38,12 @@ public class AiDecision {
         @Schema(description = "Ответ, сформированный AI", example = "Здравствуйте! Готов помочь…")
         private String reply;
 
-        /** Ключевые слова, которые модель нашла */
-        @JsonPropertyDescription("Ключевые слова, которые модель нашла в сообщении")
-        @Schema(description = "Найденные ключевые слова", example = "[\"urgent\", \"help\"]")
-        private List<String> matchedKeywords;
-
-        /** Ключевые слова, которые ожидались, но не найдены */
-        @JsonPropertyDescription("Ключевые слова, которые ожидались, но не были найдены")
-        @Schema(description = "Ожидаемые, но ненайденные ключевые слова", example = "[\"price\", \"budget\"]")
-        private List<String> missedKeywords;
-
-        /** Объяснение выбора категории */
-        @JsonPropertyDescription("Объяснение, почему выбрана конкретная категория")
-        @Schema(description = "Причина выбора категории", example = "Сообщение относится к заказам")
-        private String categoryMatchReason;
-
-        /** Объяснение выбора подкатегории */
-        @JsonPropertyDescription("Объяснение, почему выбрана конкретная подкатегория")
-        @Schema(description = "Причина выбора подкатегории", example = "Упоминание срочности и помощи")
-        private String subcategoryMatchReason;
-
         public AiDecision() {
         }
 
-        public AiDecision(boolean shouldReply, double confidence, String reason, String reply,
-                          List<String> matchedKeywords, List<String> missedKeywords,
-                          String categoryMatchReason, String subcategoryMatchReason) {
-                this.shouldReply = shouldReply;
+        public AiDecision(double confidence, String reason, String reply) {
                 this.confidence = confidence;
                 this.reason = reason;
                 this.reply = reply;
-                this.matchedKeywords = matchedKeywords;
-                this.missedKeywords = missedKeywords;
-                this.categoryMatchReason = categoryMatchReason;
-                this.subcategoryMatchReason = subcategoryMatchReason;
         }
 }

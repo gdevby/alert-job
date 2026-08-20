@@ -3,6 +3,7 @@ package by.gdev.alert.job.core.service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,6 +55,8 @@ public class OrderProcessor {
     @Getter
     private boolean autoReplyEnabled;
 
+    private final Set<String> sentLinks = ConcurrentHashMap.newKeySet();
+
     public void forEachOrders(Set<AppUser> users, List<OrderDTO> orders) {
         for (OrderDTO order : orders) {
             try {
@@ -84,8 +87,20 @@ public class OrderProcessor {
                                     if (matchedOrders.isEmpty()) return;
 
                                     matchedOrders.forEach(order -> order.setModuleName(orderModule.getName()));
+                                    List<OrderDTO> filtered = matchedOrders.stream()
+                                            .filter(order -> {
+                                                String key = user.getUuid() + "|" + order.getLink();
+                                                boolean isNew = sentLinks.add(key);
+                                                if (!isNew) {
+                                                    log.info("Дубликат заказа {} для пользователя {}, пропускаем", key, user.getEmail());
+                                                }
+                                                return isNew;
+                                            })
+                                            .toList();
 
-                                    sendOrderToUser(user, matchedOrders);
+                                    if (!filtered.isEmpty()) {
+                                        sendOrderToUser(user, filtered);
+                                    }
 
                                     if (!autoReplyEnabled || !Boolean.TRUE.equals(orderModule.getAutoReplyEnabled())) {
                                         return;

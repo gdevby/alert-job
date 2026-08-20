@@ -5,7 +5,6 @@ import by.gdev.alert.job.llm.domain.AiReplyTemplate;
 import by.gdev.alert.job.llm.domain.dto.AiDecision;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
 import by.gdev.alert.job.llm.domain.dto.promt.AiPromptDto;
-import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.service.aiautoreply.promt.AiPromptService;
 import by.gdev.alert.job.llm.service.template.AiReplyTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -141,10 +140,7 @@ public class AiOrderAnalysisService {
                 orderLink,
                 orderDate,
                 siteName,
-                categoryName,
-                subcategoryName,
-                keywords,
-                replyTemplate
+                keywords
         );
 
         Future<AiDecision> future = llmExecutor.submit(() -> {
@@ -211,28 +207,27 @@ public class AiOrderAnalysisService {
                 log.error("API error: {}", e.getMessage());
 
                 return new AiDecision(
-                        false,
                         0.0,
                         "API error: " + e.getMessage(),
-                        null, null, null, null, null
+                        null
                 );
 
             } catch (Exception e) {
                 log.error("Unexpected LLM error", e);
 
                 return new AiDecision(
-                        false,
                         0.0,
                         "Unexpected LLM error: " + e.getMessage(),
-                        null, null, null, null, null
+                        null
                 );
             }
         });
 
         try {
             AiDecision decision = future.get();
-            if (replyTemplate.contains("%auto_generated_text%") && decision.getReply() != null) {
-                String finalReply = replyTemplate.replace("%auto_generated_text%", decision.getReply());
+            // ВСТАВЛЯЕМ СГЕНЕРИРОВАННЫЙ ТЕКСТ ПОСЛЕ ПРИВЕТСТВИЯ
+            if (decision.getReply() != null && !decision.getReply().isEmpty()) {
+                String finalReply = buildFinalReply(replyTemplate, decision.getReply());
                 decision.setReply(finalReply);
             }
             return decision;
@@ -240,12 +235,47 @@ public class AiOrderAnalysisService {
             log.error("Executor error", e);
 
             return new AiDecision(
-                    false,
                     0.0,
                     "Executor error: " + e.getMessage(),
-                    null, null, null, null, null
+                    null
             );
         }
+    }
+
+    /**
+     * Вставляет сгенерированный текст после приветствия в шаблоне.
+     */
+    private String buildFinalReply(String replyTemplate, String generatedText) {
+        if (replyTemplate == null || replyTemplate.isEmpty()) {
+            return generatedText;
+        }
+
+        // Если есть маркер — используем его
+        if (replyTemplate.contains("%auto_generated_text%")) {
+            return replyTemplate.replace("%auto_generated_text%", generatedText);
+        }
+
+        // Ищем конец приветствия (первая точка, вопросительный или восклицательный знак)
+        int endOfGreeting = -1;
+        String[] delimiters = {". ", "?\n", "!\n", ".", "?", "!"};
+
+        for (String delim : delimiters) {
+            int idx = replyTemplate.indexOf(delim);
+            if (idx != -1) {
+                endOfGreeting = idx + delim.length() - 1;
+                break;
+            }
+        }
+
+        // Если нашли конец приветствия
+        if (endOfGreeting != -1 && endOfGreeting < replyTemplate.length() - 1) {
+            String greeting = replyTemplate.substring(0, endOfGreeting + 1);
+            String rest = replyTemplate.substring(endOfGreeting + 1);
+            return greeting + "\n" + generatedText + rest;
+        }
+
+        // Если не нашли — просто вставляем в начало
+        return replyTemplate + "\n" + generatedText;
     }
 
     private String extractJson(String raw) {
