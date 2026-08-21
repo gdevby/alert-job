@@ -152,6 +152,15 @@ public class AiOrderAnalysisService {
                         .call()
                         .content();
 
+                if (raw == null || raw.isBlank()) {
+                    log.error("LLM вернул пустой ответ (raw == null)");
+                    return new AiDecision(
+                            0.0,
+                            "LLM вернул пустой ответ",
+                            null
+                    );
+                }
+
                 //НЕ РАБОТАЕТ - StringTemplate v4- подходит для мелких шаблонов типа
                 /*
                 Hello <name>
