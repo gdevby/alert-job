@@ -134,16 +134,21 @@ public class AiOrderAnalysisService {
         // Экранируем проблемный фрагмент
 
         // Формируем prompt
-        String prompt = safePromptText.formatted(
-                orderTitle,
-                orderContent,
-                priceText,
-                priceValue,
-                orderLink,
-                orderDate,
-                siteName,
-                keywords
-        );
+        String prompt;
+        if (safePromptText.contains("%s")) {
+            prompt = safePromptText.formatted(
+                    orderTitle,
+                    orderContent,
+                    priceText,
+                    priceValue,
+                    orderLink,
+                    orderDate,
+                    siteName,
+                    keywords
+            );
+        } else {
+            prompt = safePromptText;
+        }
 
         Future<AiDecision> future = llmExecutor.submit(() -> {
             try {
