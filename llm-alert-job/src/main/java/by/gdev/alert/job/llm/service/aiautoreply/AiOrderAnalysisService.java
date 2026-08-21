@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import static by.gdev.alert.job.llm.constants.LlmConstants.AUTO_GENERATED_PLACEHOLDER;
+
 
 /**
  * Сервис анализа заказов с использованием LLM.
@@ -114,7 +116,7 @@ public class AiOrderAnalysisService {
 
         AiPromptDto promptEntity = aiPromptService.getPromptByIdOrDefault(uuid, promtId);
         String promptText = promptEntity.getText();
-        String safePromptText = promptText.replace(LlmConstants.AUTO_GENERATED_PLACEHOLDER,
+        String safePromptText = promptText.replace(AUTO_GENERATED_PLACEHOLDER,
                 LlmConstants.ESCAPED_AUTO_GENERATED_PLACEHOLDER
         );
 
@@ -260,8 +262,8 @@ public class AiOrderAnalysisService {
         }
 
         // Если есть маркер — используем его
-        if (replyTemplate.contains("%auto_generated_text%")) {
-            return replyTemplate.replace("%auto_generated_text%", generatedText);
+        if (replyTemplate.contains(AUTO_GENERATED_PLACEHOLDER)) {
+            return replyTemplate.replace(AUTO_GENERATED_PLACEHOLDER, generatedText);
         }
 
         // Ищем конец приветствия (первая точка, вопросительный или восклицательный знак)
