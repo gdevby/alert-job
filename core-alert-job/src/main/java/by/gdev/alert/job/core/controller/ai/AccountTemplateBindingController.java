@@ -1,4 +1,4 @@
-package by.gdev.alert.job.core.controller;
+package by.gdev.alert.job.core.controller.ai;
 
 import by.gdev.alert.job.core.model.binding.dto.BindingCreateRequest;
 import by.gdev.alert.job.core.model.binding.dto.BindingResponse;
