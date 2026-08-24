@@ -25,6 +25,9 @@ public class TestAutoreplyResponse {
     @Schema(description = "Сгенерированный текст ответа")
     private String reply;
 
+    @Schema(description = "Ключевое слово при наличии")
+    private String prefix;
+
     @Schema(description = "Тестовый заказ, на основе которого был сгенерирован ответ")
     private OrderDTO testOrder;
 }
