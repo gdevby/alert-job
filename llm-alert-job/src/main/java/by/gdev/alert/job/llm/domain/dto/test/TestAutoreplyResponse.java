@@ -25,12 +25,6 @@ public class TestAutoreplyResponse {
     @Schema(description = "Сгенерированный текст ответа")
     private String reply;
 
-    @Schema(description = "Уверенность AI (0.0-1.0)", example = "0.95")
-    private Double confidence;
-
-    @Schema(description = "Причина принятия решения")
-    private String reason;
-
     @Schema(description = "Тестовый заказ, на основе которого был сгенерирован ответ")
     private OrderDTO testOrder;
 }
