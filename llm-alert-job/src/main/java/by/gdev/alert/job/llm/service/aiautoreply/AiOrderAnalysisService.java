@@ -162,9 +162,7 @@ public class AiOrderAnalysisService {
                 if (raw == null || raw.isBlank()) {
                     log.error("LLM вернул пустой ответ (raw == null)");
                     return new AiDecision(
-                            0.0,
-                            "LLM вернул пустой ответ",
-                            null
+                            "LLM вернул пустой ответ"
                     );
                 }
 
@@ -223,18 +221,14 @@ public class AiOrderAnalysisService {
                 log.error("API error: {}", e.getMessage());
 
                 return new AiDecision(
-                        0.0,
-                        "API error: " + e.getMessage(),
-                        null
+                        "API error: " + e.getMessage()
                 );
 
             } catch (Exception e) {
                 log.error("Unexpected LLM error", e);
 
                 return new AiDecision(
-                        0.0,
-                        "Unexpected LLM error: " + e.getMessage(),
-                        null
+                        "Unexpected LLM error: " + e.getMessage()
                 );
             }
         });
@@ -251,9 +245,7 @@ public class AiOrderAnalysisService {
             log.error("Executor error", e);
 
             return new AiDecision(
-                    0.0,
-                    "Executor error: " + e.getMessage(),
-                    null
+                    "Executor error: " + e.getMessage()
             );
         }
     }

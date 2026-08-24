@@ -7,7 +7,5 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 
 public record AiDecision(
-        double confidence,
-        String reason,
         String reply
 ) {}

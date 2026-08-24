@@ -88,12 +88,10 @@ public class AiTestController {
             TestAutoreplyResponse response = TestAutoreplyResponse.builder()
                     .success(true)
                     .reply(decision.getReply())
-                    .confidence(decision.getConfidence())
-                    .reason(decision.getReason())
                     .testOrder(testOrder)
                     .build();
 
-            log.info("АВТООТВЕТ: TEST -> тест завершён успешно, shouldReply={}", decision.getConfidence());
+            log.info("АВТООТВЕТ: TEST -> тест завершён успешно, reply={}", decision.getReply());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
