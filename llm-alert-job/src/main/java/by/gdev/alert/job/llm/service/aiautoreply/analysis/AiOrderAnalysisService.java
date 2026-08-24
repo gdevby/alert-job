@@ -1,4 +1,4 @@
-package by.gdev.alert.job.llm.service.aiautoreply;
+package by.gdev.alert.job.llm.service.aiautoreply.analysis;
 
 import by.gdev.alert.job.llm.constants.LlmConstants;
 import by.gdev.alert.job.llm.domain.AiReplyTemplate;
@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -109,8 +110,6 @@ public class AiOrderAnalysisService {
         String priceText = order.getPrice() != null ? order.getPrice().getPrice() : "не указана";
         int priceValue = order.getPrice() != null ? order.getPrice().getValue() : 0;
         String siteName = order.getSourceSite() != null ? order.getSourceSite().getSourceName() : null;
-        String categoryName = order.getSourceSite() != null ? order.getSourceSite().getCategoryName() : null;
-        String subcategoryName = order.getSourceSite() != null ? order.getSourceSite().getSubCategoryName() : null;
         String orderDate = order.getDateTime() != null ? order.getDateTime().toString() : "не указана";
         List<String> keywords = List.of();
 
@@ -162,7 +161,8 @@ public class AiOrderAnalysisService {
                 if (raw == null || raw.isBlank()) {
                     log.error("LLM вернул пустой ответ (raw == null)");
                     return new AiDecision(
-                            "LLM вернул пустой ответ"
+                            "LLM вернул пустой ответ",
+                            ""
                     );
                 }
 
@@ -221,14 +221,16 @@ public class AiOrderAnalysisService {
                 log.error("API error: {}", e.getMessage());
 
                 return new AiDecision(
-                        "API error: " + e.getMessage()
+                        "API error: " + e.getMessage(),
+                        ""
                 );
 
             } catch (Exception e) {
                 log.error("Unexpected LLM error", e);
 
                 return new AiDecision(
-                        "Unexpected LLM error: " + e.getMessage()
+                        "Unexpected LLM error: " + e.getMessage(),
+                        ""
                 );
             }
         });
@@ -237,7 +239,7 @@ public class AiOrderAnalysisService {
             AiDecision decision = future.get();
             // ВСТАВЛЯЕМ СГЕНЕРИРОВАННЫЙ ТЕКСТ ПОСЛЕ ПРИВЕТСТВИЯ
             if (decision.getReply() != null && !decision.getReply().isEmpty()) {
-                String finalReply = buildFinalReply(replyTemplate, decision.getReply());
+                String finalReply = buildFinalReply(replyTemplate, decision.getReply(), decision.getPrefix());
                 decision.setReply(finalReply);
             }
             return decision;
@@ -245,45 +247,52 @@ public class AiOrderAnalysisService {
             log.error("Executor error", e);
 
             return new AiDecision(
-                    "Executor error: " + e.getMessage()
+                    "Executor error: " + e.getMessage(),
+                    ""
             );
         }
     }
 
     /**
-     * Вставляет сгенерированный текст после приветствия в шаблоне.
+     * Вставляет сгенерированный текст после приветствия в шаблоне,
+     * и добавляет префикс в начало.
      */
-    private String buildFinalReply(String replyTemplate, String generatedText) {
+    private String buildFinalReply(String replyTemplate, String generatedText, String prefix) {
         if (replyTemplate == null || replyTemplate.isEmpty()) {
-            return generatedText;
+            // Если шаблона нет — возвращаем префикс + сгенерированный текст
+            return (prefix != null && !prefix.isEmpty()) ? prefix + " " + generatedText : generatedText;
         }
 
+        String result;
         // Если есть маркер — используем его
         if (replyTemplate.contains(AUTO_GENERATED_PLACEHOLDER)) {
-            return replyTemplate.replace(AUTO_GENERATED_PLACEHOLDER, generatedText);
-        }
+            result = replyTemplate.replace(AUTO_GENERATED_PLACEHOLDER, generatedText);
+        } else {
+            // Ищем конец приветствия
+            int endOfGreeting = -1;
+            String[] delimiters = {". ", "?\n", "!\n", ".", "?", "!"};
+            for (String delim : delimiters) {
+                int idx = replyTemplate.indexOf(delim);
+                if (idx != -1) {
+                    endOfGreeting = idx + delim.length() - 1;
+                    break;
+                }
+            }
 
-        // Ищем конец приветствия (первая точка, вопросительный или восклицательный знак)
-        int endOfGreeting = -1;
-        String[] delimiters = {". ", "?\n", "!\n", ".", "?", "!"};
-
-        for (String delim : delimiters) {
-            int idx = replyTemplate.indexOf(delim);
-            if (idx != -1) {
-                endOfGreeting = idx + delim.length() - 1;
-                break;
+            if (endOfGreeting != -1 && endOfGreeting < replyTemplate.length() - 1) {
+                String greeting = replyTemplate.substring(0, endOfGreeting + 1);
+                String rest = replyTemplate.substring(endOfGreeting + 1);
+                result = greeting + "\n" + generatedText + rest;
+            } else {
+                result = replyTemplate + "\n" + generatedText;
             }
         }
 
-        // Если нашли конец приветствия
-        if (endOfGreeting != -1 && endOfGreeting < replyTemplate.length() - 1) {
-            String greeting = replyTemplate.substring(0, endOfGreeting + 1);
-            String rest = replyTemplate.substring(endOfGreeting + 1);
-            return greeting + "\n" + generatedText + rest;
+        if (prefix != null && !prefix.isEmpty()) {
+            result = prefix + "\n" + result;
         }
 
-        // Если не нашли — просто вставляем в начало
-        return replyTemplate + "\n" + generatedText;
+        return result;
     }
 
     private String extractJson(String raw) {

@@ -24,10 +24,13 @@ public class AiDecision {
         @Schema(description = "Ответ, сформированный AI", example = "Здравствуйте! Готов помочь…")
         private String reply;
 
+        private String prefix;
+
         public AiDecision() {
         }
 
-        public AiDecision(String reply) {
+        public AiDecision(String reply, String prefix) {
                 this.reply = reply;
+                this.prefix = prefix;
         }
 }

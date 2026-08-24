@@ -1,10 +1,9 @@
 package by.gdev.alert.job.llm.service.aiautoreply;
 
 import by.gdev.alert.job.llm.domain.dto.AiDecision;
-import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
-import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderRequest;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.alert.job.llm.service.aiautoreply.analysis.AiOrderAnalysisService;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.DummyReplySender;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.NotificationReplySender;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.ReplySender;
