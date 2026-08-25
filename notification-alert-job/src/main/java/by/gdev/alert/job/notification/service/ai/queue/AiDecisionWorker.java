@@ -73,6 +73,7 @@ public class AiDecisionWorker {
                     var r = step.execute(new SendAutoreplyInput(parser, creds, payload));
                     if (r.failed()) {
                         log.warn("АВТООТВЕТ: этап {} -> ОШИБКА при отправке автоответа", type);
+                        return;
                     } else {
                         log.info("АВТООТВЕТ: этап {} -> автоответ отправлен успешно", type);
                     }
