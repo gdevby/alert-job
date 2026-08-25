@@ -12,9 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Slf4j
 @Component
 public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
+
     @Value("${parser.autoreply.headless.kwork.ru:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
@@ -99,12 +103,65 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return false;
         }
 
+        // ЦЕНА: ПАРСИМ МИНИМУМ ИЗ ДИАПАЗОНА
         try {
-            page.fill("#offer-custom-price", String.valueOf(defaultPrice));
-            log.info("АВТООТВЕТ: {} -> цена установлена: {}, пользователь: {}", getSiteName(), defaultPrice, login);
+            String priceValue = String.valueOf(defaultPrice);
+
+            Locator errorMessage = page.locator("span.form-item__error:has-text('Стоимость может быть от')");
+            if (errorMessage.count() > 0) {
+                String errorText = errorMessage.textContent();
+                Pattern pattern = Pattern.compile("от\\s*(\\d+)\\s*руб");
+                Matcher matcher = pattern.matcher(errorText);
+                if (matcher.find()) {
+                    priceValue = matcher.group(1);
+                    log.info("АВТООТВЕТ: {} -> минимальная цена из диапазона: {}", getSiteName(), priceValue);
+                }
+            }
+
+            page.fill("#offer-custom-price", priceValue);
+            log.info("АВТООТВЕТ: {} -> цена установлена: {}, пользователь: {}", getSiteName(), priceValue, login);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ УСТАНОВИТЬ ЦЕНУ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
+        }
+
+        // ===== НАЗВАНИЕ ЗАКАЗА (ЧЕРЕЗ JAVASCRIPT) =====
+        try {
+            page.waitForSelector("div.trumbowyg-editor[data-placeholder-mobile='Введите название заказа']",
+                    new Page.WaitForSelectorOptions().setTimeout(5000));
+
+            String orderTitle = payload.getOrder().getTitle();
+            if (orderTitle == null || orderTitle.isEmpty()) {
+                orderTitle = "Заказ " + System.currentTimeMillis();
+            }
+
+            String safeTitle = orderTitle.replace("'", "\\'").replace("\"", "\\\"");
+
+            String js = String.format("""
+                    (function() {
+                        var editor = document.querySelector('div.trumbowyg-editor[data-placeholder-mobile="Введите название заказа"]');
+                        if (editor) {
+                            editor.click();
+                            editor.focus();
+                            editor.innerText = '%s';
+                            var evt = new Event('input', { bubbles: true });
+                            editor.dispatchEvent(evt);
+                            return true;
+                        }
+                        return false;
+                    })();
+                    """, safeTitle);
+
+            boolean success = (boolean) page.evaluate(js);
+            if (success) {
+                log.info("АВТООТВЕТ: {} -> название заказа заполнено: {}, пользователь: {}",
+                        getSiteName(), orderTitle, login);
+            } else {
+                log.warn("АВТООТВЕТ: {} -> поле названия заказа не найдено, пользователь: {}", getSiteName(), login);
+            }
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ НАЗВАНИЕ ЗАКАЗА, пользователь: {}, ошибка: {}",
+                    getSiteName(), login, e.getMessage());
         }
 
         if (!clickOrFail(page, "div.duration-select", 5000, "Открыть список сроков")) {
