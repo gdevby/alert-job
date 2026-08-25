@@ -76,6 +76,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
+            takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "order_page");
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
@@ -86,6 +87,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу', пользователь: {}", getSiteName(), login);
             return false;
         }
+        takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "click_propose");
         log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), login);
 
         if (!waitOrFail(page, "div.trumbowyg-editor", 8000, "Редактор ответа")) {
@@ -198,7 +200,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.warn("АВТООТВЕТ: {} -> КНОПКА 'Предложить' НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
         }
-
+        takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "form_filled");
         if (sendRequest) {
             try {
                 sendBtn.click();
