@@ -125,7 +125,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return false;
         }
 
-        // ===== НАЗВАНИЕ ЗАКАЗА (ЧЕРЕЗ JAVASCRIPT) =====
+        // НАЗВАНИЕ ЗАКАЗА (ЧЕРЕЗ JAVASCRIPT)
         try {
             page.waitForSelector("div.trumbowyg-editor[data-placeholder-mobile='Введите название заказа']",
                     new Page.WaitForSelectorOptions().setTimeout(5000));
