@@ -277,7 +277,7 @@ public class AccountTemplateBindingService {
 
         // Фильтруем только активные биндинги
         List<AccountTemplateBinding> activeBindings = existingBindings.stream()
-                .filter(AccountTemplateBinding::isActive)  // замените на ваш статус
+                .filter(AccountTemplateBinding::isActive)
                 .toList();
 
         List<AccountTemplateBinding> otherBindings = activeBindings.stream()
