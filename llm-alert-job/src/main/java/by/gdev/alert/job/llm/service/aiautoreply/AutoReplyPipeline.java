@@ -107,14 +107,18 @@ public class AutoReplyPipeline {
             }
 
             AiDecision decision = processItem(order, request.getTemplateId(), request.getPromtId(), uuid);
-            String reply = finalizeReply(decision);
+            String reply = null;
+            if (decision.isValid()) {
+                reply = finalizeReply(decision);
+            }
 
-            if (reply != null && !reply.trim().isEmpty()) {
+            if (reply != null && !reply.trim().isEmpty() && decision.isValid()) {
                 getDummyReplySender().send(order, reply, decision);
                 getNotificationyReplySender()
                         .sendToNotificationService(order, request.getUser(), request.getModule(),
                                 decision, request.getCredentialId(), request.getNotificationType());
             }
+
         }
     }
 

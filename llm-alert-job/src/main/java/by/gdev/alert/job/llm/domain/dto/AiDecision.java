@@ -29,8 +29,12 @@ public class AiDecision {
         public AiDecision() {
         }
 
-        public AiDecision(String reply, String prefix) {
+        @Schema(description = "Флаг валидности решения AI (true - решение принято корректно, false - ошибка или невалидный ответ в случае пустого ответа или ошибки)")
+        private boolean valid;
+
+        public AiDecision(String reply, String prefix, boolean valid) {
                 this.reply = reply;
                 this.prefix = prefix;
+                this.valid = valid;
         }
 }
