@@ -111,7 +111,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             String budgetText = null;
 
             // Пытаемся найти элемент с бюджетом на странице
-            Locator budgetLocator = page.locator("span.kw-budget"); // уточни селектор!
+            Locator budgetLocator = page.locator("span.kw-budget");
             if (budgetLocator.count() > 0) {
                 budgetText = budgetLocator.textContent();
                 log.info("АВТООТВЕТ: {} -> найден бюджет: {}", getSiteName(), budgetText);
