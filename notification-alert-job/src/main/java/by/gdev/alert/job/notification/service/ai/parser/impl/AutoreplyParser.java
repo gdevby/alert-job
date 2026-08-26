@@ -155,6 +155,7 @@ public abstract class AutoreplyParser {
      */
         protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
         if (!screenshotsEnabled) {
+            log.info("Сохранение скриншотов для отладочной информации отключено");
             return;
         }
         try {
