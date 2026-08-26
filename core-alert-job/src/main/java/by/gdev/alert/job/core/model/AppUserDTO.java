@@ -12,4 +12,5 @@ public class AppUserDTO {
     private boolean switchOffAlerts;
     private boolean defaultSendType;
     private List<UserAlertTimeDTO> alertTimeDTO;
+    private String country;
 }

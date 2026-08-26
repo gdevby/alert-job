@@ -13,4 +13,5 @@ public class ProxyCredentials {
     private String host;
     private int port;
     private ProxyState state;
+    private String country;
 }

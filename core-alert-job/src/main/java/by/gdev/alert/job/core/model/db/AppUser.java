@@ -28,4 +28,7 @@ public class AppUser extends BasicId {
     @OneToMany(mappedBy = "user")
     private Set<DelayOrderNotification> delayOrderNotifications;
     private Integer telegramFailCount = 0;
+
+    private String ipAddress;
+    private String country;
 }
