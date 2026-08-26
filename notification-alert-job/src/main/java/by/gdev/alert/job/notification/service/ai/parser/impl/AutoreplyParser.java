@@ -153,7 +153,7 @@ public abstract class AutoreplyParser {
      * @param userUuid идентификатор пользователя
      * @param step     название шага (например, "after_login", "order_page", "form_filled")
      */
-    protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
+        protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
         if (!screenshotsEnabled) {
             return;
         }
@@ -174,7 +174,7 @@ public abstract class AutoreplyParser {
             Path file = dir.resolve(step + ".png");
 
             page.screenshot(new Page.ScreenshotOptions().setPath(file));
-            log.debug("Скриншот сохранён: {}", file.toAbsolutePath());
+            log.info("Скриншот сохранён: {}", file.toAbsolutePath());
         } catch (Exception e) {
             log.warn("Не удалось сохранить скриншот для шага '{}': {}", step, e.getMessage());
         }
