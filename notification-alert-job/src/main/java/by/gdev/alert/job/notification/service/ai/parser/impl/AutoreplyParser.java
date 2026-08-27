@@ -153,7 +153,7 @@ public abstract class AutoreplyParser {
      * @param userUuid идентификатор пользователя
      * @param step     название шага (например, "after_login", "order_page", "form_filled")
      */
-        protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
+    protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
         if (!screenshotsEnabled) {
             log.info("Сохранение скриншотов для отладочной информации отключено");
             return;

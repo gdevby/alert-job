@@ -54,6 +54,7 @@ public class AppUserController {
             AppUserDTO dto = new AppUserDTO();
             dto.setUuid(user.getUuid());
             dto.setEmail(user.getEmail());
+            dto.setCountry(user.getCountry());
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             log.warn("Ошибка при получении пользователя в CORE {}", uuid, e);

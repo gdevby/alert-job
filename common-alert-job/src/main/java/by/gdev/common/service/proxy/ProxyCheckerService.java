@@ -5,7 +5,6 @@ import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.model.proxy.ProxyState;
 import by.gdev.common.service.IpGeoService;
 import by.gdev.common.service.proxy.supplier.ProxySupplier;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,22 +23,11 @@ public class ProxyCheckerService {
     private final ProxySupplier proxySupplier;
     private final IpGeoService ipGeoService;
 
-    /*@PostConstruct
-    public void initializeProxiesOnStartup() {
-        log.info("Initializing proxies states BEFORE parsers creation...");
-        checkAllProxies();
-    }*/
-
 
     public void checkAndUpdateProxy(ProxyCredentials proxy) {
-        String country;
-        synchronized (this) {
-            country = ipGeoService.getCountryByIp(proxy.getHost());
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException ignored) {}
-        }
-        proxy.setCountry(country);
+        // Определяем страну
+        updateProxyCountry(proxy);
+        // Определяем доступность
         boolean available = isProxyAvailable(proxy);
         switch (proxy.getState()) {
             case NEW -> proxy.setState(available ? ProxyState.WARMING_UP : ProxyState.FAILED);
@@ -50,6 +38,19 @@ public class ProxyCheckerService {
             }
         }
         //log.debug("Proxy {}:{} -> {}", proxy.getHost(), proxy.getPort(), proxy.getState());
+    }
+
+    private void updateProxyCountry(ProxyCredentials proxy) {
+        synchronized (this) {
+            String country = ipGeoService.getCountryByIp(proxy.getHost());
+            proxy.setCountry(country);
+            try {
+                Thread.sleep(1500); // задержка между запросами к геосервису
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Задержка прервана при определении страны для прокси {}:{}", proxy.getHost(), proxy.getPort());
+            }
+        }
     }
 
     private boolean isProxyAvailable(ProxyCredentials proxy) {

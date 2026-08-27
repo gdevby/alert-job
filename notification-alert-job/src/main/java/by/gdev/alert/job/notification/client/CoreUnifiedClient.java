@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.client;
 
+import by.gdev.alert.job.notification.model.dto.AppUserDTO;
 import by.gdev.alert.job.notification.model.dto.UserCredentialEncrypted;
 import by.gdev.common.model.HeaderName;
 import lombok.RequiredArgsConstructor;
@@ -78,6 +79,19 @@ public class CoreUnifiedClient {
         } catch (Exception e) {
             log.error("Ошибка получения пользователей с автоответом", e);
             return Collections.emptyList();
+        }
+    }
+
+    public AppUserDTO getUserByUuid(String uuid) {
+        try {
+            return webClient.get()
+                    .uri(coreUrl + "/api/users/" + uuid)
+                    .retrieve()
+                    .bodyToMono(AppUserDTO.class)
+                    .block();
+        } catch (Exception e) {
+            log.error("Ошибка получения пользователя по UUID {}", uuid, e);
+            return null;
         }
     }
 }
