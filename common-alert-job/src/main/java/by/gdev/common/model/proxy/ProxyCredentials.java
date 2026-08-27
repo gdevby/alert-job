@@ -1,5 +1,6 @@
 package by.gdev.common.model.proxy;
 
+import by.gdev.common.service.proxy.ProxySource;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,4 +15,5 @@ public class ProxyCredentials {
     private int port;
     private ProxyState state;
     private String country;
+    private ProxySource source;
 }

@@ -86,7 +86,6 @@ public class ProxyCheckerService {
             }
         }
         log.debug("Проверка прокси завершена. Статистика: РАБОЧИЕ = {}, НЕ РАБОЧИЕ = {}", working, notWorking);
-        logProxiesByCountry(proxies);
     }
 
     /**
@@ -95,42 +94,26 @@ public class ProxyCheckerService {
      * @param proxies список прокси для проверки
      */
     public void checkProxies(List<ProxyCredentials> proxies) {
+        int total = proxies.size();
         int working = 0;
         int notWorking = 0;
+        int processed = 0;
+        int logInterval = Math.max(1, Math.min(20, total / 10));
+
         for (ProxyCredentials proxy : proxies) {
             checkAndUpdateProxy(proxy);
             switch (proxy.getState()) {
                 case ACTIVE, WARMING_UP -> working++;
                 default -> notWorking++;
             }
+            processed++;
+            if (processed % logInterval == 0 || processed == total) {
+                log.info("Прогресс проверки: {}/{} прокси (рабочих: {}, нерабочих: {})",
+                        processed, total, working, notWorking);
+            }
         }
-        log.debug("Проверка списка прокси завершена. Статистика: РАБОЧИЕ = {}, НЕ РАБОЧИЕ = {}", working, notWorking);
-        logProxiesByCountry(proxies);
+        log.info("Проверка списка прокси завершена. Статистика: РАБОЧИЕ = {}, НЕ РАБОЧИЕ = {}", working, notWorking);
     }
-
-    /**
-     * Логирует распределение прокси по странам (группировка по country).
-     */
-    private void logProxiesByCountry(List<ProxyCredentials> proxies) {
-        if (proxies.isEmpty()) {
-            log.debug("Нет прокси для отображения по странам.");
-            return;
-        }
-
-        Map<String, List<ProxyCredentials>> byCountry = proxies.stream()
-                .collect(Collectors.groupingBy(p -> p.getCountry() != null ? p.getCountry() : "UNKNOWN"));
-
-        log.debug("Распределение прокси по странам:");
-        for (Map.Entry<String, List<ProxyCredentials>> entry : byCountry.entrySet()) {
-            String country = entry.getKey();
-            List<ProxyCredentials> list = entry.getValue();
-            String ips = list.stream()
-                    .map(p -> p.getHost() + ":" + p.getPort())
-                    .collect(Collectors.joining(", "));
-            log.debug("{}: {} ({} прокси)", country, ips, list.size());
-        }
-    }
-
 }
 
 

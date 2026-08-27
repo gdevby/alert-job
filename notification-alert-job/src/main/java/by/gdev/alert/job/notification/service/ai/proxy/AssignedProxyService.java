@@ -4,6 +4,7 @@ import by.gdev.alert.job.notification.client.CoreUnifiedClient;
 import by.gdev.alert.job.notification.model.dto.AppUserDTO;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.model.proxy.ProxyState;
+import by.gdev.common.service.proxy.ProxySource;
 import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-@DependsOn("proxyUpdateScheduler")
+//@DependsOn({"proxyCheckerScheduler", "proxyUpdateScheduler"})
 @RequiredArgsConstructor
 @Slf4j
 public class AssignedProxyService {
@@ -29,10 +30,10 @@ public class AssignedProxyService {
     private long lastCacheUpdate = 0;
     private static final long CACHE_TTL_MS = 10 * 60 * 1000; // 10 минут
 
-    @PostConstruct
-    public void init() {
-        reassignProxies();
-    }
+    //@PostConstruct
+    //public void init() {
+        //reassignProxies();
+    //}
 
     private void refreshUserCountryCache() {
         long now = System.currentTimeMillis();
@@ -59,7 +60,7 @@ public class AssignedProxyService {
             }
         }
         lastCacheUpdate = now;
-        log.debug("Обновлён кэш стран для {} пользователей", userCountryCache.size());
+        log.info("Обновлены распределение стран по пользователям {}", userCountryCache.size());
     }
 
     public void reassignProxies() {
@@ -68,7 +69,7 @@ public class AssignedProxyService {
         List<String> users = coreClient.getUsersWithAutoReplyEnabled();
         if (users.isEmpty()) {
             userProxyMap.clear();
-            log.debug("Нет пользователей с автоответом");
+            log.info("Нет пользователей с автоответом");
             return;
         }
 
@@ -143,14 +144,25 @@ public class AssignedProxyService {
             }
 
             newMap.put(userUuid, assignedProxy);
-            log.debug("Пользователю {} (страна {}) назначен прокси {} ({}), страна прокси {}",
-                    userUuid, userCountry, assignedProxy.getHost(), assignedProxy.getPort(),
-                    assignedProxy.getCountry() != null ? assignedProxy.getCountry() : "UNKNOWN");
+            log.info("Пользователю {} (страна {}) назначен прокси {} ({}), страна прокси {}, источник {}",
+                    userUuid,
+                    userCountry != null ? userCountry : "неизвестна",
+                    assignedProxy.getHost(),
+                    assignedProxy.getPort(),
+                    assignedProxy.getCountry() != null ? assignedProxy.getCountry() : "UNKNOWN",
+                    assignedProxy.getSource() != null ? assignedProxy.getSource() : "UNKNOWN");
+            long supplierCount = newMap.values().stream()
+                    .filter(p -> p.getSource() == ProxySource.SUPPLIER)
+                    .count();
+            long apiCount = newMap.values().stream()
+                    .filter(p -> p.getSource() == ProxySource.API)
+                    .count();
+            log.info("Всего назначено: SUPPLIER = {}, API = {}", supplierCount, apiCount);
         }
 
         userProxyMap.clear();
         userProxyMap.putAll(newMap);
-        log.debug("Назначено {} прокси для {} пользователей (сохранено старых: {})",
+        log.info("Назначено {} прокси для {} пользователей (сохранено старых: {})",
                 userProxyMap.size(), users.size(), newMap.size() - usersWithoutProxy.size());
     }
 

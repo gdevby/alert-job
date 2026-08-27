@@ -1,6 +1,7 @@
 package by.gdev.common.service.proxy.supplier;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.model.proxy.ProxyState;
+import by.gdev.common.service.proxy.ProxySource;
 
 public class ProxyParser {
     public ProxyCredentials parse(String proxyLine){
@@ -18,6 +19,7 @@ public class ProxyParser {
                     .host(host)
                     .port(port)
                     .state(ProxyState.NEW)
+                    .source(ProxySource.SUPPLIER)
                     .build();
         }
         catch (Exception ex){

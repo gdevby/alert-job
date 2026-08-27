@@ -24,16 +24,16 @@ public class ProxyAdditionalService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${proxy.house.url}")
+    @Value("${proxy.ru.url}")
     private String proxyHouseUrl;
 
-    @Value("${proxy.house.token}")
+    @Value("${proxy.ru.token}")
     private String authToken;
 
-    @Value("${proxy.house.tariff}")
+    @Value("${proxy.ru.tariff}")
     private String tariffId;
 
-    @Value("${proxy.house.limit}")
+    @Value("${proxy.ru.limit}")
     private int limit;
 
     public ProxyAdditionalService(RestTemplate restTemplate, ObjectMapper objectMapper) {
@@ -94,6 +94,7 @@ public class ProxyAdditionalService {
                         .host(ip)
                         .port(httpPort)
                         .state(ProxyState.NEW)
+                        .source(ProxySource.API)
                         .build();
                 proxies.add(credentials);
             }
