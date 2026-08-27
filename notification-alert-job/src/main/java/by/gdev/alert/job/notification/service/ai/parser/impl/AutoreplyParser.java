@@ -11,6 +11,14 @@ import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
+
 @Slf4j
 public abstract class AutoreplyParser {
     protected boolean headless;
@@ -26,6 +34,12 @@ public abstract class AutoreplyParser {
     /** Значение по умолчанию для срока выполнения (в днях) */
     @Value("${parser.autoreply.default.days:1}")
     protected int defaultDays;
+
+    @Value("${autoreply.screenshots.enabled:false}")
+    private boolean screenshotsEnabled;
+
+    @Value("${autoreply.screenshots.dir:./autoreply/screenshots}")
+    private String screenshotsBaseDir;
 
     protected AssignedProxyService assignedProxyService;
 
@@ -77,6 +91,7 @@ public abstract class AutoreplyParser {
                 log.warn("Логин не выполнен для {}", creds.login());
                 return false;
             }
+            takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "after_login");
             page.waitForTimeout(1000);
             if (!processAutoReply(page, payload, creds)) {
                 log.warn("Автоответ НЕ отправлен пользователем {}", creds.login());
@@ -127,6 +142,42 @@ public abstract class AutoreplyParser {
         } catch (Exception e) {
             log.warn("CLICK FAILED at step '{}': selector '{}'", step, selector);
             return false;
+        }
+    }
+
+    /**
+     * Сохраняет скриншот текущей страницы в структурированную папку.
+     *
+     * @param page     объект страницы Playwright
+     * @param site     имя сайта (из перечисления SiteName)
+     * @param userUuid идентификатор пользователя
+     * @param step     название шага (например, "after_login", "order_page", "form_filled")
+     */
+        protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
+        if (!screenshotsEnabled) {
+            log.info("Сохранение скриншотов для отладочной информации отключено");
+            return;
+        }
+        try {
+            // Формируем путь: base/siteName/yyyy-MM-dd/userUuid/timestamp_uuid/
+            String dateStr = LocalDate.now().toString();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss_SSS"));
+            String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+            String timeDir = timestamp + "_" + uniqueSuffix;
+
+            Path dir = Paths.get(screenshotsBaseDir)
+                    .resolve(site.name())
+                    .resolve(dateStr)
+                    .resolve(userUuid)
+                    .resolve(timeDir);
+
+            Files.createDirectories(dir);
+            Path file = dir.resolve(step + ".png");
+
+            page.screenshot(new Page.ScreenshotOptions().setPath(file));
+            log.info("Скриншот сохранён: {}", file.toAbsolutePath());
+        } catch (Exception e) {
+            log.warn("Не удалось сохранить скриншот для шага '{}': {}", step, e.getMessage());
         }
     }
 

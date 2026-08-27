@@ -162,7 +162,8 @@ public class AiOrderAnalysisService {
                     log.error("LLM вернул пустой ответ (raw == null)");
                     return new AiDecision(
                             "LLM вернул пустой ответ",
-                            ""
+                            "",
+                            false
                     );
                 }
 
@@ -214,7 +215,9 @@ public class AiOrderAnalysisService {
                         .replace("```", "")
                         .trim();
                 String json = extractJson(raw);
-                return mapper.readValue(json, AiDecision.class);
+                AiDecision decision =  mapper.readValue(json, AiDecision.class);
+                decision.setValid(true);
+                return decision;
 
             } catch (org.springframework.ai.retry.NonTransientAiException e) {
                 // Это 429, 400, 50
@@ -222,7 +225,8 @@ public class AiOrderAnalysisService {
 
                 return new AiDecision(
                         "API error: " + e.getMessage(),
-                        ""
+                        "",
+                        false
                 );
 
             } catch (Exception e) {
@@ -230,7 +234,8 @@ public class AiOrderAnalysisService {
 
                 return new AiDecision(
                         "Unexpected LLM error: " + e.getMessage(),
-                        ""
+                        "",
+                        false
                 );
             }
         });
@@ -248,7 +253,7 @@ public class AiOrderAnalysisService {
 
             return new AiDecision(
                     "Executor error: " + e.getMessage(),
-                    ""
+                    "", false
             );
         }
     }

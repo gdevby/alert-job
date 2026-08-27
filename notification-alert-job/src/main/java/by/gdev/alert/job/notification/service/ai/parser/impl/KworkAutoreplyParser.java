@@ -76,6 +76,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
+            takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "order_page");
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
@@ -86,6 +87,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу', пользователь: {}", getSiteName(), login);
             return false;
         }
+        takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "click_propose");
         log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), login);
 
         if (!waitOrFail(page, "div.trumbowyg-editor", 8000, "Редактор ответа")) {
@@ -103,23 +105,34 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return false;
         }
 
-        // ЦЕНА: ПАРСИМ МИНИМУМ ИЗ ДИАПАЗОНА
+// ЦЕНА: ПАРСИМ МИНИМУМ ИЗ БЮДЖЕТА
         try {
             String priceValue = String.valueOf(defaultPrice);
+            String budgetText = null;
 
-            Locator errorMessage = page.locator("span.form-item__error:has-text('Стоимость может быть от')");
-            if (errorMessage.count() > 0) {
-                String errorText = errorMessage.textContent();
-                Pattern pattern = Pattern.compile("от\\s*(\\d+)\\s*руб");
-                Matcher matcher = pattern.matcher(errorText);
+            // Пытаемся найти элемент с бюджетом на странице
+            Locator budgetLocator = page.locator("span.kw-budget");
+            if (budgetLocator.count() > 0) {
+                budgetText = budgetLocator.textContent();
+                log.info("АВТООТВЕТ: {} -> найден бюджет: {}", getSiteName(), budgetText);
+            }
+
+            // Если бюджет найден – извлекаем минимальное число
+            if (budgetText != null && !budgetText.isEmpty()) {
+                // Ищем первое число в тексте (минимальная цена)
+                Pattern pattern = Pattern.compile("(\\d+)");
+                Matcher matcher = pattern.matcher(budgetText);
                 if (matcher.find()) {
                     priceValue = matcher.group(1);
-                    log.info("АВТООТВЕТ: {} -> минимальная цена из диапазона: {}", getSiteName(), priceValue);
+                    log.info("АВТООТВЕТ: {} -> минимальная цена из бюджета: {}", getSiteName(), priceValue);
                 }
             }
 
+            // Если не удалось найти бюджет – оставляем defaultPrice
+
             page.fill("#offer-custom-price", priceValue);
             log.info("АВТООТВЕТ: {} -> цена установлена: {}, пользователь: {}", getSiteName(), priceValue, login);
+
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ УСТАНОВИТЬ ЦЕНУ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
@@ -198,7 +211,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.warn("АВТООТВЕТ: {} -> КНОПКА 'Предложить' НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
             return false;
         }
-
+        takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "form_filled");
         if (sendRequest) {
             try {
                 sendBtn.click();
@@ -209,6 +222,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             }
         } else {
             log.info("АВТООТВЕТ: {} -> ЗАЯВКА НЕ ОТПРАВЛЕНА (sendRequest=false), пользователь: {}", getSiteName(), login);
+            return false;
         }
 
         page.waitForTimeout(2000);

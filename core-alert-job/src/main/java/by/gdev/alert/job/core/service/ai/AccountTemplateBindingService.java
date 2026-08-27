@@ -275,7 +275,12 @@ public class AccountTemplateBindingService {
         List<AccountTemplateBinding> existingBindings = accountTemplateBindingRepository
                 .findByModuleIdAndAccountIdIn(moduleId, accountIds);
 
-        List<AccountTemplateBinding> otherBindings = existingBindings.stream()
+        // Фильтруем только активные биндинги
+        List<AccountTemplateBinding> activeBindings = existingBindings.stream()
+                .filter(AccountTemplateBinding::isActive)
+                .toList();
+
+        List<AccountTemplateBinding> otherBindings = activeBindings.stream()
                 .filter(b -> exceptId == null || !b.getId().equals(exceptId))
                 .toList();
 
