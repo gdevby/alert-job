@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class GetParserStep implements AiStep<SiteName, AutoreplyPlaywrightParser> {
+public class GetParserStep implements AiStep<SiteName, StepResult<AutoreplyPlaywrightParser>> {
 
     private final AutoreplyParserFactory parserFactory;
 
@@ -23,10 +23,10 @@ public class GetParserStep implements AiStep<SiteName, AutoreplyPlaywrightParser
     @Override
     public StepResult<AutoreplyPlaywrightParser> execute(SiteName site) {
         try {
-            return StepResult.ok(parserFactory.getParser(site));
+            AutoreplyPlaywrightParser parser = parserFactory.getParser(site);
+            return StepResult.ok(StepType.GET_PARSER, parser);
         } catch (Exception e) {
-            return StepResult.fail();
+            return StepResult.fail(StepType.GET_PARSER, "Ошибка получения парсера: " + e.getMessage());
         }
     }
 }
-
