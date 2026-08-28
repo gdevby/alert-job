@@ -92,27 +92,28 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
     private void sendErrorNotification(AiNotificationPayload payload, AiAppUserDTO user, StepResult<?> errorResult) {
         String stepName = errorResult.getStepDisplayName();
         String errorMessage = errorResult.getErrorMessage();
+        String orderLink = payload.getOrder().getLink();
+        String orderTitle = payload.getOrder().getTitle();
 
         UserNotification n = new UserNotification();
         n.setType(NotificationType.AUTO_REPLY);
         String subject = "Ошибка при отправке автоответа на шаге \"" + stepName + "\"";
-        String body = String.format("""
-                Уважаемый пользователь!
 
-                Не удалось отправить автоответ по причине:
-                %s
-
-                Ошибка произошла на шаге: %s
-
-                Если в письме есть вложение, проверьте скриншот для диагностики.
-
-                С уважением,
-                Система автоответов
-                """, errorMessage, stepName);
+        // HTML-версия письма (для email)
+        String htmlBody = String.format("""
+            <p>Уважаемый пользователь!</p>
+            <p>Не удалось отправить автоответ по причине:<br>
+            <strong>%s</strong></p>
+            <p>Ошибка произошла на шаге: <strong>%s</strong></p>
+            <p><strong>Заказ:</strong> %s</p>
+            <p><strong>Ссылка:</strong> <a href="%s">%s</a></p>
+            <p>Если в письме есть вложение, проверьте скриншот для диагностики.</p>
+            <p>С уважением,<br>Система автоответов</p>
+            """, errorMessage, stepName, orderTitle, orderLink, orderLink);
 
         if (NotificationTypeEnum.EMAIL.equals(payload.getNotificationType())) {
             log.info("АВТООТВЕТ: {} -> отправка EMAIL об ошибке на: {}", payload.getModule().getName(), user.getEmail());
-            n.setMessage(body);
+            n.setMessage(htmlBody);
             n.setToMail(user.getEmail());
 
             byte[] screenshot = errorResult.getScreenshot();
@@ -125,7 +126,8 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
             log.info("АВТООТВЕТ: {} -> EMAIL об ошибке отправлен на {}", payload.getModule().getName(), user.getEmail());
 
         } else {
-            String telegramText = "Ошибка автоответа: " + errorMessage + " (шаг: " + stepName + ")";
+            // Для телеграма – обычный текст с переносами
+            String telegramText = "Ошибка автоответа: " + errorMessage + " (шаг: " + stepName + ")\nЗаказ: " + orderTitle + "\nСсылка: " + orderLink;
             log.info("АВТООТВЕТ: {} -> TELEGRAM об ошибке: {}", payload.getModule().getName(), telegramText);
             n.setMessage(telegramText);
             n.setToMail(user.getTelegram().toString());
