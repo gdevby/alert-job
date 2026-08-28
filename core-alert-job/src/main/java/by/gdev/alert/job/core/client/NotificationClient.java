@@ -67,9 +67,25 @@ public class NotificationClient {
         }
     }
 
-
     public static class ParserSupportResponse {
         public String site;
         public boolean supported;
+    }
+
+    /**
+     * Вызывает перераспределение прокси в notification-сервисе.
+     */
+    public void reassignProxies() {
+        try {
+            String url = parserServiceUrl + "/api/internal/reassign-proxies";
+            ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.debug("Успешно вызвано перераспределение прокси в Notification");
+            } else {
+                log.warn("Не удалось вызвать перераспределение прокси, статус: {}", response.getStatusCode());
+            }
+        } catch (Exception e) {
+            log.error("Ошибка при вызове перераспределения прокси в Notification", e);
+        }
     }
 }

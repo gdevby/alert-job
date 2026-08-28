@@ -1,172 +1,197 @@
 package by.gdev.alert.job.notification.service.ai.proxy;
 
 import by.gdev.alert.job.notification.client.CoreUnifiedClient;
-import by.gdev.alert.job.notification.model.dto.AppUserDTO;
+import by.gdev.alert.job.notification.model.dto.ModuleSiteDto;
+import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.model.proxy.ProxyState;
-import by.gdev.common.service.proxy.ProxySource;
+import by.gdev.common.service.IpGeoService;
 import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-//@DependsOn({"proxyCheckerScheduler", "proxyUpdateScheduler"})
 @RequiredArgsConstructor
 @Slf4j
 public class AssignedProxyService {
 
     private final ProxySupplier proxySupplier;
     private final CoreUnifiedClient coreClient;
+    private final IpGeoService ipGeoService;
 
-    private final Map<String, ProxyCredentials> userProxyMap = new ConcurrentHashMap<>();
-    private final Map<String, String> userCountryCache = new ConcurrentHashMap<>();
-    private long lastCacheUpdate = 0;
-    private static final long CACHE_TTL_MS = 10 * 60 * 1000; // 10 минут
+    // userUuid -> (moduleId -> proxy)
+    private final Map<String, Map<Long, ProxyCredentials>> userModuleProxyMap = new ConcurrentHashMap<>();
+    private final Map<SiteName, String> siteCountryCache = new ConcurrentHashMap<>();
 
-    //@PostConstruct
-    //public void init() {
-        //reassignProxies();
-    //}
-
-    private void refreshUserCountryCache() {
-        long now = System.currentTimeMillis();
-        if (now - lastCacheUpdate < CACHE_TTL_MS && !userCountryCache.isEmpty()) {
-            return;
-        }
-        List<String> users = coreClient.getUsersWithAutoReplyEnabled();
-        if (users.isEmpty()) {
-            userCountryCache.clear();
-            lastCacheUpdate = now;
-            return;
-        }
-        for (String uuid : users) {
-            try {
-                AppUserDTO userDto = coreClient.getUserByUuid(uuid);
-                if (userDto != null && userDto.getCountry() != null) {
-                    userCountryCache.put(uuid, userDto.getCountry());
-                } else {
-                    userCountryCache.remove(uuid);
-                }
-            } catch (Exception e) {
-                log.warn("Не удалось получить страну для пользователя {}", uuid, e);
-                userCountryCache.remove(uuid);
-            }
-        }
-        lastCacheUpdate = now;
-        log.info("Обновлены распределение стран по пользователям {}", userCountryCache.size());
+    @PostConstruct
+    public void init() {
+        reassignProxies();
     }
 
-    public void reassignProxies() {
-        refreshUserCountryCache();
+    /**
+     * Перераспределяет прокси для всех пользователей и их модулей.
+     * Для каждого модуля определяется страна сайта и подбирается прокси.
+     */
+    public synchronized void reassignProxies() {
+        log.debug("Перераспределение прокси для пользователей и модулей");
 
+        // 1. Получаем всех пользователей с автоответом
         List<String> users = coreClient.getUsersWithAutoReplyEnabled();
         if (users.isEmpty()) {
-            userProxyMap.clear();
+            userModuleProxyMap.clear();
             log.info("Нет пользователей с автоответом");
             return;
         }
 
-        List<ProxyCredentials> availableProxies = proxySupplier.getProxies().stream()
-                .filter(p -> p.getState() == ProxyState.ACTIVE || p.getState() == ProxyState.WARMING_UP)
-                .collect(Collectors.toList());
+        // 2. Для каждого пользователя получаем список модулей (moduleId, siteId)
+        Map<String, List<ModuleSiteDto>> userModulesMap = new HashMap<>();
+        for (String userUuid : users) {
+            List<ModuleSiteDto> modules = coreClient.getAutoReplyEnabledModules(userUuid);
+            if (!modules.isEmpty()) {
+                userModulesMap.put(userUuid, modules);
+            }
+        }
 
-        if (availableProxies.isEmpty()) {
-            log.warn("Нет доступных РАБОЧИХ прокси для назначения!");
-            userProxyMap.clear();
+        if (userModulesMap.isEmpty()) {
+            userModuleProxyMap.clear();
+            log.info("У пользователей нет активных модулей с автоответом");
             return;
         }
 
-        Map<String, List<ProxyCredentials>> proxiesByCountry = availableProxies.stream()
-                .filter(p -> p.getCountry() != null && !p.getCountry().isEmpty())
-                .collect(Collectors.groupingBy(ProxyCredentials::getCountry));
-
-        List<ProxyCredentials> proxiesWithoutCountry = availableProxies.stream()
-                .filter(p -> p.getCountry() == null || p.getCountry().isEmpty())
+        // 3. Доступные рабочие прокси
+        List<ProxyCredentials> workingProxies = proxySupplier.getProxies().stream()
+                .filter(p -> p.getState() == ProxyState.ACTIVE || p.getState() == ProxyState.WARMING_UP)
                 .collect(Collectors.toList());
 
-        Map<String, ProxyCredentials> oldMap = new HashMap<>(userProxyMap);
-        Map<String, ProxyCredentials> newMap = new HashMap<>();
+        if (workingProxies.isEmpty()) {
+            log.warn("Нет доступных РАБОЧИХ прокси для назначения!");
+            userModuleProxyMap.clear();
+            return;
+        }
 
+        // 4. Строим новую карту назначений
+        Map<String, Map<Long, ProxyCredentials>> newMap = new HashMap<>();
+
+        // Сохраняем старые назначения, если прокси ещё рабочий
         for (String userUuid : users) {
-            ProxyCredentials oldProxy = oldMap.get(userUuid);
-            if (oldProxy != null && (oldProxy.getState() == ProxyState.ACTIVE || oldProxy.getState() == ProxyState.WARMING_UP)) {
-                newMap.put(userUuid, oldProxy);
-                availableProxies.remove(oldProxy);
-                String country = oldProxy.getCountry();
-                if (country != null && proxiesByCountry.containsKey(country)) {
-                    proxiesByCountry.get(country).remove(oldProxy);
-                    if (proxiesByCountry.get(country).isEmpty()) {
-                        proxiesByCountry.remove(country);
+            Map<Long, ProxyCredentials> oldUserMap = userModuleProxyMap.get(userUuid);
+            if (oldUserMap != null) {
+                Map<Long, ProxyCredentials> newUserMap = new HashMap<>();
+                for (Map.Entry<Long, ProxyCredentials> entry : oldUserMap.entrySet()) {
+                    ProxyCredentials proxy = entry.getValue();
+                    if (proxy.getState() == ProxyState.ACTIVE || proxy.getState() == ProxyState.WARMING_UP) {
+                        newUserMap.put(entry.getKey(), proxy);
+                        workingProxies.remove(proxy);
                     }
-                } else {
-                    proxiesWithoutCountry.remove(oldProxy);
+                }
+                if (!newUserMap.isEmpty()) {
+                    newMap.put(userUuid, newUserMap);
                 }
             }
         }
 
-        List<String> usersWithoutProxy = users.stream()
-                .filter(u -> !newMap.containsKey(u))
-                .toList();
+        // 5. Для оставшихся модулей назначаем новые прокси
+        for (String userUuid : users) {
+            List<ModuleSiteDto> modules = userModulesMap.get(userUuid);
+            if (modules == null) continue;
 
-        for (String userUuid : usersWithoutProxy) {
-            String userCountry = userCountryCache.get(userUuid);
-            ProxyCredentials assignedProxy = null;
+            Map<Long, ProxyCredentials> userMap = newMap.computeIfAbsent(userUuid, k -> new HashMap<>());
 
-            if (userCountry != null && !userCountry.isEmpty() && proxiesByCountry.containsKey(userCountry)) {
-                List<ProxyCredentials> candidates = proxiesByCountry.get(userCountry);
-                if (!candidates.isEmpty()) {
-                    assignedProxy = candidates.remove(0);
-                    if (candidates.isEmpty()) {
-                        proxiesByCountry.remove(userCountry);
+            for (ModuleSiteDto dto : modules) {
+                Long moduleId = dto.getModuleId();
+                if (userMap.containsKey(moduleId)) continue; // уже назначен
+
+                SiteName site = SiteName.fromId(dto.getSiteId());
+                String targetCountry = getSiteCountry(site);
+                ProxyCredentials assignedProxy = null;
+
+                if (targetCountry != null) {
+                    // Ищем прокси из той же страны
+                    List<ProxyCredentials> candidates = workingProxies.stream()
+                            .filter(p -> targetCountry.equalsIgnoreCase(p.getCountry()))
+                            .toList();
+                    if (!candidates.isEmpty()) {
+                        assignedProxy = candidates.get(0);
+                        workingProxies.remove(assignedProxy);
                     }
                 }
-            }
 
-            if (assignedProxy == null) {
-                if (!proxiesWithoutCountry.isEmpty()) {
-                    assignedProxy = proxiesWithoutCountry.remove(0);
-                } else if (!availableProxies.isEmpty()) {
-                    Collections.shuffle(availableProxies);
-                    assignedProxy = availableProxies.remove(0);
+                // Если не нашли по стране – берём любой свободный
+                if (assignedProxy == null && !workingProxies.isEmpty()) {
+                    assignedProxy = workingProxies.remove(0);
                 }
-            }
 
-            if (assignedProxy == null) {
-                log.warn("Недостаточно прокси для всех пользователей");
-                break;
-            }
+                if (assignedProxy == null) {
+                    log.warn("Недостаточно прокси для пользователя {} модуля {}", userUuid, moduleId);
+                    continue;
+                }
 
-            newMap.put(userUuid, assignedProxy);
-            log.info("Пользователю {} (страна {}) назначен прокси {} ({}), страна прокси {}, источник {}",
-                    userUuid,
-                    userCountry != null ? userCountry : "неизвестна",
-                    assignedProxy.getHost(),
-                    assignedProxy.getPort(),
-                    assignedProxy.getCountry() != null ? assignedProxy.getCountry() : "UNKNOWN",
-                    assignedProxy.getSource() != null ? assignedProxy.getSource() : "UNKNOWN");
-            long supplierCount = newMap.values().stream()
-                    .filter(p -> p.getSource() == ProxySource.SUPPLIER)
-                    .count();
-            long apiCount = newMap.values().stream()
-                    .filter(p -> p.getSource() == ProxySource.API)
-                    .count();
-            log.info("Всего назначено: SUPPLIER = {}, API = {}", supplierCount, apiCount);
+                userMap.put(moduleId, assignedProxy);
+                log.info("Пользователю {} для модуля {} (сайт {}) назначен прокси {}:{}, страна {}",
+                        userUuid, moduleId, site, assignedProxy.getHost(), assignedProxy.getPort(), assignedProxy.getCountry());
+            }
         }
 
-        userProxyMap.clear();
-        userProxyMap.putAll(newMap);
-        log.info("Назначено {} прокси для {} пользователей (сохранено старых: {})",
-                userProxyMap.size(), users.size(), newMap.size() - usersWithoutProxy.size());
+        userModuleProxyMap.clear();
+        userModuleProxyMap.putAll(newMap);
+        log.info("Перераспределение завершено. Назначено прокси для {} пользователей", userModuleProxyMap.size());
     }
 
+    /**
+     * Возвращает прокси для конкретного пользователя и модуля.
+     */
+    public ProxyCredentials getProxyForUserAndModule(String userUuid, Long moduleId) {
+        Map<Long, ProxyCredentials> userMap = userModuleProxyMap.get(userUuid);
+        if (userMap != null) {
+            ProxyCredentials proxy = userMap.get(moduleId);
+            if (proxy != null && (proxy.getState() == ProxyState.ACTIVE || proxy.getState() == ProxyState.WARMING_UP)) {
+                return proxy;
+            }
+        }
+        // Если прокси нет или нерабочий – перераспределяем на лету
+        log.warn("Прокси для пользователя {} модуля {} не найден или нерабочий, выполняем перераспределение", userUuid, moduleId);
+        reassignProxies();
+        Map<Long, ProxyCredentials> newUserMap = userModuleProxyMap.get(userUuid);
+        if (newUserMap != null) {
+            return newUserMap.get(moduleId);
+        }
+        return null;
+    }
+
+    /**
+     * Старый метод для обратной совместимости (использует первый модуль).
+     * @deprecated используйте {@link #getProxyForUserAndModule(String, Long)}
+     */
+    @Deprecated
     public ProxyCredentials getProxyForUser(String userUuid) {
-        return userProxyMap.get(userUuid);
+        Map<Long, ProxyCredentials> userMap = userModuleProxyMap.get(userUuid);
+        if (userMap != null && !userMap.isEmpty()) {
+            return userMap.values().iterator().next();
+        }
+        return null;
+    }
+
+    /**
+     * Возвращает страну сайта по его домену (с кэшированием).
+     */
+    private String getSiteCountry(SiteName site) {
+        return siteCountryCache.computeIfAbsent(site, s -> {
+            try {
+                String domain = s.getDomain();
+                InetAddress address = InetAddress.getByName(domain);
+                String ip = address.getHostAddress();
+                return ipGeoService.getCountryByIp(ip);
+            } catch (Exception e) {
+                log.warn("Ошибка определения страны для сайта {}: {}", s, e.getMessage());
+                return null;
+            }
+        });
     }
 }

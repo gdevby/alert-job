@@ -1,6 +1,7 @@
 package by.gdev.alert.job.core.controller;
 
 import by.gdev.alert.job.core.model.AppUserDTO;
+import by.gdev.alert.job.core.model.ModuleSiteDto;
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.service.AppUserService;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -13,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @RestController
@@ -54,12 +57,17 @@ public class AppUserController {
             AppUserDTO dto = new AppUserDTO();
             dto.setUuid(user.getUuid());
             dto.setEmail(user.getEmail());
-            dto.setCountry(user.getCountry());
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             log.warn("Ошибка при получении пользователя в CORE {}", uuid, e);
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/{uuid}/auto-reply-modules")
+    public ResponseEntity<List<ModuleSiteDto>> getAutoReplyEnabledModules(@PathVariable String uuid) {
+        List<ModuleSiteDto> modules = userService.getAutoReplyEnabledModules(uuid);
+        return ResponseEntity.ok(modules);
     }
 
 }

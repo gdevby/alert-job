@@ -11,5 +11,4 @@ public class AppUserDTO {
     private Long telegram;
     private boolean switchOffAlerts;
     private boolean defaultSendType;
-    private String country;
 }
