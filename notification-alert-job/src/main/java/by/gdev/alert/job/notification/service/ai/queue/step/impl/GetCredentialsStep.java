@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class GetCredentialsStep implements AiStep<AiNotificationPayload, DecryptedCredential> {
+public class GetCredentialsStep implements AiStep<AiNotificationPayload, StepResult<DecryptedCredential>> {
 
     private final UserCredentialService userCredentialService;
 
@@ -23,10 +23,10 @@ public class GetCredentialsStep implements AiStep<AiNotificationPayload, Decrypt
     @Override
     public StepResult<DecryptedCredential> execute(AiNotificationPayload payload) {
         try {
-            var creds = userCredentialService.getUserCredentialsBlocking(payload);
-            return StepResult.ok(creds);
+            DecryptedCredential creds = userCredentialService.getUserCredentialsBlocking(payload);
+            return StepResult.ok(StepType.GET_CREDENTIALS, creds);
         } catch (Exception e) {
-            return StepResult.fail();
+            return StepResult.fail(StepType.GET_CREDENTIALS, "Ошибка получения учётных данных: " + e.getMessage());
         }
     }
 }

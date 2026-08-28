@@ -4,9 +4,12 @@ import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
+import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
+import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
-import com.microsoft.playwright.*;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,101 +47,156 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     @Override
-    protected boolean login(Page page, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, DecryptedCredential creds) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
-        page.navigate("https://kwork.ru/login");
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        log.info("АВТООТВЕТ: {} -> страница логина загружена, пользователь: {}", getSiteName(), creds.login());
+        try {
+            page.navigate("https://kwork.ru/login");
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            log.info("АВТООТВЕТ: {} -> страница логина загружена, пользователь: {}", getSiteName(), creds.login());
 
-        page.waitForSelector("input[placeholder='Электронная почта или логин']");
-        page.fill("input[placeholder='Электронная почта или логин']", creds.login());
-        log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
+            page.waitForSelector("input[placeholder='Электронная почта или логин']");
+            page.fill("input[placeholder='Электронная почта или логин']", creds.login());
+            log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
 
-        page.fill("input[placeholder='Пароль']", creds.password());
-        log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
+            page.fill("input[placeholder='Пароль']", creds.password());
+            log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
 
-        Locator loginBtn = page.locator("button.auth-form__button");
-        page.waitForCondition(loginBtn::isEnabled);
-        loginBtn.click();
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
-        return true;
+            Locator loginBtn = page.locator("button.auth-form__button");
+            page.waitForCondition(loginBtn::isEnabled);
+            loginBtn.click();
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> ОШИБКА ЛОГИНА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка логина: " + e.getMessage(), captureScreenshot(page));
+        }
     }
 
     @Override
-    protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
-        String link = payload.getOrder().getLink();
-        String login = creds.login();
-        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}, пользователь: {}", getSiteName(), link, login);
+    protected StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
+        String userUuid = payload.getUser().getUuid();
+        log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}, пользователь: {}", getSiteName(), payload.getOrder().getLink(), creds.login());
 
+        StepResult<Void> result;
+
+        result = openOrderPage(page, payload, creds);
+        if (result.failed()) return result;
+
+        result = clickOfferButton(page, userUuid, creds);
+        if (result.failed()) return result;
+
+        result = waitAndFillReplyEditor(page, payload, creds);
+        if (result.failed()) return result;
+
+        result = parseAndSetPrice(page, creds);
+        if (result.failed()) return result;
+
+        result = setOrderTitle(page, payload, creds);
+        if (result.failed()) return result;
+
+        result = selectDuration(page, creds);
+        if (result.failed()) return result;
+
+        result = submitOffer(page, userUuid, creds);
+        if (result.failed()) return result;
+
+        return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+
+    private StepResult<Void> openOrderPage(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         try {
-            page.navigate(link);
+            page.navigate(payload.getOrder().getLink());
             page.waitForLoadState(LoadState.NETWORKIDLE);
-            log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
+            log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), creds.login());
             takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "order_page");
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть заказ: " + e.getMessage(), captureScreenshot(page));
         }
+    }
 
-        if (!clickOrFail(page, "span.projects-offer-btn:has-text('Предложить услугу')",
-                8000, "Открыть форму отклика")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу', пользователь: {}", getSiteName(), login);
-            return false;
+    private StepResult<Void> clickOfferButton(Page page, String userUuid, DecryptedCredential creds) {
+        if (!clickOrFail(page, "span.projects-offer-btn:has-text('Предложить услугу')", 8000, "Открыть форму отклика")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу', пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' не найдена", captureScreenshot(page));
         }
-        takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "click_propose");
-        log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), login);
+        takeScreenshot(page, getSiteName(), userUuid, "click_propose");
+        log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), creds.login());
+        return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
 
+    private StepResult<Void> waitAndFillReplyEditor(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         if (!waitOrFail(page, "div.trumbowyg-editor", 8000, "Редактор ответа")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН РЕДАКТОР, пользователь: {}", getSiteName(), login);
-            return false;
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН РЕДАКТОР, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Редактор ответа не найден", captureScreenshot(page));
         }
-        log.info("АВТООТВЕТ: {} -> редактор найден, пользователь: {}", getSiteName(), login);
+        log.info("АВТООТВЕТ: {} -> редактор найден, пользователь: {}", getSiteName(), creds.login());
 
         try {
-            page.fill("div.trumbowyg-editor", payload.getDecision().reply());
-            log.info("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}, пользователь: {}", getSiteName(),
-                    payload.getDecision().reply() != null ? payload.getDecision().reply().length() : 0, login);
+            String reply = payload.getDecision().reply();
+            page.fill("div.trumbowyg-editor", reply);
+            log.info("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}, пользователь: {}", getSiteName(), reply != null ? reply.length() : 0, creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить текст: " + e.getMessage(), captureScreenshot(page));
         }
+    }
 
-// ЦЕНА: ПАРСИМ МИНИМУМ ИЗ БЮДЖЕТА
+    private StepResult<Void> parseAndSetPrice(Page page, DecryptedCredential creds) {
         try {
             String priceValue = String.valueOf(defaultPrice);
-            String budgetText = null;
 
-            // Пытаемся найти элемент с бюджетом на странице
-            Locator budgetLocator = page.locator("span.kw-budget");
-            if (budgetLocator.count() > 0) {
-                budgetText = budgetLocator.textContent();
-                log.info("АВТООТВЕТ: {} -> найден бюджет: {}", getSiteName(), budgetText);
-            }
+            // Получаем placeholder у поля ввода цены
+            Locator priceInput = page.locator("#offer-custom-price");
+            String placeholder = priceInput.getAttribute("placeholder");
+            log.info("АВТООТВЕТ: {} -> placeholder поля цены: {}", getSiteName(), placeholder);
 
-            // Если бюджет найден – извлекаем минимальное число
-            if (budgetText != null && !budgetText.isEmpty()) {
-                // Ищем первое число в тексте (минимальная цена)
+            if (placeholder != null && !placeholder.isEmpty()) {
+                // Ищем первое число в placeholder (минимальная цена)
                 Pattern pattern = Pattern.compile("(\\d+)");
-                Matcher matcher = pattern.matcher(budgetText);
+                Matcher matcher = pattern.matcher(placeholder);
                 if (matcher.find()) {
                     priceValue = matcher.group(1);
-                    log.info("АВТООТВЕТ: {} -> минимальная цена из бюджета: {}", getSiteName(), priceValue);
+                    log.info("АВТООТВЕТ: {} -> минимальная цена из placeholder: {}", getSiteName(), priceValue);
+                } else {
+                    log.warn("АВТООТВЕТ: {} -> в placeholder нет чисел, используем цену по умолчанию: {}", getSiteName(), defaultPrice);
+                }
+            } else {
+                log.warn("АВТООТВЕТ: {} -> placeholder не найден, используем цену по умолчанию: {}", getSiteName(), defaultPrice);
+            }
+
+            // Устанавливаем цену
+            priceInput.fill(priceValue);
+            log.info("АВТООТВЕТ: {} -> цена установлена: {}, пользователь: {}", getSiteName(), priceValue, creds.login());
+
+            // Проверяем, не появилась ли ошибка (если цена слишком низкая)
+            Locator errorMessage = page.locator("span.form-item__error:has-text('Стоимость может быть от')");
+            if (errorMessage.count() > 0) {
+                String errorText = errorMessage.textContent();
+                Pattern pattern = Pattern.compile("от\\s*(\\d+)\\s*руб");
+                Matcher matcher = pattern.matcher(errorText);
+                if (matcher.find()) {
+                    String correctedPrice = matcher.group(1);
+                    log.info("АВТООТВЕТ: {} -> скорректировали цену по ошибке: {}", getSiteName(), correctedPrice);
+                    priceInput.fill(correctedPrice);
+                    priceValue = correctedPrice;
                 }
             }
 
-            // Если не удалось найти бюджет – оставляем defaultPrice
-
-            page.fill("#offer-custom-price", priceValue);
-            log.info("АВТООТВЕТ: {} -> цена установлена: {}, пользователь: {}", getSiteName(), priceValue, login);
-
+            log.info("АВТООТВЕТ: {} -> итоговая цена: {}, пользователь: {}", getSiteName(), priceValue, creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ УСТАНОВИТЬ ЦЕНУ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ УСТАНОВИТЬ ЦЕНУ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось установить цену: " + e.getMessage(), captureScreenshot(page));
         }
+    }
 
-        // НАЗВАНИЕ ЗАКАЗА (ЧЕРЕЗ JAVASCRIPT)
+    private StepResult<Void> setOrderTitle(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         try {
             page.waitForSelector("div.trumbowyg-editor[data-placeholder-mobile='Введите название заказа']",
                     new Page.WaitForSelectorOptions().setTimeout(5000));
@@ -149,7 +207,6 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             }
 
             String safeTitle = orderTitle.replace("'", "\\'").replace("\"", "\\\"");
-
             String js = String.format("""
                     (function() {
                         var editor = document.querySelector('div.trumbowyg-editor[data-placeholder-mobile="Введите название заказа"]');
@@ -167,65 +224,92 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
             boolean success = (boolean) page.evaluate(js);
             if (success) {
-                log.info("АВТООТВЕТ: {} -> название заказа заполнено: {}, пользователь: {}",
-                        getSiteName(), orderTitle, login);
+                log.info("АВТООТВЕТ: {} -> название заказа заполнено: {}, пользователь: {}", getSiteName(), orderTitle, creds.login());
+                return StepResult.ok(StepType.SEND_AUTOREPLY, null);
             } else {
-                log.warn("АВТООТВЕТ: {} -> поле названия заказа не найдено, пользователь: {}", getSiteName(), login);
+                log.warn("АВТООТВЕТ: {} -> поле названия заказа не найдено, пользователь: {}", getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле названия заказа не найдено", captureScreenshot(page));
             }
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ НАЗВАНИЕ ЗАКАЗА, пользователь: {}, ошибка: {}",
-                    getSiteName(), login, e.getMessage());
+                    getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить название заказа: " + e.getMessage(), captureScreenshot(page));
         }
+    }
 
+    private StepResult<Void> selectDuration(Page page, DecryptedCredential creds) {
         if (!clickOrFail(page, "div.duration-select", 5000, "Открыть список сроков")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ СПИСОК СРОКОВ, пользователь: {}", getSiteName(), login);
-            return false;
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ СПИСОК СРОКОВ, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть список сроков", captureScreenshot(page));
         }
-        log.info("АВТООТВЕТ: {} -> список сроков открыт, пользователь: {}", getSiteName(), login);
+        log.info("АВТООТВЕТ: {} -> список сроков открыт, пользователь: {}", getSiteName(), creds.login());
 
         if (!waitOrFail(page, "ul.vs__dropdown-menu li", 5000, "Список сроков")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН СПИСОК СРОКОВ, пользователь: {}", getSiteName(), login);
-            return false;
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН СПИСОК СРОКОВ, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Список сроков не найден", captureScreenshot(page));
         }
 
         try {
             page.locator("ul.vs__dropdown-menu li").first().click();
-            log.info("АВТООТВЕТ: {} -> срок выполнения выбран, пользователь: {}", getSiteName(), login);
+            log.info("АВТООТВЕТ: {} -> срок выполнения выбран, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ВЫБРАТЬ СРОК, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ВЫБРАТЬ СРОК, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось выбрать срок: " + e.getMessage(), captureScreenshot(page));
         }
+    }
 
-        if (!waitOrFail(page, "button.kw-button--green:has-text('Предложить')",
-                8000, "Кнопка отправки")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить', пользователь: {}", getSiteName(), login);
-            return false;
+    private StepResult<Void> submitOffer(Page page, String userUuid, DecryptedCredential creds) {
+        if (!waitOrFail(page, "button.kw-button--green:has-text('Предложить')", 8000, "Кнопка отправки")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить', пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить' не найдена", captureScreenshot(page));
         }
-        log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' найдена, пользователь: {}", getSiteName(), login);
+        log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' найдена, пользователь: {}", getSiteName(), creds.login());
 
         Locator sendBtn = page.locator("button.kw-button--green:has-text('Предложить')");
         try {
             page.waitForCondition(sendBtn::isEnabled, new Page.WaitForConditionOptions().setTimeout(5000));
-            log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' активна, пользователь: {}", getSiteName(), login);
+            log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' активна, пользователь: {}", getSiteName(), creds.login());
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> КНОПКА 'Предложить' НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
-        }
-        takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "form_filled");
-        if (sendRequest) {
-            try {
-                sendBtn.click();
-                log.info("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА, пользователь: {}", getSiteName(), login);
-            } catch (Exception e) {
-                log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-                return false;
-            }
-        } else {
-            log.info("АВТООТВЕТ: {} -> ЗАЯВКА НЕ ОТПРАВЛЕНА (sendRequest=false), пользователь: {}", getSiteName(), login);
-            return false;
+            log.warn("АВТООТВЕТ: {} -> КНОПКА 'Предложить' НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить' неактивна", captureScreenshot(page));
         }
 
-        page.waitForTimeout(2000);
-        return true;
+        takeScreenshot(page, getSiteName(), userUuid, "form_filled");
+
+        if (!sendRequest) {
+            log.info("АВТООТВЕТ: {} -> ЗАЯВКА НЕ ОТПРАВЛЕНА (sendRequest=false), пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Заявка не отправлена (sendRequest=false)", captureScreenshot(page));
+        }
+
+        try {
+            sendBtn.click();
+            log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' нажата, ждём подтверждения...", getSiteName());
+
+            boolean sent = false;
+            try {
+                page.waitForCondition(
+                        () -> !sendBtn.isVisible() || !sendBtn.isEnabled(),
+                        new Page.WaitForConditionOptions().setTimeout(10000)
+                );
+                sent = true;
+            } catch (com.microsoft.playwright.TimeoutError e) {
+                log.warn("АВТООТВЕТ: {} -> кнопка не исчезла за 10 секунд, возможно заявка не отправлена, пользователь: {}", getSiteName(), creds.login());
+            }
+
+            if (sent) {
+                log.info("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА, пользователь: {}", getSiteName(), creds.login());
+                page.navigate("https://kwork.ru/projects");
+                page.waitForLoadState(LoadState.NETWORKIDLE);
+                log.info("АВТООТВЕТ: {} -> перешли на страницу проектов", getSiteName());
+                return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+            } else {
+                log.warn("АВТООТВЕТ: {} -> кнопка не исчезла, заявка не отправлена, пользователь: {}", getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Заявка не отправлена (кнопка не исчезла)", captureScreenshot(page));
+            }
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось отправить заявку: " + e.getMessage(), captureScreenshot(page));
+        }
     }
 }
