@@ -36,7 +36,6 @@ public class EmailReaderService {
                     gdevEmailConfig.getUsername(),
                     gdevEmailConfig.getPassword()
             );
-            log.info("АВТООТВЕТ: EMAIL -> подключение успешно");
 
             Folder inbox = store.getFolder(gdevEmailConfig.getFolder());
             inbox.open(Folder.READ_WRITE); // чтобы мы могли менять флаги у писем

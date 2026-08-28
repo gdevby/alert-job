@@ -36,7 +36,7 @@ public class ProxySupplier {
     private final ProxyParser proxyParser = new ProxyParser();
     private int index = 0;
 
-    // ========== ЗАГРУЗКА И ПАРСИНГ ==========
+    // ЗАГРУЗКА И ПАРСИНГ
     private synchronized List<String> downloadProxyLines() throws IOException {
         URL url = new URL(proxyUrl);
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
@@ -54,7 +54,6 @@ public class ProxySupplier {
         }
     }
 
-    // ========== ПУБЛИЧНЫЕ МЕТОДЫ ==========
     @PostConstruct
     public void init() {
         if ("url".equalsIgnoreCase(mode)) {
@@ -87,7 +86,7 @@ public class ProxySupplier {
         return proxies;
     }
 
-    // Замена ТОЛЬКО прокси от SUPPLIER ----
+    // Замена ТОЛЬКО прокси от SUPPLIER
     public synchronized void replaceSupplierProxies(List<ProxyCredentials> newSupplierProxies) {
         if (newSupplierProxies == null || newSupplierProxies.isEmpty()) {
             log.warn("Попытка заменить SUPPLIER-прокси на пустой список – отменено.");
@@ -104,7 +103,7 @@ public class ProxySupplier {
         log.debug("SUPPLIER-прокси заменены. Всего прокси: {}", proxies.size());
     }
 
-    // Добавление/обновление прокси от API ----
+    // Добавление/обновление прокси от API
     public synchronized void addApiProxies(List<ProxyCredentials> newApiProxies) {
         if (newApiProxies == null || newApiProxies.isEmpty()) {
             return;
@@ -119,18 +118,18 @@ public class ProxySupplier {
         log.debug("API-прокси обновлены. Всего прокси: {}", proxies.size());
     }
 
-    // Получение всего списка ----
+    // Получение всего списка
     public synchronized List<ProxyCredentials> getProxies() {
         return proxies;
     }
 
-    // Получение только рабочих ----
+    // Получение только рабочих
     public synchronized List<ProxyCredentials> getWorkingProxies() {
         return proxies.stream()
                 .filter(p -> p.getState() == ProxyState.ACTIVE
                         || p.getState() == ProxyState.NEW
                         || p.getState() == ProxyState.WARMING_UP)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     //Загрузка свежих прокси из основного источника (для обновления) ----

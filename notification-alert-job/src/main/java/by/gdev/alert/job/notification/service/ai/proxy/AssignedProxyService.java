@@ -15,7 +15,6 @@ import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +41,7 @@ public class AssignedProxyService {
     public synchronized void reassignProxies() {
         log.debug("Перераспределение прокси для пользователей и модулей");
 
-        // 1. Получаем всех пользователей с автоответом
+        // Получаем всех пользователей с автоответом
         List<String> users = coreClient.getUsersWithAutoReplyEnabled();
         if (users.isEmpty()) {
             userModuleProxyMap.clear();
@@ -50,7 +49,7 @@ public class AssignedProxyService {
             return;
         }
 
-        // 2. Для каждого пользователя получаем список модулей (moduleId, siteId)
+        // Для каждого пользователя получаем список модулей (moduleId, siteId)
         Map<String, List<ModuleSiteDto>> userModulesMap = new HashMap<>();
         for (String userUuid : users) {
             List<ModuleSiteDto> modules = coreClient.getAutoReplyEnabledModules(userUuid);
@@ -65,18 +64,15 @@ public class AssignedProxyService {
             return;
         }
 
-        // 3. Доступные рабочие прокси
-        List<ProxyCredentials> workingProxies = proxySupplier.getProxies().stream()
-                .filter(p -> p.getState() == ProxyState.ACTIVE || p.getState() == ProxyState.WARMING_UP)
-                .collect(Collectors.toList());
-
+        // Доступные рабочие прокси
+        List<ProxyCredentials> workingProxies = proxySupplier.getWorkingProxies();
         if (workingProxies.isEmpty()) {
             log.warn("Нет доступных РАБОЧИХ прокси для назначения!");
             userModuleProxyMap.clear();
             return;
         }
 
-        // 4. Строим новую карту назначений
+        // Строим новую карту назначений
         Map<String, Map<Long, ProxyCredentials>> newMap = new HashMap<>();
 
         // Сохраняем старые назначения, если прокси ещё рабочий
@@ -97,7 +93,7 @@ public class AssignedProxyService {
             }
         }
 
-        // 5. Для оставшихся модулей назначаем новые прокси
+        // Для оставшихся модулей назначаем новые прокси
         for (String userUuid : users) {
             List<ModuleSiteDto> modules = userModulesMap.get(userUuid);
             if (modules == null) continue;

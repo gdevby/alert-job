@@ -12,7 +12,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -24,17 +26,8 @@ public class ProxyAdditionalService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${proxy.ru.url}")
-    private String proxyHouseUrl;
-
-    @Value("${proxy.ru.token}")
-    private String authToken;
-
-    @Value("${proxy.ru.tariff}")
-    private String tariffId;
-
-    @Value("${proxy.ru.limit}")
-    private int limit;
+    @Value("${proxy.additional.url}")
+    private String proxyAdditionalUrl;
 
     public ProxyAdditionalService(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
@@ -43,21 +36,28 @@ public class ProxyAdditionalService {
 
     public List<ProxyCredentials> fetchProxies() {
         try {
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(proxyAdditionalUrl);
+            String authToken = builder.build().getQueryParams().getFirst("auth_token");
+            if (authToken != null) {
+                builder.replaceQueryParam("auth_token", (Object[]) null);
+            }
+            URI uri = builder.build().toUri();
+
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Auth-Token", authToken);
+            if (authToken != null && !authToken.isEmpty()) {
+                headers.set("Auth-Token", authToken);
+            }
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            String url = proxyHouseUrl + "?tariff_id=" + tariffId + "&limit=" + limit;
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-
+            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return parseProxies(response.getBody());
             } else {
-                log.warn("Failed to fetch proxies, status: {}", response.getStatusCode());
+                log.warn("Ошибка запроса, статус: {}", response.getStatusCode());
                 return List.of();
             }
         } catch (Exception e) {
-            log.error("Error fetching proxies from ProxyHouse", e);
+            log.error("Ошибка загрузки прокси по URL {}: {}", proxyAdditionalUrl, e.getMessage());
             return List.of();
         }
     }
