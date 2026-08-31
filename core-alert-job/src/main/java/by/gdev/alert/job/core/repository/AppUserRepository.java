@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import by.gdev.alert.job.core.model.db.AppUser;
+import org.springframework.data.repository.query.Param;
 
 public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 
@@ -35,5 +36,7 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 """)
     List<AppUser> findUsersBySourceSiteId(Long sourceSiteId);
 
+	@Query("SELECT u FROM AppUser u LEFT JOIN FETCH u.orderModules om LEFT JOIN FETCH om.sources WHERE u.uuid = :uuid")
+	Optional<AppUser> findByUuidWithModulesAndSources(@Param("uuid") String uuid);
 
 }

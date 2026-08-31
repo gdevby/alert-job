@@ -56,7 +56,7 @@ public abstract class AutoreplyParser {
         try {
             playwright = playwrightManager.createPlaywright();
             String userUuid = payload.getUser().getUuid();
-            ProxyCredentials proxyCred = assignedProxyService.getProxyForUser(userUuid);
+            ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(userUuid, payload.getModule().getId());
 
             if (proxyCred == null && proxy) {
                 proxyCred = playwrightManager.getProxyWithRetry(3, 500);

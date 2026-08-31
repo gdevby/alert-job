@@ -3,14 +3,17 @@ package by.gdev.common.service.proxy;
 
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.model.proxy.ProxyState;
+import by.gdev.common.service.IpGeoService;
 import by.gdev.common.service.proxy.supplier.ProxySupplier;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,15 +21,13 @@ import java.net.Socket;
 public class ProxyCheckerService {
 
     private final ProxySupplier proxySupplier;
-
-    @PostConstruct
-    public void initializeProxiesOnStartup() {
-        log.info("Initializing proxies states BEFORE parsers creation...");
-        checkAllProxies();
-    }
+    private final IpGeoService ipGeoService;
 
 
     public void checkAndUpdateProxy(ProxyCredentials proxy) {
+        // Определяем страну
+        updateProxyCountry(proxy);
+        // Определяем доступность
         boolean available = isProxyAvailable(proxy);
         switch (proxy.getState()) {
             case NEW -> proxy.setState(available ? ProxyState.WARMING_UP : ProxyState.FAILED);
@@ -37,6 +38,19 @@ public class ProxyCheckerService {
             }
         }
         //log.debug("Proxy {}:{} -> {}", proxy.getHost(), proxy.getPort(), proxy.getState());
+    }
+
+    private void updateProxyCountry(ProxyCredentials proxy) {
+        synchronized (this) {
+            String country = ipGeoService.getCountryByIp(proxy.getHost());
+            proxy.setCountry(country);
+            try {
+                Thread.sleep(1500); // задержка между запросами к геосервису
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Задержка прервана при определении страны для прокси {}:{}", proxy.getHost(), proxy.getPort());
+            }
+        }
     }
 
     private boolean isProxyAvailable(ProxyCredentials proxy) {
@@ -74,6 +88,32 @@ public class ProxyCheckerService {
         log.debug("Проверка прокси завершена. Статистика: РАБОЧИЕ = {}, НЕ РАБОЧИЕ = {}", working, notWorking);
     }
 
+    /**
+     * Проверяет переданный список прокси, обновляя их состояние.
+     *
+     * @param proxies список прокси для проверки
+     */
+    public void checkProxies(List<ProxyCredentials> proxies) {
+        int total = proxies.size();
+        int working = 0;
+        int notWorking = 0;
+        int processed = 0;
+        int logInterval = Math.max(1, Math.min(20, total / 10));
+
+        for (ProxyCredentials proxy : proxies) {
+            checkAndUpdateProxy(proxy);
+            switch (proxy.getState()) {
+                case ACTIVE, WARMING_UP -> working++;
+                default -> notWorking++;
+            }
+            processed++;
+            if (processed % logInterval == 0 || processed == total) {
+                log.info("Прогресс проверки: {}/{} прокси (рабочих: {}, нерабочих: {})",
+                        processed, total, working, notWorking);
+            }
+        }
+        log.info("Проверка списка прокси завершена. Статистика: РАБОЧИЕ = {}, НЕ РАБОЧИЕ = {}", working, notWorking);
+    }
 }
 
 

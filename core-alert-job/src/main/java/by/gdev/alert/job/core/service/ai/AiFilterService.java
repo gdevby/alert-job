@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.service.ai;
 
+import by.gdev.alert.job.core.client.NotificationClient;
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,21 +12,26 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AiFilterService {
     private final OrderModulesRepository orderModulesRepository;
+    private final NotificationClient notificationClient;
 
-    public boolean getAutoReplyStatus(String uuid, Long moduleId){
+    public boolean getAutoReplyStatus(String uuid, Long moduleId) {
         Optional<OrderModules> orderModule = orderModulesRepository.findById(moduleId);
         return orderModule.isPresent() && Boolean.TRUE.equals(orderModule.get().getAutoReplyEnabled());
     }
 
-    public void setAutoReplyStatus(String uuid, Long moduleId, boolean status){
+    public void setAutoReplyStatus(String uuid, Long moduleId, boolean status) {
         Optional<OrderModules> orderModuleOptional = orderModulesRepository.findById(moduleId);
-        if (orderModuleOptional.isPresent()){
+        if (orderModuleOptional.isPresent()) {
             OrderModules orderModule = orderModuleOptional.get();
-            if (orderModule.isAvailable()){
+            if (orderModule.isAvailable()) {
                 orderModule.setAutoReplyEnabled(status);
                 orderModulesRepository.save(orderModule);
+
+                // Если автоответ включён – перераспределяем прокси
+                if (status) {
+                    notificationClient.reassignProxies();
+                }
             }
         }
     }
-
 }
