@@ -120,13 +120,26 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     private StepResult<Void> clickOfferButton(Page page, String userUuid, DecryptedCredential creds) {
-        if (!clickOrFail(page, "span.projects-offer-btn:has-text('Предложить услугу')", 8000, "Открыть форму отклика")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу', пользователь: {}", getSiteName(), creds.login());
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' не найдена", captureScreenshot(page));
+        String selector = "span.projects-offer-btn:has-text('Предложить услугу')";
+        try {
+            Locator offerButton = page.locator(selector);
+            // Ждем появления кнопки
+            offerButton.waitFor(new Locator.WaitForOptions().setTimeout(8000));
+            // Проверяем, есть ли класс disabled или атрибут disabled
+            boolean isDisabled = offerButton.getAttribute("class").contains("disabled") || offerButton.isDisabled();
+            if (isDisabled) {
+                log.warn("АВТООТВЕТ: {} -> КНОПКА 'Предложить услугу' НЕАКТИВНА (disabled), пользователь: {}", getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' неактивна - отклики закончились", captureScreenshot(page));
+            }
+            // Кнопка активна, кликаем
+            offerButton.click();
+            takeScreenshot(page, getSiteName(), userUuid, "click_propose");
+            log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу' или ошибка, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' не найдена или ошибка: " + e.getMessage(), captureScreenshot(page));
         }
-        takeScreenshot(page, getSiteName(), userUuid, "click_propose");
-        log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), creds.login());
-        return StepResult.ok(StepType.SEND_AUTOREPLY, null);
     }
 
     private StepResult<Void> waitAndFillReplyEditor(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
