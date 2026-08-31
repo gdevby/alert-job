@@ -70,18 +70,14 @@ public class CoreUnifiedClient {
     }
 
     // Auto-reply users
-    public List<String> getUsersWithAutoReplyEnabled() {
-        try {
-            return webClient.get()
-                    .uri(coreUrl + "/api/modules/auto-reply/users")
-                    .retrieve()
-                    .bodyToMono(String[].class)
-                    .map(List::of)
-                    .block();
-        } catch (Exception e) {
-            log.error("Ошибка получения пользователей с автоответом", e);
-            return Collections.emptyList();
-        }
+    public Mono<List<String>> getUsersWithAutoReplyEnabled() {
+        return webClient.get()
+                .uri(coreUrl + "/api/modules/auto-reply/users")
+                .retrieve()
+                .bodyToMono(String[].class)
+                .map(List::of)
+                .doOnError(e -> log.error("Ошибка получения пользователей с автоответом", e))
+                .onErrorReturn(Collections.emptyList());
     }
 
     //  User sites with auto-reply

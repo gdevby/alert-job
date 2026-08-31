@@ -19,7 +19,7 @@ public class ProxyReassignScheduler {
 
     @Scheduled(fixedDelayString = "#{${proxy.reassign.interval.minutes:30} * 60 * 1000}")
     public void reassignProxies() {
-        log.debug("Перераспределение прокси для пользователей (интервал {} мин)", intervalMinutes);
-        assignedProxyService.reassignProxies();
+        log.debug("Перераспределение прокси для пользователей (интервал {} мин) запущено", intervalMinutes);
+        assignedProxyService.reassignProxies().subscribe();
     }
 }

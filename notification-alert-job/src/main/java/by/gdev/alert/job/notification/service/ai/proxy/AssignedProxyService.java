@@ -10,8 +10,9 @@ import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,115 +30,107 @@ public class AssignedProxyService {
     private final Map<String, Map<Long, ProxyCredentials>> userModuleProxyMap = new ConcurrentHashMap<>();
     private final Map<SiteName, String> siteCountryCache = new ConcurrentHashMap<>();
 
-    @PostConstruct
-    public void init() {
-        reassignProxies();
-    }
-
     /**
      * Перераспределяет прокси для всех пользователей и их модулей.
      * Для каждого модуля определяется страна сайта и подбирается прокси.
      */
-    public synchronized void reassignProxies() {
-        log.debug("Перераспределение прокси для пользователей и модулей");
+    public Mono<Void> reassignProxies() {
+        return Mono.fromCallable(() -> {
+                    log.debug("Перераспределение прокси для пользователей и модулей");
 
-        // Получаем всех пользователей с автоответом
-        List<String> users = coreClient.getUsersWithAutoReplyEnabled();
-        if (users.isEmpty()) {
-            userModuleProxyMap.clear();
-            log.info("Нет пользователей с автоответом");
-            return;
-        }
-
-        // Для каждого пользователя получаем список модулей (moduleId, siteId)
-        Map<String, List<ModuleSiteDto>> userModulesMap = new HashMap<>();
-        for (String userUuid : users) {
-            List<ModuleSiteDto> modules = coreClient.getAutoReplyEnabledModules(userUuid);
-            if (!modules.isEmpty()) {
-                userModulesMap.put(userUuid, modules);
-            }
-        }
-
-        if (userModulesMap.isEmpty()) {
-            userModuleProxyMap.clear();
-            log.info("У пользователей нет активных модулей с автоответом");
-            return;
-        }
-
-        // Доступные рабочие прокси
-        List<ProxyCredentials> workingProxies = proxySupplier.getWorkingProxies();
-        if (workingProxies.isEmpty()) {
-            log.warn("Нет доступных РАБОЧИХ прокси для назначения!");
-            userModuleProxyMap.clear();
-            return;
-        }
-
-        // Строим новую карту назначений
-        Map<String, Map<Long, ProxyCredentials>> newMap = new HashMap<>();
-
-        // Сохраняем старые назначения, если прокси ещё рабочий
-        for (String userUuid : users) {
-            Map<Long, ProxyCredentials> oldUserMap = userModuleProxyMap.get(userUuid);
-            if (oldUserMap != null) {
-                Map<Long, ProxyCredentials> newUserMap = new HashMap<>();
-                for (Map.Entry<Long, ProxyCredentials> entry : oldUserMap.entrySet()) {
-                    ProxyCredentials proxy = entry.getValue();
-                    if (proxy.getState() == ProxyState.ACTIVE || proxy.getState() == ProxyState.WARMING_UP) {
-                        newUserMap.put(entry.getKey(), proxy);
-                        workingProxies.remove(proxy);
+                    List<String> users = coreClient.getUsersWithAutoReplyEnabled().block();
+                    if (users == null || users.isEmpty()) {
+                        userModuleProxyMap.clear();
+                        log.info("Нет пользователей с автоответом");
+                        return null;
                     }
-                }
-                if (!newUserMap.isEmpty()) {
-                    newMap.put(userUuid, newUserMap);
-                }
-            }
-        }
 
-        // Для оставшихся модулей назначаем новые прокси
-        for (String userUuid : users) {
-            List<ModuleSiteDto> modules = userModulesMap.get(userUuid);
-            if (modules == null) continue;
-
-            Map<Long, ProxyCredentials> userMap = newMap.computeIfAbsent(userUuid, k -> new HashMap<>());
-
-            for (ModuleSiteDto dto : modules) {
-                Long moduleId = dto.getModuleId();
-                if (userMap.containsKey(moduleId)) continue; // уже назначен
-
-                SiteName site = SiteName.fromId(dto.getSiteId());
-                String targetCountry = getSiteCountry(site);
-                ProxyCredentials assignedProxy = null;
-
-                if (targetCountry != null) {
-                    // Ищем прокси из той же страны
-                    List<ProxyCredentials> candidates = workingProxies.stream()
-                            .filter(p -> targetCountry.equalsIgnoreCase(p.getCountry()))
-                            .toList();
-                    if (!candidates.isEmpty()) {
-                        assignedProxy = candidates.get(0);
-                        workingProxies.remove(assignedProxy);
+                    Map<String, List<ModuleSiteDto>> userModulesMap = new HashMap<>();
+                    for (String userUuid : users) {
+                        List<ModuleSiteDto> modules = coreClient.getAutoReplyEnabledModules(userUuid);
+                        if (!modules.isEmpty()) {
+                            userModulesMap.put(userUuid, modules);
+                        }
                     }
-                }
 
-                // Если не нашли по стране – берём любой свободный
-                if (assignedProxy == null && !workingProxies.isEmpty()) {
-                    assignedProxy = workingProxies.remove(0);
-                }
+                    if (userModulesMap.isEmpty()) {
+                        userModuleProxyMap.clear();
+                        log.info("У пользователей нет активных модулей с автоответом");
+                        return null;
+                    }
 
-                if (assignedProxy == null) {
-                    log.warn("Недостаточно прокси для пользователя {} модуля {}", userUuid, moduleId);
-                    continue;
-                }
+                    List<ProxyCredentials> workingProxies = proxySupplier.getWorkingProxies();
+                    if (workingProxies.isEmpty()) {
+                        log.warn("Нет доступных РАБОЧИХ прокси для назначения!");
+                        userModuleProxyMap.clear();
+                        return null;
+                    }
 
-                userMap.put(moduleId, assignedProxy);
-                log.info("Пользователю {} для модуля {} (сайт {}) назначен прокси {}:{}, страна {}",
-                        userUuid, moduleId, site, assignedProxy.getHost(), assignedProxy.getPort(), assignedProxy.getCountry());
-            }
-        }
+                    Map<String, Map<Long, ProxyCredentials>> newMap = new HashMap<>();
 
-        userModuleProxyMap.clear();
-        userModuleProxyMap.putAll(newMap);
-        log.info("Перераспределение завершено. Назначено прокси для {} пользователей", userModuleProxyMap.size());
+                    for (String userUuid : users) {
+                        Map<Long, ProxyCredentials> oldUserMap = userModuleProxyMap.get(userUuid);
+                        if (oldUserMap != null) {
+                            Map<Long, ProxyCredentials> newUserMap = new HashMap<>();
+                            for (Map.Entry<Long, ProxyCredentials> entry : oldUserMap.entrySet()) {
+                                ProxyCredentials proxy = entry.getValue();
+                                if (proxy.getState() == ProxyState.ACTIVE || proxy.getState() == ProxyState.WARMING_UP) {
+                                    newUserMap.put(entry.getKey(), proxy);
+                                    workingProxies.remove(proxy);
+                                }
+                            }
+                            if (!newUserMap.isEmpty()) {
+                                newMap.put(userUuid, newUserMap);
+                            }
+                        }
+                    }
+
+                    for (String userUuid : users) {
+                        List<ModuleSiteDto> modules = userModulesMap.get(userUuid);
+                        if (modules == null) continue;
+
+                        Map<Long, ProxyCredentials> userMap = newMap.computeIfAbsent(userUuid, k -> new HashMap<>());
+
+                        for (ModuleSiteDto dto : modules) {
+                            Long moduleId = dto.getModuleId();
+                            if (userMap.containsKey(moduleId)) continue;
+
+                            SiteName site = SiteName.fromId(dto.getSiteId());
+                            String targetCountry = getSiteCountry(site);
+                            ProxyCredentials assignedProxy = null;
+
+                            if (targetCountry != null) {
+                                List<ProxyCredentials> candidates = workingProxies.stream()
+                                        .filter(p -> targetCountry.equalsIgnoreCase(p.getCountry()))
+                                        .toList();
+                                if (!candidates.isEmpty()) {
+                                    assignedProxy = candidates.get(0);
+                                    workingProxies.remove(assignedProxy);
+                                }
+                            }
+
+                            if (assignedProxy == null && !workingProxies.isEmpty()) {
+                                assignedProxy = workingProxies.remove(0);
+                            }
+
+                            if (assignedProxy == null) {
+                                log.warn("Недостаточно прокси для пользователя {} модуля {}", userUuid, moduleId);
+                                continue;
+                            }
+
+                            userMap.put(moduleId, assignedProxy);
+                            log.info("Пользователю {} для модуля {} (сайт {}) назначен прокси {}:{}, страна {}",
+                                    userUuid, moduleId, site, assignedProxy.getHost(), assignedProxy.getPort(), assignedProxy.getCountry());
+                        }
+                    }
+
+                    userModuleProxyMap.clear();
+                    userModuleProxyMap.putAll(newMap);
+                    log.info("Перераспределение завершено. Назначено прокси для {} пользователей", userModuleProxyMap.size());
+                    return null;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
     }
 
     /**
