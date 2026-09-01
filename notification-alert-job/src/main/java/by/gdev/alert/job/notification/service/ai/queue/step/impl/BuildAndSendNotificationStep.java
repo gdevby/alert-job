@@ -90,7 +90,7 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
     }
 
     private void sendErrorNotification(AiNotificationPayload payload, AiAppUserDTO user, StepResult<?> errorResult) {
-        String moduleName = payload.getModule().getName(); // добавлено
+        String moduleName = payload.getModule().getName();
         String stepName = errorResult.getStepDisplayName();
         String errorMessage = errorResult.getErrorMessage();
         String orderLink = payload.getOrder().getLink();

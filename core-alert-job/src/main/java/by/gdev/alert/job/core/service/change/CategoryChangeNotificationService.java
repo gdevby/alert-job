@@ -1,15 +1,14 @@
 package by.gdev.alert.job.core.service.change;
 
-import by.gdev.alert.job.core.configuration.category.AdminProperties;
 import by.gdev.alert.job.core.model.category.CategoryChangeDTO;
 import by.gdev.alert.job.core.model.category.CategoryDiffDTO;
 import by.gdev.alert.job.core.model.category.tree.CategoryDTO;
 import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.OrderModules;
 import by.gdev.alert.job.core.model.db.SourceSite;
-import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.repository.SourceSiteRepository;
+import by.gdev.alert.job.core.service.AppUserService;
 import by.gdev.alert.job.core.service.MailSenderService;
 import by.gdev.alert.job.core.service.change.dto.ModuleInfo;
 import by.gdev.alert.job.core.service.change.dto.RemovedCategoryInfo;
@@ -33,8 +32,7 @@ public class CategoryChangeNotificationService {
 
     private final CleanupService cleanupService;
     private final MailSenderService mailSenderService;
-    private final AdminProperties adminProperties;
-    private final AppUserRepository userRepository;
+    private final AppUserService userService;
     private final SourceSiteRepository sourceSiteRepository;
     private final OrderModulesRepository orderModulesRepository;
 
@@ -62,7 +60,7 @@ public class CategoryChangeNotificationService {
             log.debug("No users affected by removed categories.");
         }
         //Находим админа
-        List<AppUser> adminUsers = getAdminUsers();
+        List<AppUser> adminUsers = userService.getAdminUsers();
         // Удаляем категории через CleanupService
         cleanupRemovedCategories(changesRequest);
         if (adminUsers.isEmpty()) {
@@ -73,20 +71,6 @@ public class CategoryChangeNotificationService {
 
         //Уведомляем пользователей
         notifyUsers(usersInfo);
-    }
-
-    public List<AppUser> getAdminUsers() {
-        List<AppUser> admins = new ArrayList<>();
-
-        if (adminProperties.getUuids() == null) {
-            return admins;
-        }
-
-        for (String uuid : adminProperties.getUuids()) {
-            userRepository.findByUuid(uuid).ifPresent(admins::add);
-        }
-
-        return admins;
     }
 
 
@@ -185,7 +169,7 @@ public class CategoryChangeNotificationService {
                     info = new RemovedCategoryInfo("Неизвестная категория", null);
                 }
 
-                List<AppUser> users = userRepository.findUsersBySourceSiteId(source.getId());
+                List<AppUser> users = userService.findUsersBySourceSiteId(source.getId());
                 for (AppUser user : users) {
                     List<OrderModules> modules =
                             orderModulesRepository.findByUserIdAndSources_Id(user.getId(), source.getId());
