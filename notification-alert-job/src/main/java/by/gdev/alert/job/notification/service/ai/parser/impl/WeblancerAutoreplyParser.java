@@ -44,7 +44,7 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
     }
 
     @Override
-    protected StepResult<Void> login(Page page, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         try {
@@ -81,6 +81,7 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
 
             log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
+            setOpt(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
 
         } catch (Exception e) {

@@ -43,7 +43,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
-    protected StepResult<Void> login(Page page, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         try {
@@ -98,6 +98,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             }
 
             log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
+            setOpt(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
 
         } catch (Exception e) {

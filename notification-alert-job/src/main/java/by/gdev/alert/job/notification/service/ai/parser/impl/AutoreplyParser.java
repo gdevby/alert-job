@@ -75,7 +75,7 @@ public abstract class AutoreplyParser {
             context = playwrightManager.createBrowserContext(browser, proxyCred, proxy, getSiteName());
             page = context.newPage();
 
-            StepResult<Void> loginResult = login(page, creds);
+            StepResult<Void> loginResult = login(page, payload, creds);
             if (loginResult.failed()) {
                 log.warn("Логин не выполнен для {}", creds.login());
                 return loginResult;
@@ -177,7 +177,12 @@ public abstract class AutoreplyParser {
         }
     }
 
-    protected abstract StepResult<Void> login(Page page, DecryptedCredential creds);
+    protected void setOpt(AiNotificationPayload payload, String otp, boolean used){
+        payload.setOtpUsed(used);
+        payload.setOtpValue(otp);
+    }
+
+    protected abstract StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds);
 
     protected abstract StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds);
 

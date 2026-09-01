@@ -47,7 +47,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     @Override
-    protected StepResult<Void> login(Page page, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         try {
@@ -67,6 +67,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             loginBtn.click();
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
+            setOpt(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> ОШИБКА ЛОГИНА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());

@@ -81,6 +81,9 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
 
         } else {
             String telegramText = payload.getDecision().reply();
+            if (payload.isOtpUsed()) {
+                telegramText += "\n\nOTP для входа: " + payload.getOtpValue();
+            }
             log.info("АВТООТВЕТ: {} -> TELEGRAM ТЕКСТ: {}", payload.getModule().getName(), telegramText);
             n.setMessage(telegramText);
             n.setToMail(user.getTelegram().toString());
@@ -96,22 +99,30 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
         String orderLink = payload.getOrder().getLink();
         String orderTitle = payload.getOrder().getTitle();
 
+        String otpInfoHtml = "";
+        String otpInfoText = "";
+        if (payload.isOtpUsed() && payload.getOtpValue() != null) {
+            otpInfoHtml = "<p><strong>Ожидался OTP:</strong> " + payload.getOtpValue() + "</p>";
+            otpInfoText = "Ожидался OTP: " + payload.getOtpValue() + "\n";
+        }
+
         UserNotification n = new UserNotification();
         n.setType(NotificationType.AUTO_REPLY_ERROR);
         String subject = "Ошибка при отправке автоответа на шаге \"" + stepName + "\"";
 
-        // HTML-версия письма (для email)
+        // HTML-версия письма (для email) – ошибка выделена красным жирным
         String htmlBody = String.format("""
-        <p>Уважаемый пользователь!</p>
-        <p>Не удалось отправить автоответ по причине:<br>
-        <strong>%s</strong></p>
-        <p>Ошибка произошла на шаге: <strong>%s</strong></p>
-        <p><strong>Модуль:</strong> %s</p>
-        <p><strong>Заказ:</strong> %s</p>
-        <p><strong>Ссылка:</strong> <a href="%s">%s</a></p>
-        <p>Если в письме есть вложение, проверьте скриншот для диагностики.</p>
-        <p>С уважением,<br>Система автоответов</p>
-        """, errorMessage, stepName, moduleName, orderTitle, orderLink, orderLink);
+    <p>Уважаемый пользователь!</p>
+    <p>Не удалось отправить автоответ по причине:<br>
+    <strong style="color: red; font-weight: bold;">%s</strong></p>
+    <p>Ошибка произошла на шаге: <strong>%s</strong></p>
+    <p><strong>Модуль:</strong> %s</p>
+    %s
+    <p><strong>Заказ:</strong> %s</p>
+    <p><strong>Ссылка:</strong> <a href="%s">%s</a></p>
+    <p>Если в письме есть вложение, проверьте скриншот для диагностики.</p>
+    <p>С уважением,<br>Система автоответов</p>
+    """, errorMessage, stepName, moduleName, otpInfoHtml, orderTitle, orderLink, orderLink);
 
         if (NotificationTypeEnum.EMAIL.equals(payload.getNotificationType())) {
             log.info("АВТООТВЕТ: {} -> отправка EMAIL об ошибке на: {}", payload.getModule().getName(), user.getEmail());
@@ -128,9 +139,10 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
             log.info("АВТООТВЕТ: {} -> EMAIL об ошибке отправлен на {}", payload.getModule().getName(), user.getEmail());
 
         } else {
-            // Для телеграма – добавляем модуль в текст
+            // Для телеграма – добавляем otpInfoText (в телеграме цвет не поддерживается, но можно выделить звёздочками)
             String telegramText = "Модуль: " + moduleName + "\n" +
                     "Ошибка автоответа: " + errorMessage + " (шаг: " + stepName + ")\n" +
+                    otpInfoText +
                     "Заказ: " + orderTitle + "\n" +
                     "Ссылка: " + orderLink;
             log.info("АВТООТВЕТ: {} -> TELEGRAM об ошибке: {}", payload.getModule().getName(), telegramText);
@@ -145,22 +157,29 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
         String replyHtml = payload.getDecision().reply()
                 .replace("\n", "<br>");
 
+        String otpBlock = "";
+        if (payload.isOtpUsed()) {
+            otpBlock = "<p><strong>OTP для входа:</strong> " + payload.getOtpValue() + "</p>";
+        }
+
         return String.format("""
-                <div style="font-family: Arial, sans-serif; padding: 12px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa; margin-bottom: 12px;">
-                    <h3 style="margin: 0 0 10px 0; color: #333;">Автоответ от AI</h3>
-                    <p style="margin: 4px 0;"><strong>Модуль:</strong> %s</p>
-                    <p style="margin: 4px 0;"><strong>Название заказа:</strong> %s</p>
-                    <p style="margin: 4px 0;"><strong>Ссылка:</strong> <a href="%s" style="color: #1a73e8;">%s</a></p>
-                    <hr style="margin: 12px 0; border: none; border-top: 1px solid #ddd;">
-                    <p style="margin: 4px 0;"><strong>Ответ AI:</strong></p>
-                    <div style="padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px;">%s</div>
-                    <p style="margin-top: 12px; color: #666; font-size: 12px;">📎 Полный ответ приложен к письму как файл response_ai.txt</p>
-                </div>
-                """,
+            <div style="font-family: Arial, sans-serif; padding: 12px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa; margin-bottom: 12px;">
+                <h3 style="margin: 0 0 10px 0; color: #333;">Автоответ от AI</h3>
+                <p style="margin: 4px 0;"><strong>Модуль:</strong> %s</p>
+                <p style="margin: 4px 0;"><strong>Название заказа:</strong> %s</p>
+                <p style="margin: 4px 0;"><strong>Ссылка:</strong> <a href="%s" style="color: #1a73e8;">%s</a></p>
+                %s
+                <hr style="margin: 12px 0; border: none; border-top: 1px solid #ddd;">
+                <p style="margin: 4px 0;"><strong>Ответ AI:</strong></p>
+                <div style="padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px;">%s</div>
+                <p style="margin-top: 12px; color: #666; font-size: 12px;">📎 Полный ответ приложен к письму как файл response_ai.txt</p>
+            </div>
+            """,
                 payload.getModule().getName(),
                 payload.getOrder().getTitle(),
                 payload.getOrder().getLink(),
                 payload.getOrder().getLink(),
+                otpBlock,
                 replyHtml
         );
     }

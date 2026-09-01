@@ -48,9 +48,10 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     @Override
-    protected StepResult<Void> login(Page page, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
+        // Открыть главную страницу
         try {
             safeNavigate(page, "https://youdo.com/");
             log.info("АВТООТВЕТ: {} -> главная страница загружена, пользователь: {}", getSiteName(), creds.login());
@@ -59,23 +60,39 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть главную страницу: " + e.getMessage(), captureScreenshot(page));
         }
 
+        //  Клик по главной кнопке "Войти"
         if (!clickOrFail(page, "span[data-test='LoginButton']", 8000, "Кнопка 'Войти'")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти' не найдена", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        if (!clickOrFail(page, "span[data-test='LoginWithEmailButton']", 8000, "Войти через email")) {
+        // Ожидание появления кнопки "Войти через электронную почту" (до 10 секунд)
+        boolean emailButtonFound = waitOrFail(page, "span[data-test='LoginWithEmailButton']", 10000, "Кнопка 'Войти через email'");
+        if (!emailButtonFound) {
+            // Попробуем альтернативный селектор (на случай изменения data-test)
+            emailButtonFound = waitOrFail(page, "span:has-text('Войти через электронную почту')", 5000, "Кнопка 'Войти через email' (текст)");
+        }
+        if (!emailButtonFound) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Войти через email', пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти через email' не найдена", captureScreenshot(page));
         }
+        log.info("АВТООТВЕТ: {} -> кнопка 'Войти через email' появилась, пользователь: {}", getSiteName(), creds.login());
+
+        // Клик по кнопке "Войти через электронную почту"
+        if (!clickOrFail(page, "span[data-test='LoginWithEmailButton']", 8000, "Войти через email")) {
+            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ НАЖАТЬ КНОПКУ 'Войти через email', пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось нажать кнопку 'Войти через email'", captureScreenshot(page));
+        }
         log.info("АВТООТВЕТ: {} -> кнопка 'Войти через email' нажата, пользователь: {}", getSiteName(), creds.login());
 
+        // Ожидание поля ввода email
         if (!waitOrFail(page, "input[name='login']", 8000, "Поле email")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ EMAIL, пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле email не найдено", captureScreenshot(page));
         }
 
+        // Заполнение email
         try {
             page.fill("input[name='login']", creds.login());
             log.info("АВТООТВЕТ: {} -> email заполнен: {}", getSiteName(), creds.login());
@@ -84,17 +101,20 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить email: " + e.getMessage(), captureScreenshot(page));
         }
 
+        // Клик по кнопке "Далее"
         if (!clickOrFail(page, "button:has-text('Далее')", 8000, "Кнопка 'Далее'")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Далее', пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Далее' не найдена", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Далее' нажата, пользователь: {}", getSiteName(), creds.login());
 
+        // Ожидание поля ввода OTP
         if (!waitOrFail(page, "input[name='code']", 15000, "Поле ввода кода")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ВВОДА КОДА, пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле ввода кода не найдено", captureScreenshot(page));
         }
 
+        // Получение OTP
         log.info("АВТООТВЕТ: {} -> ожидание OTP для {}", getSiteName(), creds.login());
         String otp = otpService.waitForOtp(SiteName.YOUDO.name(), creds.login(), 120_000);
         if (otp == null) {
@@ -102,7 +122,9 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "OTP не получен за отведённое время", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> OTP получен для пользователя: {}", getSiteName(), creds.login());
+        setOpt(payload, otp, true);
 
+        // Заполнение поля OTP
         try {
             page.fill("input[name='code']", otp);
             log.info("АВТООТВЕТ: {} -> OTP заполнен для пользователя: {}", getSiteName(), creds.login());
@@ -111,6 +133,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить OTP: " + e.getMessage(), captureScreenshot(page));
         }
 
+        // Ожидание загрузки страницы после ввода OTP
         try {
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> страница загружена после ввода OTP, пользователь: {}", getSiteName(), creds.login());
