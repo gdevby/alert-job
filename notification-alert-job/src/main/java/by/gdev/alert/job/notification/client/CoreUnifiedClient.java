@@ -93,8 +93,7 @@ public class CoreUnifiedClient {
             return Collections.emptyList();
         }
     }
-
-    // В конце класса, перед последней скобкой
+    
     public Mono<List<String>> getAdminEmails() {
         return webClient.get()
                 .uri(coreUrl + "/api/users/admins/emails")
