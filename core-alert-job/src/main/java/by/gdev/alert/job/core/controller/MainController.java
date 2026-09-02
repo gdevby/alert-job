@@ -68,6 +68,12 @@ public class MainController {
 	return ResponseEntity.ok(coreService.changeUserTelegram(uuid, telegramId));
     }
 
+    @PatchMapping("user/webhook")
+    public ResponseEntity<Mono<Void>> changeUserWebhook(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+	    @RequestParam(name = "url", required = false) String url) {
+	return ResponseEntity.ok(coreService.changeUserWebhook(uuid, url));
+    }
+
     @PatchMapping("user/alert-time")
     public ResponseEntity<Mono<UserAlertTimeDTO>> createAlertTime(
 	    @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid, @RequestBody AlertTime alertTime) {
