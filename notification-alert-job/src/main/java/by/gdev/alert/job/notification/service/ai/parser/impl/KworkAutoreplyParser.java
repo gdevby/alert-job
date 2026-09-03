@@ -66,12 +66,59 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             page.waitForCondition(loginBtn::isEnabled);
             loginBtn.click();
             page.waitForLoadState(LoadState.NETWORKIDLE);
+
+            if (isLoginErrorPresent(page)) {
+                log.warn("АВТООТВЕТ: {} -> ОШИБКА: Логин или пароль указаны неверно, пользователь: {}",
+                        getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY,
+                        "Логин или пароль указаны неверно",
+                        captureScreenshot(page));
+            }
+
+            if (isCaptchaPresent(page)) {
+                log.warn("АВТООТВЕТ: {} -> ТРЕБУЕТСЯ ПРОХОЖДЕНИЕ КАПЧИ, пользователь: {}",
+                        getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY,
+                        "Требуется прохождение капчи 'Подтвердите, что вы не робот'",
+                        captureScreenshot(page));
+            }
+
             log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
             setOpt(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> ОШИБКА ЛОГИНА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка логина: " + e.getMessage(), captureScreenshot(page));
+        }
+    }
+
+    /**
+     * Проверяет, появилась ли ошибка "Логин или пароль указаны неверно" на странице логина.
+     * @param page страница с формой логина
+     * @return true, если ошибка присутствует, иначе false
+     */
+    private boolean isLoginErrorPresent(Page page) {
+        try {
+            Locator errorLocator = page.locator("div.form-item__after-input.form-item__error:has-text('Логин или пароль указаны неверно')");
+            return errorLocator.count() > 0;
+        } catch (Exception e) {
+            log.debug("Ошибка при проверке наличия сообщения о неверном логине: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Проверяет, появилась ли капча "Подтвердите, что вы не робот" на странице.
+     * @param page страница с формой логина
+     * @return true, если капча присутствует, иначе false
+     */
+    private boolean isCaptchaPresent(Page page) {
+        try {
+            Locator captchaLocator = page.locator("text=Подтвердите, что вы не робот");
+            return captchaLocator.count() > 0;
+        } catch (Exception e) {
+            log.debug("Ошибка при проверке наличия капчи: {}", e.getMessage());
+            return false;
         }
     }
 

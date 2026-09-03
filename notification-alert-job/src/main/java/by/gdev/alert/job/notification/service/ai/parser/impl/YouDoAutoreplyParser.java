@@ -108,6 +108,13 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Далее' нажата, пользователь: {}", getSiteName(), creds.login());
 
+        if (isEmailErrorPresent(page)) {
+            log.warn("АВТООТВЕТ: {} -> НЕПРАВИЛЬНЫЙ АДРЕС ПОЧТЫ, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Неправильный адрес почты",
+                    captureScreenshot(page));
+        }
+
         // Ожидание поля ввода OTP
         if (!waitOrFail(page, "input[name='code']", 15000, "Поле ввода кода")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ВВОДА КОДА, пользователь: {}", getSiteName(), creds.login());
@@ -147,6 +154,15 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         otpService.invalidateOtp(SiteName.YOUDO.name(), creds.login());
         log.debug("АВТООТВЕТ: {} -> OTP инвалидирован для {}", getSiteName(), creds.login());
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    private boolean isEmailErrorPresent(Page page) {
+        try {
+            Locator errorLocator = page.locator("div.Tooltip_tooltip__Ml13N.Tooltip_error__kiiol:has-text('Неправильный адрес почты')");
+            return errorLocator.count() > 0;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override

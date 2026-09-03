@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.parser.impl;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
@@ -48,7 +49,8 @@ public abstract class AutoreplyParser {
         this.assignedProxyService = assignedProxyService;
     }
 
-    public final StepResult<Void> sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload) {
+    public final StepResult<Void> sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload,
+                                                AutoreplyMode autoreplyMode) {
         Playwright playwright = null;
         Browser browser = null;
         BrowserContext context = null;
@@ -76,6 +78,9 @@ public abstract class AutoreplyParser {
             page = context.newPage();
 
             StepResult<Void> loginResult = login(page, payload, creds);
+            if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
+                return loginResult;
+            }
             if (loginResult.failed()) {
                 log.warn("Логин не выполнен для {}", creds.login());
                 return loginResult;

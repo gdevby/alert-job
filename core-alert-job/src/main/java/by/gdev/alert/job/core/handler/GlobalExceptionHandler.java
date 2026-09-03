@@ -3,10 +3,14 @@ package by.gdev.alert.job.core.handler;
 import by.gdev.alert.job.core.exeption.ai.*;
 import by.gdev.alert.job.core.exeption.ai.binding.BindingAlreadyExistsException;
 import by.gdev.alert.job.core.exeption.ai.binding.BindingNotFoundException;
+import by.gdev.alert.job.core.exeption.ai.credential.InvalidCredentialsException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
@@ -42,6 +46,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
 
-
+    @ExceptionHandler(InvalidCredentialsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST) // или UNPROCESSABLE_ENTITY
+    public Map<String, Object> handleInvalidCredentials(InvalidCredentialsException e) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", e.getMessage());
+        body.put("status", 400);
+        return body;
+    }
 }
 

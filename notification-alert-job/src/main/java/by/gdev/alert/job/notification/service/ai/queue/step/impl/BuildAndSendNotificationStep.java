@@ -110,7 +110,7 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
         n.setType(NotificationType.AUTO_REPLY_ERROR);
         String subject = "Ошибка при отправке автоответа на шаге \"" + stepName + "\"";
 
-        // HTML-версия письма (для email) – ошибка выделена красным жирным
+        // HTML-версия письма
         String htmlBody = String.format("""
     <p>Уважаемый пользователь!</p>
     <p>Не удалось отправить автоответ по причине:<br>
@@ -139,7 +139,6 @@ public class BuildAndSendNotificationStep implements AiStep<AiNotificationPayloa
             log.info("АВТООТВЕТ: {} -> EMAIL об ошибке отправлен на {}", payload.getModule().getName(), user.getEmail());
 
         } else {
-            // Для телеграма – добавляем otpInfoText (в телеграме цвет не поддерживается, но можно выделить звёздочками)
             String telegramText = "Модуль: " + moduleName + "\n" +
                     "Ошибка автоответа: " + errorMessage + " (шаг: " + stepName + ")\n" +
                     otpInfoText +
