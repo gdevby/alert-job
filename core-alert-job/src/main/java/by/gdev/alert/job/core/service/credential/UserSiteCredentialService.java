@@ -147,6 +147,28 @@ public class UserSiteCredentialService {
         log.debug("Удалена учётная запись id={}", id);
     }
 
+    public CredentialValidationResult validate(Long credentialId, String uuid) {
+        UserSiteCredential cred = userSiteCredentialRepository.findById(credentialId)
+                .orElse(null);
+        if (cred == null) {
+            return CredentialValidationResult.fail("Учётные данные не найдены");
+        }
+        if (!cred.getUserUuid().equals(uuid)) {
+            return CredentialValidationResult.fail("Нет доступа к этим учётным данным");
+        }
+        try {
+            return notificationClient.validateCredentials(
+                    cred.getUserUuid(),
+                    cred.getSiteId(),
+                    cred.getLogin(),
+                    cred.getPasswordEncrypted()
+            );
+        } catch (Exception e) {
+            log.error("Ошибка проверки учётных данных ID {}", credentialId, e);
+            return CredentialValidationResult.fail("Ошибка проверки: " + e.getMessage());
+        }
+    }
+
     private CredentialValidationResult checkAccount(String uuid, Long siteId, String login, String password) {
         try {
             CredentialValidationResult result = notificationClient.validateCredentials(uuid, siteId, login, password);

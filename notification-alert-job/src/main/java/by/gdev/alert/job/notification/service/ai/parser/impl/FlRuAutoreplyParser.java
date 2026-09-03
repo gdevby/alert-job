@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.parser.impl;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
@@ -19,6 +20,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
+
+    private static final String[] LOGIN_ERROR_SELECTORS = {
+            "div.invalid-feedback.mt-8.d-block:has-text('Неверный логин/пароль')",
+            "text=Неверный логин/пароль"
+    };
 
     private final CaptchaService captchaService;
 
@@ -43,7 +49,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
-    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         try {
@@ -84,6 +90,11 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             }
             log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата, пользователь: {}", getSiteName(), creds.login());
 
+            if (waitForLoginError(page, 3000)) {
+                log.warn("АВТООТВЕТ: {} -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: {}", getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
+            }
+
             try {
                 page.waitForLoadState(LoadState.NETWORKIDLE);
                 log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
@@ -93,6 +104,10 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             }
 
             if (page.url().contains("/account/login")) {
+                if (isLoginErrorPresent(page)) {
+                    log.warn("АВТООТВЕТ: {} -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: {}", getSiteName(), creds.login());
+                    return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
+                }
                 log.warn("АВТООТВЕТ: {} -> ВХОД НЕ ВЫПОЛНЕН, остались на странице логина, пользователь: {}", getSiteName(), creds.login());
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Остались на странице логина", captureScreenshot(page));
             }
@@ -105,6 +120,32 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             log.error("АВТООТВЕТ: {} -> ОШИБКА ПРИ ЛОГИНЕ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage(), e);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка при логине: " + e.getMessage(), captureScreenshot(page));
         }
+    }
+
+    private boolean waitForLoginError(Page page, int timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (isLoginErrorPresent(page)) {
+                return true;
+            }
+            page.waitForTimeout(300);
+        }
+        return isLoginErrorPresent(page);
+    }
+
+    private boolean isLoginErrorPresent(Page page) {
+        for (String selector : LOGIN_ERROR_SELECTORS) {
+            try {
+                Locator locator = page.locator(selector).first();
+                if (locator.isVisible()) {
+                    log.debug("АВТООТВЕТ: {} -> ошибка логина обнаружена (селектор: {})", getSiteName(), selector);
+                    return true;
+                }
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> проверка ошибки логина через '{}' не удалась: {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+        return false;
     }
 
     @Override

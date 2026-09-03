@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.parser.impl;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
@@ -44,7 +45,7 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
     }
 
     @Override
-    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         try {
@@ -96,9 +97,25 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось дождаться загрузки после входа: " + e.getMessage(), captureScreenshot(page));
         }
 
+        if (isLoginErrorPresent(page)) {
+            log.warn("АВТООТВЕТ: {} -> НЕВЕРНЫЙ ЛОГИН ИЛИ ПАРОЛЬ, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Неверный логин или пароль",
+                    captureScreenshot(page));
+        }
+
         log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
         setOpt(payload, null, false);
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    private boolean isLoginErrorPresent(Page page) {
+        try {
+            Locator errorLocator = page.locator("div.fi-err:has-text('Неверный логин или пароль')");
+            return errorLocator.count() > 0;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override

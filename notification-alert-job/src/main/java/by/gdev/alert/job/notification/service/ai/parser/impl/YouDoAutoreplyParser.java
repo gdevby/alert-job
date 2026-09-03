@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.parser.impl;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
@@ -11,7 +12,9 @@ import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,6 +22,26 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
+
+    private static final String[] LOGIN_BUTTON_SELECTORS = {
+            "data-test=LoginButton",
+            "[data-test='LoginButton']",
+            "text=Войти"
+    };
+
+    private static final String[] LOGIN_EMAIL_BUTTON_SELECTORS = {
+            "data-test=LoginWithEmailButton",
+            "[data-test='LoginWithEmailButton']",
+            "text=Войти через электронную почту"
+    };
+
+    private static final String[] EMAIL_ERROR_SELECTORS = {
+            "text=Неправильный адрес электронной почты",
+            "text=Неправильный адрес почты",
+            "[class*='Tooltip_error']:has-text('Неправильный адрес')"
+    };
+
+    private static final String EMAIL_ERROR_MESSAGE = "Неправильный адрес электронной почты";
 
     private final OtpService otpService;
 
@@ -37,6 +60,9 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         this.sendRequest = sendRequest;
     }
 
+    @Value("${credential.validation.otp.timeout.ms:120000}")
+    private long otpValidationTimeoutMs;
+
     public YouDoAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService, OtpService otpService) {
         super(playwrightManager, assignedProxyService);
         this.otpService = otpService;
@@ -48,7 +74,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     @Override
-    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         // Открыть главную страницу
@@ -60,27 +86,27 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть главную страницу: " + e.getMessage(), captureScreenshot(page));
         }
 
-        //  Клик по главной кнопке "Войти"
-        if (!clickOrFail(page, "span[data-test='LoginButton']", 8000, "Кнопка 'Войти'")) {
+        try {
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+        } catch (Exception e) {
+            log.debug("АВТООТВЕТ: {} -> NETWORKIDLE не достигнут, продолжаем, пользователь: {}", getSiteName(), creds.login());
+        }
+
+        dismissCookieBanner(page);
+
+        if (!clickLoginButton(page)) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти' не найдена", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        // Ожидание появления кнопки "Войти через электронную почту" (до 10 секунд)
-        boolean emailButtonFound = waitOrFail(page, "span[data-test='LoginWithEmailButton']", 10000, "Кнопка 'Войти через email'");
-        if (!emailButtonFound) {
-            // Попробуем альтернативный селектор (на случай изменения data-test)
-            emailButtonFound = waitOrFail(page, "span:has-text('Войти через электронную почту')", 5000, "Кнопка 'Войти через email' (текст)");
-        }
-        if (!emailButtonFound) {
+        if (!waitForLoginModal(page, 10000)) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Войти через email', пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти через email' не найдена", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Войти через email' появилась, пользователь: {}", getSiteName(), creds.login());
 
-        // Клик по кнопке "Войти через электронную почту"
-        if (!clickOrFail(page, "span[data-test='LoginWithEmailButton']", 8000, "Войти через email")) {
+        if (!clickWithFallback(page, LOGIN_EMAIL_BUTTON_SELECTORS, 8000, "Кнопка 'Войти через email'")) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ НАЖАТЬ КНОПКУ 'Войти через email', пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось нажать кнопку 'Войти через email'", captureScreenshot(page));
         }
@@ -108,22 +134,24 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Далее' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        if (isEmailErrorPresent(page)) {
-            log.warn("АВТООТВЕТ: {} -> НЕПРАВИЛЬНЫЙ АДРЕС ПОЧТЫ, пользователь: {}", getSiteName(), creds.login());
-            return StepResult.fail(StepType.SEND_AUTOREPLY,
-                    "Неправильный адрес почты",
-                    captureScreenshot(page));
+        if (waitForEmailError(page, 5000)) {
+            log.warn("АВТООТВЕТ: {} -> НЕПРАВИЛЬНЫЙ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.fail(StepType.SEND_AUTOREPLY, EMAIL_ERROR_MESSAGE, captureScreenshot(page));
         }
 
         // Ожидание поля ввода OTP
         if (!waitOrFail(page, "input[name='code']", 15000, "Поле ввода кода")) {
+            if (isEmailErrorPresent(page)) {
+                log.warn("АВТООТВЕТ: {} -> НЕПРАВИЛЬНЫЙ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ, пользователь: {}", getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY, EMAIL_ERROR_MESSAGE, captureScreenshot(page));
+            }
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ВВОДА КОДА, пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле ввода кода не найдено", captureScreenshot(page));
         }
 
         // Получение OTP
         log.info("АВТООТВЕТ: {} -> ожидание OTP для {}", getSiteName(), creds.login());
-        String otp = otpService.waitForOtp(SiteName.YOUDO.name(), creds.login(), 120_000);
+        String otp = otpService.waitForOtp(SiteName.YOUDO.name(), creds.login(), otpValidationTimeoutMs);
         if (otp == null) {
             log.warn("АВТООТВЕТ: {} -> OTP НЕ ПОЛУЧЕН за отведённое время, пользователь: {}", getSiteName(), creds.login());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "OTP не получен за отведённое время", captureScreenshot(page));
@@ -150,19 +178,111 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
 
         log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
-        page.waitForTimeout(30000);
         otpService.invalidateOtp(SiteName.YOUDO.name(), creds.login());
         log.debug("АВТООТВЕТ: {} -> OTP инвалидирован для {}", getSiteName(), creds.login());
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
     }
 
-    private boolean isEmailErrorPresent(Page page) {
+    private void dismissCookieBanner(Page page) {
         try {
-            Locator errorLocator = page.locator("div.Tooltip_tooltip__Ml13N.Tooltip_error__kiiol:has-text('Неправильный адрес почты')");
-            return errorLocator.count() > 0;
+            Locator cookieBtn = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Хорошо"));
+            cookieBtn.waitFor(new Locator.WaitForOptions().setTimeout(3000));
+            cookieBtn.click();
+            log.info("АВТООТВЕТ: {} -> cookie-баннер закрыт", getSiteName());
         } catch (Exception e) {
-            return false;
+            log.debug("АВТООТВЕТ: {} -> cookie-баннер не найден или уже закрыт", getSiteName());
         }
+    }
+
+    private boolean clickLoginButton(Page page) {
+        for (String selector : LOGIN_BUTTON_SELECTORS) {
+            try {
+                Locator locator = page.locator(selector).first();
+                locator.waitFor(new Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.VISIBLE)
+                        .setTimeout(8000));
+                locator.scrollIntoViewIfNeeded();
+                clickLocator(locator);
+                log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата (селектор: {})", getSiteName(), selector);
+                if (waitForLoginModal(page, 5000)) {
+                    return true;
+                }
+                log.debug("АВТООТВЕТ: {} -> модалка логина не открылась после клика '{}'", getSiteName(), selector);
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> кнопка 'Войти' не найдена через '{}': {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    private boolean waitForLoginModal(Page page, int timeoutMs) {
+        for (String selector : LOGIN_EMAIL_BUTTON_SELECTORS) {
+            if (waitOrFail(page, selector, timeoutMs, "Модалка логина")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean clickWithFallback(Page page, String[] selectors, int timeoutMs, String step) {
+        for (String selector : selectors) {
+            try {
+                Locator locator = page.locator(selector).first();
+                locator.waitFor(new Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.VISIBLE)
+                        .setTimeout(timeoutMs));
+                locator.scrollIntoViewIfNeeded();
+                clickLocator(locator);
+                log.info("АВТООТВЕТ: {} -> {} (селектор: {})", getSiteName(), step, selector);
+                return true;
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> {} не удалось через '{}': {}", getSiteName(), step, selector, e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    private void clickLocator(Locator locator) {
+        try {
+            locator.click();
+        } catch (Exception e) {
+            locator.click(new Locator.ClickOptions().setForce(true));
+        }
+    }
+
+    private boolean waitForEmailError(Page page, int timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (isEmailErrorPresent(page)) {
+                return true;
+            }
+            page.waitForTimeout(300);
+        }
+        return isEmailErrorPresent(page);
+    }
+
+    private boolean isEmailErrorPresent(Page page) {
+        for (String selector : EMAIL_ERROR_SELECTORS) {
+            try {
+                Locator locator = page.locator(selector).first();
+                if (locator.isVisible()) {
+                    log.debug("АВТООТВЕТ: {} -> ошибка email обнаружена (селектор: {})", getSiteName(), selector);
+                    return true;
+                }
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> проверка ошибки email через '{}' не удалась: {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+        try {
+            Locator partialMatch = page.getByText("Неправильный адрес", new Page.GetByTextOptions().setExact(false)).first();
+            if (partialMatch.isVisible()) {
+                log.debug("АВТООТВЕТ: {} -> ошибка email обнаружена (getByText частичное совпадение)", getSiteName());
+                return true;
+            }
+        } catch (Exception e) {
+            log.debug("АВТООТВЕТ: {} -> getByText проверка ошибки email не удалась: {}", getSiteName(), e.getMessage());
+        }
+        return false;
     }
 
     @Override

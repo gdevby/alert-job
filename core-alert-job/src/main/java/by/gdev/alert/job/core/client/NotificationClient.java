@@ -13,6 +13,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -24,6 +26,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class NotificationClient {
+    private static final String VALIDATION_TIMEOUT_MESSAGE =
+            "Проверка аккаунта заняла слишком много времени. Дождитесь OTP-письма и попробуйте снова.";
+
     private final RestTemplate restTemplate;
 
     @Qualifier("plainRestTemplate")
@@ -135,6 +140,15 @@ public class NotificationClient {
                 return CredentialValidationResult.fail("Ошибка: " + e.getStatusCode());
             }
 
+        } catch (HttpServerErrorException e) {
+            log.error("Ошибка валидации (HTTP {}): {}", e.getStatusCode().value(), e.getMessage());
+            if (e.getStatusCode().value() == 504) {
+                return CredentialValidationResult.fail(VALIDATION_TIMEOUT_MESSAGE);
+            }
+            return CredentialValidationResult.fail("Ошибка проверки аккаунта: " + e.getStatusCode());
+        } catch (ResourceAccessException e) {
+            log.error("Таймаут при валидации учётных данных", e);
+            return CredentialValidationResult.fail(VALIDATION_TIMEOUT_MESSAGE);
         } catch (Exception e) {
             log.error("Ошибка валидации", e);
             return CredentialValidationResult.fail("Ошибка: " + e.getMessage());
