@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST) // или UNPROCESSABLE_ENTITY
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> handleInvalidCredentials(InvalidCredentialsException e) {
         Map<String, Object> body = new HashMap<>();
         body.put("error", e.getMessage());
