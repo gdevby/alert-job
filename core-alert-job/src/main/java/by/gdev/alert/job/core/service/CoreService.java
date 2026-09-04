@@ -11,11 +11,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.common.collect.Sets;
 
 import by.gdev.alert.job.core.configuration.ApplicationProperty;
+import by.gdev.alert.job.core.exeption.InvalidWebhookUrlException;
 import by.gdev.alert.job.core.model.AlertTime;
 import by.gdev.alert.job.core.model.AppUserDTO;
 import by.gdev.alert.job.core.model.Modules;
@@ -36,6 +38,7 @@ import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.exeption.CollectionLimitExeption;
 import by.gdev.common.exeption.ConflictExeption;
 import by.gdev.common.exeption.ResourceNotFoundException;
+import by.gdev.common.util.WebhookUrlValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -117,6 +120,29 @@ public class CoreService {
 			user.setDefaultSendType(defaultSend);
 			user = userRepository.save(user);
 			m.success(user.isDefaultSendType());
+		});
+	}
+
+	public Mono<Void> changeUserWebhook(String uuid, String webhookUrl) {
+		// Адрес проверяем до сборки Mono: исключение из тела Mono всплывёт уже
+		// после того, как статус ответа отдан, и обработчик его не увидит.
+		String url = StringUtils.hasText(webhookUrl) ? webhookUrl.trim() : null;
+		if (url != null) {
+			try {
+				WebhookUrlValidator.validate(url);
+			} catch (IllegalArgumentException e) {
+				throw new InvalidWebhookUrlException(e.getMessage());
+			}
+		}
+
+		return Mono.create(m -> {
+			AppUser user = userRepository.findByUuid(uuid)
+					.orElseThrow(() -> new ResourceNotFoundException("user not found"));
+			user.setWebhookUrl(url);
+			// Смена адреса — повод дать каналу второй шанс.
+			user.setWebhookFailCount(0);
+			userRepository.save(user);
+			m.success();
 		});
 	}
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import Title from '../../components/common/title/Title'
 import InstructionForTg from '../../components/notification/instructionForTg/InstructionForTg'
 import NotificationSource from '../../layouts/notificationPage/norificationSource/NotificationSource';
+import WebhookSource from '../../layouts/notificationPage/webhookSource/WebhookSource';
 import AlertStatus from '../../layouts/notificationPage/alertStatus/AlertStatus';
 import AlertTime from '../../layouts/notificationPage/alertTime/AlertTime';
 import Btn from '../../components/common/button/Button';
@@ -21,6 +22,7 @@ const NotificationsPage = () => {
 	const [isOpenTime, setIsOpenTime] = useState(false)
 	const [alertType, setAlertType] = useState()
 	const [email, setEmail] = useState('')
+	const [webhookUrl, setWebhookUrl] = useState('')
 
 	const { handleStatus } = changeAuthStatus()
 
@@ -41,6 +43,7 @@ const NotificationsPage = () => {
 				setAlertType(response.data.defaultSendType)
 				setTelegramId(response.data.telegram === null ? '' : response.data.telegram)
 				setEmail(response.data.email)
+				setWebhookUrl(response.data.webhookUrl === null ? '' : response.data.webhookUrl)
 				if (response.data.defaultSendType) {
 					return setCurrentPlatform({ name: 'email', id: 1 })
 				}
@@ -65,6 +68,10 @@ const NotificationsPage = () => {
 		setTelegramId(newId)
 	}
 
+	const updateWebhookUrl = (newUrl) => {
+		setWebhookUrl(newUrl)
+	}
+
 	return <div className='notification_page'>
 		<div className='container'>
 			<Title text='Настройка уведомлений' />
@@ -76,6 +83,7 @@ const NotificationsPage = () => {
 				email={email}
 				updateTelegramId={updateTelegramId}
 			/>
+			<WebhookSource webhookUrl={webhookUrl} updateWebhookUrl={updateWebhookUrl} />
 			<AlertStatus alertStatus={alertStatus} handleAlertsStatus={handleAlertsStatus} />
 			<Btn className='mt-1' text={isOpenTime ? 'Скрыть настройку время оповещения' : 'Показать настройки время оповещения'} onClick={handleShowsAlertTime} />
 			{isOpenTime && <AlertTime shedule={shedule} />}
