@@ -1,15 +1,13 @@
 package by.gdev.alert.job.core.service.ai;
 
 import by.gdev.alert.job.core.model.db.AppUser;
+import by.gdev.alert.job.core.client.NotificationClient;
 import by.gdev.alert.job.core.model.db.OrderModules;
-import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.OrderModulesRepository;
 import by.gdev.alert.job.core.service.AppUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -21,13 +19,13 @@ public class AiFilterService {
 
     private final OrderModulesRepository orderModulesRepository;
     private final AppUserService appUserService;
+    private final NotificationClient notificationClient;
 
     public boolean getAutoReplyStatus(String uuid, Long moduleId) {
         Optional<OrderModules> orderModule = orderModulesRepository.findByIdAndUserUuid(moduleId, uuid);
         return orderModule.isPresent() && Boolean.TRUE.equals(orderModule.get().getAutoReplyEnabled());
     }
 
-    @Transactional
     public void setAutoReplyStatus(String uuid, Long moduleId, boolean status) {
         Optional<OrderModules> orderModuleOptional = orderModulesRepository.findById(moduleId);
         if (orderModuleOptional.isPresent()) {
@@ -52,6 +50,10 @@ public class AiFilterService {
                 orderModule.setAutoReplyEnabled(status);
                 orderModulesRepository.save(orderModule);
                 updatePremiumStatus(uuid);
+                // Если автоответ включён – перераспределяем прокси
+                if (status) {
+                    notificationClient.reassignProxies();
+                }
                 log.info("АВТООТВЕТ: пользователь {} {} автоответ на модуле {}",
                         uuid, status ? "включил" : "отключил", moduleId);
             }

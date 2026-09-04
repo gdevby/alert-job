@@ -67,8 +67,7 @@ const AlertTime = (props) => {
 		}
 	}, [shedule])
 
-	const removeTime = async (e) => {
-		const id = e.target.id
+	const removeTime = async (id) => {
 		try {
 			await coreService.removeAlertTime(id)
 			setAddedAlertDays(prev => prev.filter(item => item.id != id))
@@ -108,7 +107,7 @@ const AlertTime = (props) => {
 					{addedAlertDays.map(item => <Item key={item.endAlert}>
 						<div>{getDayById(item.alertDate)}</div>
 						<div>{item.startAlert} - {item.endAlert}</div>
-						<Btn text={'Удалить'} id={item.id} onClick={removeTime} />
+						<Btn text={'Удалить'} onClick={() => removeTime(item.id)} />
 					</Item>)}
 				</div> : <p>Пока ничего не добавлено.</p>}
 		</div>

@@ -1,8 +1,12 @@
 package by.gdev.alert.job.notification.service.ai.otp;
 
+import by.gdev.alert.job.notification.client.CoreUnifiedClient;
+import by.gdev.alert.job.notification.service.MailService;
 import by.gdev.alert.job.notification.service.ai.otp.email.EmailReaderService;
 import by.gdev.alert.job.notification.service.ai.otp.email.MailDto;
+import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.SiteName;
+import by.gdev.common.model.UserNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,15 +24,20 @@ import java.util.regex.Pattern;
 public class EmailOtpScheduler {
     private final EmailReaderService emailReaderService;
     private final OtpService otpService;
+    private final CoreUnifiedClient coreClient;
+    private final MailService mailService;
 
     private static final DateTimeFormatter DATE_TIME_FMT =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+
+    private volatile boolean adminNotified = false;
 
     @Scheduled(fixedDelay = 30000)
     public void checkMailbox() {
         log.debug("Запуск шедулера проверки почты: {} ...", LocalDateTime.now().format(DATE_TIME_FMT));
         try {
             List<MailDto> newMessages = emailReaderService.readUnreadMessages();
+            otpService.setMailAvailable(true);
             for (MailDto mail : newMessages) {
                 log.debug("Новое письмо UID={}", mail.uid());
                 String userId = detectUser(mail);
@@ -50,6 +59,11 @@ public class EmailOtpScheduler {
             }
         } catch (Exception e) {
             log.error("Ошибка чтения почтового ящика", e);
+            otpService.setMailAvailable(false);
+            if (!adminNotified) {
+                sendAdminNotification(e.getMessage());
+                adminNotified = true;
+            }
         }
     }
 
@@ -88,7 +102,41 @@ public class EmailOtpScheduler {
     }
 
 
+    private void sendAdminNotification(String errorMessage) {
+        coreClient.getAdminEmails()
+                .subscribe(adminEmails -> {
+                    if (adminEmails.isEmpty()) {
+                        log.warn("Нет администраторов для уведомления об ошибке OTP");
+                        return;
+                    }
+                    String htmlBody = buildAdminHtml(errorMessage);
+                    for (String email : adminEmails) {
+                        UserNotification n = new UserNotification();
+                        n.setToMail(email);
+                        n.setMessage(htmlBody);
+                        n.setType(NotificationType.OTP_MAIL_ERROR);
+                        mailService.sendMessage(n);
+                        log.debug("Уведомление об ошибке OTP отправлено админу {}", email);
+                    }
+                    log.info("Уведомления об ошибке OTP отправлены {} админам", adminEmails.size());
+                }, ex -> {
+                    log.error("Не удалось получить список администраторов из core", ex);
+                });
+    }
 
-
-
+    private String buildAdminHtml(String errorMessage) {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+        return String.format("""
+                <div style="font-family: Arial, sans-serif; padding: 16px; border: 1px solid #e53935; border-radius: 8px; background: #fff5f5; max-width: 600px;">
+                    <h2 style="color: #c62828; margin-top: 0;">Ошибка получения OTP-кодов</h2>
+                    <p><strong>Время:</strong> %s</p>
+                    <p><strong>Причина ошибки:</strong></p>
+                    <blockquote style="background: #fff; padding: 10px; border-left: 4px solid #e53935; margin: 10px 0;">
+                        %s
+                    </blockquote>
+                    <p>Проверьте доступность почтового сервера и учётные данные, указанные в настройках модуля <code>notification</code>.</p>
+                    <p style="margin-top: 20px; color: #666; font-size: 12px;">Это автоматическое уведомление, отправлено системой автоответов.</p>
+                </div>
+                """, timestamp, errorMessage);
+    }
 }

@@ -24,6 +24,19 @@ public class OtpService {
     private final Map<String, OtpEntry> storage = new ConcurrentHashMap<>();
     private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
+    // Флаг доступности почты
+    private volatile boolean mailAvailable = true;
+
+    public void setMailAvailable(boolean available) {
+        this.mailAvailable = available;
+        if (!available) {
+            synchronized (this) {
+                this.notifyAll();
+            }
+        }
+        log.info("Статус доступности почты изменён: {}", available);
+    }
+
     private Object lockFor(String key) {
         return locks.computeIfAbsent(key, k -> new Object());
     }

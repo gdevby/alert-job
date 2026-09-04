@@ -1,10 +1,9 @@
 package by.gdev.alert.job.llm.service.aiautoreply;
 
 import by.gdev.alert.job.llm.domain.dto.AiDecision;
-import by.gdev.alert.job.llm.domain.dto.order.AiAppUserDTO;
-import by.gdev.alert.job.llm.domain.dto.order.AiOrderModulesDTO;
 import by.gdev.alert.job.llm.domain.dto.order.AiOrderRequest;
 import by.gdev.alert.job.llm.domain.dto.order.OrderDTO;
+import by.gdev.alert.job.llm.service.aiautoreply.analysis.AiOrderAnalysisService;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.DummyReplySender;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.NotificationReplySender;
 import by.gdev.alert.job.llm.service.aiautoreply.sender.ReplySender;
@@ -108,14 +107,18 @@ public class AutoReplyPipeline {
             }
 
             AiDecision decision = processItem(order, request.getTemplateId(), request.getPromtId(), uuid);
-            String reply = finalizeReply(decision);
+            String reply = null;
+            if (decision.isValid()) {
+                reply = finalizeReply(decision);
+            }
 
-            if (reply != null && !reply.trim().isEmpty()) {
+            if (reply != null && !reply.trim().isEmpty() && decision.isValid()) {
                 getDummyReplySender().send(order, reply, decision);
                 getNotificationyReplySender()
                         .sendToNotificationService(order, request.getUser(), request.getModule(),
                                 decision, request.getCredentialId(), request.getNotificationType());
             }
+
         }
     }
 

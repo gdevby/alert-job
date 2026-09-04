@@ -8,7 +8,7 @@ import by.gdev.common.model.SiteName;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ResolveSiteStep implements AiStep<AiNotificationPayload, SiteName> {
+public class ResolveSiteStep implements AiStep<AiNotificationPayload, StepResult<SiteName>> {
 
     @Override
     public StepType type() {
@@ -21,11 +21,9 @@ public class ResolveSiteStep implements AiStep<AiNotificationPayload, SiteName> 
             SiteName siteEnum = SiteName.fromId(
                     payload.getOrder().getSourceSite().getSource()
             );
-            return StepResult.ok(siteEnum);
+            return StepResult.ok(StepType.RESOLVE_SITE, siteEnum);
         } catch (Exception e) {
-            return StepResult.fail();
+            return StepResult.fail(StepType.RESOLVE_SITE, "Ошибка определения сайта: " + e.getMessage());
         }
     }
 }
-
-

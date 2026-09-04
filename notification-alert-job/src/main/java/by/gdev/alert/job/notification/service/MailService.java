@@ -120,8 +120,10 @@ public class MailService {
     private String resolveSubject(UserNotification n) {
         return switch (n.getType()) {
             case AUTO_REPLY -> "Автоответ от AI";
+            case AUTO_REPLY_ERROR -> "Ошибка автоответа";
             case ORDER -> "Оповещение о новых заказах";
             case CLEANUP -> "Уведомление об очистке сайта";
+            case OTP_MAIL_ERROR -> "Ошибка серверов принятия одноразовых почтовых кодов";
             case TEST -> "Тестовое сообщение";
             case CATEGORY_CHANGE_ADMIN -> "Администратор: уведомление об изменении категорий на сайтах";
             case CATEGORY_CHANGE_USER -> "Уведомление об изменении категорий на сайтах";

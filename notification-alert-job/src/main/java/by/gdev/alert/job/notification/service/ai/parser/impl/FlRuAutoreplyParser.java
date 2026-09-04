@@ -1,9 +1,12 @@
 package by.gdev.alert.job.notification.service.ai.parser.impl;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
+import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
+import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.CaptchaService;
 import by.gdev.common.service.playwright.PlaywrightManager;
@@ -17,6 +20,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
+
+    private static final String[] LOGIN_ERROR_SELECTORS = {
+            "div.invalid-feedback.mt-8.d-block:has-text('Неверный логин/пароль')",
+            "text=Неверный логин/пароль"
+    };
 
     private final CaptchaService captchaService;
 
@@ -41,7 +49,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
-    protected boolean login(Page page, DecryptedCredential creds) {
+    protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         try {
@@ -50,7 +58,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
 
             if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
                 log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле логина не найдено", captureScreenshot(page));
             }
 
             try {
@@ -58,7 +66,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                 log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
             } catch (Exception e) {
                 log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ЛОГИН, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить логин: " + e.getMessage(), captureScreenshot(page));
             }
 
             try {
@@ -66,46 +74,82 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                 log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
             } catch (Exception e) {
                 log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ПАРОЛЬ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить пароль: " + e.getMessage(), captureScreenshot(page));
             }
 
             log.info("АВТООТВЕТ: {} -> попытка прохождения SmartCaptcha для пользователя: {}", getSiteName(), creds.login());
             if (!captchaService.solveYandexSmartCaptcha(page)) {
                 log.warn("АВТООТВЕТ: {} -> SmartCaptcha НЕ ПРОЙДЕНА, пользователь: {}", getSiteName(), creds.login());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "SmartCaptcha не пройдена", captureScreenshot(page));
             }
             log.info("АВТООТВЕТ: {} -> SmartCaptcha пройдена, пользователь: {}", getSiteName(), creds.login());
 
             if (!clickOrFail(page, "#submit-button", 8000, "Кнопка 'Войти'")) {
                 log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: {}", getSiteName(), creds.login());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти' не найдена", captureScreenshot(page));
             }
             log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата, пользователь: {}", getSiteName(), creds.login());
+
+            if (waitForLoginError(page, 3000)) {
+                log.warn("АВТООТВЕТ: {} -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: {}", getSiteName(), creds.login());
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
+            }
 
             try {
                 page.waitForLoadState(LoadState.NETWORKIDLE);
                 log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
             } catch (Exception e) {
                 log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ДОЖДАТЬСЯ ЗАГРУЗКИ ПОСЛЕ ВХОДА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось дождаться загрузки после входа: " + e.getMessage(), captureScreenshot(page));
             }
 
             if (page.url().contains("/account/login")) {
+                if (isLoginErrorPresent(page)) {
+                    log.warn("АВТООТВЕТ: {} -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: {}", getSiteName(), creds.login());
+                    return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
+                }
                 log.warn("АВТООТВЕТ: {} -> ВХОД НЕ ВЫПОЛНЕН, остались на странице логина, пользователь: {}", getSiteName(), creds.login());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Остались на странице логина", captureScreenshot(page));
             }
 
             log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
-            return true;
+            setOpt(payload, null, false);
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
 
         } catch (Exception e) {
             log.error("АВТООТВЕТ: {} -> ОШИБКА ПРИ ЛОГИНЕ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage(), e);
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка при логине: " + e.getMessage(), captureScreenshot(page));
         }
     }
 
+    private boolean waitForLoginError(Page page, int timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (isLoginErrorPresent(page)) {
+                return true;
+            }
+            page.waitForTimeout(300);
+        }
+        return isLoginErrorPresent(page);
+    }
+
+    private boolean isLoginErrorPresent(Page page) {
+        for (String selector : LOGIN_ERROR_SELECTORS) {
+            try {
+                Locator locator = page.locator(selector).first();
+                if (locator.isVisible()) {
+                    log.debug("АВТООТВЕТ: {} -> ошибка логина обнаружена (селектор: {})", getSiteName(), selector);
+                    return true;
+                }
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> проверка ошибки логина через '{}' не удалась: {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+        return false;
+    }
+
     @Override
-    protected boolean processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
+    protected StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         String link = payload.getOrder().getLink();
         String login = creds.login();
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}, пользователь: {}", getSiteName(), link, login);
@@ -114,14 +158,15 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
+            takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "order_page");
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть заказ: " + e.getMessage(), captureScreenshot(page));
         }
 
         if (!waitOrFail(page, "#el-descr", 8000, "Поле текста отклика")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ТЕКСТА ОТКЛИКА, пользователь: {}", getSiteName(), login);
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле текста отклика не найдено", captureScreenshot(page));
         }
 
         try {
@@ -130,7 +175,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                     payload.getDecision().reply() != null ? payload.getDecision().reply().length() : 0, login);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ ОТКЛИКА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить текст отклика: " + e.getMessage(), captureScreenshot(page));
         }
 
         try {
@@ -143,11 +188,12 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             }
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> ошибка при выборе способа оплаты, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            // Не критично, продолжаем
         }
 
         if (!waitOrFail(page, "#el-time_from", 8000, "Поле срока выполнения")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ СРОКА ВЫПОЛНЕНИЯ, пользователь: {}", getSiteName(), login);
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле срока выполнения не найдено", captureScreenshot(page));
         }
 
         try {
@@ -156,12 +202,12 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             log.info("АВТООТВЕТ: {} -> срок выполнения установлен: {} дней, пользователь: {}", getSiteName(), defaultDays, login);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ СРОК ВЫПОЛНЕНИЯ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить срок выполнения: " + e.getMessage(), captureScreenshot(page));
         }
 
         if (!waitOrFail(page, "#el-cost_from", 8000, "Поле цены")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНО ПОЛЕ ЦЕНЫ, пользователь: {}", getSiteName(), login);
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле цены не найдено", captureScreenshot(page));
         }
 
         try {
@@ -170,12 +216,12 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             log.info("АВТООТВЕТ: {} -> цена установлена: {}, пользователь: {}", getSiteName(), defaultPrice, login);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ЦЕНУ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить цену: " + e.getMessage(), captureScreenshot(page));
         }
 
         if (!waitOrFail(page, "#el-submit", 8000, "Кнопка отправки отклика")) {
             log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА ОТПРАВКИ ОТКЛИКА, пользователь: {}", getSiteName(), login);
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка отправки отклика не найдена", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> кнопка отправки найдена, пользователь: {}", getSiteName(), login);
 
@@ -186,7 +232,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             log.info("АВТООТВЕТ: {} -> кнопка отправки активна, пользователь: {}", getSiteName(), login);
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> КНОПКА ОТПРАВКИ НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-            return false;
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка отправки неактивна", captureScreenshot(page));
         }
 
         if (sendRequest) {
@@ -195,15 +241,16 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                 log.info("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА, пользователь: {}", getSiteName(), login);
             } catch (Exception e) {
                 log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ НАЖАТЬ КНОПКУ ОТПРАВКИ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
-                return false;
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось нажать кнопку отправки: " + e.getMessage(), captureScreenshot(page));
             }
         } else {
             log.info("АВТООТВЕТ: {} -> ЗАЯВКА НЕ ОТПРАВЛЕНА (sendRequest=false), пользователь: {}", getSiteName(), login);
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Заявка не отправлена (sendRequest=false)", captureScreenshot(page));
         }
 
         page.waitForTimeout(2000);
         log.info("АВТООТВЕТ: {} -> ОТКЛИК УСПЕШНО ЗАВЕРШЁН, пользователь: {}", getSiteName(), login);
-        return true;
+        return StepResult.ok(StepType.SEND_AUTOREPLY, null);
     }
 
     @Override

@@ -8,7 +8,7 @@ import by.gdev.alert.job.llm.domain.dto.test.TestAutoreplyResponse;
 import by.gdev.alert.job.llm.domain.promt.AiPrompt;
 import by.gdev.alert.job.llm.repository.AiReplyTemplateRepository;
 import by.gdev.alert.job.llm.repository.promt.AiPromptRepository;
-import by.gdev.alert.job.llm.service.aiautoreply.AiOrderAnalysisService;
+import by.gdev.alert.job.llm.service.aiautoreply.analysis.AiOrderAnalysisService;
 import by.gdev.common.model.HeaderName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -87,13 +87,12 @@ public class AiTestController {
 
             TestAutoreplyResponse response = TestAutoreplyResponse.builder()
                     .success(true)
+                    .prefix(decision.getPrefix())
                     .reply(decision.getReply())
-                    .confidence(decision.getConfidence())
-                    .reason(decision.getReason())
                     .testOrder(testOrder)
                     .build();
 
-            log.info("АВТООТВЕТ: TEST -> тест завершён успешно, shouldReply={}", decision.getConfidence());
+            log.info("АВТООТВЕТ: TEST -> тест завершён успешно, reply={}", decision.getReply());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {

@@ -59,16 +59,9 @@ public class DummyReplySender implements ReplySender {
         if (order.getPrice() != null) {
             appendIfNotNull(sb, "Цена", order.getPrice().getPrice());
         }
-
         sb.append("\n--- Решение AI ---\n");
-        appendIfNotNull(sb, "confidence", decision.getConfidence());
-        appendIfNotNull(sb, "reason", decision.getReason());
-
-        sb.append("\n--- Автоответ ---\n");
         sb.append(replyText).append("\n");
-
         sb.append("===================================================\n\n\n");
-
         log.debug(sb.toString());
     }
 

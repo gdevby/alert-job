@@ -2,12 +2,14 @@ package by.gdev.alert.job.core.controller;
 
 import by.gdev.alert.job.core.model.SiteDTO;
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
+import by.gdev.alert.job.core.model.credential.dto.CredentialValidationResult;
 import by.gdev.alert.job.core.model.credential.dto.UserCredentialRequest;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.model.credential.dto.UserSiteCredentialShortResponse;
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -146,6 +148,15 @@ public class UserCredentialController {
             @PathVariable Long id) {
         credentialService.delete(uuid, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/validate/{credentialId}")
+    public ResponseEntity<CredentialValidationResult> validateCredential(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @PathVariable Long credentialId) {
+        CredentialValidationResult result = credentialService.validate(credentialId, uuid);
+        return ResponseEntity.ok(result);
     }
 
 }

@@ -4,7 +4,9 @@ import by.gdev.alert.job.core.client.NotificationClient;
 import by.gdev.alert.job.core.exeption.ai.AccessDeniedException;
 import by.gdev.alert.job.core.exeption.ai.InvalidSiteIdException;
 import by.gdev.alert.job.core.exeption.ai.credential.CredentialNotFoundException;
+import by.gdev.alert.job.core.exeption.ai.credential.InvalidCredentialsException;
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
+import by.gdev.alert.job.core.model.credential.dto.CredentialValidationResult;
 import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
@@ -76,10 +78,13 @@ public class UserSiteCredentialService {
                     .login(login)
                     .passwordEncrypted(encryptedPassword)
                     .build();
+            CredentialValidationResult validationResult = checkAccount(userUuid, siteId, login, encryptedPassword);
+            log.info("Проверены новые учётные данные: userUuid={}, siteId={}, name={}, login={}. Результат: {}",
+                    userUuid, siteId, name, login, validationResult.isSuccess());
             UserSiteCredential saved = userSiteCredentialRepository.save(newCredential);
-            log.debug("Созданы новые учётные данные: userUuid={}, siteId={}, name={}, login={}",
-                    userUuid, siteId, name, login);
-            return saved;
+                log.info("Созданы новые учётные данные: userUuid={}, siteId={}, name={}, login={}",
+                        userUuid, siteId, name, login);
+                return saved;
         }
     }
 
@@ -140,5 +145,45 @@ public class UserSiteCredentialService {
         // Удаляем саму учётную запись
         userSiteCredentialRepository.delete(cred);
         log.debug("Удалена учётная запись id={}", id);
+    }
+
+    public CredentialValidationResult validate(Long credentialId, String uuid) {
+        UserSiteCredential cred = userSiteCredentialRepository.findById(credentialId)
+                .orElse(null);
+        if (cred == null) {
+            return CredentialValidationResult.fail("Учётные данные не найдены");
+        }
+        if (!cred.getUserUuid().equals(uuid)) {
+            return CredentialValidationResult.fail("Нет доступа к этим учётным данным");
+        }
+        try {
+            return notificationClient.validateCredentials(
+                    cred.getUserUuid(),
+                    cred.getSiteId(),
+                    cred.getLogin(),
+                    cred.getPasswordEncrypted()
+            );
+        } catch (Exception e) {
+            log.error("Ошибка проверки учётных данных ID {}", credentialId, e);
+            return CredentialValidationResult.fail("Ошибка проверки: " + e.getMessage());
+        }
+    }
+
+    private CredentialValidationResult checkAccount(String uuid, Long siteId, String login, String password) {
+        try {
+            CredentialValidationResult result = notificationClient.validateCredentials(uuid, siteId, login, password);
+            if (!result.isSuccess()) {
+                log.warn("Проверка аккаунта не удалась: siteId={}, login={}, ошибка={}",
+                        siteId, login, result.getErrorMessage());
+                throw new InvalidCredentialsException("Не удалось войти на сайт: " + result.getErrorMessage());
+            }
+            log.info("Проверка аккаунта успешна: siteId={}, login={}", siteId, login);
+            return result;
+        } catch (InvalidCredentialsException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Ошибка проверки аккаунта для siteId={}, login={}", siteId, login, e);
+            throw new InvalidCredentialsException("Ошибка проверки аккаунта: " + e.getMessage());
+        }
     }
 }

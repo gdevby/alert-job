@@ -1,19 +1,25 @@
 package by.gdev.alert.job.notification.service.ai.parser;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
+import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.common.model.SiteName;
 
 public interface AutoreplyPlaywrightParser {
 
     SiteName getSiteName();
+
     /**
      * Логинится на сайт, переходит на страницу заказа и отправляет автоответ.
      *
      * @param creds   — логин + расшифрованный пароль пользователя
      * @param payload — данные заказа, модуля, ссылки, текста автоответа
-     * @return true если автоответ успешно отправлен
+     * @param mode — режим автоответа (только логин либо весь цикл - логин и заполнение формы)
+     * @return StepResult с описанием ошибки и скриншотом при неудаче
      */
-    boolean sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload);
+    StepResult<Void> sendAutoreply(DecryptedCredential creds,
+                                   AiNotificationPayload payload,
+                                   AutoreplyMode mode);
 }
 
