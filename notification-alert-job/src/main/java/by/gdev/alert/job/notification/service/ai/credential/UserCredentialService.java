@@ -29,4 +29,9 @@ public class UserCredentialService {
         );
     }
 
+    public DecryptedCredential getUserCredentials(String login, String encryptedPassword) {
+        String decryptedPassword = encryptionService.decrypt(encryptedPassword);
+        return new DecryptedCredential(login, decryptedPassword);
+    }
+
 }

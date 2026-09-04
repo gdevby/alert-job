@@ -1,13 +1,19 @@
 package by.gdev.alert.job.notification.controller;
 
 import by.gdev.alert.job.notification.model.dto.*;
+import by.gdev.alert.job.notification.model.dto.credential.CredentialValidationRequest;
+import by.gdev.alert.job.notification.model.dto.credential.CredentialValidationResult;
+import by.gdev.alert.job.notification.service.ai.credential.CredentialValidationService;
 import by.gdev.alert.job.notification.service.ai.queue.UserQueueManager;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -27,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AiNotificationController {
     private final UserQueueManager userQueueManager;
+    private final CredentialValidationService credentialValidationService;
     private final Set<String> dedup = ConcurrentHashMap.newKeySet();
 
     @PostMapping("/decision")
@@ -94,5 +101,20 @@ public class AiNotificationController {
         int size = userQueueManager.size(uuid);
         log.info("Queue size for user {}: {}", uuid, size);
         return ResponseEntity.ok(size);
+    }
+
+    @PostMapping("/credentials/validate")
+    public Mono<CredentialValidationResult> validateCredentials(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @RequestBody CredentialValidationRequest request) {
+
+        CredentialValidationResult result = credentialValidationService.validate(
+                uuid,
+                request.getSiteId(),
+                request.getLogin(),
+                request.getPassword()
+        );
+
+        return Mono.just(result);
     }
 }

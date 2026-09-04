@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -68,6 +69,15 @@ public class AppUserController {
     public ResponseEntity<List<ModuleSiteDto>> getAutoReplyEnabledModules(@PathVariable String uuid) {
         List<ModuleSiteDto> modules = userService.getAutoReplyEnabledModules(uuid);
         return ResponseEntity.ok(modules);
+    }
+
+    @GetMapping("/admins/emails")
+    public ResponseEntity<List<String>> getAdminEmails() {
+        List<AppUser> admins = userService.getAdminUsers();
+        List<String> emails = admins.stream()
+                .map(AppUser::getEmail)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(emails);
     }
 
 }

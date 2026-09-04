@@ -18,4 +18,6 @@ public class AiNotificationPayload {
     private AiDecision decision;
     private NotificationTypeEnum notificationType;
     private StepResult<?> stepResult;
+    private boolean otpUsed;
+    private String otpValue;
 }

@@ -93,5 +93,14 @@ public class CoreUnifiedClient {
             return Collections.emptyList();
         }
     }
+    
+    public Mono<List<String>> getAdminEmails() {
+        return webClient.get()
+                .uri(coreUrl + "/api/users/admins/emails")
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<String>>() {})
+                .doOnError(e -> log.error("Ошибка получения списка администраторов", e))
+                .onErrorReturn(Collections.emptyList());
+    }
 
 }

@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.queue.step.impl;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.service.ai.queue.step.AiStep;
 import by.gdev.alert.job.notification.service.ai.queue.step.RetrySupport;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.SendAutoreplyInput;
@@ -26,7 +27,8 @@ public class SendAutoreplyStep implements AiStep<SendAutoreplyInput, StepResult<
             try {
                 StepResult<Void> result = input.parser().sendAutoreply(
                         input.creds(),
-                        input.payload()
+                        input.payload(),
+                        AutoreplyMode.FULL_AUTOREPLY
                 );
                 if (result.success()) {
                     return StepResult.ok(StepType.SEND_AUTOREPLY, null);

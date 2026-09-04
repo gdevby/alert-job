@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.service;
 
+import by.gdev.alert.job.core.configuration.category.AdminProperties;
 import by.gdev.alert.job.core.model.AppUserDTO;
 import by.gdev.alert.job.core.model.ModuleSiteDto;
 import by.gdev.alert.job.core.model.db.AppUser;
@@ -20,6 +21,7 @@ import java.util.stream.StreamSupport;
 @Slf4j
 public class AppUserService {
     private final AppUserRepository appUserRepository;
+    private final AdminProperties adminProperties;
 
     public Optional<AppUser> findByUuid(String uuid) {
         return appUserRepository.findByUuid(uuid);
@@ -56,6 +58,21 @@ public class AppUserService {
             }
         }
         return new ArrayList<>(result);
+    }
+
+    public List<AppUser> findUsersBySourceSiteId(Long sourceSiteId){
+        return appUserRepository.findUsersBySourceSiteId(sourceSiteId);
+    }
+
+    public List<AppUser> getAdminUsers() {
+        List<AppUser> admins = new ArrayList<>();
+        if (adminProperties.getUuids() == null) {
+            return admins;
+        }
+        for (String uuid : adminProperties.getUuids()) {
+            appUserRepository.findByUuid(uuid).ifPresent(admins::add);
+        }
+        return admins;
     }
 }
 

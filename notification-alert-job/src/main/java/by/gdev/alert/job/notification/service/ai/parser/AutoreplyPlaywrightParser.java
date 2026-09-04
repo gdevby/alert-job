@@ -1,5 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.parser;
 
+import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
@@ -14,8 +15,11 @@ public interface AutoreplyPlaywrightParser {
      *
      * @param creds   — логин + расшифрованный пароль пользователя
      * @param payload — данные заказа, модуля, ссылки, текста автоответа
+     * @param mode — режим автоответа (только логин либо весь цикл - логин и заполнение формы)
      * @return StepResult с описанием ошибки и скриншотом при неудаче
      */
-    StepResult<Void> sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload);
+    StepResult<Void> sendAutoreply(DecryptedCredential creds,
+                                   AiNotificationPayload payload,
+                                   AutoreplyMode mode);
 }
 
