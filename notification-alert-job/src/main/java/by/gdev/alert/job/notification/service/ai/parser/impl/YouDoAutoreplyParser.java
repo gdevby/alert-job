@@ -303,7 +303,10 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
         else {
             int remainingResponses = youdoTariffChecker.getRemainingResponses(page);
-            if (remainingResponses < 2){
+            if (remainingResponses > 0){
+                StepResult.ok(StepType.SEND_AUTOREPLY, null);
+            }
+            else{
                 return StepResult.fail(StepType.SEND_AUTOREPLY,
                         "Откликов меньше чем нужно ", captureScreenshot(page));
             }
