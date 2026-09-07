@@ -5,6 +5,7 @@ import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.otp.OtpService;
+import by.gdev.alert.job.notification.service.ai.parser.YoudoTariffChecker;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
@@ -45,6 +46,8 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
     private final OtpService otpService;
 
+    private final YoudoTariffChecker youdoTariffChecker;
+
     @Value("${parser.autoreply.headless.youdo.com:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
@@ -63,9 +66,13 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     @Value("${credential.validation.otp.timeout.ms:120000}")
     private long otpValidationTimeoutMs;
 
-    public YouDoAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService, OtpService otpService) {
+    public YouDoAutoreplyParser(PlaywrightManager playwrightManager,
+                                AssignedProxyService assignedProxyService,
+                                OtpService otpService,
+                                YoudoTariffChecker youdoTariffChecker) {
         super(playwrightManager, assignedProxyService);
         this.otpService = otpService;
+        this.youdoTariffChecker = youdoTariffChecker;
     }
 
     @Override
@@ -285,13 +292,48 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         return false;
     }
 
+    private StepResult<Void> checkTariff(Page page, String login){
+        page.navigate(getProfileUrl(page));
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        log.info("АВТООТВЕТ: {} -> страница профиля открыта, пользователь: {}", getSiteName(), login);
+        boolean isTariffTab = youdoTariffChecker.isTariffsTabPresent(page);
+        if (!isTariffTab){
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Профиль бесплатный. Отклик не удастся отправить ", captureScreenshot(page));
+        }
+        else {
+            int remainingResponses = youdoTariffChecker.getRemainingResponses(page);
+            if (remainingResponses > 0){
+                return StepResult.fail(StepType.SEND_AUTOREPLY,
+                        "Откликов меньше чем нужно ", captureScreenshot(page));
+            }
+        }
+        return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    private String getProfileUrl(Page page){
+        // Находим элемент
+        Locator avatarLink = page.locator("a.avatar_block__KOT6G.avatar_s32Square__FqL_i.js-toggleUserNavigationBtn");
+        // Получаем значение атрибута href
+        String href = avatarLink.getAttribute("href");
+        // Формируем полный URL
+        String profileUrl = "https://youdo.com" + href;
+        log.info("Профиль пользователя: {}", profileUrl);
+        return profileUrl;
+    }
+
+
     @Override
     protected StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         String link = payload.getOrder().getLink();
         String login = creds.login();
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}, пользователь: {}", getSiteName(), link, login);
-
         try {
+            StepResult<Void> tariffResult = checkTariff(page, login);
+            if (tariffResult.failed()) {
+                return tariffResult; // возвращаем ошибку, если профиль бесплатный или откликов недостаточно
+            }
+            log.info("АВТООТВЕТ: {} -> тариф активен, продолжаем обработку заказа", getSiteName());
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
