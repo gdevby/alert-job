@@ -292,40 +292,6 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         return false;
     }
 
-    private StepResult<Void> checkTariff(Page page, String login){
-        page.navigate(getProfileUrl(page));
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        log.info("АВТООТВЕТ: {} -> страница профиля открыта, пользователь: {}", getSiteName(), login);
-        boolean isTariffTab = youdoTariffChecker.isTariffsTabPresent(page);
-        if (!isTariffTab){
-            return StepResult.fail(StepType.SEND_AUTOREPLY,
-                    "Профиль бесплатный. Отклик не удастся отправить ", captureScreenshot(page));
-        }
-        else {
-            int remainingResponses = youdoTariffChecker.getRemainingResponses(page);
-            if (remainingResponses > 0){
-                StepResult.ok(StepType.SEND_AUTOREPLY, null);
-            }
-            else{
-                return StepResult.fail(StepType.SEND_AUTOREPLY,
-                        "Откликов меньше чем нужно ", captureScreenshot(page));
-            }
-        }
-        return StepResult.ok(StepType.SEND_AUTOREPLY, null);
-    }
-
-    private String getProfileUrl(Page page){
-        // Находим элемент
-        Locator avatarLink = page.locator("a.avatar_block__KOT6G.avatar_s32Square__FqL_i.js-toggleUserNavigationBtn");
-        // Получаем значение атрибута href
-        String href = avatarLink.getAttribute("href");
-        // Формируем полный URL
-        String profileUrl = "https://youdo.com" + href;
-        log.info("Профиль пользователя: {}", profileUrl);
-        return profileUrl;
-    }
-
-
     @Override
     protected StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         String link = payload.getOrder().getLink();
@@ -411,5 +377,38 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
         page.waitForTimeout(3000);
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    private StepResult<Void> checkTariff(Page page, String login){
+        page.navigate(getProfileUrl(page));
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        log.info("АВТООТВЕТ: {} -> страница профиля открыта, пользователь: {}", getSiteName(), login);
+        boolean isTariffTab = youdoTariffChecker.isTariffsTabPresent(page);
+        if (!isTariffTab){
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Профиль бесплатный. Отклик не удастся отправить ", captureScreenshot(page));
+        }
+        else {
+            int remainingResponses = youdoTariffChecker.getRemainingResponses(page);
+            if (remainingResponses > 0){
+                StepResult.ok(StepType.SEND_AUTOREPLY, null);
+            }
+            else{
+                return StepResult.fail(StepType.SEND_AUTOREPLY,
+                        "Количество откликов мало для отправки автоответа ", captureScreenshot(page));
+            }
+        }
+        return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    private String getProfileUrl(Page page){
+        // Находим элемент
+        Locator avatarLink = page.locator("a.avatar_block__KOT6G.avatar_s32Square__FqL_i.js-toggleUserNavigationBtn");
+        // Получаем значение атрибута href
+        String href = avatarLink.getAttribute("href");
+        // Формируем полный URL
+        String profileUrl = "https://youdo.com" + href;
+        log.info("Профиль пользователя: {}", profileUrl);
+        return profileUrl;
     }
 }
