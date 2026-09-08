@@ -33,6 +33,9 @@ public class PlaywrightManager {
     @Autowired
     private ProxyService proxyService;
 
+    @Autowired
+    private PlaywrightStealthContext playwrightStealthContext;
+
     /**
      * Создаёт новый экземпляр {@link Playwright}.
      *
@@ -358,5 +361,9 @@ public class PlaywrightManager {
                         "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });"
         );
         return context;
+    }
+
+    public BrowserContext createStealthBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, SiteName site) {
+        return playwrightStealthContext.createStealthBrowserContext(browser, proxy, useProxy, site);
     }
 }

@@ -74,7 +74,7 @@ public abstract class AutoreplyParser {
             }
 
             browser = playwrightManager.createBrowser(playwright, proxyCred, headless, proxy, getSiteName());
-            context = playwrightManager.createBrowserContext(browser, proxyCred, proxy, getSiteName());
+            context = playwrightManager.createStealthBrowserContext(browser, proxyCred, proxy, getSiteName());
             page = context.newPage();
 
             StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
