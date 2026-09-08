@@ -173,6 +173,10 @@ export const BindingUpdateRequestNotificationTypeEnum = {
 
 export type BindingUpdateRequestNotificationTypeEnum = typeof BindingUpdateRequestNotificationTypeEnum[keyof typeof BindingUpdateRequestNotificationTypeEnum];
 
+export interface CredentialValidationResult {
+    'success'?: boolean;
+    'errorMessage'?: string;
+}
 /**
  * DTO типа уведомления
  */
@@ -283,6 +287,7 @@ export const AccountTemplateBindingsApiAxiosParamCreator = function (configurati
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            localVarHeaderParameter['Accept'] = '*/*';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
@@ -1188,6 +1193,7 @@ export const UserCredentialsApiAxiosParamCreator = function (configuration?: Con
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            localVarHeaderParameter['Accept'] = '*/*';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
@@ -1265,6 +1271,39 @@ export const UserCredentialsApiAxiosParamCreator = function (configuration?: Con
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @param {number} credentialId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        validateCredential: async (credentialId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'credentialId' is not null or undefined
+            assertParamExists('validateCredential', 'credentialId', credentialId)
+            const localVarPath = `/api/credentials/validate/{credentialId}`
+                .replace('{credentialId}', encodeURIComponent(String(credentialId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -1325,6 +1364,18 @@ export const UserCredentialsApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.getEncryptedById']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * 
+         * @param {number} credentialId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async validateCredential(credentialId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CredentialValidationResult>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.validateCredential(credentialId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.validateCredential']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -1372,6 +1423,15 @@ export const UserCredentialsApiFactory = function (configuration?: Configuration
          */
         getEncryptedById(credentialId: number, options?: RawAxiosRequestConfig): AxiosPromise<UserCredentialEncrypted> {
             return localVarFp.getEncryptedById(credentialId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @param {number} credentialId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        validateCredential(credentialId: number, options?: RawAxiosRequestConfig): AxiosPromise<CredentialValidationResult> {
+            return localVarFp.validateCredential(credentialId, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1421,6 +1481,16 @@ export class UserCredentialsApi extends BaseAPI {
      */
     public getEncryptedById(credentialId: number, options?: RawAxiosRequestConfig) {
         return UserCredentialsApiFp(this.configuration).getEncryptedById(credentialId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @param {number} credentialId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public validateCredential(credentialId: number, options?: RawAxiosRequestConfig) {
+        return UserCredentialsApiFp(this.configuration).validateCredential(credentialId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1495,6 +1565,7 @@ export const UserFiltersApiAxiosParamCreator = function (configuration?: Configu
                 localVarQueryParameter['enabled'] = enabled;
             }
 
+            localVarHeaderParameter['Accept'] = '*/*';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};

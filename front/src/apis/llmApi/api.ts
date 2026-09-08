@@ -278,37 +278,13 @@ export interface TestAutoreplyResponse {
      */
     'error'?: string;
     /**
-     * Отвечать ли на заказ
-     */
-    'shouldReply'?: boolean;
-    /**
      * Сгенерированный текст ответа
      */
     'reply'?: string;
     /**
-     * Уверенность AI (0.0-1.0)
+     * Ключевое слово при наличии
      */
-    'confidence'?: number;
-    /**
-     * Причина принятия решения
-     */
-    'reason'?: string;
-    /**
-     * Найденные ключевые слова
-     */
-    'matchedKeywords'?: Array<string>;
-    /**
-     * Пропущенные ключевые слова
-     */
-    'missedKeywords'?: Array<string>;
-    /**
-     * Причина соответствия категории
-     */
-    'categoryMatchReason'?: string;
-    /**
-     * Причина соответствия подкатегории
-     */
-    'subcategoryMatchReason'?: string;
+    'prefix'?: string;
     'testOrder'?: OrderDTO;
 }
 
