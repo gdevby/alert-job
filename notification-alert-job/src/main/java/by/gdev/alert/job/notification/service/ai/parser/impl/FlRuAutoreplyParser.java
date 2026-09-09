@@ -10,6 +10,7 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.CaptchaService;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.SessionStorageService;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -43,8 +44,11 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         this.sendRequest = sendRequest;
     }
 
-    public FlRuAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService, CaptchaService captchaService) {
-        super(playwrightManager, assignedProxyService);
+    public FlRuAutoreplyParser(PlaywrightManager playwrightManager,
+                               AssignedProxyService assignedProxyService,
+                               SessionStorageService sessionStorageService,
+                               CaptchaService captchaService) {
+        super(playwrightManager, assignedProxyService, sessionStorageService);
         this.captchaService = captchaService;
     }
 
@@ -251,6 +255,17 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         page.waitForTimeout(2000);
         log.info("АВТООТВЕТ: {} -> ОТКЛИК УСПЕШНО ЗАВЕРШЁН, пользователь: {}", getSiteName(), login);
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    @Override
+    protected void afterLogin(Page page) {
+        try {
+            safeNavigate(page, "https://www.fl.ru/account/profile/");
+            page.waitForSelector(".b-profile-menu", new Page.WaitForSelectorOptions().setTimeout(5000));
+            log.info("{}: переход в профиль выполнен", getSiteName());
+        } catch (Exception e) {
+            log.warn("{}: не удалось перейти в профиль", getSiteName(), e);
+        }
     }
 
     @Override

@@ -9,6 +9,7 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.SessionStorageService;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
@@ -40,8 +41,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
         return SiteName.WEBLANCER;
     }
 
-    public WeblancerAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
-        super(playwrightManager, assignedProxyService);
+    public WeblancerAutoreplyParser(PlaywrightManager playwrightManager,
+                                    AssignedProxyService assignedProxyService,
+                                    SessionStorageService sessionStorageService) {
+        super(playwrightManager, assignedProxyService, sessionStorageService);
     }
 
     @Override
@@ -172,5 +175,16 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
         page.waitForTimeout(10000);
         log.info("АВТООТВЕТ: {} -> ОТКЛИК УСПЕШНО ЗАВЕРШЁН, пользователь: {}", getSiteName(), login);
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    @Override
+    protected void afterLogin(Page page) {
+        try {
+            safeNavigate(page, "https://weblancer.ru/");
+            page.waitForSelector(".header__user", new Page.WaitForSelectorOptions().setTimeout(5000));
+            log.info("{}: переход на главную выполнен", getSiteName());
+        } catch (Exception e) {
+            log.warn("{}: не удалось перейти на главную", getSiteName(), e);
+        }
     }
 }

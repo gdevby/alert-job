@@ -8,7 +8,9 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
+import by.gdev.common.service.playwright.CaptchaService;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.SessionStorageService;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -35,8 +37,10 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
         this.sendRequest = sendRequest;
     }
 
-    public FreelanceRuAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
-        super(playwrightManager, assignedProxyService);
+    public FreelanceRuAutoreplyParser(PlaywrightManager playwrightManager,
+                                      AssignedProxyService assignedProxyService,
+                                      SessionStorageService sessionStorageService) {
+        super(playwrightManager, assignedProxyService, sessionStorageService);
     }
 
     @Override
@@ -195,5 +199,16 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
         page.waitForTimeout(2000);
         log.info("АВТООТВЕТ: {} -> ОТКЛИК УСПЕШНО ЗАВЕРШЁН, пользователь: {}", getSiteName(), login);
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+    }
+
+    @Override
+    protected void afterLogin(Page page) {
+        try {
+            safeNavigate(page, "https://freelance.ru/");
+            page.waitForSelector(".header__user", new Page.WaitForSelectorOptions().setTimeout(5000));
+            log.info("{}: переход на главную выполнен", getSiteName());
+        } catch (Exception e) {
+            log.warn("{}: не удалось перейти на главную", getSiteName(), e);
+        }
     }
 }

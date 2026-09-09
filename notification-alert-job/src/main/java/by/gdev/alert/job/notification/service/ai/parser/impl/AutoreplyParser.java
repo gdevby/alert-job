@@ -9,6 +9,7 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.SessionStorageService;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ public abstract class AutoreplyParser {
     protected boolean proxy;
 
     protected PlaywrightManager playwrightManager;
+    protected AssignedProxyService assignedProxyService;
+    protected SessionStorageService sessionStorageService;
 
     @Value("${parser.autoreply.default.price:1000}")
     protected int defaultPrice;
@@ -42,11 +45,12 @@ public abstract class AutoreplyParser {
     @Value("${autoreply.screenshots.dir:./autoreply/screenshots}")
     private String screenshotsBaseDir;
 
-    protected AssignedProxyService assignedProxyService;
-
-    protected AutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
+    protected AutoreplyParser(PlaywrightManager playwrightManager,
+                              AssignedProxyService assignedProxyService,
+                              SessionStorageService sessionStorageService) {
         this.playwrightManager = playwrightManager;
         this.assignedProxyService = assignedProxyService;
+        this.sessionStorageService = sessionStorageService;
     }
 
     public final StepResult<Void> sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload,
@@ -55,40 +59,66 @@ public abstract class AutoreplyParser {
         Browser browser = null;
         BrowserContext context = null;
         Page page = null;
+
         try {
             playwright = playwrightManager.createPlaywright();
             String userUuid = payload.getUser().getUuid();
-            ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(userUuid, payload.getModule().getId());
+            String siteName = getSiteName().name();
 
-            if (proxyCred == null && proxy) {
-                proxyCred = playwrightManager.getProxyWithRetry(3, 500);
-                log.info("АВТООТВЕТ: {} -> для пользователя {} нет закреплённого прокси, взят случайный: {}:{}",
-                        getSiteName(), userUuid,
-                        proxyCred != null ? proxyCred.getHost() : "null",
-                        proxyCred != null ? proxyCred.getPort() : 0);
-            } else if (proxyCred != null) {
-                log.info("АВТООТВЕТ: {} -> для пользователя {} используется закреплённый прокси: {}:{}",
-                        getSiteName(), userUuid, proxyCred.getHost(), proxyCred.getPort());
-            } else {
-                log.info("АВТООТВЕТ: {} -> для пользователя {} прокси не используется (proxy=false или отсутствует)", getSiteName(), userUuid);
-            }
+            ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(
+                    userUuid, payload.getModule().getId()
+            );
 
             browser = playwrightManager.createBrowser(playwright, proxyCred, headless, proxy, getSiteName());
-            context = playwrightManager.createBrowserContext(browser, proxyCred, proxy, getSiteName());
+
+            // -----------------------------
+            // СЕССИЯ: ПРОВЕРКА И ЗАГРУЗКА
+            // -----------------------------
+            boolean hasSession = sessionStorageService.hasSession(siteName, userUuid);
+
+            if (hasSession) {
+                log.info("SESSION {}: загружаем существующую сессию", siteName);
+                context = sessionStorageService.load(browser, siteName, userUuid);
+            } else {
+                log.info("SESSION {}: сессии нет → создаём новый контекст", siteName);
+                context = playwrightManager.createBrowserContext(browser, proxyCred, proxy, getSiteName());
+            }
+
             page = context.newPage();
 
-            StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
-            if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
-                return loginResult;
+            // -----------------------------
+            // ЛОГИН ТОЛЬКО ЕСЛИ СЕССИИ НЕТ
+            // -----------------------------
+            if (!hasSession) {
+                StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
+
+                if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
+                    return loginResult;
+                }
+
+                if (loginResult.failed()) {
+                    log.warn("Логин не выполнен для {}", creds.login());
+                    return loginResult;
+                }
+
+                // -----------------------------
+                // ПЕРЕХОД НА СТРАНИЦУ, ГДЕ ПОЯВЛЯЮТСЯ КУКИ АВТОРИЗАЦИИ
+                // -----------------------------
+                afterLogin(page);
+                // -----------------------------
+                // СОХРАНЕНИЕ СЕССИИ
+                // -----------------------------
+                sessionStorageService.save(context, siteName, userUuid);
+                log.info("SESSION {}: новая сессия сохранена", siteName);
+            } else {
+                log.info("SESSION {}: логин пропущен — работаем по загруженной сессии", siteName);
             }
-            if (loginResult.failed()) {
-                log.warn("Логин не выполнен для {}", creds.login());
-                return loginResult;
-            }
-            takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "after_login");
+
+            takeScreenshot(page, getSiteName(), userUuid, "after_login");
             page.waitForTimeout(1000);
 
             StepResult<Void> processResult = processAutoReply(page, payload, creds);
+
             if (processResult.failed()) {
                 log.warn("Автоответ НЕ отправлен пользователем {}", creds.login());
                 return processResult;
@@ -125,7 +155,7 @@ public abstract class AutoreplyParser {
             page.waitForSelector(selector, new Page.WaitForSelectorOptions().setTimeout(timeoutMs));
             return true;
         } catch (Exception e) {
-            log.warn("TIMEOUT at step '{}': selector '{}' not found within {} ms", step, selector, timeoutMs);
+            log.warn("TIMEOUT at step '{}': selector '{}' not найден за {} ms", step, selector, timeoutMs);
             return false;
         }
     }
@@ -152,7 +182,7 @@ public abstract class AutoreplyParser {
 
     protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
         if (!screenshotsEnabled) {
-            log.info("Сохранение скриншотов для отладочной информации отключено");
+            log.info("Сохранение скриншотов отключено");
             return;
         }
         try {
@@ -178,7 +208,7 @@ public abstract class AutoreplyParser {
             Files.write(file, screenshotBytes);
             log.info("Скриншот сохранён: {}", file.toAbsolutePath());
         } catch (Exception e) {
-            log.warn("Не удалось сохранить скриншот для шага '{}': {}", step, e.getMessage());
+            log.warn("Не удалось сохранить скриншот '{}': {}", step, e.getMessage());
         }
     }
 
@@ -190,6 +220,9 @@ public abstract class AutoreplyParser {
     protected abstract StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode);
 
     protected abstract StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds);
+
+    //Переход на страницу где есть куки авторизации
+    protected abstract void afterLogin(Page page);
 
     protected abstract SiteName getSiteName();
 }

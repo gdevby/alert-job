@@ -9,6 +9,7 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.SessionStorageService;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -38,8 +39,10 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         this.sendRequest = sendRequest;
     }
 
-    public KworkAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
-        super(playwrightManager, assignedProxyService);
+    public KworkAutoreplyParser(PlaywrightManager playwrightManager,
+                                AssignedProxyService assignedProxyService,
+                                SessionStorageService sessionStorageService) {
+        super(playwrightManager, assignedProxyService, sessionStorageService);
     }
 
     @Override
@@ -372,6 +375,17 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         } catch (Exception e) {
             log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось отправить заявку: " + e.getMessage(), captureScreenshot(page));
+        }
+    }
+
+    @Override
+    protected void afterLogin(Page page) {
+        try {
+            safeNavigate(page, "https://kwork.ru/projects");
+            page.waitForSelector(".user-menu", new Page.WaitForSelectorOptions().setTimeout(5000));
+            log.info("{}: переход на страницу проектов выполнен", getSiteName());
+        } catch (Exception e) {
+            log.warn("{}: не удалось перейти на страницу проектов", getSiteName(), e);
         }
     }
 }

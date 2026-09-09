@@ -11,6 +11,7 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.SessionStorageService;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -68,9 +69,10 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
     public YouDoAutoreplyParser(PlaywrightManager playwrightManager,
                                 AssignedProxyService assignedProxyService,
+                                SessionStorageService sessionStorageService,
                                 OtpService otpService,
                                 YoudoTariffChecker youdoTariffChecker) {
-        super(playwrightManager, assignedProxyService);
+        super(playwrightManager, assignedProxyService, sessionStorageService);
         this.otpService = otpService;
         this.youdoTariffChecker = youdoTariffChecker;
     }
@@ -410,5 +412,16 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         String profileUrl = "https://youdo.com" + href;
         log.info("Профиль пользователя: {}", profileUrl);
         return profileUrl;
+    }
+
+    @Override
+    protected void afterLogin(Page page) {
+        try {
+            safeNavigate(page, "https://youdo.com/profile");
+            page.waitForSelector(".ProfileMenu_container__GnwLh", new Page.WaitForSelectorOptions().setTimeout(5000));
+            log.info("{}: переход в профиль выполнен", getSiteName());
+        } catch (Exception e) {
+            log.warn("{}: не удалось перейти в профиль", getSiteName(), e);
+        }
     }
 }
