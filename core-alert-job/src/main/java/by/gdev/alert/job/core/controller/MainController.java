@@ -53,12 +53,15 @@ public class MainController {
     }
 
     @PatchMapping("user/alerts")
-    public ResponseEntity<Mono<Boolean>> diactivateAlerts(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
-	    @RequestParam("status") boolean status) {
-        Mono<Boolean> statusChanged = coreService.changeAlertStatus(uuid, status);
-        statsService.collectTodayStat();
-        return ResponseEntity.ok(statusChanged);
+    public Mono<ResponseEntity<Boolean>> diactivateAlerts(
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @RequestParam("status") boolean status) {
+
+        return coreService.changeAlertStatus(uuid, status)
+                .doOnSuccess(v -> statsService.collectTodayStat())
+                .map(ResponseEntity::ok);
     }
+
 
     @PatchMapping("user/alerts/type")
     public ResponseEntity<Mono<Boolean>> alertType(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
