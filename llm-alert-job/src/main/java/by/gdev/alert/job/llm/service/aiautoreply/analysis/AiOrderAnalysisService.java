@@ -210,13 +210,22 @@ public class AiOrderAnalysisService {
                  */
 
 
-                log.info("RAW LLM RESPONSE:\n{}", raw);
                 raw = raw.replace("```json", "")
                         .replace("```", "")
                         .trim();
                 String json = extractJson(raw);
                 AiDecision decision =  mapper.readValue(json, AiDecision.class);
                 decision.setValid(true);
+                log.info("""
+[LLM] AiDecision:
+  valid: {}
+  prefix: {}
+  reply: {}
+""",
+                        decision.isValid(),
+                        decision.getPrefix() != null ? decision.getPrefix() : "<null>",
+                        decision.getReply() != null ? decision.getReply() : "<null>"
+                );
                 return decision;
 
             } catch (org.springframework.ai.retry.NonTransientAiException e) {

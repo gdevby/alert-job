@@ -60,17 +60,33 @@ public class AiStartupCheck implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         String provider = detectProvider(baseUrl);
+        log.info("""
+==================== AI STARTUP CHECK ====================
+  Provider: {}
+  Base URL: {}
+  Model: {}
+===========================================================
+""", provider, baseUrl, model);
 
         try {
-            chatClientStartup
+            String response = chatClientStartup
                     .prompt("Respond with OK only.")
                     .call()
                     .content();
 
-            log.debug("{} доступен", provider);
-            log.debug("Используемая модель: {}", model);
+            log.info("""
+[AI STARTUP] SUCCESS
+  Provider: {}
+  Model: {}
+  Response: {}
+""", provider, model, response);
         } catch (Exception e) {
-            log.error("{} недоступен: {}", provider, e.getMessage());
+            log.error("""
+[AI STARTUP] FAILURE
+  Provider: {}
+  Model: {}
+  Error: {}
+""", provider, model, e.getMessage());
         }
     }
 
