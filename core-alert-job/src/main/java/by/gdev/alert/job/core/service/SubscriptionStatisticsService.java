@@ -22,7 +22,7 @@ public class SubscriptionStatisticsService {
     @Transactional
     public void collectTodayStat() {
         LocalDate today = LocalDate.now();
-        long count = userRepository.countBySwitchOffAlertsTrue();
+        long count = userRepository.countBySwitchOffAlertsOn();
 
         DailySubscriptionStat stat = statRepository.findByStatDate(today)
                 .orElse(new DailySubscriptionStat());
