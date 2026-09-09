@@ -102,7 +102,6 @@ public class AutoReplyPipeline {
             String key = order.getLink();
 
             if (!sent.add(key)) {
-                log.warn("LLM DUPLICATE DROPPED (already sent to Notification): {}", key);
                 continue;
             }
 
@@ -126,7 +125,18 @@ public class AutoReplyPipeline {
      * Выполняет анализ одного заказа с учётом контекста.
      */
     private AiDecision processItem(OrderDTO order, Long templateId, Long promtId, String uuid) {
-        log.info("АВТООТВЕТ: анализ заказа id={}, templateId={}, promtId={}", order.getLink(), templateId, promtId);
+        log.info("""
+[LLM] Начат анализ заказа:
+  link: {}
+  title: {}
+  templateId: {}
+  promtId: {}
+""",
+                order.getLink(),
+                order.getTitle(),
+                templateId,
+                promtId
+        );
         return analysisService.analyze(order, templateId, promtId, uuid);
     }
 

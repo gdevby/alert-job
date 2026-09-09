@@ -49,20 +49,33 @@ public class DummyReplySender implements ReplySender {
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append("\n===================================================\n");
-        sb.append("=============== ЗАКАЗ #").append(num).append(" ===============\n\n");
+        log.info("""
+==================== AUTO-REPLY #{} ====================
+ORDER:
+  title: {}
+  link: {}
+  price: {}
+  message: {}
 
-        // Краткая информация о заказе
-        appendIfNotNull(sb, "Заголовок", order.getTitle());
-        appendIfNotNull(sb, "Ссылка", order.getLink());
-        appendIfNotNull(sb, "Описание", order.getMessage());
-        if (order.getPrice() != null) {
-            appendIfNotNull(sb, "Цена", order.getPrice().getPrice());
-        }
-        sb.append("\n--- Решение AI ---\n");
-        sb.append(replyText).append("\n");
-        sb.append("===================================================\n\n\n");
-        log.debug(sb.toString());
+AI DECISION:
+  valid: {}
+  prefix: {}
+  reply: {}
+
+FINAL TEXT:
+{}
+===========================================================
+""",
+                num,
+                order.getTitle(),
+                order.getLink(),
+                order.getPrice() != null ? order.getPrice().getPrice() : "<нет>",
+                order.getMessage(),
+                decision.isValid(),
+                decision.getPrefix(),
+                decision.getReply(),
+                replyText
+        );
     }
 
     /**
