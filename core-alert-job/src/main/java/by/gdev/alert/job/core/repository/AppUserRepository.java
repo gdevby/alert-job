@@ -39,4 +39,6 @@ public interface AppUserRepository extends CrudRepository<AppUser, Long> {
 	@Query("SELECT u FROM AppUser u LEFT JOIN FETCH u.orderModules om LEFT JOIN FETCH om.sources WHERE u.uuid = :uuid")
 	Optional<AppUser> findByUuidWithModulesAndSources(@Param("uuid") String uuid);
 
+	@Query("SELECT COUNT(u) FROM AppUser u WHERE u.switchOffAlerts = false ")
+	long countBySwitchOffAlertsOn();
 }

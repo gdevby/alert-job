@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.controller;
 
+import by.gdev.alert.job.core.service.SubscriptionStatisticsService;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -37,6 +38,7 @@ import reactor.core.publisher.Mono;
 public class MainController {
 
     private final CoreService coreService;
+    private final SubscriptionStatisticsService statsService;
 
     @PostMapping("user/authentication")
     public Mono<ResponseEntity<String>> userAuthentication(
@@ -53,7 +55,9 @@ public class MainController {
     @PatchMapping("user/alerts")
     public ResponseEntity<Mono<Boolean>> diactivateAlerts(@RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
 	    @RequestParam("status") boolean status) {
-	return ResponseEntity.ok(coreService.changeAlertStatus(uuid, status));
+        Mono<Boolean> statusChanged = coreService.changeAlertStatus(uuid, status);
+        statsService.collectTodayStat();
+        return ResponseEntity.ok(statusChanged);
     }
 
     @PatchMapping("user/alerts/type")
