@@ -177,6 +177,11 @@ export interface CredentialValidationResult {
     'success'?: boolean;
     'errorMessage'?: string;
 }
+export interface DailySubscriptionStat {
+    'id'?: number;
+    'statDate'?: string;
+    'totalUsers'?: number;
+}
 /**
  * DTO типа уведомления
  */
@@ -1125,6 +1130,169 @@ export class ModulesApi extends BaseAPI {
      */
     public getNotificationTypes(options?: RawAxiosRequestConfig) {
         return ModulesApiFp(this.configuration).getNotificationTypes(options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * SubscriptionStatisticsApi - axios parameter creator
+ */
+export const SubscriptionStatisticsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Возвращает список ежедневной статистики подписок за последние 30 дней.
+         * @summary Статистика за последний месяц
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getLastMonthStats: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/stats/subscriptions/last-month`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Возвращает список ежедневной статистики подписок за указанное количество дней.
+         * @summary Статистика за последние N дней
+         * @param {number} [days] Количество дней для выборки
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getStatsForLastDays: async (days?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/stats/subscriptions/last-days`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (days !== undefined) {
+                localVarQueryParameter['days'] = days;
+            }
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * SubscriptionStatisticsApi - functional programming interface
+ */
+export const SubscriptionStatisticsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = SubscriptionStatisticsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Возвращает список ежедневной статистики подписок за последние 30 дней.
+         * @summary Статистика за последний месяц
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getLastMonthStats(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<DailySubscriptionStat>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getLastMonthStats(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['SubscriptionStatisticsApi.getLastMonthStats']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Возвращает список ежедневной статистики подписок за указанное количество дней.
+         * @summary Статистика за последние N дней
+         * @param {number} [days] Количество дней для выборки
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getStatsForLastDays(days?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<DailySubscriptionStat>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getStatsForLastDays(days, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['SubscriptionStatisticsApi.getStatsForLastDays']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * SubscriptionStatisticsApi - factory interface
+ */
+export const SubscriptionStatisticsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = SubscriptionStatisticsApiFp(configuration)
+    return {
+        /**
+         * Возвращает список ежедневной статистики подписок за последние 30 дней.
+         * @summary Статистика за последний месяц
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getLastMonthStats(options?: RawAxiosRequestConfig): AxiosPromise<Array<DailySubscriptionStat>> {
+            return localVarFp.getLastMonthStats(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Возвращает список ежедневной статистики подписок за указанное количество дней.
+         * @summary Статистика за последние N дней
+         * @param {number} [days] Количество дней для выборки
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getStatsForLastDays(days?: number, options?: RawAxiosRequestConfig): AxiosPromise<Array<DailySubscriptionStat>> {
+            return localVarFp.getStatsForLastDays(days, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * SubscriptionStatisticsApi - object-oriented interface
+ */
+export class SubscriptionStatisticsApi extends BaseAPI {
+    /**
+     * Возвращает список ежедневной статистики подписок за последние 30 дней.
+     * @summary Статистика за последний месяц
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getLastMonthStats(options?: RawAxiosRequestConfig) {
+        return SubscriptionStatisticsApiFp(this.configuration).getLastMonthStats(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Возвращает список ежедневной статистики подписок за указанное количество дней.
+     * @summary Статистика за последние N дней
+     * @param {number} [days] Количество дней для выборки
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getStatsForLastDays(days?: number, options?: RawAxiosRequestConfig) {
+        return SubscriptionStatisticsApiFp(this.configuration).getStatsForLastDays(days, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

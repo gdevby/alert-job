@@ -1,8 +1,12 @@
+import { SubscriptionStatisticsApi } from '@/apis/coreApi';
+import { useQuery } from '@tanstack/react-query';
 import Title from '../../components/common/title/Title';
 import Examples from '../../layouts/homePage/examples/Examples';
 import Chart from '../../components/orders/chart/Chart';
 
 import './homePage.scss';
+
+const subscriptionStatisticsApi = new SubscriptionStatisticsApi();
 
 const list = [
   'Настройка по дням недели и времени, чтобы не уведомлять ночью и на выходных',
@@ -26,6 +30,12 @@ const sites = [
 ];
 
 const HomePage = () => {
+  const { data, isPending } = useQuery({
+    queryKey: ['subscriptionStatisticsApi.getStatsForLastDays'],
+    queryFn: () => subscriptionStatisticsApi.getStatsForLastDays(1),
+    placeholderData: data => data,
+  });
+
   return (
     <div className="container">
       <div className="homePage_content">
@@ -66,6 +76,10 @@ const HomePage = () => {
         <p className="mt-1">
           Чтобы начать, создайте аккаунт и авторизуйтесь на этом сайте, в правом верхнем углу можете сконфигурировать
           фильтры.
+        </p>
+        <p className="mt-1">
+          Количество активных пользователей: {isPending && '...'}
+          {!isPending && data?.data[0].totalUsers}
         </p>
         <Chart />
         <Examples />
