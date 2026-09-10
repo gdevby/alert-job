@@ -260,6 +260,72 @@ public class PlaywrightManager {
     }
 
     /**
+     * Базовые опции контекста: viewport, userAgent, locale, deviceScaleFactor, isMobile, hasTouch.
+     * Без прокси и без timezone — они добавляются отдельно.
+     */
+    public Browser.NewContextOptions baseContextOptions() {
+        return new Browser.NewContextOptions()
+                .setViewportSize(1366, 768)
+                .setUserAgent(
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                                "Chrome/123.0.0.0 Safari/537.36"
+                )
+                .setLocale("ru-RU")
+                .setDeviceScaleFactor(1.0)
+                .setIsMobile(false)
+                .setHasTouch(false);
+    }
+
+    /**
+     * Настраивает прокси в опциях контекста.
+     */
+    public void applyProxy(Browser.NewContextOptions options, ProxyCredentials proxy, boolean useProxy) {
+        if (!useProxy) {
+            return;
+        }
+        ProxyCredentials usedProxy = proxy != null ? proxy : proxyService.getRandomActiveProxy();
+        options.setProxy(new Proxy("http://" + usedProxy.getHost() + ":" + usedProxy.getPort())
+                .setUsername(usedProxy.getUsername())
+                .setPassword(usedProxy.getPassword()));
+    }
+
+    /**
+     * Настраивает timezone для конкретного сайта.
+     */
+    public void applyTimezone(Browser.NewContextOptions options, SiteName site) {
+        if (SiteName.FREELANCEHUNT.equals(site)) {
+            options.setTimezoneId("Europe/Berlin");
+        }
+    }
+
+    /**
+     * Антидетект-скрипты для контекста.
+     */
+    public void applyStealthScripts(BrowserContext context) {
+        context.addInitScript(
+                "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });" +
+                        "Object.defineProperty(window, 'chrome', {" +
+                        "  get: () => ({" +
+                        "    runtime: {}," +
+                        "    app: { isInstalled: false }," +
+                        "    webstore: { onInstallStageChanged: {}, onDownloadProgress: {} }" +
+                        "  })" +
+                        "});" +
+                        "Object.defineProperty(navigator, 'plugins', {" +
+                        "  get: () => [" +
+                        "    { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }," +
+                        "    { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' }," +
+                        "    { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' }" +
+                        "  ]" +
+                        "});" +
+                        "Object.defineProperty(navigator, 'languages', { get: () => ['en-US','ru-RU','en','ru'] });" +
+                        "Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });" +
+                        "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });"
+        );
+    }
+
+    /**
      * Создаёт новый {@link BrowserContext} с антидетект‑настройками.
      *
      * @param browser браузер
@@ -288,75 +354,12 @@ public class PlaywrightManager {
      *  - FREELANCEHUNT → timezone = Europe/Berlin.
      */
     public BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy, SiteName site) {
-        BrowserContext context;
-        Browser.NewContextOptions options;
-        if (useProxy){
-            ProxyCredentials usedProxy = proxy != null ? proxy : proxyService.getRandomActiveProxy();
-            options = new Browser.NewContextOptions()
-                    .setViewportSize(1366, 768)
-                    .setUserAgent(
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                    "Chrome/123.0.0.0 Safari/537.36"
-                    )
-                    .setLocale("ru-RU")
-                    .setDeviceScaleFactor(1.0)
-                    .setIsMobile(false)
-                    .setHasTouch(false)
-                    .setProxy(new Proxy("http://" + usedProxy.getHost() + ":" + usedProxy.getPort())
-                            .setUsername(usedProxy.getUsername())
-                            .setPassword(usedProxy.getPassword()));
-        }
-        else {
-            options = new Browser.NewContextOptions()
-                    .setViewportSize(1366, 768)
-                    .setUserAgent(
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                    "Chrome/123.0.0.0 Safari/537.36"
-                    )
-                    .setLocale("ru-RU")
-                    .setDeviceScaleFactor(1.0)
-                    .setIsMobile(false)
-                    .setHasTouch(false);
-        }
+        Browser.NewContextOptions options = baseContextOptions();
+        applyProxy(options, proxy, useProxy);
+        applyTimezone(options, site);
 
-        if ("FREELANCEHUNT".equals(site)){
-            options.setTimezoneId("Europe/Berlin");
-        }
-
-        context = browser.newContext(options);
-        context.addInitScript(
-                // webdriver = undefined
-                "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });" +
-
-                        // window.chrome — реалистичный объект
-                        "Object.defineProperty(window, 'chrome', {" +
-                        "  get: () => ({" +
-                        "    runtime: {}," +
-                        "    app: { isInstalled: false }," +
-                        "    webstore: { onInstallStageChanged: {}, onDownloadProgress: {} }" +
-                        "  })" +
-                        "});" +
-
-                        // Реалистичные плагины
-                        "Object.defineProperty(navigator, 'plugins', {" +
-                        "  get: () => [" +
-                        "    { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }," +
-                        "    { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' }," +
-                        "    { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' }" +
-                        "  ]" +
-                        "});" +
-
-                        // Локали
-                        "Object.defineProperty(navigator, 'languages', { get: () => ['en-US','ru-RU','en','ru'] });" +
-
-                        // CPU
-                        "Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });" +
-
-                        // RAM
-                        "Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });"
-        );
+        BrowserContext context = browser.newContext(options);
+        applyStealthScripts(context);
         return context;
     }
 }

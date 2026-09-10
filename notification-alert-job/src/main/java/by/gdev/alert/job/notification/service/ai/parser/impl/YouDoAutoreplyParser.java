@@ -303,7 +303,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             StepResult<Void> tariffResult = checkTariff(page, login);
             if (tariffResult.failed()) {
                 return tariffResult; // возвращаем ошибку, если профиль бесплатный или откликов недостаточно
-            }
+           }
             log.info("АВТООТВЕТ: {} -> тариф активен, продолжаем обработку заказа", getSiteName());
             page.navigate(link);
             page.waitForLoadState(LoadState.NETWORKIDLE);

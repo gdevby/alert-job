@@ -71,9 +71,7 @@ public abstract class AutoreplyParser {
 
             browser = playwrightManager.createBrowser(playwright, proxyCred, headless, proxy, getSiteName());
 
-            // -----------------------------
             // СЕССИЯ: ПРОВЕРКА И ЗАГРУЗКА
-            // -----------------------------
             boolean hasSession = sessionStorageService.hasSession(siteName, userUuid);
 
             if (hasSession) {
@@ -86,12 +84,9 @@ public abstract class AutoreplyParser {
 
             page = context.newPage();
 
-            // -----------------------------
             // ЛОГИН ТОЛЬКО ЕСЛИ СЕССИИ НЕТ
-            // -----------------------------
             if (!hasSession) {
                 StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
-
                 if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
                     return loginResult;
                 }
@@ -101,19 +96,18 @@ public abstract class AutoreplyParser {
                     return loginResult;
                 }
 
-                // -----------------------------
                 // ПЕРЕХОД НА СТРАНИЦУ, ГДЕ ПОЯВЛЯЮТСЯ КУКИ АВТОРИЗАЦИИ
-                // -----------------------------
+                page.waitForTimeout(2000);
                 afterLogin(page);
-                // -----------------------------
+                page.waitForTimeout(2000);
                 // СОХРАНЕНИЕ СЕССИИ
-                // -----------------------------
                 sessionStorageService.save(context, siteName, userUuid);
                 log.info("SESSION {}: новая сессия сохранена", siteName);
             } else {
+                afterLogin(page);
+                page.waitForTimeout(2000);
                 log.info("SESSION {}: логин пропущен — работаем по загруженной сессии", siteName);
             }
-
             takeScreenshot(page, getSiteName(), userUuid, "after_login");
             page.waitForTimeout(1000);
 
