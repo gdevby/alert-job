@@ -1,7 +1,7 @@
 # Shared image for Spring Boot microservices (layered JAR).
 
 # Stage 1: unpack the JAR into layers (dependencies, loader, application).
-FROM eclipse-temurin:17-jre-jammy AS extractor
+FROM eclipse-temurin:17-jre-alpine AS extractor
 
 # JAR file name is passed from Maven (dockerfile-maven-plugin).
 ARG JAR_FILE
@@ -13,7 +13,7 @@ COPY target/${JAR_FILE} application.jar
 RUN java -Djarmode=tools -jar application.jar extract --layers --launcher --destination extracted
 
 # Stage 2: final runtime image.
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:17-jre-alpine
 
 # Service port (8011, 8012, 8015, etc.) — build-arg from pom.xml.
 ARG SERVER_PORT=8080
