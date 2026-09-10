@@ -53,7 +53,8 @@ public class SecurityConfig {
                 "/favicon.png",
                 "/actuator/**",
                 "/core-alert-job/api/user/test",
-                "/parser/api/orders/statistics"
+                "/parser/api/orders/statistics",
+                "/core/stats/subscriptions/**"
         ));
 
         // Добавляем Swagger-пути для каждого переданного модуля
