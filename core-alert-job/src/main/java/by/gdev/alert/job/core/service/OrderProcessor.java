@@ -19,6 +19,7 @@ import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
 import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.SiteName;
 import lombok.Getter;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import by.gdev.alert.job.core.repository.AppUserRepository;
 import by.gdev.alert.job.core.repository.DelayOrderNotificationRepository;
 import by.gdev.alert.job.core.repository.UserFilterRepository;
 import by.gdev.common.model.OrderDTO;
+import by.gdev.common.model.PriceDTO;
 import by.gdev.common.model.SourceSiteDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +54,10 @@ public class OrderProcessor {
     private final LlmClient llmClient;
     private final NotificationClient notificationClient;
     private final AiOrderRequestMapper aiOrderRequestMapper;
+
+    private static final String NEW_LINE = "\n";
+    private static final int TELEGRAM_DESCRIPTION_LIMIT = 300;
+    private static final int EMAIL_DESCRIPTION_LIMIT = 800;
 
     @Value("${autoreply.enabled:false}")
     @Getter
@@ -192,10 +198,15 @@ public class OrderProcessor {
                 String modulesString = orderList.stream().map(order -> {
                     return order.getModuleName();
                 }).distinct().collect(Collectors.joining(", "));
-                SourceSiteDTO s = orderList.get(0).getSourceSite();
-                return user.isDefaultSendType() ? createOrdersMessageEmail(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), s.getCategoryName(),
-                        s.getSubCategoryName()) : createOrdersMessageTelegram(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), s.getCategoryName(),
-                        s.getSubCategoryName());
+                OrderDTO first = orderList.get(0);
+                SourceSiteDTO s = first.getSourceSite();
+                String description = resolveDescription(first.getMessage(), first.getTitle());
+                String price = resolvePrice(first.getPrice());
+                return user.isDefaultSendType()
+                        ? createOrdersMessageEmail(modulesString, first.getTitle(), first.getLink(),
+                                s.getCategoryName(), s.getSubCategoryName(), description, price)
+                        : createOrdersMessageTelegram(modulesString, first.getTitle(), first.getLink(),
+                                s.getCategoryName(), s.getSubCategoryName(), description, price);
             }).toList();
             mailSenderService.sendMessagesToUser(user, resultOrdersString, NotificationType.ORDER);
         } else {
@@ -210,6 +221,8 @@ public class OrderProcessor {
                 if (!StringUtils.isEmpty(s.getSubCategoryName())) {
                     don.setSubCategoryName(s.getSubCategoryName());
                 }
+                don.setMessage(resolveDescription(l.getMessage(), l.getTitle()));
+                don.setPrice(resolvePrice(l.getPrice()));
                 delayOrderRepository.save(don);
             });
         }
@@ -296,9 +309,14 @@ public class OrderProcessor {
                     String modulesString = orderList.stream().map(DelayOrderNotification::getOrderName)
                             .distinct()
                             .collect(Collectors.joining(", "));
-                    return user.isDefaultSendType() ? createOrdersMessageEmail(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), orderList.get(0).getCategoryName(),
-                            orderList.get(0).getSubCategoryName()) : createOrdersMessageTelegram(modulesString, orderList.get(0).getTitle(), orderList.get(0).getLink(), orderList.get(0).getCategoryName(),
-                            orderList.get(0).getSubCategoryName());
+                    DelayOrderNotification first = orderList.get(0);
+                    return user.isDefaultSendType()
+                            ? createOrdersMessageEmail(modulesString, first.getTitle(), first.getLink(),
+                                    first.getCategoryName(), first.getSubCategoryName(),
+                                    first.getMessage(), first.getPrice())
+                            : createOrdersMessageTelegram(modulesString, first.getTitle(), first.getLink(),
+                                    first.getCategoryName(), first.getSubCategoryName(),
+                                    first.getMessage(), first.getPrice());
                 }).toList();
                 if (!resultOrdersString.isEmpty()) {
                     //sendMessageToUser(user, resultOrdersString);
@@ -318,24 +336,79 @@ public class OrderProcessor {
         });
     }
 
+    /**
+     * Описание заказа для уведомления.
+     * Часть парсеров (например kwork) кладёт в message сам заголовок — такое
+     * описание ничего не добавляет, поэтому не показываем его вовсе.
+     */
+    private String resolveDescription(String message, String title) {
+        if (StringUtils.isBlank(message)) {
+            return "";
+        }
+        String cleaned = message.trim().replaceAll("\\s+", " ");
+        if (StringUtils.equalsIgnoreCase(cleaned, StringUtils.trimToEmpty(title))) {
+            return "";
+        }
+        return cleaned;
+    }
+
+    private String resolvePrice(PriceDTO price) {
+        return price == null ? "" : StringUtils.trimToEmpty(price.getPrice());
+    }
+
+    private String shorten(String text, int limit) {
+        if (StringUtils.length(text) <= limit) {
+            return text;
+        }
+        return StringUtils.substring(text, 0, limit - 1).trim() + "…";
+    }
+
     private String createOrdersMessageTelegram(String name, String title, String link, String categoryName,
-                                       String subCategoryName) {
-        return StringUtils.isNotEmpty(subCategoryName)
-                ? String.format("%s, %s, %s новый заказ - %s %s", name, categoryName, subCategoryName, title, link)
-                : String.format("%s, %s, новый заказ - %s %s", name, categoryName, title, link);
+                                       String subCategoryName, String description, String price) {
+        StringBuilder message = new StringBuilder();
+        message.append(StringUtils.isNotEmpty(subCategoryName)
+                ? String.format("%s, %s, %s новый заказ - %s", name, categoryName, subCategoryName, title)
+                : String.format("%s, %s, новый заказ - %s", name, categoryName, title));
+
+        if (StringUtils.isNotBlank(price)) {
+            message.append(NEW_LINE).append("Цена: ").append(price);
+        }
+        if (StringUtils.isNotBlank(description)) {
+            message.append(NEW_LINE).append(shorten(description, TELEGRAM_DESCRIPTION_LIMIT));
+        }
+        return message.append(NEW_LINE).append(link).toString();
     }
 
     private String createOrdersMessageEmail(String moduleName,
                                        String title,
                                        String link,
                                        String categoryName,
-                                       String subCategoryName) {
+                                       String subCategoryName,
+                                       String description,
+                                       String price) {
 
         String subCategoryBlock = "";
         if (StringUtils.isNotEmpty(subCategoryName)) {
             subCategoryBlock = String.format(
                     "<p style=\"margin: 4px 0;\"><strong>Подкатегория:</strong> %s</p>",
-                    subCategoryName
+                    escapeHtml(subCategoryName)
+            );
+        }
+
+        String priceBlock = "";
+        if (StringUtils.isNotBlank(price)) {
+            priceBlock = String.format(
+                    "<p style=\"margin: 4px 0;\"><strong>Цена:</strong> %s</p>",
+                    escapeHtml(price)
+            );
+        }
+
+        String descriptionBlock = "";
+        if (StringUtils.isNotBlank(description)) {
+            descriptionBlock = String.format(
+                    "<p style=\"margin: 8px 0 4px 0;\"><strong>Описание:</strong></p>"
+                            + "<p style=\"margin: 0; white-space: pre-line; color: #444;\">%s</p>",
+                    escapeHtml(shorten(description, EMAIL_DESCRIPTION_LIMIT))
             );
         }
 
@@ -357,18 +430,33 @@ public class OrderProcessor {
                     <strong>Название:</strong> %s
                 </p>
 
-                <p style="margin: 4px 0;">
+                %s
+
+                %s
+
+                <p style="margin: 8px 0 4px 0;">
                     <strong>Ссылка:</strong>
                     <a href="%s" style="color: #1a73e8;">%s</a>
                 </p>
             </div>
             """,
-                moduleName,
-                categoryName,
+                escapeHtml(moduleName),
+                escapeHtml(categoryName),
                 subCategoryBlock,
-                title,
+                escapeHtml(title),
+                priceBlock,
+                descriptionBlock,
                 link,
                 link
         );
+    }
+
+    /**
+     * Заголовок, описание и цена приходят с чужих сайтов как есть, поэтому в
+     * письмо они попадают только экранированными: иначе угловая скобка в
+     * описании ломает вёрстку письма, а разметка из заказа подставляется в него.
+     */
+    private String escapeHtml(String value) {
+        return StringEscapeUtils.escapeHtml(StringUtils.trimToEmpty(value));
     }
 }

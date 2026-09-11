@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.model.db;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 
@@ -18,4 +19,7 @@ public class DelayOrderNotification extends BasicId {
     private String orderName;
     private String categoryName;
     private String subCategoryName;
+    @Column(length = 2000)
+    private String message;
+    private String price;
 }
