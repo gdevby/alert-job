@@ -19,15 +19,13 @@ FROM eclipse-temurin:17-jre-alpine
 ARG SERVER_PORT=8080
 # Persist the port in an environment variable for HEALTHCHECK.
 ENV SERVER_PORT=${SERVER_PORT}
-# JVM flags: respect container limits and faster random startup.
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
+# JVM flags: respect container limits, faster random startup, crash on OOM.
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=80.0 -XX:+CrashOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
-# Create a non-root user and install curl for health checks.
-RUN groupadd -r app \
-    && useradd -r -m -d /home/app -g app app \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+# Create a non-root user and install curl for health checks (Alpine syntax).
+RUN addgroup -S app \
+    && adduser -S -h /home/app -G app app \
+    && apk add --no-cache curl
 
 # Application directory inside the container.
 WORKDIR /app

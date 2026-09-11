@@ -4,7 +4,7 @@
 ARG PLAYWRIGHT_VERSION=1.61.0
 
 # Stage 1: unpack the JAR into layers (same logic as java-service.Dockerfile).
-FROM eclipse-temurin:17-jre-alpine AS extractor
+FROM eclipse-temurin:17-jre-jammy AS extractor
 
 # JAR file name is passed from Maven (dockerfile-maven-plugin).
 ARG JAR_FILE
@@ -22,8 +22,8 @@ FROM mcr.microsoft.com/playwright/java:v${PLAYWRIGHT_VERSION}-jammy
 ARG SERVER_PORT=8017
 # Persist the port in an environment variable for HEALTHCHECK.
 ENV SERVER_PORT=${SERVER_PORT}
-# JVM flags: respect container limits and faster random startup.
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
+# JVM flags: respect container limits, faster random startup, crash on OOM.
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=80.0 -XX:+CrashOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
 # Temporarily root — required for apt-get install curl.
 USER root
