@@ -46,6 +46,7 @@ public class OrderProcessor {
     private final ApplicationProperty property;
     private final UserFilterRepository filterRepository;
     private final MailSenderService mailSenderService;
+    private final WebhookSenderService webhookSenderService;
 
     private final AccountTemplateBindingRepository accountTemplateBindingRepository;
     private final UserSiteCredentialRepository userSiteCredentialRepository;
@@ -184,6 +185,10 @@ public class OrderProcessor {
     }
 
     private void sendOrderToUser(AppUser user, List<OrderDTO> list) {
+        // Webhook — канал для машин: он не ждёт окна оповещений и не заменяет
+        // почту с телеграмом, а работает рядом с ними.
+        webhookSenderService.sendOrders(user, list);
+
         if (CollectionUtils.isEmpty(user.getUserAlertTimes()) || isMatchUserAlertTimes(user)) {
             Map<String, List<OrderDTO>> byLink = list.stream().collect(Collectors.groupingBy(OrderDTO::getLink));
             List<String> resultOrdersString = byLink.entrySet().stream().map(entry -> {

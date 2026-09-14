@@ -1,5 +1,6 @@
 package by.gdev.alert.job.core.handler;
 
+import by.gdev.alert.job.core.exeption.InvalidWebhookUrlException;
 import by.gdev.alert.job.core.exeption.ai.*;
 import by.gdev.alert.job.core.exeption.ai.binding.BindingAlreadyExistsException;
 import by.gdev.alert.job.core.exeption.ai.binding.BindingNotFoundException;
@@ -39,6 +40,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrderModuleNotFoundException.class)
     public ResponseEntity<?> handleOrderModuleNotFound(OrderModuleNotFoundException ex) {
         return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidWebhookUrlException.class)
+    public ResponseEntity<?> handleInvalidWebhookUrl(InvalidWebhookUrlException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
 
     @ExceptionHandler(InvalidSiteIdException.class)

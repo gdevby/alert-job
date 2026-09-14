@@ -8,6 +8,47 @@
 
 На данный момент на сайте доступны следующие биржи: [freelance.ru](https://freelance.ru), [fl.ru](https://www.fl.ru), [weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
 
+### Уведомления на webhook
+
+Кроме почты и телеграма заказы можно получать на свой HTTP-эндпоинт — это канал
+для интеграций: приходит не отрендеренный текст, а сами заказы в JSON.
+
+Адрес задаётся на странице настройки уведомлений или запросом
+`PATCH /api/user/webhook?url=https://example.com/hooks/alert-job`
+(пустое значение выключает канал).
+
+Канал независимый: он не заменяет почту и телеграм, работает рядом с ними и не
+подчиняется расписанию тишины (`UserAlertTime`) — оно про людей, а не про
+интеграции. Общий тумблер уведомлений webhook выключает.
+
+`POST` на указанный адрес, заголовки `X-AlertJob-Event` и `X-AlertJob-User`, тело:
+
+```json
+{
+  "url": "https://example.com/hooks/alert-job",
+  "userUuid": "0d2c...",
+  "type": "ORDER",
+  "sentAt": "2025-09-01T10:15:30Z",
+  "orders": [
+    {
+      "title": "Нужен парсер на Python",
+      "link": "https://freelance.ru/projects/1",
+      "dateTime": "2025-09-01T10:15:00Z",
+      "price": { "value": 15000, "currency": "RUB" },
+      "sourceSite": { "categoryName": "Разработка", "subCategoryName": "Python" },
+      "moduleName": "Backend"
+    }
+  ]
+}
+```
+
+Принимаются только внешние `http`/`https` адреса: адреса внутри периметра
+(loopback, приватные и link-local диапазоны) отклоняются с кодом 400, иначе
+пользователь мог бы заставить сервис ходить по внутренней сети.
+
+После `webhook.max.failures` (по умолчанию 10) неудачных доставок подряд канал
+замолкает; сохранение нового адреса сбрасывает счётчик.
+
 Проект писался на микросервисной архитектуре.<br>
 Используемые технологии:
 

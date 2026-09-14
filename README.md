@@ -9,6 +9,49 @@ For example "I want to receive orders that contain backend in the name and do no
 
 At the moment, the following exchanges are available on the website: [freelance.ru](https://freelance.ru), [fl.ru](https://www.fl.ru), [weblancer.net](https://www.weblancer.net), [freelancehunt](https://freelancehunt.com/), [youdo](https://youdo.com/), [kwork](https://kwork.ru/), [freelancer](https://www.freelancer.com/), [truelancer](https://www.truelancer.com/).
 
+### Webhook notifications
+
+Besides email and Telegram, orders can be delivered to your own HTTP endpoint —
+a channel for integrations: it carries the orders themselves as JSON, not a
+rendered message.
+
+Set the address on the notifications page or via
+`PATCH /api/user/webhook?url=https://example.com/hooks/alert-job`
+(an empty value turns the channel off).
+
+The channel is independent: it does not replace email or Telegram, runs next to
+them and ignores quiet hours (`UserAlertTime`) — those are for humans, not for
+integrations. The global alerts toggle does switch it off.
+
+A `POST` is sent to the given address with `X-AlertJob-Event` and
+`X-AlertJob-User` headers and this body:
+
+```json
+{
+  "url": "https://example.com/hooks/alert-job",
+  "userUuid": "0d2c...",
+  "type": "ORDER",
+  "sentAt": "2025-09-01T10:15:30Z",
+  "orders": [
+    {
+      "title": "Python parser needed",
+      "link": "https://freelance.ru/projects/1",
+      "dateTime": "2025-09-01T10:15:00Z",
+      "price": { "value": 15000, "currency": "RUB" },
+      "sourceSite": { "categoryName": "Development", "subCategoryName": "Python" },
+      "moduleName": "Backend"
+    }
+  ]
+}
+```
+
+Only external `http`/`https` addresses are accepted: anything inside the
+perimeter (loopback, private and link-local ranges) is rejected with 400 —
+otherwise a user could make the service walk the internal network.
+
+After `webhook.max.failures` (10 by default) consecutive failures the channel
+goes silent; saving a new address resets the counter.
+
 The project has a microservice architecture.<br>
 Used technologies:
 <ol>
