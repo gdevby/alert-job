@@ -24,9 +24,14 @@ public class ProxyUpdateScheduler {
     @Value("${parser.proxy.refresh-interval-hours:24}")
     private int refreshIntervalHours;
 
+    /** Включена ли проверка страны через geo-сервис. */
+    @Value("${proxy.checker.country-filter.enabled:true}")
+    private boolean countryFilterEnabled;
+
     @Scheduled(fixedDelayString = "#{${parser.proxy.refresh-interval-hours:24} * 60 * 60 * 1000}")
     public void refreshProxies() {
-        log.debug("Проверка списка прокси на обновления... (интервал {} ч.)", refreshIntervalHours);
+        log.info("Проверка списка прокси на обновления... (интервал {} ч., country-filter={})",
+                refreshIntervalHours, countryFilterEnabled);
         List<ProxyCredentials> fresh = proxySupplier.loadFreshProxies();
         if (fresh.isEmpty()) {
             log.warn("Обновление прокси пропущено — свежий список пустой!");
@@ -53,7 +58,7 @@ public class ProxyUpdateScheduler {
                 totalAfter, newSupplierCount, apiCount);
 
         // Проверяем все прокси (включая API)
-        proxyCheckerService.checkAllProxies();
+        proxyCheckerService.checkAllProxies(countryFilterEnabled);
         eventPublisher.publishEvent(new ProxyListUpdatedEvent(this, proxySupplier.getProxies()));
     }
 }
