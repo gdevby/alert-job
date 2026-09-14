@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
+import by.gdev.alert.job.notification.service.ai.merics.AutoreplyMetrics;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
@@ -12,6 +13,8 @@ import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.file.Files;
@@ -21,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import org.slf4j.Logger;
 
 @Slf4j
 public abstract class AutoreplyParser {
@@ -44,7 +48,11 @@ public abstract class AutoreplyParser {
 
     protected AssignedProxyService assignedProxyService;
 
-    protected AutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
+    @Autowired
+    protected AutoreplyMetrics autoreplyMetrics;
+
+    protected AutoreplyParser(PlaywrightManager playwrightManager,
+                              AssignedProxyService assignedProxyService) {
         this.playwrightManager = playwrightManager;
         this.assignedProxyService = assignedProxyService;
     }
@@ -185,6 +193,52 @@ public abstract class AutoreplyParser {
     protected void setOpt(AiNotificationPayload payload, String otp, boolean used){
         payload.setOtpUsed(used);
         payload.setOtpValue(otp);
+    }
+
+    /**
+     * Регистрирует проблемную ситуацию при отправке автоотклика.
+     * <p>
+     * Метод делает две вещи одновременно:
+     * <ol>
+     *     <li>Пишет сообщение в переданный slf4j-логгер с указанным уровнем.</li>
+     *     <li>Инкрементирует Prometheus-счётчик {@code autoreply_problems_total}
+     *         с тегами {@code site} (берётся из {@link #getSiteName()}) и {@code error_type}.</li>
+     * </ol>
+     *
+     * <p><b>Допустимые уровни:</b> только {@link org.slf4j.event.Level#WARN} и
+     * {@link org.slf4j.event.Level#ERROR}. Любой другой уровень будет обработан
+     * как {@code WARN}. Это осознанное ограничение: метод предназначен
+     * для фиксации ошибочных и предупреждающих ситуаций, а не для общего логирования.
+     *
+     * <p><b>Пример использования:</b>
+     * <pre>{@code
+     * if (!clickLoginButton(page)) {
+     *     report(Level.WARN, log,
+     *             "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: " + creds.login(),
+     *             AutoreplyErrorTypes.BUTTON_NOT_FOUND);
+     *     return StepResult.fail(StepType.SEND_AUTOREPLY,
+     *             "Кнопка 'Войти' не найдена", captureScreenshot(page));
+     * }
+     * }</pre>
+     *
+     * @param level     уровень логирования; допустимы {@link org.slf4j.event.Level#WARN}
+     *                  и {@link org.slf4j.event.Level#ERROR}, остальные трактуются как WARN
+     * @param logger    slf4j-логгер вызывающего класса (обычно {@code log} из {@code @Slf4j});
+     *                  передаётся параметром, чтобы строка в логе принадлежала источнику,
+     *                  а не {@link by.gdev.alert.job.notification.service.ai.parser.impl.AutoreplyParser}
+     * @param message   текст сообщения для лога; формируется вызывающим кодом,
+     *                  поддерживает {@code {}}-плейсхолдеры, если собран через {@code String.format}
+     * @param errorType тип ошибки из {@link by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes};
+     *                  используется как значение тега {@code error_type} в метрике Prometheus.
+     *
+     */
+    protected void report(Level level, Logger logger, String message, String errorType) {
+        if (level.equals(Level.ERROR)) {
+            logger.error(message);
+        } else {
+            logger.warn(message);
+        }
+        autoreplyMetrics.incrementProblem(getSiteName().name(), errorType);
     }
 
     protected abstract StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode);

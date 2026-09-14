@@ -1,0 +1,13 @@
+package by.gdev.alert.job.notification.service.ai.merics;
+
+public final class AutoreplyErrorTypes {
+    public static final String BUTTON_NOT_FOUND = "BUTTON_NOT_FOUND";
+    public static final String FIELD_NOT_FOUND = "FIELD_NOT_FOUND";
+    public static final String TIMEOUT = "TIMEOUT";
+    public static final String LOGIN_FAILED = "LOGIN_FAILED";
+    public static final String ERROR_OPEN_PAGE = "ERROR_OPEN_PAGE";
+    public static final String EMAIL_INVALID = "EMAIL_INVALID";
+    public static final String OTP_NOT_RECEIVED = "OTP_NOT_RECEIVED";
+    public static final String TARIFF_LIMIT = "TARIFF_LIMIT";
+    public static final String CAPTCHA_FAILED = "CAPTCHA_FAILED";
+}

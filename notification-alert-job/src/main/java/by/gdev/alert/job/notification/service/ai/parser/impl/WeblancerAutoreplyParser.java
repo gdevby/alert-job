@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
+import by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
@@ -13,6 +14,7 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -87,6 +89,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
 
         } catch (Exception e) {
             log.error("АВТООТВЕТ: {} -> ОШИБКА ПРИ ЛОГИНЕ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage(), e);
+            report(Level.ERROR, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> ОШИБКА ПРИ ЛОГИНЕ, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.LOGIN_FAILED);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка при логине: " + e.getMessage(), captureScreenshot(page));
         }
     }
@@ -103,7 +109,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
             takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "order_page");
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: "
+                            + login + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.ERROR_OPEN_PAGE);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть заказ: " + e.getMessage(), captureScreenshot(page));
         }
 
@@ -115,7 +124,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             openFormBtn.click();
             log.info("АВТООТВЕТ: {} -> кнопка 'Добавить заявку' нажата, пользователь: {}", getSiteName(), login);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ НАЖАТЬ КНОПКУ 'Добавить заявку', пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ НАЖАТЬ КНОПКУ 'Добавить заявку', пользователь: "
+                            + login + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось нажать кнопку 'Добавить заявку': " + e.getMessage(), captureScreenshot(page));
         }
 
@@ -123,7 +135,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             page.waitForSelector("textarea[placeholder='Комментарий']");
             log.debug("АВТООТВЕТ: {} -> форма подачи заявки загружена, пользователь: {}", getSiteName(), login);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ ДОЖДАЛИСЬ ФОРМЫ ПОДАЧИ ЗАЯВКИ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ ДОЖДАЛИСЬ ФОРМЫ ПОДАЧИ ЗАЯВКИ, пользователь: "
+                            + login + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не дождались формы подачи заявки: " + e.getMessage(), captureScreenshot(page));
         }
 
@@ -133,7 +148,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             log.info("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}, пользователь: {}", getSiteName(),
                     reply != null ? reply.length() : 0, login);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ ОТВЕТА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ ОТВЕТА, пользователь: "
+                            + login + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить текст ответа: " + e.getMessage(), captureScreenshot(page));
         }
 
@@ -148,7 +166,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             page.waitForCondition(addBtn::isEnabled);
             log.debug("АВТООТВЕТ: {} -> кнопка 'Добавить' активна, пользователь: {}", getSiteName(), login);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> КНОПКА 'Добавить' НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> КНОПКА 'Добавить' НЕАКТИВНА, пользователь: "
+                            + login + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Добавить' неактивна", captureScreenshot(page));
         }
 
@@ -161,7 +182,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
                 addBtn.click();
                 log.info("АВТООТВЕТ: {} -> ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА, пользователь: {}", getSiteName(), login);
             } catch (Exception e) {
-                log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: {}, ошибка: {}", getSiteName(), login, e.getMessage());
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: "
+                                + login + ", ошибка: " + e.getMessage(),
+                        AutoreplyErrorTypes.BUTTON_NOT_FOUND);
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось отправить заявку: " + e.getMessage(), captureScreenshot(page));
             }
         } else {
