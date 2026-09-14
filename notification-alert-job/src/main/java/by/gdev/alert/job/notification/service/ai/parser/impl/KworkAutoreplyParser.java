@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
+import by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
@@ -13,6 +14,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -69,16 +71,18 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             page.waitForLoadState(LoadState.NETWORKIDLE);
 
             if (isLoginErrorPresent(page)) {
-                log.warn("АВТООТВЕТ: {} -> ОШИБКА: Логин или пароль указаны неверно, пользователь: {}",
-                        getSiteName(), creds.login());
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> ОШИБКА: Логин или пароль указаны неверно, пользователь: " + creds.login(),
+                        AutoreplyErrorTypes.LOGIN_FAILED);
                 return StepResult.fail(StepType.SEND_AUTOREPLY,
                         "Логин или пароль указаны неверно",
                         captureScreenshot(page));
             }
 
             if (isCaptchaPresent(page)) {
-                log.warn("АВТООТВЕТ: {} -> ТРЕБУЕТСЯ ПРОХОЖДЕНИЕ КАПЧИ, пользователь: {}",
-                        getSiteName(), creds.login());
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> ТРЕБУЕТСЯ ПРОХОЖДЕНИЕ КАПЧИ, пользователь: " + creds.login(),
+                        AutoreplyErrorTypes.CAPTCHA_FAILED);
                 return StepResult.fail(StepType.SEND_AUTOREPLY,
                         "Требуется прохождение капчи 'Подтвердите, что вы не робот'",
                         captureScreenshot(page));
@@ -88,16 +92,14 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             setOpt(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> ОШИБКА ЛОГИНА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> ОШИБКА ЛОГИНА, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.LOGIN_FAILED);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка логина: " + e.getMessage(), captureScreenshot(page));
         }
     }
 
-    /**
-     * Проверяет, появилась ли ошибка "Логин или пароль указаны неверно" на странице логина.
-     * @param page страница с формой логина
-     * @return true, если ошибка присутствует, иначе false
-     */
     private boolean isLoginErrorPresent(Page page) {
         try {
             Locator errorLocator = page.locator("div.form-item__after-input.form-item__error:has-text('Логин или пароль указаны неверно')");
@@ -108,11 +110,6 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
     }
 
-    /**
-     * Проверяет, появилась ли капча "Подтвердите, что вы не робот" на странице.
-     * @param page страница с формой логина
-     * @return true, если капча присутствует, иначе false
-     */
     private boolean isCaptchaPresent(Page page) {
         try {
             Locator captchaLocator = page.locator("text=Подтвердите, что вы не робот");
@@ -154,7 +151,6 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
     }
 
-
     private StepResult<Void> openOrderPage(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         try {
             page.navigate(payload.getOrder().getLink());
@@ -163,7 +159,10 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "order_page");
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ОТКРЫТЬ ЗАКАЗ, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.ERROR_OPEN_PAGE);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть заказ: " + e.getMessage(), captureScreenshot(page));
         }
     }
@@ -172,28 +171,32 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         String selector = "span.projects-offer-btn:has-text('Предложить услугу')";
         try {
             Locator offerButton = page.locator(selector);
-            // Ждем появления кнопки
             offerButton.waitFor(new Locator.WaitForOptions().setTimeout(8000));
-            // Проверяем, есть ли класс disabled или атрибут disabled
             boolean isDisabled = offerButton.getAttribute("class").contains("disabled") || offerButton.isDisabled();
             if (isDisabled) {
-                log.warn("АВТООТВЕТ: {} -> КНОПКА 'Предложить услугу' НЕАКТИВНА (disabled), пользователь: {}", getSiteName(), creds.login());
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> КНОПКА 'Предложить услугу' НЕАКТИВНА (disabled), пользователь: " + creds.login(),
+                        AutoreplyErrorTypes.TARIFF_LIMIT);
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' неактивна - отклики закончились", captureScreenshot(page));
             }
-            // Кнопка активна, кликаем
             offerButton.click();
             takeScreenshot(page, getSiteName(), userUuid, "click_propose");
             log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу' или ошибка, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу' или ошибка, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' не найдена или ошибка: " + e.getMessage(), captureScreenshot(page));
         }
     }
 
     private StepResult<Void> waitAndFillReplyEditor(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
         if (!waitOrFail(page, "div.trumbowyg-editor", 8000, "Редактор ответа")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН РЕДАКТОР, пользователь: {}", getSiteName(), creds.login());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕН РЕДАКТОР, пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Редактор ответа не найден", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> редактор найден, пользователь: {}", getSiteName(), creds.login());
@@ -204,7 +207,10 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.info("АВТООТВЕТ: {} -> текст ответа вставлен, длина: {}, пользователь: {}", getSiteName(), reply != null ? reply.length() : 0, creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ТЕКСТ, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить текст: " + e.getMessage(), captureScreenshot(page));
         }
     }
@@ -213,13 +219,11 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         try {
             String priceValue = String.valueOf(defaultPrice);
 
-            // Получаем placeholder у поля ввода цены
             Locator priceInput = page.locator("#offer-custom-price");
             String placeholder = priceInput.getAttribute("placeholder");
             log.info("АВТООТВЕТ: {} -> placeholder поля цены: {}", getSiteName(), placeholder);
 
             if (placeholder != null && !placeholder.isEmpty()) {
-                // Ищем первое число в placeholder (минимальная цена)
                 Pattern pattern = Pattern.compile("(\\d+)");
                 Matcher matcher = pattern.matcher(placeholder);
                 if (matcher.find()) {
@@ -232,11 +236,9 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
                 log.warn("АВТООТВЕТ: {} -> placeholder не найден, используем цену по умолчанию: {}", getSiteName(), defaultPrice);
             }
 
-            // Устанавливаем цену
             priceInput.fill(priceValue);
             log.info("АВТООТВЕТ: {} -> цена установлена: {}, пользователь: {}", getSiteName(), priceValue, creds.login());
 
-            // Проверяем, не появилась ли ошибка (если цена слишком низкая)
             Locator errorMessage = page.locator("span.form-item__error:has-text('Стоимость может быть от')");
             if (errorMessage.count() > 0) {
                 String errorText = errorMessage.textContent();
@@ -253,7 +255,10 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.info("АВТООТВЕТ: {} -> итоговая цена: {}, пользователь: {}", getSiteName(), priceValue, creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ УСТАНОВИТЬ ЦЕНУ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ УСТАНОВИТЬ ЦЕНУ, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось установить цену: " + e.getMessage(), captureScreenshot(page));
         }
     }
@@ -289,25 +294,33 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
                 log.info("АВТООТВЕТ: {} -> название заказа заполнено: {}, пользователь: {}", getSiteName(), orderTitle, creds.login());
                 return StepResult.ok(StepType.SEND_AUTOREPLY, null);
             } else {
-                log.warn("АВТООТВЕТ: {} -> поле названия заказа не найдено, пользователь: {}", getSiteName(), creds.login());
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> поле названия заказа не найдено, пользователь: " + creds.login(),
+                        AutoreplyErrorTypes.FIELD_NOT_FOUND);
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле названия заказа не найдено", captureScreenshot(page));
             }
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ НАЗВАНИЕ ЗАКАЗА, пользователь: {}, ошибка: {}",
-                    getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ НАЗВАНИЕ ЗАКАЗА, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить название заказа: " + e.getMessage(), captureScreenshot(page));
         }
     }
 
     private StepResult<Void> selectDuration(Page page, DecryptedCredential creds) {
         if (!clickOrFail(page, "div.duration-select", 5000, "Открыть список сроков")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТКРЫТЬ СПИСОК СРОКОВ, пользователь: {}", getSiteName(), creds.login());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ОТКРЫТЬ СПИСОК СРОКОВ, пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть список сроков", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> список сроков открыт, пользователь: {}", getSiteName(), creds.login());
 
         if (!waitOrFail(page, "ul.vs__dropdown-menu li", 5000, "Список сроков")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕН СПИСОК СРОКОВ, пользователь: {}", getSiteName(), creds.login());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕН СПИСОК СРОКОВ, пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Список сроков не найден", captureScreenshot(page));
         }
 
@@ -316,14 +329,19 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             log.info("АВТООТВЕТ: {} -> срок выполнения выбран, пользователь: {}", getSiteName(), creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ВЫБРАТЬ СРОК, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ВЫБРАТЬ СРОК, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось выбрать срок: " + e.getMessage(), captureScreenshot(page));
         }
     }
 
     private StepResult<Void> submitOffer(Page page, String userUuid, DecryptedCredential creds) {
         if (!waitOrFail(page, "button.kw-button--green:has-text('Предложить')", 8000, "Кнопка отправки")) {
-            log.warn("АВТООТВЕТ: {} -> НЕ НАЙДЕНА КНОПКА 'Предложить', пользователь: {}", getSiteName(), creds.login());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Предложить', пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить' не найдена", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' найдена, пользователь: {}", getSiteName(), creds.login());
@@ -333,7 +351,10 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             page.waitForCondition(sendBtn::isEnabled, new Page.WaitForConditionOptions().setTimeout(5000));
             log.info("АВТООТВЕТ: {} -> кнопка 'Предложить' активна, пользователь: {}", getSiteName(), creds.login());
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> КНОПКА 'Предложить' НЕАКТИВНА, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> КНОПКА 'Предложить' НЕАКТИВНА, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить' неактивна", captureScreenshot(page));
         }
 
@@ -366,11 +387,16 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
                 log.info("АВТООТВЕТ: {} -> перешли на страницу проектов", getSiteName());
                 return StepResult.ok(StepType.SEND_AUTOREPLY, null);
             } else {
-                log.warn("АВТООТВЕТ: {} -> кнопка не исчезла, заявка не отправлена, пользователь: {}", getSiteName(), creds.login());
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> кнопка не исчезла, заявка не отправлена, пользователь: " + creds.login(),
+                        AutoreplyErrorTypes.BUTTON_NOT_FOUND);
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Заявка не отправлена (кнопка не исчезла)", captureScreenshot(page));
             }
         } catch (Exception e) {
-            log.warn("АВТООТВЕТ: {} -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: {}, ошибка: {}", getSiteName(), creds.login(), e.getMessage());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ОТПРАВИТЬ ЗАЯВКУ, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось отправить заявку: " + e.getMessage(), captureScreenshot(page));
         }
     }

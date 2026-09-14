@@ -7,6 +7,7 @@ import by.gdev.common.service.proxy.supplier.ProxySupplier;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,10 @@ public class ProxyCheckerScheduler {
     private final ProxyAdditionalService proxyAdditionalService;
     private final ProxySupplier proxySupplier;
     private final ApplicationEventPublisher eventPublisher;
+
+    /** Включена ли проверка страны через geo-сервис. */
+    @Value("${proxy.checker.country-filter.enabled:true}")
+    private boolean countryFilterEnabled;
 
     @PostConstruct
     public void init() {
@@ -47,7 +52,7 @@ public class ProxyCheckerScheduler {
         log.info("Всего прокси после добавления API: {}", allProxies.size());
 
         // Проверяем все прокси
-        proxyCheckerService.checkProxies(allProxies);
+        proxyCheckerService.checkProxies(allProxies, countryFilterEnabled);
         log.info("Проверка завершена.");
 
         // Логируем распределение по странам
