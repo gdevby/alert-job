@@ -23,10 +23,14 @@ public class ProxyCheckerService {
     private final ProxySupplier proxySupplier;
     private final IpGeoService ipGeoService;
 
-
-    public void checkAndUpdateProxy(ProxyCredentials proxy) {
+    /**
+     * Проверка одного прокси. Если {@code countryFilter} = false — страна не определяется.
+     */
+    public void checkAndUpdateProxy(ProxyCredentials proxy, boolean countryFilter) {
         // Определяем страну
-        updateProxyCountry(proxy);
+        if (countryFilter) {
+            updateProxyCountry(proxy);
+        }
         // Определяем доступность
         boolean available = isProxyAvailable(proxy);
         switch (proxy.getState()) {
@@ -73,12 +77,12 @@ public class ProxyCheckerService {
         return false; // все 3 попытки провалились
     }
 
-    public void checkAllProxies() {
+    public void checkAllProxies(boolean countryFilterEnabled) {
         var proxies = proxySupplier.getProxies();
         int working = 0;
         int notWorking = 0;
         for (ProxyCredentials proxy : proxies) {
-            checkAndUpdateProxy(proxy);
+            checkAndUpdateProxy(proxy, countryFilterEnabled);
 
             switch (proxy.getState()) {
                 case ACTIVE, WARMING_UP -> working++;
@@ -93,7 +97,7 @@ public class ProxyCheckerService {
      *
      * @param proxies список прокси для проверки
      */
-    public void checkProxies(List<ProxyCredentials> proxies) {
+    public void checkProxies(List<ProxyCredentials> proxies, boolean countryFilter) {
         int total = proxies.size();
         int working = 0;
         int notWorking = 0;
@@ -101,7 +105,7 @@ public class ProxyCheckerService {
         int logInterval = Math.max(1, Math.min(20, total / 10));
 
         for (ProxyCredentials proxy : proxies) {
-            checkAndUpdateProxy(proxy);
+            checkAndUpdateProxy(proxy, countryFilter);
             switch (proxy.getState()) {
                 case ACTIVE, WARMING_UP -> working++;
                 default -> notWorking++;

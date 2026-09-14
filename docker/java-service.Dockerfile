@@ -20,7 +20,7 @@ ARG SERVER_PORT=8080
 # Persist the port in an environment variable for HEALTHCHECK.
 ENV SERVER_PORT=${SERVER_PORT}
 # JVM flags: respect container limits and faster random startup.
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=80.0 -XX:+CrashOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
 # Create a non-root user and install curl for health checks.
 RUN groupadd -r app \
