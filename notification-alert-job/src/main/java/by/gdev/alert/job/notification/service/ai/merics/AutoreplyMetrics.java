@@ -29,7 +29,7 @@ public class AutoreplyMetrics {
                         .tag("site", safe(siteName))
                         .tag("error_type", safe(errorType))
                         .register(meterRegistry)
-        ).increment();
+        ).increment();;
     }
 
     private String safe(String value) {
