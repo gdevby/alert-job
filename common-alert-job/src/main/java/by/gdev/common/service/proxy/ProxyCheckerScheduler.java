@@ -56,7 +56,9 @@ public class ProxyCheckerScheduler {
         log.info("Проверка завершена.");
 
         // Логируем распределение по странам
-        logCountryDistribution(allProxies);
+        if (countryFilterEnabled) {
+            logCountryDistribution(allProxies);
+        }
 
         // Считаем активные
         long active = allProxies.stream()
