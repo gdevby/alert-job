@@ -9,7 +9,6 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
@@ -42,8 +41,8 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
         return SiteName.WEBLANCER;
     }
 
-    public WeblancerAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
-        super(playwrightManager, assignedProxyService);
+    public WeblancerAutoreplyParser(AssignedProxyService assignedProxyService) {
+        super(assignedProxyService);
     }
 
     @Override
@@ -54,6 +53,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             page.navigate("https://www.weblancer.net/?lang=ru");
             log.info("АВТООТВЕТ: {} -> главная страница загружена, пользователь: {}", getSiteName(), creds.login());
 
+            getCurrentManager().humanMouse(page);
+            getCurrentManager().humanDelay(page);
+            getCurrentManager().humanScroll(page);
+
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Вход"))
                     .click();
             log.info("АВТООТВЕТ: {} -> кнопка 'Вход' нажата, пользователь: {}", getSiteName(), creds.login());
@@ -61,12 +64,15 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             page.waitForSelector("input[name='login']");
             log.debug("АВТООТВЕТ: {} -> форма логина загружена, пользователь: {}", getSiteName(), creds.login());
 
-            page.getByPlaceholder("Ваш логин, телефон или email")
-                    .fill(creds.login());
+            getCurrentManager().humanMouse(page);
+            getCurrentManager().humanDelay(page);
+            getCurrentManager().humanType(page, "input[name='login']", creds.login());
             log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
 
-            page.getByPlaceholder("Ваш пароль")
-                    .fill(creds.password());
+            getCurrentManager().humanMouse(page);
+            getCurrentManager().humanDelay(page);
+            getCurrentManager().humanType(page, "input[name='password']", creds.password());
+
             log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
 
             Locator loginBtn = page.getByRole(
@@ -74,9 +80,10 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
                     new Page.GetByRoleOptions().setName("Войти в аккаунт")
             );
 
-            page.waitForCondition(() -> loginBtn.isEnabled());
+            page.waitForCondition(loginBtn::isEnabled);
             log.debug("АВТООТВЕТ: {} -> кнопка 'Войти в аккаунт' активна, пользователь: {}", getSiteName(), creds.login());
 
+            //getPlaywrightManager().humanDelay(page);
             loginBtn.click();
             log.info("АВТООТВЕТ: {} -> кнопка 'Войти в аккаунт' нажата, пользователь: {}", getSiteName(), creds.login());
 
@@ -84,7 +91,7 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
 
             log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
-            setOpt(payload, null, false);
+            setOtp(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
 
         } catch (Exception e) {

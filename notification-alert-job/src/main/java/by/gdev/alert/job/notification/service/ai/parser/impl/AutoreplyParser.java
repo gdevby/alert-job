@@ -3,13 +3,16 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
-import by.gdev.alert.job.notification.service.ai.merics.AutoreplyMetrics;
+import by.gdev.alert.job.notification.service.ai.parser.debug.AutoreplyReporter;
+import by.gdev.alert.job.notification.service.ai.parser.debug.ScreenshotService;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
-import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.manager.BrowserLaunchOptions;
+import by.gdev.common.service.playwright.manager.PlaywrightBrowserManager;
+import by.gdev.common.service.playwright.manager.PlaywrightManagerResolver;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
@@ -17,22 +20,19 @@ import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.UUID;
+
 import org.slf4j.Logger;
 
 @Slf4j
 public abstract class AutoreplyParser {
-    protected boolean headless;
-    protected boolean sendRequest;
-    protected boolean proxy;
 
-    protected PlaywrightManager playwrightManager;
+    //опции автоответа
+    //видимость браузера
+    protected boolean headless;
+    //прожимать ли кнопку отправки ответа на заказ
+    protected boolean sendRequest;
+    //использовать ли прокси для запуска браузера
+    protected boolean proxy;
 
     @Value("${parser.autoreply.default.price:1000}")
     protected int defaultPrice;
@@ -40,20 +40,18 @@ public abstract class AutoreplyParser {
     @Value("${parser.autoreply.default.days:1}")
     protected int defaultDays;
 
-    @Value("${autoreply.screenshots.enabled:false}")
-    private boolean screenshotsEnabled;
-
-    @Value("${autoreply.screenshots.dir:./autoreply/screenshots}")
-    private String screenshotsBaseDir;
-
     protected AssignedProxyService assignedProxyService;
 
     @Autowired
-    protected AutoreplyMetrics autoreplyMetrics;
+    protected ScreenshotService screenshotService;
 
-    protected AutoreplyParser(PlaywrightManager playwrightManager,
-                              AssignedProxyService assignedProxyService) {
-        this.playwrightManager = playwrightManager;
+    @Autowired
+    protected AutoreplyReporter reporter;
+
+    @Autowired
+    protected PlaywrightManagerResolver managerResolver;
+
+    protected AutoreplyParser(AssignedProxyService assignedProxyService) {
         this.assignedProxyService = assignedProxyService;
     }
 
@@ -63,26 +61,15 @@ public abstract class AutoreplyParser {
         Browser browser = null;
         BrowserContext context = null;
         Page page = null;
+
+        PlaywrightBrowserManager manager = managerResolver.resolve(getSiteName());
+        BrowserLaunchOptions options = buildLaunchOptions(getSiteName(), payload);
+
         try {
-            playwright = playwrightManager.createPlaywright();
-            String userUuid = payload.getUser().getUuid();
-            ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(userUuid, payload.getModule().getId());
+            playwright = manager.createPlaywright();
+            browser = manager.createBrowser(playwright, options, getSiteName());
+            context = manager.createBrowserContext(browser, options, getSiteName());
 
-            if (proxyCred == null && proxy) {
-                proxyCred = playwrightManager.getProxyWithRetry(3, 500);
-                log.info("АВТООТВЕТ: {} -> для пользователя {} нет закреплённого прокси, взят случайный: {}:{}",
-                        getSiteName(), userUuid,
-                        proxyCred != null ? proxyCred.getHost() : "null",
-                        proxyCred != null ? proxyCred.getPort() : 0);
-            } else if (proxyCred != null) {
-                log.info("АВТООТВЕТ: {} -> для пользователя {} используется закреплённый прокси: {}:{}",
-                        getSiteName(), userUuid, proxyCred.getHost(), proxyCred.getPort());
-            } else {
-                log.info("АВТООТВЕТ: {} -> для пользователя {} прокси не используется (proxy=false или отсутствует)", getSiteName(), userUuid);
-            }
-
-            browser = playwrightManager.createBrowser(playwright, proxyCred, headless, proxy, getSiteName());
-            context = playwrightManager.createBrowserContext(browser, proxyCred, proxy, getSiteName());
             page = context.newPage();
 
             StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
@@ -111,8 +98,12 @@ public abstract class AutoreplyParser {
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Необработанная ошибка: " + e.getMessage(), screenshot);
 
         } finally {
-            playwrightManager.closeResources(page, context, browser, playwright, getSiteName());
+            manager.closeResources(page, context, browser, playwright, getSiteName());
         }
+    }
+
+    protected PlaywrightBrowserManager getCurrentManager() {
+        return managerResolver.resolve(getSiteName());
     }
 
     void safeNavigate(Page page, String url) {
@@ -149,96 +140,46 @@ public abstract class AutoreplyParser {
         }
     }
 
-    protected byte[] captureScreenshot(Page page) {
-        try {
-            return page.screenshot();
-        } catch (Exception e) {
-            log.warn("Не удалось сделать скриншот: {}", e.getMessage());
-            return null;
+    /**
+     * Формирует опции запуска браузера для конкретного сайта.
+     * <p>
+     * Прокси резолвится только когда он реально нужен:
+     * <ul>
+     *     <li>используется локальный Playwright (не Camoufox)</li>
+     *     <li>и флаг {@code proxy=true} для этого сайта</li>
+     * </ul>
+     * Для Camoufox прокси задан на Python-сервере и здесь игнорируется.
+     */
+    protected BrowserLaunchOptions buildLaunchOptions(SiteName site, AiNotificationPayload payload) {
+        PlaywrightBrowserManager manager = managerResolver.resolve(site);
+        boolean needProxy = (manager == managerResolver.getLocalManager()) && proxy;
+
+        if (!needProxy) {
+            return new BrowserLaunchOptions(null, headless, proxy);
         }
+
+        ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(
+                payload.getUser().getUuid(),
+                payload.getModule().getId()
+        );
+        return new BrowserLaunchOptions(proxyCred, headless, true);
     }
 
-    protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
-        if (!screenshotsEnabled) {
-            log.info("Сохранение скриншотов для отладочной информации отключено");
-            return;
-        }
-        try {
-            byte[] screenshotBytes = captureScreenshot(page);
-            if (screenshotBytes == null || screenshotBytes.length == 0) {
-                log.warn("Не удалось получить скриншот для шага '{}'", step);
-                return;
-            }
-
-            String dateStr = LocalDate.now().toString();
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss_SSS"));
-            String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
-            String timeDir = timestamp + "_" + uniqueSuffix;
-
-            Path dir = Paths.get(screenshotsBaseDir)
-                    .resolve(site.name())
-                    .resolve(dateStr)
-                    .resolve(userUuid)
-                    .resolve(timeDir);
-
-            Files.createDirectories(dir);
-            Path file = dir.resolve(step + ".png");
-            Files.write(file, screenshotBytes);
-            log.info("Скриншот сохранён: {}", file.toAbsolutePath());
-        } catch (Exception e) {
-            log.warn("Не удалось сохранить скриншот для шага '{}': {}", step, e.getMessage());
-        }
-    }
-
-    protected void setOpt(AiNotificationPayload payload, String otp, boolean used){
+    protected void setOtp(AiNotificationPayload payload, String otp, boolean used){
         payload.setOtpUsed(used);
         payload.setOtpValue(otp);
     }
 
-    /**
-     * Регистрирует проблемную ситуацию при отправке автоотклика.
-     * <p>
-     * Метод делает две вещи одновременно:
-     * <ol>
-     *     <li>Пишет сообщение в переданный slf4j-логгер с указанным уровнем.</li>
-     *     <li>Инкрементирует Prometheus-счётчик {@code autoreply_problems_total}
-     *         с тегами {@code site} (берётся из {@link #getSiteName()}) и {@code error_type}.</li>
-     * </ol>
-     *
-     * <p><b>Допустимые уровни:</b> только {@link org.slf4j.event.Level#WARN} и
-     * {@link org.slf4j.event.Level#ERROR}. Любой другой уровень будет обработан
-     * как {@code WARN}. Это осознанное ограничение: метод предназначен
-     * для фиксации ошибочных и предупреждающих ситуаций, а не для общего логирования.
-     *
-     * <p><b>Пример использования:</b>
-     * <pre>{@code
-     * if (!clickLoginButton(page)) {
-     *     report(Level.WARN, log,
-     *             "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: " + creds.login(),
-     *             AutoreplyErrorTypes.BUTTON_NOT_FOUND);
-     *     return StepResult.fail(StepType.SEND_AUTOREPLY,
-     *             "Кнопка 'Войти' не найдена", captureScreenshot(page));
-     * }
-     * }</pre>
-     *
-     * @param level     уровень логирования; допустимы {@link org.slf4j.event.Level#WARN}
-     *                  и {@link org.slf4j.event.Level#ERROR}, остальные трактуются как WARN
-     * @param logger    slf4j-логгер вызывающего класса (обычно {@code log} из {@code @Slf4j});
-     *                  передаётся параметром, чтобы строка в логе принадлежала источнику,
-     *                  а не {@link by.gdev.alert.job.notification.service.ai.parser.impl.AutoreplyParser}
-     * @param message   текст сообщения для лога; формируется вызывающим кодом,
-     *                  поддерживает {@code {}}-плейсхолдеры, если собран через {@code String.format}
-     * @param errorType тип ошибки из {@link by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes};
-     *                  используется как значение тега {@code error_type} в метрике Prometheus.
-     *
-     */
     protected void report(Level level, Logger logger, String message, String errorType) {
-        if (level.equals(Level.ERROR)) {
-            logger.error(message);
-        } else {
-            logger.warn(message);
-        }
-        autoreplyMetrics.incrementProblem(getSiteName().name(), errorType);
+        reporter.report(level, logger, getSiteName(), message, errorType);
+    }
+
+    protected byte[] captureScreenshot(Page page) {
+        return screenshotService.capture(page);
+    }
+
+    protected void takeScreenshot(Page page, SiteName site, String userUuid, String step) {
+        screenshotService.take(page, site, userUuid, step);
     }
 
     protected abstract StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode);

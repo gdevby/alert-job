@@ -9,8 +9,7 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.service.playwright.CaptchaService;
-import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.captcha.CaptchaService;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -45,8 +44,8 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         this.sendRequest = sendRequest;
     }
 
-    public FlRuAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService, CaptchaService captchaService) {
-        super(playwrightManager, assignedProxyService);
+    public FlRuAutoreplyParser(AssignedProxyService assignedProxyService, CaptchaService captchaService) {
+        super(assignedProxyService);
         this.captchaService = captchaService;
     }
 
@@ -136,7 +135,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             }
 
             log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
-            setOpt(payload, null, false);
+            setOtp(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
 
         } catch (Exception e) {

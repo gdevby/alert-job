@@ -1,4 +1,4 @@
-package by.gdev.common.service.playwright;
+package by.gdev.common.service.playwright.captcha;
 
 import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Locator;
@@ -14,7 +14,7 @@ public class CaptchaService {
     private Frame findYandexCaptchaFrame(Page page) {
         for (Frame f : page.frames()) {
             String url = f.url();
-            if (url != null && url.contains("checkbox")) { // ВАЖНО!
+            if (url != null && url.contains("checkbox")) {
                 return f;
             }
         }

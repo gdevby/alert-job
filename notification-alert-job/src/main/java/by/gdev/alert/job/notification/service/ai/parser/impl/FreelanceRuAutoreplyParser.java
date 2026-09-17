@@ -9,7 +9,6 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -37,8 +36,8 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
         this.sendRequest = sendRequest;
     }
 
-    public FreelanceRuAutoreplyParser(PlaywrightManager playwrightManager, AssignedProxyService assignedProxyService) {
-        super(playwrightManager, assignedProxyService);
+    public FreelanceRuAutoreplyParser(AssignedProxyService assignedProxyService) {
+        super(assignedProxyService);
     }
 
     @Override
@@ -127,7 +126,7 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
         }
 
         log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
-        setOpt(payload, null, false);
+        setOtp(payload, null, false);
         return StepResult.ok(StepType.SEND_AUTOREPLY, null);
     }
 
