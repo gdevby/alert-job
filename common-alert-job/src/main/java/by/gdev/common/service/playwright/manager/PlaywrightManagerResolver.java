@@ -23,9 +23,6 @@ public class PlaywrightManagerResolver {
     @Getter
     private final PlaywrightManager localManager;
 
-    @Value("${camoufox.enabled:false}")
-    private boolean enabled;
-
     @Value("${camoufox.sites:}")
     private String camoufoxSitesRaw;
 
@@ -37,20 +34,16 @@ public class PlaywrightManagerResolver {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toSet());
-        log.info("Camoufox включён: {}, сайты: {}", enabled, camoufoxSites);
+        log.info("Camoufox-сайты: {}", camoufoxSites);
     }
 
     public PlaywrightBrowserManager resolve(SiteName site) {
-        if (isEnabledCamoufox() && camoufoxSites.contains(site.name())) {
+        if (camoufoxSites.contains(site.name())) {
             log.info("[{}] Используем Camoufox", site);
             return camoufoxManager;
         }
         log.debug("[{}] Используем локальный Playwright", site);
         return localManager;
-    }
-
-    public boolean isEnabledCamoufox() {
-        return enabled;
     }
 
 }

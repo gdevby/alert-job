@@ -151,20 +151,15 @@ public abstract class AutoreplyParser {
      * Для Camoufox прокси задан на Python-сервере и здесь игнорируется.
      */
     protected BrowserLaunchOptions buildLaunchOptions(SiteName site, AiNotificationPayload payload) {
-        PlaywrightBrowserManager manager = managerResolver.resolve(site);
-        boolean needProxy = (manager == managerResolver.getLocalManager()) && proxy;
-
-        if (!needProxy) {
-            return new BrowserLaunchOptions(null, headless, proxy);
+        if (!proxy) {
+            return new BrowserLaunchOptions(null, headless, false);
         }
-
         ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(
                 payload.getUser().getUuid(),
                 payload.getModule().getId()
         );
         return new BrowserLaunchOptions(proxyCred, headless, true);
     }
-
     protected void setOtp(AiNotificationPayload payload, String otp, boolean used){
         payload.setOtpUsed(used);
         payload.setOtpValue(otp);
