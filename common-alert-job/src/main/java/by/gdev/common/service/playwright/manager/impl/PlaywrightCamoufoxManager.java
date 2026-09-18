@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
+
 @Slf4j
 @Component
 public class PlaywrightCamoufoxManager implements PlaywrightBrowserManager {
@@ -39,6 +41,20 @@ public class PlaywrightCamoufoxManager implements PlaywrightBrowserManager {
 
     @Override
     public BrowserContext createBrowserContext(Browser browser, BrowserLaunchOptions options, SiteName site) {
+        return createBrowserContext(browser, options, site, null);
+    }
+
+    @Override
+    public BrowserContext createBrowserContext(Browser browser, BrowserLaunchOptions options,
+                                               SiteName site, Path storageStatePath) {
+        return createBrowserContext(browser, options, site, storageStatePath, null);
+    }
+
+    @Override
+    public BrowserContext createBrowserContext(Browser browser, BrowserLaunchOptions options,
+                                               SiteName site, Path storageStatePath,
+                                               String storageStateJson) {
+        // storageState игнорируется: на connect восстановление через restoreCookies/restoreOrigins
         if (!browser.contexts().isEmpty()) {
             return browser.contexts().get(0);
         }

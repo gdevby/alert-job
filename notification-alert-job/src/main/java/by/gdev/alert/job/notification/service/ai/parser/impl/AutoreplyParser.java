@@ -10,28 +10,29 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.playwright.sessions.storage.SessionStorage;
 import by.gdev.common.service.playwright.manager.BrowserLaunchOptions;
 import by.gdev.common.service.playwright.manager.PlaywrightBrowserManager;
 import by.gdev.common.service.playwright.manager.PlaywrightManagerResolver;
+import by.gdev.common.service.playwright.manager.impl.PlaywrightCamoufoxManager;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-
 import org.slf4j.Logger;
+
+import java.nio.file.Path;
+import java.util.List;
 
 @Slf4j
 public abstract class AutoreplyParser {
 
-    //опции автоответа
-    //видимость браузера
     protected boolean headless;
-    //прожимать ли кнопку отправки ответа на заказ
     protected boolean sendRequest;
-    //использовать ли прокси для запуска браузера
     protected boolean proxy;
 
     @Value("${parser.autoreply.default.price:1000}")
@@ -40,6 +41,9 @@ public abstract class AutoreplyParser {
     @Value("${parser.autoreply.default.days:1}")
     protected int defaultDays;
 
+    @Value("${parser.autoreply.post-login.pause-ms:0}")
+    protected long postLoginPauseMs;
+
     protected AssignedProxyService assignedProxyService;
 
     @Autowired
@@ -47,6 +51,9 @@ public abstract class AutoreplyParser {
 
     @Autowired
     protected AutoreplyReporter reporter;
+
+    @Autowired
+    protected SessionStorage sessionStorage;
 
     @Autowired
     protected PlaywrightManagerResolver managerResolver;
@@ -64,32 +71,75 @@ public abstract class AutoreplyParser {
 
         PlaywrightBrowserManager manager = managerResolver.resolve(getSiteName());
         BrowserLaunchOptions options = buildLaunchOptions(getSiteName(), payload);
+        String siteName = getSiteName().name();
+        String userUuid = payload.getUser().getUuid();
+        String login = creds.login();
+        boolean camoufox = manager instanceof PlaywrightCamoufoxManager;
 
         try {
             playwright = manager.createPlaywright();
             browser = manager.createBrowser(playwright, options, getSiteName());
-            context = manager.createBrowserContext(browser, options, getSiteName());
+
+            boolean hasSession = sessionStorage.hasSession(userUuid, siteName, login);
+            log.info("SESSION: location={} hasSession={} manager={}",
+                    sessionStorage.describeSession(userUuid, siteName, login), hasSession,
+                    camoufox ? "Camoufox" : "Chromium");
+
+            Path chromiumPath = null;
+            String chromiumJson = null;
+            if (hasSession && !camoufox) {
+                chromiumPath = sessionStorage.storageStatePath(userUuid, siteName, login).orElse(null);
+                if (chromiumPath == null) {
+                    chromiumJson = sessionStorage.storageStateJson(userUuid, siteName, login).orElse(null);
+                }
+            }
+            context = manager.createBrowserContext(browser, options, getSiteName(), chromiumPath, chromiumJson);
+
+            if (hasSession && camoufox) {
+                sessionStorage.restoreCookies(context, userUuid, siteName, login);
+            }
 
             page = context.newPage();
 
-            StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
+            if (hasSession && camoufox) {
+                sessionStorage.restoreOrigins(page, userUuid, siteName, login);
+            }
+
+            sessionStorage.logContextCookies(context, sessionCookieCheckUrl(), "after-restore");
+
+            StepResult<Void> loginResult = resolveLogin(page, payload, creds, autoreplyMode,
+                    userUuid, siteName, login, hasSession);
+
+            if (!loginResult.failed()) {
+                pauseForSessionVerify(page, userUuid);
+                try {
+                    sessionStorage.save(context, userUuid, siteName, login);
+                    log.info("SESSION: save после успешного login/verify {}/{}", siteName, login);
+                } catch (Exception ex) {
+                    log.warn("Не удалось сохранить сессию: {}", ex.getMessage());
+                }
+            } else {
+                log.warn("SESSION: save пропущен — login/verify не успешен {}/{}", siteName, login);
+            }
+
             if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
                 return loginResult;
             }
             if (loginResult.failed()) {
-                log.warn("Логин не выполнен для {}", creds.login());
+                log.warn("Логин не выполнен для {}", login);
                 return loginResult;
             }
-            takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "after_login");
+
+            takeScreenshot(page, getSiteName(), userUuid, "after_login");
             page.waitForTimeout(1000);
 
             StepResult<Void> processResult = processAutoReply(page, payload, creds);
             if (processResult.failed()) {
-                log.warn("Автоответ НЕ отправлен пользователем {}", creds.login());
+                log.warn("Автоответ НЕ отправлен пользователем {}", login);
                 return processResult;
             }
 
-            log.info("Автоответ успешно отправлен пользователем {}", creds.login());
+            log.info("Автоответ успешно отправлен пользователем {}", login);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
 
         } catch (Exception e) {
@@ -104,6 +154,81 @@ public abstract class AutoreplyParser {
 
     protected PlaywrightBrowserManager getCurrentManager() {
         return managerResolver.resolve(getSiteName());
+    }
+
+    protected void humanWarmup(Page page) {
+        getCurrentManager().humanMouse(page);
+        getCurrentManager().humanDelay(page);
+    }
+
+    /** URL для проверки cookies после restore (домен биржи). */
+    protected String sessionCookieCheckUrl() {
+        return null;
+    }
+
+    protected StepResult<Void> resolveLogin(Page page, AiNotificationPayload payload,
+                                            DecryptedCredential creds, AutoreplyMode autoreplyMode,
+                                            String userUuid, String siteName, String login,
+                                            boolean hasSession) {
+        if (hasSession) {
+            StepResult<Void> verified = verifyExistingSession(page, creds, autoreplyMode);
+            if (!verified.failed()) {
+                log.info("SESSION: verifyExistingSession OK для {}/{}", siteName, login);
+                return verified;
+            }
+            log.warn("SESSION: verify не прошёл для {}/{} ({}), пробуем полный login без delete",
+                    siteName, login, verified.getErrorMessage());
+        }
+        StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
+        if (loginResult.failed() && hasSession) {
+            log.warn("SESSION: полный login не удался — удаляем устаревшую сессию {}/{}", siteName, login);
+            sessionStorage.delete(userUuid, siteName, login);
+        }
+        return loginResult;
+    }
+
+    protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
+        return StepResult.fail(StepType.SEND_AUTOREPLY, "Проверка сессии не реализована для сайта");
+    }
+
+    protected boolean contextHasCookie(BrowserContext ctx, String url, String name) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        try {
+            List<Cookie> cookies = ctx.cookies(url);
+            return cookies.stream().anyMatch(c -> name.equals(c.name));
+        } catch (Exception e) {
+            log.debug("SESSION: contextHasCookie error: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    protected boolean contextHasCookieValue(BrowserContext ctx, String url, String name, String expectedValue) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        try {
+            List<Cookie> cookies = ctx.cookies(url);
+            return cookies.stream()
+                    .anyMatch(c -> name.equals(c.name) && expectedValue.equals(c.value));
+        } catch (Exception e) {
+            log.debug("SESSION: contextHasCookieValue error: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    protected void pauseForSessionVerify(Page page, String userUuid) {
+        long pause = postLoginPauseMs;
+        if (pause <= 0 && !headless) {
+            pause = 5000;
+        }
+        if (pause <= 0 || page == null) {
+            return;
+        }
+        log.info("SESSION: пауза {} ms для проверки UI (headless={})", pause, headless);
+        takeScreenshot(page, getSiteName(), userUuid, "session_verify");
+        page.waitForTimeout(pause);
     }
 
     void safeNavigate(Page page, String url) {
@@ -140,16 +265,6 @@ public abstract class AutoreplyParser {
         }
     }
 
-    /**
-     * Формирует опции запуска браузера для конкретного сайта.
-     * <p>
-     * Прокси резолвится только когда он реально нужен:
-     * <ul>
-     *     <li>используется локальный Playwright (не Camoufox)</li>
-     *     <li>и флаг {@code proxy=true} для этого сайта</li>
-     * </ul>
-     * Для Camoufox прокси задан на Python-сервере и здесь игнорируется.
-     */
     protected BrowserLaunchOptions buildLaunchOptions(SiteName site, AiNotificationPayload payload) {
         if (!proxy) {
             return new BrowserLaunchOptions(null, headless, false);
@@ -160,7 +275,8 @@ public abstract class AutoreplyParser {
         );
         return new BrowserLaunchOptions(proxyCred, headless, true);
     }
-    protected void setOtp(AiNotificationPayload payload, String otp, boolean used){
+
+    protected void setOtp(AiNotificationPayload payload, String otp, boolean used) {
         payload.setOtpUsed(used);
         payload.setOtpValue(otp);
     }
@@ -177,9 +293,11 @@ public abstract class AutoreplyParser {
         screenshotService.take(page, site, userUuid, step);
     }
 
-    protected abstract StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode);
+    protected abstract StepResult<Void> login(Page page, AiNotificationPayload payload,
+                                              DecryptedCredential creds, AutoreplyMode mode);
 
-    protected abstract StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload, DecryptedCredential creds);
+    protected abstract StepResult<Void> processAutoReply(Page page, AiNotificationPayload payload,
+                                                         DecryptedCredential creds);
 
     protected abstract SiteName getSiteName();
 }

@@ -3,6 +3,8 @@ package by.gdev.common.service.playwright.manager;
 import by.gdev.common.model.SiteName;
 import com.microsoft.playwright.*;
 
+import java.nio.file.Path;
+
 public interface PlaywrightBrowserManager {
 
     Playwright createPlaywright();
@@ -11,9 +13,33 @@ public interface PlaywrightBrowserManager {
 
     BrowserContext createBrowserContext(Browser browser, BrowserLaunchOptions options, SiteName site);
 
+    default BrowserContext createBrowserContext(Browser browser, BrowserLaunchOptions options,
+                                                SiteName site, Path storageStatePath) {
+        return createBrowserContext(browser, options, site, storageStatePath, null);
+    }
+
+    default BrowserContext createBrowserContext(Browser browser, BrowserLaunchOptions options,
+                                                SiteName site, Path storageStatePath,
+                                                String storageStateJson) {
+        return createBrowserContext(browser, options, site);
+    }
+
     void closeResources(Page page, BrowserContext context, Browser browser,
                         Playwright playwright, SiteName site);
 
+    default Browser.NewContextOptions baseContextOptions() {
+        return new Browser.NewContextOptions()
+                .setViewportSize(1366, 768)
+                .setLocale("ru-RU")
+                .setDeviceScaleFactor(1.0)
+                .setIsMobile(false)
+                .setHasTouch(false)
+                .setTimezoneId("Europe/Moscow");
+    }
+
+    default void applyStealthScripts(BrowserContext context) {
+        // no-op
+    }
 
     default void humanMouse(Page page) {
         for (int i = 0; i < 15; i++) {
@@ -43,5 +69,4 @@ public interface PlaywrightBrowserManager {
             page.waitForTimeout(200 + (int)(Math.random() * 400));
         }
     }
-
 }

@@ -49,6 +49,31 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     @Override
+    protected String sessionCookieCheckUrl() {
+        return "https://kwork.ru";
+    }
+
+    @Override
+    protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
+        try {
+            page.navigate("https://kwork.ru/");
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.waitForTimeout(2000);
+            if (page.url().contains("/login")) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Редирект на /login");
+            }
+            Locator loginField = page.locator("input[placeholder='Электронная почта или логин']");
+            if (loginField.count() > 0 && loginField.first().isVisible()) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Форма логина на главной");
+            }
+            log.info("АВТООТВЕТ: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+        } catch (Exception e) {
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
+        }
+    }
+
+    @Override
     protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 

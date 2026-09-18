@@ -11,6 +11,7 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -80,6 +81,39 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     @Override
     public SiteName getSiteName() {
         return SiteName.YOUDO;
+    }
+
+    @Override
+    protected String sessionCookieCheckUrl() {
+        return "https://youdo.com";
+    }
+
+    @Override
+    protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
+        try {
+            BrowserContext ctx = page.context();
+            String checkUrl = sessionCookieCheckUrl();
+            boolean hasAuth = contextHasCookie(ctx, checkUrl, "xcuid")
+                    || contextHasCookie(ctx, "https://youdo.com", "userEmail");
+            if (!hasAuth) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Нет auth-cookies YouDo в контексте");
+            }
+            safeNavigate(page, "https://youdo.com/");
+            page.waitForTimeout(2000);
+            for (String selector : LOGIN_BUTTON_SELECTORS) {
+                try {
+                    Locator btn = page.locator(selector);
+                    if (btn.count() > 0 && btn.first().isVisible()) {
+                        return StepResult.fail(StepType.SEND_AUTOREPLY, "LoginButton виден при наличии cookies");
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            log.info("АВТООТВЕТ: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+        } catch (Exception e) {
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
+        }
     }
 
     @Override

@@ -46,6 +46,32 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
     }
 
     @Override
+    protected String sessionCookieCheckUrl() {
+        return "https://freelance.ru";
+    }
+
+    @Override
+    protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
+        try {
+            safeNavigate(page, "https://freelance.ru/auth/login");
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.waitForTimeout(1500);
+            if (!page.url().contains("/auth/login")) {
+                log.info("АВТООТВЕТ: {} -> сессия активна (редирект с login), пользователь: {}",
+                        getSiteName(), creds.login());
+                return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+            }
+            if (waitOrFail(page, "input[placeholder='логин или email']", 3000, "Поле логина")) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Форма логина на /auth/login");
+            }
+            log.info("АВТООТВЕТ: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+        } catch (Exception e) {
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
+        }
+    }
+
+    @Override
     protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 

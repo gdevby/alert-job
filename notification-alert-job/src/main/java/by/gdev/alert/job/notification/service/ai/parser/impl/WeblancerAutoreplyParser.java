@@ -9,6 +9,8 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
+import by.gdev.common.service.playwright.captcha.CaptchaService;
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
@@ -20,6 +22,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class WeblancerAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
+
+    private final CaptchaService captchaService;
+
+    @Value("${captcha.cloudflare.enabled:true}")
+    private boolean cloudflareCaptchaEnabled;
 
     @Value("${parser.autoreply.headless.weblancer.net:true}")
     private void setHeadless(boolean headless) {
@@ -41,8 +48,60 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
         return SiteName.WEBLANCER;
     }
 
-    public WeblancerAutoreplyParser(AssignedProxyService assignedProxyService) {
+    public WeblancerAutoreplyParser(AssignedProxyService assignedProxyService, CaptchaService captchaService) {
         super(assignedProxyService);
+        this.captchaService = captchaService;
+    }
+
+    @Override
+    protected String sessionCookieCheckUrl() {
+        return "https://www.weblancer.net";
+    }
+
+    private StepResult<Void> passCloudflareIfNeeded(Page page, String step) {
+        if (!cloudflareCaptchaEnabled) {
+            return null;
+        }
+        log.debug("АВТООТВЕТ: {} -> проверка Cloudflare ({})", getSiteName(), step);
+        if (!captchaService.solveCloudflareTurnstile(page)) {
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> Cloudflare Turnstile не пройдена, шаг: " + step,
+                    AutoreplyErrorTypes.CAPTCHA_FAILED);
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Cloudflare Turnstile не пройдена (" + step + ")",
+                    captureScreenshot(page));
+        }
+        return null;
+    }
+
+    @Override
+    protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
+        try {
+            String checkUrl = sessionCookieCheckUrl();
+            BrowserContext ctx = page.context();
+            boolean hasAuth = contextHasCookieValue(ctx, checkUrl, "auth_logged", "true")
+                    || contextHasCookie(ctx, checkUrl, "token");
+            if (!hasAuth) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Нет auth-cookies Weblancer в контексте");
+            }
+            page.navigate("https://www.weblancer.net/?lang=ru");
+            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+            page.waitForTimeout(1500);
+
+            StepResult<Void> cf = passCloudflareIfNeeded(page, "verify_session");
+            if (cf != null) {
+                return cf;
+            }
+
+            Locator loginBtn = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Вход"));
+            if (loginBtn.count() > 0 && loginBtn.first().isVisible()) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка «Вход» видна при наличии cookies");
+            }
+            log.info("АВТООТВЕТ: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+        } catch (Exception e) {
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
+        }
     }
 
     @Override
@@ -52,6 +111,11 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
         try {
             page.navigate("https://www.weblancer.net/?lang=ru");
             log.info("АВТООТВЕТ: {} -> главная страница загружена, пользователь: {}", getSiteName(), creds.login());
+
+            StepResult<Void> cf = passCloudflareIfNeeded(page, "after_home");
+            if (cf != null) {
+                return cf;
+            }
 
             getCurrentManager().humanMouse(page);
             getCurrentManager().humanDelay(page);
@@ -63,6 +127,11 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
 
             page.waitForSelector("input[name='login']");
             log.debug("АВТООТВЕТ: {} -> форма логина загружена, пользователь: {}", getSiteName(), creds.login());
+
+            cf = passCloudflareIfNeeded(page, "after_login_modal");
+            if (cf != null) {
+                return cf;
+            }
 
             getCurrentManager().humanMouse(page);
             getCurrentManager().humanDelay(page);
@@ -83,9 +152,14 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
             page.waitForCondition(loginBtn::isEnabled);
             log.debug("АВТООТВЕТ: {} -> кнопка 'Войти в аккаунт' активна, пользователь: {}", getSiteName(), creds.login());
 
-            //getPlaywrightManager().humanDelay(page);
+            getCurrentManager().humanDelay(page);
             loginBtn.click();
             log.info("АВТООТВЕТ: {} -> кнопка 'Войти в аккаунт' нажата, пользователь: {}", getSiteName(), creds.login());
+
+            cf = passCloudflareIfNeeded(page, "after_submit");
+            if (cf != null) {
+                return cf;
+            }
 
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
