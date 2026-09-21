@@ -5,14 +5,19 @@ import by.gdev.common.model.proxy.ProxyCredentials;
 /**
  * Универсальные опции запуска браузера.
  * Локальный менеджер использует все поля,
- * Camoufox: proxy и headless передаются в Python-лаунчер (/launch).
+ * Camoufox: proxy, headless и requestUserEmail передаются в Python-лаунчер (/launch).
  */
 public record BrowserLaunchOptions(
         ProxyCredentials proxy,
         boolean headless,
-        boolean useProxy
+        boolean useProxy,
+        String requestUserEmail
 ) {
+    public BrowserLaunchOptions(ProxyCredentials proxy, boolean headless, boolean useProxy) {
+        this(proxy, headless, useProxy, null);
+    }
+
     public static BrowserLaunchOptions empty() {
-        return new BrowserLaunchOptions(null, false, false);
+        return new BrowserLaunchOptions(null, false, false, null);
     }
 }

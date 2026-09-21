@@ -104,14 +104,15 @@ public abstract class AbstractAutoreplySessionVerifier implements AutoreplySessi
     }
 
     protected BrowserLaunchOptions buildLaunchOptions(AiNotificationPayload payload) {
+        String userEmail = payload.getUser() != null ? payload.getUser().getEmail() : null;
         if (!proxy) {
-            return new BrowserLaunchOptions(null, headless, false);
+            return new BrowserLaunchOptions(null, headless, false, userEmail);
         }
         ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(
                 payload.getUser().getUuid(),
                 payload.getModule().getId()
         );
-        return new BrowserLaunchOptions(proxyCred, headless, true);
+        return new BrowserLaunchOptions(proxyCred, headless, true, userEmail);
     }
 
     protected boolean contextHasCookie(BrowserContext ctx, String url, String name) {

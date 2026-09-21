@@ -244,14 +244,15 @@ public abstract class AutoreplyParser {
     }
 
     protected BrowserLaunchOptions buildLaunchOptions(SiteName site, AiNotificationPayload payload) {
+        String userEmail = payload.getUser() != null ? payload.getUser().getEmail() : null;
         if (!proxy) {
-            return new BrowserLaunchOptions(null, headless, false);
+            return new BrowserLaunchOptions(null, headless, false, userEmail);
         }
         ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(
                 payload.getUser().getUuid(),
                 payload.getModule().getId()
         );
-        return new BrowserLaunchOptions(proxyCred, headless, true);
+        return new BrowserLaunchOptions(proxyCred, headless, true, userEmail);
     }
 
     protected void setOtp(AiNotificationPayload payload, String otp, boolean used) {

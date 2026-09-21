@@ -22,6 +22,13 @@ PROBE_HOST = '127.0.0.1'
 NEXT_PORT = PORT_START
 
 
+def _format_user_email(data):
+    email = data.get('userEmail') or data.get('user_email')
+    if email is None or str(email).strip() == '':
+        return '?'
+    return str(email).strip()
+
+
 class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -43,6 +50,7 @@ class Handler(BaseHTTPRequestHandler):
         proxy = data.get('proxy')
         site = data.get('site', 'unknown')
         country = data.get('country') or '?'
+        user_email = _format_user_email(data)
         headless = bool(data.get('headless', True))
         proxy_part = json.dumps(proxy, sort_keys=True) if proxy else 'none'
         key = f'{headless}|{proxy_part}'
@@ -50,7 +58,11 @@ class Handler(BaseHTTPRequestHandler):
         with lock:
             inst = instances.get(key)
             if inst and inst['process'].poll() is None:
-                print(f'[launcher] [{site}] reuse port {inst["port"]} country={inst.get("country", "?")}', flush=True)
+                print(
+                    f'[launcher] [{site}] reuse port {inst["port"]} country={inst.get("country", "?")} '
+                    f'user={user_email}',
+                    flush=True,
+                )
                 return self._json({'endpoint': inst['endpoint'], 'key': key})
 
             port = NEXT_PORT
@@ -71,13 +83,17 @@ class Handler(BaseHTTPRequestHandler):
             endpoint = f'ws://{WS_HOST}:{port}/camoufox'
             proxy_str = proxy.get('server') if proxy else 'no-proxy'
 
-            print(f'[launcher] [{site}] start port {port} headless={headless} proxy={proxy_str} country={country}', flush=True)
+            print(
+                f'[launcher] [{site}] start port {port} headless={headless} proxy={proxy_str} '
+                f'country={country} user={user_email}',
+                flush=True,
+            )
 
             deadline = time.time() + 60
             ready = False
             while time.time() < deadline:
                 if proc.poll() is not None:
-                    print(f'[launcher] [{site}] FAILED port {port} (process died)', flush=True)
+                    print(f'[launcher] [{site}] FAILED port {port} user={user_email} (process died)', flush=True)
                     return self._json({'error': 'Camoufox failed to start'}, status=500)
                 try:
                     with socket.create_connection((PROBE_HOST, port), timeout=1):
@@ -87,17 +103,18 @@ class Handler(BaseHTTPRequestHandler):
                     time.sleep(0.5)
 
             if not ready:
-                print(f'[launcher] [{site}] TIMEOUT port {port}', flush=True)
+                print(f'[launcher] [{site}] TIMEOUT port {port} user={user_email}', flush=True)
                 proc.terminate()
                 return self._json({'error': 'Camoufox timeout'}, status=500)
 
-            print(f'[launcher] [{site}] ready port {port} country={country}', flush=True)
+            print(f'[launcher] [{site}] ready port {port} country={country} user={user_email}', flush=True)
             instances[key] = {
                 'process': proc,
                 'endpoint': endpoint,
                 'port': port,
                 'site': site,
                 'country': country,
+                'user_email': user_email,
             }
             self._json({'endpoint': endpoint, 'key': key})
 
@@ -114,8 +131,12 @@ class Handler(BaseHTTPRequestHandler):
             proc = inst['process']
             site = inst.get('site', 'unknown')
             country = inst.get('country', '?')
+            user_email = inst.get('user_email', '?')
             if proc.poll() is None:
-                print(f'[launcher] [{site}] kill port {inst["port"]} country={country}', flush=True)
+                print(
+                    f'[launcher] [{site}] kill port {inst["port"]} country={country} user={user_email}',
+                    flush=True,
+                )
                 proc.terminate()
                 try:
                     proc.wait(timeout=5)

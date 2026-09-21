@@ -29,10 +29,13 @@ public class CamoufoxLauncherClient {
 
     private final Gson gson = new Gson();
 
-    public LaunchResult launch(ProxyCredentials proxy, SiteName site, boolean headless) {
+    public LaunchResult launch(ProxyCredentials proxy, SiteName site, boolean headless, String requestUserEmail) {
         Map<String, Object> body = new HashMap<>();
         body.put("site", site.name());
         body.put("headless", headless);
+        if (requestUserEmail != null && !requestUserEmail.isBlank()) {
+            body.put("userEmail", requestUserEmail.trim());
+        }
 
         if (proxy != null) {
             Map<String, String> p = new HashMap<>();
