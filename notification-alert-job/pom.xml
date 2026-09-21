@@ -8,7 +8,7 @@
 	<artifactId>notification-alert-job</artifactId>
 	<properties>
 		<docker.server.port>8019</docker.server.port>
-		<docker.dockerfile.name>java-playwright.Dockerfile</docker.dockerfile.name>
+		<docker.dockerfile.name>java-playwright-notification.Dockerfile</docker.dockerfile.name>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -30,7 +30,6 @@
 		<dependency>
 			<groupId>com.microsoft.playwright</groupId>
 			<artifactId>playwright</artifactId>
-			<version>1.62.0</version>
 		</dependency>
 
         <dependency>
@@ -101,6 +100,42 @@
 	</dependencies>
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-docker-camoufox-assets</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/docker</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/../config/camufox</directory>
+									<includes>
+										<include>camoufox_launcher.py</include>
+										<include>requirements.txt</include>
+									</includes>
+									<targetPath>.</targetPath>
+								</resource>
+								<resource>
+									<directory>${project.basedir}/../docker</directory>
+									<includes>
+										<include>notification-entrypoint.sh</include>
+									</includes>
+								</resource>
+							</resources>
+							<nonFilteredFileExtensions>
+								<nonFilteredFileExtension>sh</nonFilteredFileExtension>
+								<nonFilteredFileExtension>py</nonFilteredFileExtension>
+							</nonFilteredFileExtensions>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>dockerfile-maven-plugin</artifactId>
