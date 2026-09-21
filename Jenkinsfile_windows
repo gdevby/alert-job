@@ -74,6 +74,12 @@ pipeline {
                             },
                             'front': {
                                 bat "docker push ${REGISTRY}/front:${REVISION}"
+                            },
+                            'camoufox-launcher': {
+                                bat """
+                                    docker build -f docker/camoufox-launcher.Dockerfile -t ${REGISTRY}/camoufox-launcher:${REVISION} --build-arg PLAYWRIGHT_VERSION=1.62.0 .
+                                    docker push ${REGISTRY}/camoufox-launcher:${REVISION}
+                                """
                             }
                         )
                     }

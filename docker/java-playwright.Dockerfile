@@ -1,7 +1,7 @@
 # parser-alert-job / notification-alert-job image: Playwright + layered Spring Boot JAR.
 
 # Must be before any FROM — used in stage 2 base image tag (build-arg from pom.xml / Jenkins).
-ARG PLAYWRIGHT_VERSION=1.61.0
+ARG PLAYWRIGHT_VERSION=1.62.0
 
 # Stage 1: unpack the JAR into layers (same logic as java-service.Dockerfile).
 FROM eclipse-temurin:17-jre-jammy AS extractor

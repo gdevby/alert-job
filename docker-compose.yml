@@ -87,6 +87,21 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+  camoufox-launcher:
+    image: rg.gdev.by/alert-job/camoufox-launcher:$alert_job_version
+    ports:
+      - "8888:8888"
+    environment:
+      CAMOUFOX_HTTP_BIND: "0.0.0.0"
+      CAMOUFOX_WS_HOST: camoufox-launcher
+      TZ: Europe/Moscow
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8888/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
   notification:
     image: rg.gdev.by/alert-job/notification-alert-job:$alert_job_version
     ports:
@@ -94,9 +109,12 @@ services:
     environment:
        - "SPRING_PROFILES_ACTIVE=$profile"
        - TZ=Europe/Moscow
+       - CAMOUFOX_LAUNCHER_URL=http://camoufox-launcher:8888
     env_file:
       - .env
     depends_on:
+      camoufox-launcher:
+        condition: service_healthy
       config:
         condition: service_healthy
       eureka:

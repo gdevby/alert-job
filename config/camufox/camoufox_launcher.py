@@ -1,4 +1,5 @@
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -8,10 +9,25 @@ from threading import Lock
 
 instances = {}          # key -> {'process', 'endpoint', 'port', 'site', 'country'}
 lock = Lock()
-NEXT_PORT = 8080
+
+HTTP_BIND = os.environ.get('CAMOUFOX_HTTP_BIND', '127.0.0.1')
+WS_HOST = os.environ.get('CAMOUFOX_WS_HOST', '127.0.0.1')
+PORT_START = int(os.environ.get('CAMOUFOX_PORT_START', '8080'))
+SERVER_BIND = os.environ.get(
+    'CAMOUFOX_SERVER_BIND',
+    '127.0.0.1' if WS_HOST in ('127.0.0.1', 'localhost') else '0.0.0.0',
+)
+PROBE_HOST = '127.0.0.1'
+
+NEXT_PORT = PORT_START
 
 
 class Handler(BaseHTTPRequestHandler):
+
+    def do_GET(self):
+        if self.path == '/health':
+            return self._json({'status': 'ok'})
+        self.send_error(404)
 
     def do_POST(self):
         if self.path == '/launch':
@@ -45,14 +61,14 @@ class Handler(BaseHTTPRequestHandler):
                 "from camoufox.server import launch_server\n"
                 "p = json.loads(sys.argv[1]) if sys.argv[1] != 'null' else None\n"
                 f"launch_server(headless={headless}, port={port}, ws_path='camoufox', "
-                "host='127.0.0.1', proxy=p, locale='ru-RU')\n"
+                f"host='{SERVER_BIND}', proxy=p, locale='ru-RU')\n"
             )
             proc = subprocess.Popen(
                 [sys.executable, "-c", script, json.dumps(proxy)],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            endpoint = f'ws://127.0.0.1:{port}/camoufox'
+            endpoint = f'ws://{WS_HOST}:{port}/camoufox'
             proxy_str = proxy.get('server') if proxy else 'no-proxy'
 
             print(f'[launcher] [{site}] start port {port} headless={headless} proxy={proxy_str} country={country}', flush=True)
@@ -64,7 +80,7 @@ class Handler(BaseHTTPRequestHandler):
                     print(f'[launcher] [{site}] FAILED port {port} (process died)', flush=True)
                     return self._json({'error': 'Camoufox failed to start'}, status=500)
                 try:
-                    with socket.create_connection(('127.0.0.1', port), timeout=1):
+                    with socket.create_connection((PROBE_HOST, port), timeout=1):
                         ready = True
                         break
                 except (ConnectionRefusedError, OSError):
@@ -121,5 +137,5 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    print('Camoufox launcher on http://127.0.0.1:8888', flush=True)
-    HTTPServer(('127.0.0.1', 8888), Handler).serve_forever()
+    print(f'Camoufox launcher on http://{HTTP_BIND}:8888 ws_host={WS_HOST}', flush=True)
+    HTTPServer((HTTP_BIND, 8888), Handler).serve_forever()

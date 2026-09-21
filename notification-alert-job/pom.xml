@@ -30,7 +30,6 @@
 		<dependency>
 			<groupId>com.microsoft.playwright</groupId>
 			<artifactId>playwright</artifactId>
-			<version>1.62.0</version>
 		</dependency>
 
         <dependency>
