@@ -3,6 +3,7 @@ package by.gdev.alert.job.notification.client;
 import by.gdev.alert.job.notification.model.dto.AppUserDTO;
 import by.gdev.alert.job.notification.model.dto.ModuleSiteDto;
 import by.gdev.alert.job.notification.model.dto.UserCredentialEncrypted;
+import by.gdev.alert.job.notification.model.dto.credential.UserCredentialShortDto;
 import by.gdev.common.model.HeaderName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +68,20 @@ public class CoreUnifiedClient {
                 .retrieve()
                 .bodyToMono(UserCredentialEncrypted.class)
                 .block();
+    }
+
+    public List<UserCredentialShortDto> getAllUserCredentials(String userUuid) {
+        try {
+            return webClient.get()
+                    .uri(coreUrl + "/api/credentials/user/all")
+                    .header(HeaderName.UUID_USER_HEADER, userUuid)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<UserCredentialShortDto>>() {})
+                    .block();
+        } catch (Exception e) {
+            log.error("Ошибка получения учётных данных для user {}", userUuid, e);
+            return Collections.emptyList();
+        }
     }
 
     // Auto-reply users

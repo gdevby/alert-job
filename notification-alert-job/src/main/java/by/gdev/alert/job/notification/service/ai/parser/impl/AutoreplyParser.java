@@ -6,6 +6,7 @@ import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.debug.AutoreplyReporter;
 import by.gdev.alert.job.notification.service.ai.parser.debug.ScreenshotService;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
+import by.gdev.alert.job.notification.service.ai.sessions.AutoreplySessionVerifierFactory;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
@@ -16,7 +17,6 @@ import by.gdev.common.service.playwright.manager.PlaywrightBrowserManager;
 import by.gdev.common.service.playwright.manager.PlaywrightManagerResolver;
 import by.gdev.common.service.playwright.manager.impl.PlaywrightCamoufoxManager;
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
-import java.util.List;
 
 @Slf4j
 public abstract class AutoreplyParser {
@@ -57,6 +56,9 @@ public abstract class AutoreplyParser {
 
     @Autowired
     protected PlaywrightManagerResolver managerResolver;
+
+    @Autowired
+    protected AutoreplySessionVerifierFactory sessionVerifierFactory;
 
     protected AutoreplyParser(AssignedProxyService assignedProxyService) {
         this.assignedProxyService = assignedProxyService;
@@ -188,34 +190,10 @@ public abstract class AutoreplyParser {
     }
 
     protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
-        return StepResult.fail(StepType.SEND_AUTOREPLY, "Проверка сессии не реализована для сайта");
-    }
-
-    protected boolean contextHasCookie(BrowserContext ctx, String url, String name) {
-        if (url == null || url.isBlank()) {
-            return false;
-        }
-        try {
-            List<Cookie> cookies = ctx.cookies(url);
-            return cookies.stream().anyMatch(c -> name.equals(c.name));
-        } catch (Exception e) {
-            log.debug("SESSION: contextHasCookie error: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    protected boolean contextHasCookieValue(BrowserContext ctx, String url, String name, String expectedValue) {
-        if (url == null || url.isBlank()) {
-            return false;
-        }
-        try {
-            List<Cookie> cookies = ctx.cookies(url);
-            return cookies.stream()
-                    .anyMatch(c -> name.equals(c.name) && expectedValue.equals(c.value));
-        } catch (Exception e) {
-            log.debug("SESSION: contextHasCookieValue error: {}", e.getMessage());
-            return false;
-        }
+        return sessionVerifierFactory.find(getSiteName())
+                .map(v -> v.verifySessionOnPage(page, creds))
+                .orElseGet(() -> StepResult.fail(StepType.SEND_AUTOREPLY,
+                        "Проверка сессии не реализована для сайта"));
     }
 
     protected void pauseForSessionVerify(Page page, String userUuid) {

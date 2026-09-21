@@ -10,7 +10,6 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.captcha.CaptchaService;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -53,28 +52,6 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     @Override
     protected String sessionCookieCheckUrl() {
         return "https://www.fl.ru";
-    }
-
-    @Override
-    protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
-        try {
-            String checkUrl = sessionCookieCheckUrl();
-            BrowserContext ctx = page.context();
-            boolean hasAuthCookies = contextHasCookie(ctx, checkUrl, "PHPSESSID")
-                    || contextHasCookie(ctx, checkUrl, "id");
-            if (!hasAuthCookies) {
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Нет auth-cookies FL.ru в контексте");
-            }
-            safeNavigate(page, "https://www.fl.ru/");
-            page.waitForTimeout(2000);
-            if (page.url().contains("/account/login")) {
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Редирект на страницу логина");
-            }
-            log.info("АВТООТВЕТ: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
-            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
-        } catch (Exception e) {
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
-        }
     }
 
     @Override

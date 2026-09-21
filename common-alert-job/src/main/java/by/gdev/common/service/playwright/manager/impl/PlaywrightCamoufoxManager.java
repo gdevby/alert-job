@@ -27,7 +27,8 @@ public class PlaywrightCamoufoxManager implements PlaywrightBrowserManager {
 
     @Override
     public Browser createBrowser(Playwright playwright, BrowserLaunchOptions options, SiteName site) {
-        CamoufoxLauncherClient.LaunchResult result = launcherClient.launch(options.proxy(), site);
+        CamoufoxLauncherClient.LaunchResult result =
+                launcherClient.launch(options.proxy(), site, options.headless());
         currentKey.set(result.key());
         log.info("[{}] Подключение к Camoufox: {} (key={})", site, result.endpoint(), result.key());
         try {

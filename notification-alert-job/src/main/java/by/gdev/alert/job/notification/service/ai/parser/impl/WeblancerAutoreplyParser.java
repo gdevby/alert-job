@@ -10,7 +10,6 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.service.playwright.captcha.CaptchaService;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
@@ -72,36 +71,6 @@ public class WeblancerAutoreplyParser extends AutoreplyParser implements Autorep
                     captureScreenshot(page));
         }
         return null;
-    }
-
-    @Override
-    protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
-        try {
-            String checkUrl = sessionCookieCheckUrl();
-            BrowserContext ctx = page.context();
-            boolean hasAuth = contextHasCookieValue(ctx, checkUrl, "auth_logged", "true")
-                    || contextHasCookie(ctx, checkUrl, "token");
-            if (!hasAuth) {
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Нет auth-cookies Weblancer в контексте");
-            }
-            page.navigate("https://www.weblancer.net/?lang=ru");
-            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-            page.waitForTimeout(1500);
-
-            StepResult<Void> cf = passCloudflareIfNeeded(page, "verify_session");
-            if (cf != null) {
-                return cf;
-            }
-
-            Locator loginBtn = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Вход"));
-            if (loginBtn.count() > 0 && loginBtn.first().isVisible()) {
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка «Вход» видна при наличии cookies");
-            }
-            log.info("АВТООТВЕТ: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
-            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
-        } catch (Exception e) {
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
-        }
     }
 
     @Override

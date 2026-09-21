@@ -27,7 +27,9 @@ class Handler(BaseHTTPRequestHandler):
         proxy = data.get('proxy')
         site = data.get('site', 'unknown')
         country = data.get('country') or '?'
-        key = json.dumps(proxy, sort_keys=True) if proxy else 'none'
+        headless = bool(data.get('headless', True))
+        proxy_part = json.dumps(proxy, sort_keys=True) if proxy else 'none'
+        key = f'{headless}|{proxy_part}'
 
         with lock:
             inst = instances.get(key)
@@ -42,7 +44,7 @@ class Handler(BaseHTTPRequestHandler):
                 "import sys, json\n"
                 "from camoufox.server import launch_server\n"
                 "p = json.loads(sys.argv[1]) if sys.argv[1] != 'null' else None\n"
-                f"launch_server(headless=False, port={port}, ws_path='camoufox', "
+                f"launch_server(headless={headless}, port={port}, ws_path='camoufox', "
                 "host='127.0.0.1', proxy=p, locale='ru-RU')\n"
             )
             proc = subprocess.Popen(
@@ -53,7 +55,7 @@ class Handler(BaseHTTPRequestHandler):
             endpoint = f'ws://127.0.0.1:{port}/camoufox'
             proxy_str = proxy.get('server') if proxy else 'no-proxy'
 
-            print(f'[launcher] [{site}] start port {port} proxy={proxy_str} country={country}', flush=True)
+            print(f'[launcher] [{site}] start port {port} headless={headless} proxy={proxy_str} country={country}', flush=True)
 
             deadline = time.time() + 60
             ready = False
