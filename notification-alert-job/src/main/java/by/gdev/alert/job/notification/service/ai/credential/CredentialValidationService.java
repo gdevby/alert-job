@@ -22,7 +22,8 @@ public class CredentialValidationService {
     private final AutoreplyParserFactory parserFactory;
     private final UserCredentialService userCredentialService;
 
-    public CredentialValidationResult validate(String uuid, Long siteId, String login, String password) {
+    public CredentialValidationResult validate(String uuid, Long siteId, String login, String password,
+                                               String userEmail) {
         SiteName siteName;
         try {
             siteName = SiteName.fromId(siteId);
@@ -49,6 +50,9 @@ public class CredentialValidationService {
         //Пользователь, который сделал запрос
         AiAppUserDTO user = new AiAppUserDTO();
         user.setUuid(uuid);
+        if (userEmail != null && !userEmail.isBlank()) {
+            user.setEmail(userEmail.trim());
+        }
         payload.setUser(user);
 
         DecryptedCredential decryptedCred =  userCredentialService.getUserCredentials(login, password);

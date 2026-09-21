@@ -7,10 +7,12 @@ import by.gdev.alert.job.core.exeption.ai.credential.CredentialNotFoundException
 import by.gdev.alert.job.core.exeption.ai.credential.InvalidCredentialsException;
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
 import by.gdev.alert.job.core.model.credential.dto.CredentialValidationResult;
+import by.gdev.alert.job.core.model.db.AppUser;
 import by.gdev.alert.job.core.model.db.ai.AccountTemplateBinding;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.repository.ai.AccountTemplateBindingRepository;
 import by.gdev.alert.job.core.repository.ai.UserSiteCredentialRepository;
+import by.gdev.alert.job.core.service.AppUserService;
 import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class UserSiteCredentialService {
     private final UserSiteCredentialRepository userSiteCredentialRepository;
     private final EncryptionService encryptionService;
     private final NotificationClient notificationClient;
+    private final AppUserService appUserService;
 
     public UserSiteCredential createOrUpdateCredential(
             String name,
@@ -159,6 +162,7 @@ public class UserSiteCredentialService {
         try {
             return notificationClient.validateCredentials(
                     cred.getUserUuid(),
+                    resolveUserEmail(cred.getUserUuid()),
                     cred.getSiteId(),
                     cred.getLogin(),
                     cred.getPasswordEncrypted()
@@ -171,7 +175,8 @@ public class UserSiteCredentialService {
 
     private CredentialValidationResult checkAccount(String uuid, Long siteId, String login, String password) {
         try {
-            CredentialValidationResult result = notificationClient.validateCredentials(uuid, siteId, login, password);
+            CredentialValidationResult result = notificationClient.validateCredentials(
+                    uuid, resolveUserEmail(uuid), siteId, login, password);
             if (!result.isSuccess()) {
                 log.warn("Проверка аккаунта не удалась: siteId={}, login={}, ошибка={}",
                         siteId, login, result.getErrorMessage());
@@ -185,5 +190,12 @@ public class UserSiteCredentialService {
             log.error("Ошибка проверки аккаунта для siteId={}, login={}", siteId, login, e);
             throw new InvalidCredentialsException("Ошибка проверки аккаунта: " + e.getMessage());
         }
+    }
+
+    private String resolveUserEmail(String userUuid) {
+        return appUserService.findByUuid(userUuid)
+                .map(AppUser::getEmail)
+                .filter(email -> !email.isBlank())
+                .orElse(null);
     }
 }

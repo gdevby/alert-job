@@ -109,7 +109,8 @@ public class AiNotificationController {
                 uuid,
                 request.getSiteId(),
                 request.getLogin(),
-                request.getPassword()
+                request.getPassword(),
+                request.getUserEmail()
         );
 
         return Mono.just(result);
