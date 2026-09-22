@@ -7,7 +7,7 @@ import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Lock
 
-instances = {}          # key -> {'process', 'endpoint', 'port', 'site', 'country'}
+instances = {}          # key -> {'process', 'endpoint', 'port', 'site', 'country', 'refs'}
 lock = Lock()
 
 HTTP_BIND = os.environ.get('CAMOUFOX_HTTP_BIND', '127.0.0.1')
@@ -58,9 +58,10 @@ class Handler(BaseHTTPRequestHandler):
         with lock:
             inst = instances.get(key)
             if inst and inst['process'].poll() is None:
+                inst['refs'] = inst.get('refs', 1) + 1
                 print(
                     f'[launcher] [{site}] reuse port {inst["port"]} country={inst.get("country", "?")} '
-                    f'user={user_email}',
+                    f'user={user_email} refs={inst["refs"]}',
                     flush=True,
                 )
                 return self._json({'endpoint': inst['endpoint'], 'key': key})
@@ -115,6 +116,7 @@ class Handler(BaseHTTPRequestHandler):
                 'site': site,
                 'country': country,
                 'user_email': user_email,
+                'refs': 1,
             }
             self._json({'endpoint': endpoint, 'key': key})
 
@@ -124,7 +126,7 @@ class Handler(BaseHTTPRequestHandler):
         key = data.get('key')
 
         with lock:
-            inst = instances.pop(key, None)
+            inst = instances.get(key)
             if inst is None:
                 return self._json({'status': 'not_found'})
 
@@ -132,6 +134,16 @@ class Handler(BaseHTTPRequestHandler):
             site = inst.get('site', 'unknown')
             country = inst.get('country', '?')
             user_email = inst.get('user_email', '?')
+
+            inst['refs'] = inst.get('refs', 1) - 1
+            if inst['refs'] > 0 and proc.poll() is None:
+                print(
+                    f'[launcher] [{site}] keep port {inst["port"]} user={user_email} refs={inst["refs"]}',
+                    flush=True,
+                )
+                return self._json({'status': 'in_use', 'refs': inst['refs']})
+
+            instances.pop(key, None)
             if proc.poll() is None:
                 print(
                     f'[launcher] [{site}] kill port {inst["port"]} country={country} user={user_email}',

@@ -55,10 +55,9 @@ public class PlaywrightCamoufoxManager implements PlaywrightBrowserManager {
     public BrowserContext createBrowserContext(Browser browser, BrowserLaunchOptions options,
                                                SiteName site, Path storageStatePath,
                                                String storageStateJson) {
-        // storageState игнорируется: на connect восстановление через restoreCookies/restoreOrigins
-        if (!browser.contexts().isEmpty()) {
-            return browser.contexts().get(0);
-        }
+        // storageState игнорируется: на connect восстановление через restoreCookies/restoreOrigins.
+        // Контекст всегда новый: инстанс Camoufox может быть общим, переиспользование чужого
+        // контекста привело бы к утечке cookies между пользователями.
         return browser.newContext();
     }
 
@@ -67,7 +66,8 @@ public class PlaywrightCamoufoxManager implements PlaywrightBrowserManager {
                                Playwright playwright, SiteName site) {
         try { if (page != null && !page.isClosed()) page.close(); } catch (Exception ignored) {}
         try { if (context != null) context.close(); } catch (Exception ignored) {}
-        try { if (browser != null && browser.isConnected()) browser.close(); } catch (Exception ignored) {}
+        // browser.close() не вызываем: инстанс общий, закрытие очистило бы контексты других
+        // клиентов. Соединение разрывается на playwright.close(), процесс освобождает лаунчер.
         try { if (playwright != null) playwright.close(); } catch (Exception ignored) {}
 
         String key = currentKey.get();

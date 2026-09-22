@@ -252,6 +252,11 @@ public abstract class AutoreplyParser {
                 payload.getUser().getUuid(),
                 payload.getModule().getId()
         );
+        if (proxyCred == null) {
+            proxyCred = managerResolver.getLocalManager().getProxyWithRetry(3, 500);
+            log.info("АВТООТВЕТ: {} -> нет закреплённого прокси, взят случайный: {}", site,
+                    proxyCred != null ? proxyCred.getHost() + ":" + proxyCred.getPort() : "нет активных");
+        }
         return new BrowserLaunchOptions(proxyCred, headless, true, userEmail);
     }
 

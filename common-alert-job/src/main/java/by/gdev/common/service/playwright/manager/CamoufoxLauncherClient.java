@@ -47,7 +47,9 @@ public class CamoufoxLauncherClient {
         }
 
         String json = gson.toJson(body);
-        log.info("Запрос к Camoufox-лаунчеру: {}", json);
+        log.info("Запрос к Camoufox-лаунчеру: site={} headless={} proxy={} country={}", site, headless,
+                proxy != null ? proxy.getHost() + ":" + proxy.getPort() : "no-proxy",
+                proxy != null ? proxy.getCountry() : "-");
 
         JsonObject r = post("/launch", json);
         if (r.has("error")) {

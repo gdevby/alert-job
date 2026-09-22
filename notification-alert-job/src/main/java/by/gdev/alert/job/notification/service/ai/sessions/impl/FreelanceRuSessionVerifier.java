@@ -49,8 +49,9 @@ public class FreelanceRuSessionVerifier extends AbstractAutoreplySessionVerifier
             if (waitOrFail(page, "input[placeholder='логин или email']", 3000, "Поле логина")) {
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Форма логина на /auth/login");
             }
-            log.info("SESSION-VERIFY: FREELANCERU сессия активна, пользователь: {}", creds.login());
-            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+            // Редиректа не было, но и форму логина определить не удалось — сессию не подтверждаем
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Остались на /auth/login, состояние сессии не подтверждено");
         } catch (Exception e) {
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
         }
