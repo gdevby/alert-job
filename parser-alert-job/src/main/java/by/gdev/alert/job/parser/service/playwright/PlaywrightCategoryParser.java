@@ -41,22 +41,22 @@ public abstract class PlaywrightCategoryParser implements Parser {
 
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy,
                                     boolean headless, boolean isActiveProxy) {
-        PlaywrightBrowserManager manager = managerResolver.resolve(getSiteName());
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
         BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, isActiveProxy);
         return manager.createBrowser(playwright, options, getSiteName());
     }
 
     public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        managerResolver.resolve(getSiteName())
+        managerResolver.getLocalManager()
                 .closeResources(page, context, browser, playwright, getSiteName());
     }
 
     public Playwright createPlaywright() {
-        return managerResolver.resolve(getSiteName()).createPlaywright();
+        return managerResolver.getLocalManager().createPlaywright();
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        PlaywrightBrowserManager manager = managerResolver.resolve(getSiteName());
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
         BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, useProxy);
         return manager.createBrowserContext(browser, options, getSiteName());
     }

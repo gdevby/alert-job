@@ -146,7 +146,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @return объект Playwright
      */
     public Playwright createPlaywright() {
-        return managerResolver.resolve(getSiteName()).createPlaywright();
+        return managerResolver.getLocalManager().createPlaywright();
     }
 
     /**
@@ -158,7 +158,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @param playwright движок Playwright
      */
     protected void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        managerResolver.resolve(getSiteName())
+        managerResolver.getLocalManager()
                 .closeResources(page, context, browser, playwright, getSiteName());
     }
 
@@ -171,7 +171,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @return новый контекст браузера
      */
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        PlaywrightBrowserManager manager = managerResolver.resolve(getSiteName());
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
         BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, useProxy);
         return manager.createBrowserContext(browser, options, getSiteName());
     }
@@ -186,7 +186,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @return браузер
      */
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
-        PlaywrightBrowserManager manager = managerResolver.resolve(getSiteName());
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
         BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, isActiveProxy);
         return manager.createBrowser(playwright, options, getSiteName());
     }
