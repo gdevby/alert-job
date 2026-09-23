@@ -124,6 +124,13 @@ public abstract class AutoreplyParser {
                 log.warn("SESSION: save пропущен — login/verify не успешен {}/{}", siteName, login);
             }
 
+            if (!loginResult.failed()) {
+                StepResult<Void> afterLogin = checkAfterLogin(page, creds);
+                if (afterLogin != null) {
+                    loginResult = afterLogin;
+                }
+            }
+
             if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
                 return loginResult;
             }
@@ -194,6 +201,16 @@ public abstract class AutoreplyParser {
                 .map(v -> v.verifySessionOnPage(page, creds))
                 .orElseGet(() -> StepResult.fail(StepType.SEND_AUTOREPLY,
                         "Проверка сессии не реализована для сайта"));
+    }
+
+    /**
+     * Проверка страницы после успешного login/verify — сессия к этому моменту уже сохранена.
+     * Нужна, когда биржа пускает по сессии, но требует дополнительное действие (например FL.ru просит код из письма).
+     *
+     * @return ошибку для пользователя либо {@code null}, если всё в порядке
+     */
+    protected StepResult<Void> checkAfterLogin(Page page, DecryptedCredential creds) {
+        return null;
     }
 
     protected void pauseForSessionVerify(Page page, String userUuid) {

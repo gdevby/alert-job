@@ -27,6 +27,17 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             "text=Неверный логин/пароль"
     };
 
+    /** Признаки страницы FL.ru "Введите код из письма для входа" (вход по коду на e-mail). */
+    private static final String[] EMAIL_CODE_SELECTORS = {
+            "form.js-send-confirmation-code",
+            "h2:has-text('Введите код из письма для входа')",
+            "a[href*='/account/repeat-send-code']"
+    };
+
+    private static final String EMAIL_CODE_MESSAGE =
+            "На FL.ru включён вход по коду из письма. Автоотклики работать не будут, пока вы не отключите "
+                    + "подтверждение входа по e-mail в настройках профиля FL.ru (Настройки -> Безопасность).";
+
     private final CaptchaService captchaService;
 
     @Value("${parser.autoreply.headless.fl.ru:true}")
@@ -171,6 +182,35 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             page.waitForTimeout(300);
         }
         return isLoginErrorPresent(page);
+    }
+
+    /**
+     * FL.ru показывает форму кода из письма и после логина, и при заходе с восстановленной сессией,
+     * причём прямо на главной — URL при этом не меняется, поэтому проверяем по разметке.
+     */
+    @Override
+    protected StepResult<Void> checkAfterLogin(Page page, DecryptedCredential creds) {
+        if (!isEmailCodePage(page)) {
+            return null;
+        }
+        report(Level.WARN, log,
+                "АВТООТВЕТ: " + getSiteName() + " -> ВКЛЮЧЁН ВХОД ПО КОДУ ИЗ ПИСЬМА, пользователь: " + creds.login(),
+                AutoreplyErrorTypes.EMAIL_CODE_LOGIN_ENABLED);
+        return StepResult.fail(StepType.SEND_AUTOREPLY, EMAIL_CODE_MESSAGE, captureScreenshot(page));
+    }
+
+    private boolean isEmailCodePage(Page page) {
+        for (String selector : EMAIL_CODE_SELECTORS) {
+            try {
+                if (page.locator(selector).count() > 0) {
+                    log.debug("АВТООТВЕТ: {} -> страница ввода кода из письма обнаружена (селектор: {})", getSiteName(), selector);
+                    return true;
+                }
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> проверка страницы кода через '{}' не удалась: {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+        return false;
     }
 
     private boolean isLoginErrorPresent(Page page) {

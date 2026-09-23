@@ -10,4 +10,5 @@ public final class AutoreplyErrorTypes {
     public static final String OTP_NOT_RECEIVED = "OTP_NOT_RECEIVED";
     public static final String TARIFF_LIMIT = "TARIFF_LIMIT";
     public static final String CAPTCHA_FAILED = "CAPTCHA_FAILED";
+    public static final String EMAIL_CODE_LOGIN_ENABLED = "EMAIL_CODE_LOGIN_ENABLED";
 }
