@@ -195,7 +195,6 @@ services:
     environment:
        - SPRING_PROFILES_ACTIVE=prod
        - TZ=Europe/Moscow
-       - CAMOUFOX_LAUNCHER_URL=http://camoufox-launcher:8888
     depends_on:
       camoufox-launcher:
         condition: service_healthy
@@ -212,6 +211,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 90s
+    volumes:
+      - "./tmp_images:/app/autoreply/screenshots"
   parser:
     restart: always
     image: rg.gdev.by/alert-job/parser-alert-job:$alert_job_version
@@ -273,6 +274,10 @@ services:
     restart: always
     container_name: prometheus
     image: prom/prometheus:latest
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     volumes:
       - $prometheus_directory/:/etc/prometheus/
     command:
