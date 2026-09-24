@@ -5,7 +5,9 @@ import by.gdev.alert.job.parser.repository.CategoryRepository;
 import by.gdev.alert.job.parser.service.Parser;
 import by.gdev.alert.job.parser.service.category.ParsedCategory;
 import by.gdev.common.model.proxy.ProxyCredentials;
-import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.manager.BrowserLaunchOptions;
+import by.gdev.common.service.playwright.manager.PlaywrightBrowserManager;
+import by.gdev.common.service.playwright.manager.PlaywrightManagerResolver;
 import com.microsoft.playwright.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +21,7 @@ import java.util.Map;
 public abstract class PlaywrightCategoryParser implements Parser {
 
     @Autowired
-    private PlaywrightManager playwrightManager;
+    private PlaywrightManagerResolver managerResolver;
 
     @Autowired
     @Getter
@@ -34,23 +36,29 @@ public abstract class PlaywrightCategoryParser implements Parser {
     protected boolean headless;
 
     public ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
-        return playwrightManager.getProxyWithRetry(maxRetries, retryDelayMs);
+        return managerResolver.getLocalManager().getProxyWithRetry(maxRetries, retryDelayMs);
     }
 
-    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
+    protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy,
+                                    boolean headless, boolean isActiveProxy) {
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
+        BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, isActiveProxy);
+        return manager.createBrowser(playwright, options, getSiteName());
     }
 
     public void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
+        managerResolver.getLocalManager()
+                .closeResources(page, context, browser, playwright, getSiteName());
     }
 
     public Playwright createPlaywright() {
-        return playwrightManager.createPlaywright();
+        return managerResolver.getLocalManager().createPlaywright();
     }
 
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
+        BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, useProxy);
+        return manager.createBrowserContext(browser, options, getSiteName());
     }
 
     public Map<ParsedCategory, List<ParsedCategory>> parseWithRetry(SiteSourceJob job) {
@@ -62,6 +70,7 @@ public abstract class PlaywrightCategoryParser implements Parser {
                 return parsePlaywright(job);
             } catch (PlaywrightException e) {
                 if (e.getMessage() != null && e.getMessage().contains("Timeout")) {
+                    sleepQuietly(retryDelayMs);
                     continue;
                 }
                 lastError = e;
@@ -70,19 +79,27 @@ public abstract class PlaywrightCategoryParser implements Parser {
                 lastError = e;
                 log.error("Неожиданная ошибка на попытке {} для {}: {}", attempt, getSiteName(), e.getMessage());
             }
+            sleepQuietly(retryDelayMs);
         }
 
         if (lastError == null) {
-            log.warn("Все 3 попытки парсинга категорий {} дали пустой результат", getSiteName());
+            log.warn("Все {} попытки парсинга категорий {} дали пустой результат",
+                    retryAttempts, getSiteName());
             return Map.of();
         }
 
         log.error("Все {} попытки парсинга категорий {} провалились. Последняя ошибка: {}",
-                retryAttempts,
-                getSiteName(),
-                lastError.getMessage());
+                retryAttempts, getSiteName(), lastError.getMessage());
 
         return Map.of();
+    }
+
+    private void sleepQuietly(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     protected abstract Map<ParsedCategory, List<ParsedCategory>> parsePlaywright(SiteSourceJob job);

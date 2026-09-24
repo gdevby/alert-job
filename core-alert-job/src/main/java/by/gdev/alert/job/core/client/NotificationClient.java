@@ -108,12 +108,14 @@ public class NotificationClient {
      * Вызывает проверку аккаунта в notification-сервисе.
      * Возвращает CredentialValidationResult с информацией об ошибке, если валидация не удалась.
      */
-    public CredentialValidationResult validateCredentials(String uuid, Long siteId, String login, String password) {
+    public CredentialValidationResult validateCredentials(String uuid, String userEmail, Long siteId,
+                                                          String login, String password) {
         try {
             CredentialValidationRequest request = new CredentialValidationRequest();
             request.setSiteId(siteId);
             request.setLogin(login);
             request.setPassword(password);
+            request.setUserEmail(userEmail);
 
             HttpHeaders headers = new HttpHeaders();
             headers.set(HeaderName.UUID_USER_HEADER, uuid);

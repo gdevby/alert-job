@@ -9,11 +9,8 @@ import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -112,7 +109,8 @@ public class AiNotificationController {
                 uuid,
                 request.getSiteId(),
                 request.getLogin(),
-                request.getPassword()
+                request.getPassword(),
+                request.getUserEmail()
         );
 
         return Mono.just(result);

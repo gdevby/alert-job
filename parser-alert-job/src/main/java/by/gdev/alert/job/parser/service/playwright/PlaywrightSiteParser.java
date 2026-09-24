@@ -4,9 +4,11 @@ package by.gdev.alert.job.parser.service.playwright;
 import by.gdev.alert.job.parser.domain.db.*;
 import by.gdev.alert.job.parser.service.order.AbsctractSiteParser;
 import by.gdev.common.model.OrderDTO;
-import by.gdev.common.model.SourceSiteDTO;
 import by.gdev.common.model.proxy.ProxyCredentials;
-import by.gdev.common.service.playwright.PlaywrightManager;
+import by.gdev.common.service.playwright.manager.BrowserLaunchOptions;
+import by.gdev.common.service.playwright.manager.PlaywrightBrowserManager;
+import by.gdev.common.service.playwright.manager.PlaywrightManagerResolver;
+import by.gdev.common.service.playwright.manager.impl.PlaywrightManager;
 import by.gdev.common.util.Pair;
 import com.microsoft.playwright.*;
 import jakarta.annotation.PostConstruct;
@@ -45,7 +47,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * Менеджер Playwright, отвечающий за создание браузеров, контекстов, страниц и прокси.
      */
     @Autowired
-    private PlaywrightManager playwrightManager;
+    private PlaywrightManagerResolver managerResolver;
 
 
     /**
@@ -63,18 +65,17 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     private int categoryClickRetryAttempts;
 
     /**
-     * Задержка между попытками клика (мс).
-     */
-    @Value("${parser.category-click-retry-attempts-delay:500}")
-    @Getter
-    private int categoryClickRetryAttemptsDelay;
-
-    /**
      * Базовая задержка между retry‑попытками Playwright (мс).
      */
     @Value("${parser.site.retry.delay:2000}")
     private long retryDelayMs;
 
+    /**
+     * Задержка между попытками клика (мс).
+     */
+    @Value("${parser.category-click-retry-attempts-delay:500}")
+    @Getter
+    private int categoryClickRetryAttemptsDelay;
 
     /**
      * Сырые строки ошибок Playwright, которые должны игнорироваться (CSV).
@@ -126,8 +127,9 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
     protected ProxyCredentials getProxyWithRetry(int maxRetries, long retryDelayMs) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                ProxyCredentials proxy = playwrightManager.getProxyWithRetry(maxRetries, retryDelayMs);
-                if (proxy != null) {;
+                ProxyCredentials proxy = managerResolver.getLocalManager()
+                        .getProxyWithRetry(maxRetries, retryDelayMs);
+                if (proxy != null) {
                     return proxy;
                 }
             } catch (Exception e) {
@@ -144,7 +146,7 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @return объект Playwright
      */
     public Playwright createPlaywright() {
-        return playwrightManager.createPlaywright();
+        return managerResolver.getLocalManager().createPlaywright();
     }
 
     /**
@@ -156,7 +158,8 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @param playwright движок Playwright
      */
     protected void closeResources(Page page, BrowserContext context, Browser browser, Playwright playwright) {
-        playwrightManager.closeResources(page, context , browser, playwright, getSiteName());
+        managerResolver.getLocalManager()
+                .closeResources(page, context, browser, playwright, getSiteName());
     }
 
     /**
@@ -168,7 +171,9 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @return новый контекст браузера
      */
     protected BrowserContext createBrowserContext(Browser browser, ProxyCredentials proxy, boolean useProxy) {
-        return playwrightManager.createBrowserContext(browser, proxy, useProxy, getSiteName());
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
+        BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, useProxy);
+        return manager.createBrowserContext(browser, options, getSiteName());
     }
 
     /**
@@ -181,7 +186,9 @@ public abstract class PlaywrightSiteParser extends AbsctractSiteParser {
      * @return браузер
      */
     protected Browser createBrowser(Playwright playwright, ProxyCredentials proxy, boolean headless, boolean isActiveProxy){
-        return playwrightManager.createBrowser(playwright, proxy, headless, isActiveProxy, getSiteName());
+        PlaywrightBrowserManager manager = managerResolver.getLocalManager();
+        BrowserLaunchOptions options = new BrowserLaunchOptions(proxy, headless, isActiveProxy);
+        return manager.createBrowser(playwright, options, getSiteName());
     }
 
     /**

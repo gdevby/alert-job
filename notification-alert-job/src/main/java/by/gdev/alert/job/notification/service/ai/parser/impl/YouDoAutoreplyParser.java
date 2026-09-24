@@ -11,7 +11,6 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.service.playwright.PlaywrightManager;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -70,11 +69,10 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     @Value("${credential.validation.otp.timeout.ms:120000}")
     private long otpValidationTimeoutMs;
 
-    public YouDoAutoreplyParser(PlaywrightManager playwrightManager,
-                                AssignedProxyService assignedProxyService,
+    public YouDoAutoreplyParser(AssignedProxyService assignedProxyService,
                                 OtpService otpService,
                                 YoudoTariffChecker youdoTariffChecker) {
-        super(playwrightManager, assignedProxyService);
+        super(assignedProxyService);
         this.otpService = otpService;
         this.youdoTariffChecker = youdoTariffChecker;
     }
@@ -82,6 +80,11 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     @Override
     public SiteName getSiteName() {
         return SiteName.YOUDO;
+    }
+
+    @Override
+    protected String sessionCookieCheckUrl() {
+        return "https://youdo.com";
     }
 
     @Override
@@ -192,7 +195,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "OTP не получен за отведённое время", captureScreenshot(page));
         }
         log.info("АВТООТВЕТ: {} -> OTP получен для пользователя: {}", getSiteName(), creds.login());
-        setOpt(payload, otp, true);
+        setOtp(payload, otp, true);
 
         // Заполнение поля OTP
         try {

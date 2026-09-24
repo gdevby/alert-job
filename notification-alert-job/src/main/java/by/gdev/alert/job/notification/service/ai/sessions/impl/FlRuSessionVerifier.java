@@ -1,0 +1,59 @@
+package by.gdev.alert.job.notification.service.ai.sessions.impl;
+
+import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
+import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
+import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
+import by.gdev.alert.job.notification.service.ai.sessions.AbstractAutoreplySessionVerifier;
+import by.gdev.common.model.SiteName;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+public class FlRuSessionVerifier extends AbstractAutoreplySessionVerifier {
+
+    @Value("${parser.autoreply.headless.fl.ru:true}")
+    private void setHeadless(boolean headless) {
+        this.headless = headless;
+    }
+
+    @Value("${parser.autoreply.proxy.fl.ru:false}")
+    private void setProxy(boolean proxy) {
+        this.proxy = proxy;
+    }
+
+    @Override
+    public SiteName getSiteName() {
+        return SiteName.FLRU;
+    }
+
+    @Override
+    protected String sessionCookieCheckUrl() {
+        return "https://www.fl.ru";
+    }
+
+    @Override
+    public StepResult<Void> verifySessionOnPage(Page page, DecryptedCredential creds) {
+        try {
+            String checkUrl = sessionCookieCheckUrl();
+            BrowserContext ctx = page.context();
+            boolean hasAuthCookies = contextHasCookie(ctx, checkUrl, "PHPSESSID")
+                    || contextHasCookie(ctx, checkUrl, "id");
+            if (!hasAuthCookies) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Нет auth-cookies FL.ru в контексте");
+            }
+            safeNavigate(page, "https://www.fl.ru/");
+            page.waitForTimeout(2000);
+            if (page.url().contains("/account/login")) {
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Редирект на страницу логина");
+            }
+            log.info("SESSION-VERIFY: FLRU сессия активна, пользователь: {}", creds.login());
+            return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+        } catch (Exception e) {
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
+        }
+    }
+}

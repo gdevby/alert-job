@@ -7,4 +7,5 @@ public class CredentialValidationRequest {
     private Long siteId;
     private String login;
     private String password;
+    private String userEmail;
 }
