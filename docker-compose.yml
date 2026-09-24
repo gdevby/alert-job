@@ -89,6 +89,9 @@ services:
         condition: service_healthy
   camoufox-launcher:
     image: rg.gdev.by/alert-job/camoufox-launcher:$alert_job_version
+    build:
+      context: .
+      dockerfile: docker/camoufox-launcher.Dockerfile
     ports:
       - "8888:8888"
     environment:
