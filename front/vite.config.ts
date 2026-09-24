@@ -27,6 +27,16 @@ export default defineConfig(({ mode }) => {
       modulePreload: false,
       rolldownOptions: {
         output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: 'common',
+                minSize: 100000,
+                maxSize: 1000000,
+                priority: 5,
+              },
+            ],
+          },
           entryFileNames: `[name]-v${REVISION}.js`,
           assetFileNames: ({ names }) => {
             if (names[0] === 'index.css') {
