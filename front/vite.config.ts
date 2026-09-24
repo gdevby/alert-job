@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
       modulePreload: false,
       rolldownOptions: {
         output: {
+          strictExecutionOrder: true,
           codeSplitting: {
             groups: [
               {
