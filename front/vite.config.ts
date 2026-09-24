@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
           },
           entryFileNames: `[name]-v${REVISION}.js`,
           assetFileNames: ({ names }) => {
-            if (names[0] === 'index.css') {
+            if (names[0] === 'common.css') {
               return `[name]-v${REVISION}[extname]`;
             }
             return 'assets/[name]-[hash][extname]';
