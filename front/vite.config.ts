@@ -27,20 +27,9 @@ export default defineConfig(({ mode }) => {
       modulePreload: false,
       rolldownOptions: {
         output: {
-          strictExecutionOrder: true,
-          codeSplitting: {
-            groups: [
-              {
-                name: 'common',
-                minSize: 100000,
-                maxSize: 1000000,
-                priority: 5,
-              },
-            ],
-          },
           entryFileNames: `[name]-v${REVISION}.js`,
           assetFileNames: ({ names }) => {
-            if (names[0] === 'common.css') {
+            if (names[0] === 'index.css') {
               return `[name]-v${REVISION}[extname]`;
             }
             return 'assets/[name]-[hash][extname]';
