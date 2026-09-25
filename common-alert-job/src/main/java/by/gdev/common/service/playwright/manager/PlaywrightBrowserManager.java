@@ -1,6 +1,7 @@
 package by.gdev.common.service.playwright.manager;
 
 import by.gdev.common.model.SiteName;
+import by.gdev.common.service.playwright.human.HumanInput;
 import com.microsoft.playwright.*;
 
 import java.nio.file.Path;
@@ -42,31 +43,22 @@ public interface PlaywrightBrowserManager {
     }
 
     default void humanMouse(Page page) {
-        for (int i = 0; i < 15; i++) {
-            int x = 50 + (int)(Math.random() * 300);
-            int y = 50 + (int)(Math.random() * 300);
-            page.mouse().move(x, y, new Mouse.MoveOptions().setSteps(5));
-            page.waitForTimeout(50 + (int)(Math.random() * 120));
-        }
+        HumanInput.wander(page);
     }
 
     default void humanType(Page page, String selector, String text) {
-        Locator input = page.locator(selector);
-        input.click();
-        for (char c : text.toCharArray()) {
-            page.keyboard().press(String.valueOf(c));
-            page.waitForTimeout(50 + (int)(Math.random() * 100));
-        }
+        HumanInput.type(page, page.locator(selector), text);
+    }
+
+    default void humanClick(Page page, String selector) {
+        HumanInput.click(page, page.locator(selector));
     }
 
     default void humanDelay(Page page) {
-        page.waitForTimeout(500 + (int)(Math.random() * 1200));
+        HumanInput.pause(page);
     }
 
     default void humanScroll(Page page) {
-        for (int i = 0; i < 3; i++) {
-            page.mouse().wheel(0, 200 + (int)(Math.random() * 300));
-            page.waitForTimeout(200 + (int)(Math.random() * 400));
-        }
+        HumanInput.scroll(page);
     }
 }

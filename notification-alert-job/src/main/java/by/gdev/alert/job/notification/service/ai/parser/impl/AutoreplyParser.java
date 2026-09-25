@@ -114,6 +114,15 @@ public abstract class AutoreplyParser {
 
             if (!loginResult.failed()) {
                 pauseForSessionVerify(page, userUuid);
+                // Строго до сохранения: пока дополнительный шаг не пройден, вход не завершён,
+                // и сохранённая сессия на следующем запуске упрётся в тот же шаг.
+                StepResult<Void> afterLogin = checkAfterLogin(page, creds);
+                if (afterLogin != null) {
+                    loginResult = afterLogin;
+                }
+            }
+
+            if (!loginResult.failed()) {
                 try {
                     sessionStorage.save(context, userUuid, siteName, login);
                     log.info("SESSION: save после успешного login/verify {}/{}", siteName, login);
@@ -122,13 +131,6 @@ public abstract class AutoreplyParser {
                 }
             } else {
                 log.warn("SESSION: save пропущен — login/verify не успешен {}/{}", siteName, login);
-            }
-
-            if (!loginResult.failed()) {
-                StepResult<Void> afterLogin = checkAfterLogin(page, creds);
-                if (afterLogin != null) {
-                    loginResult = afterLogin;
-                }
             }
 
             if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
@@ -204,7 +206,7 @@ public abstract class AutoreplyParser {
     }
 
     /**
-     * Проверка страницы после успешного login/verify — сессия к этому моменту уже сохранена.
+     * Проверка страницы после успешного login/verify — выполняется до сохранения сессии.
      * Нужна, когда биржа пускает по сессии, но требует дополнительное действие (например FL.ru просит код из письма).
      *
      * @return ошибку для пользователя либо {@code null}, если всё в порядке
@@ -252,7 +254,7 @@ public abstract class AutoreplyParser {
     boolean clickOrFail(Page page, String selector, int timeoutMs, String step) {
         if (!waitOrFail(page, selector, timeoutMs, step)) return false;
         try {
-            page.locator(selector).click();
+            getCurrentManager().humanClick(page, selector);
             return true;
         } catch (Exception e) {
             log.warn("CLICK FAILED at step '{}': selector '{}'", step, selector);

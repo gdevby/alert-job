@@ -1,0 +1,28 @@
+<html lang="ru"><head><meta charset="utf-8"><title></title></head>
+<body>
+<main role="main" class="container p-0 pt-54 pt-sm-96">
+  <div class="row justify-content-between">
+    <div class="container pb-54">
+      <div class="row">
+        <div class="col-md-6 col-xs-12">
+          <h2 class="mb-8">Введите код из письма для входа</h2>
+          <form method="POST" action="" class="mb-16 js-send-confirmation-code">
+            <input type="hidden" name="_token" value="d8Yhz7ryjc58REe0YKLgqAcBg60jr24GJkSy0Cai">
+            <div class="form-group mb-24">
+              <label for="code">На регистрационный e-mail (<strong>sa****ki@g****v.by</strong>) было отправлено письмо с кодом для входа на сайт.</label>
+              <input name="code" type="text" class="form-control" id="code" placeholder="Код из письма">
+            </div>
+            <button class="btn btn-success mb-8" name="add" type="submit">Войти</button>
+          </form>
+          <div>Не пришел код?
+            <div id="counter">Отправить повторно возможно через <span id="seconds">47</span></div>
+            <div id="repeat-send" style="display: none;">
+              <a href="https://www.fl.ru/account/repeat-send-code/">Отправить повторно</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body></html>

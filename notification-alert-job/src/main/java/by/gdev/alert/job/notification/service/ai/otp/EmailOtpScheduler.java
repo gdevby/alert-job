@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -44,14 +45,18 @@ public class EmailOtpScheduler {
                 if (userId == null) {
                     log.warn("Не удалось определить пользователя для письма UID={}", mail.uid());
                 }
-                // Определяем сайт по отправителю/теме/телу
-                SiteName site = detectSite(mail);
+                String text = OtpMailRule.normalize(mail.body());
+                // Правило под конкретную биржу знает её адрес и формат кода, общий разбор — нет.
+                OtpMailRule rule = OtpMailRule.forSender(mail.from()).orElse(null);
+
+                SiteName site = rule != null ? rule.site() : detectSite(mail);
                 if (site == null) {
                     log.warn("Не удалось определить сайт для письма UID={}", mail.uid());
                 }
-                String otp = extractOtp(mail.body());
+                String otp = rule != null ? rule.extractCode(text).orElse(null) : extractOtp(text);
                 if (otp != null && site != null && userId != null) {
-                    otpService.saveOtp(site.name(), userId, otp);
+                    Instant sentAt = mail.sentDate() != null ? mail.sentDate().toInstant() : Instant.now();
+                    otpService.saveOtp(site.name(), userId, otp, sentAt);
                     log.debug("OTP={} для userId={} (site={})", otp, userId, site);
                 } else {
                     log.warn("Не найден OTP в письме UID={}", mail.uid());
@@ -72,25 +77,19 @@ public class EmailOtpScheduler {
     }
 
     private SiteName detectSite(MailDto mail) {
-        String from = mail.from().toLowerCase();
-        String subject = mail.subject().toLowerCase();
-        String body = mail.body().toLowerCase();
+        String haystack = (mail.from() + " " + mail.subject() + " " + mail.body()).toLowerCase();
         for (SiteName site : SiteName.values()) {
-            String lexeme = site.name().toLowerCase();
-            if (from.contains(lexeme) || subject.contains(lexeme) || body.contains(lexeme)) {
+            // Домен проверяем наравне с именем: у части бирж имя элемента с доменом не совпадает
+            // (FREELANCERU против freelance.ru), и по одному имени такое письмо не опознаётся.
+            if (haystack.contains(site.name().toLowerCase()) || haystack.contains(site.getDomain())) {
                 return site;
             }
         }
         return null;
     }
 
-    private String extractOtp(String raw) {
-        if (raw == null) return null;
-        String text = raw
-                .replaceAll("<[^>]*>", " ")
-                .replaceAll("&nbsp;", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
+    private String extractOtp(String text) {
+        if (text == null || text.isBlank()) return null;
         Pattern p = Pattern.compile("Код для подтверждения\\s*[:\\-]?\\s*(\\d{4,6})",
                 Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
