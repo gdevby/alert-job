@@ -22,7 +22,6 @@ public class IpGeoService {
     private static final String API_URL = "http://ip-api.com/json/";
 
     public String getCountryByIp(String ip) {
-        // Если IP уже есть в кэше, возвращаем из кэша
         return cache.computeIfAbsent(ip, this::fetchCountry);
     }
 
