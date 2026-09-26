@@ -64,8 +64,47 @@ public abstract class AutoreplyParser {
         this.assignedProxyService = assignedProxyService;
     }
 
+    /** Сколько раз открывать браузер заново (смена прокси между попытками — в наследнике). */
+    protected int autoreplyProxySwitchMaxAttempts() {
+        return 1;
+    }
+
+    protected boolean shouldRetryAutoreplyWithNewProxy(StepResult<Void> result) {
+        return false;
+    }
+
+    protected void prepareNextAutoreplyProxyAttempt(AiNotificationPayload payload, int nextAttempt) {
+    }
+
+    protected void onAutoreplyAttemptStarted(int attempt) {
+    }
+
+    /** Не логиниться в том же браузере (например DDoS — нужен другой прокси). */
+    protected boolean skipLoginAfterVerifyFailure(StepResult<Void> verifyResult) {
+        return false;
+    }
+
     public final StepResult<Void> sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload,
                                                 AutoreplyMode autoreplyMode) {
+        int maxAttempts = Math.max(1, autoreplyProxySwitchMaxAttempts());
+        StepResult<Void> last = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            onAutoreplyAttemptStarted(attempt);
+            if (attempt > 1) {
+                prepareNextAutoreplyProxyAttempt(payload, attempt);
+                log.warn("АВТООТВЕТ: {} -> повтор после DDoS/защиты, попытка {}/{}",
+                        getSiteName(), attempt, maxAttempts);
+            }
+            last = runAutoreplyOnce(creds, payload, autoreplyMode);
+            if (!last.failed() || attempt >= maxAttempts || !shouldRetryAutoreplyWithNewProxy(last)) {
+                return last;
+            }
+        }
+        return last;
+    }
+
+    private StepResult<Void> runAutoreplyOnce(DecryptedCredential creds, AiNotificationPayload payload,
+                                              AutoreplyMode autoreplyMode) {
         Playwright playwright = null;
         Browser browser = null;
         BrowserContext context = null;
@@ -185,6 +224,9 @@ public abstract class AutoreplyParser {
             StepResult<Void> verified = verifyExistingSession(page, creds, autoreplyMode);
             if (!verified.failed()) {
                 log.info("SESSION: verifyExistingSession OK для {}/{}", siteName, login);
+                return verified;
+            }
+            if (skipLoginAfterVerifyFailure(verified)) {
                 return verified;
             }
             log.warn("SESSION: verify не прошёл для {}/{} ({}), пробуем полный login без delete",

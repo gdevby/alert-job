@@ -10,7 +10,10 @@ import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
+import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.captcha.CaptchaService;
+import by.gdev.common.service.playwright.flru.FlRuPlaywrightGuards;
+import by.gdev.common.service.playwright.manager.BrowserLaunchOptions;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -19,11 +22,28 @@ import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 @Slf4j
 @Component
 public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
+
+    private static final class ProxyRetryState {
+        final Set<String> triedHostPorts = new HashSet<>();
+        ProxyCredentials overrideProxy;
+        ProxyCredentials lastUsed;
+
+        void reset() {
+            triedHostPorts.clear();
+            overrideProxy = null;
+            lastUsed = null;
+        }
+    }
+
+    private static final ThreadLocal<ProxyRetryState> PROXY_RETRY_STATE =
+            ThreadLocal.withInitial(ProxyRetryState::new);
 
     private static final String[] LOGIN_ERROR_SELECTORS = {
             "div.invalid-feedback.mt-8.d-block:has-text('Неверный логин/пароль')",
@@ -84,6 +104,9 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     @Value("${parser.autoreply.fl.ru.otp.resend.cooldown.max-wait.ms:120000}")
     private long otpResendCooldownMaxWaitMs;
 
+    @Value("${parser.autoreply.fl.ru.ddos.proxy.max-attempts:3}")
+    private int ddosProxyMaxAttempts;
+
     @Value("${parser.autoreply.headless.fl.ru:true}")
     private void setHeadless(boolean headless) {
         this.headless = headless;
@@ -112,6 +135,69 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
+    protected int autoreplyProxySwitchMaxAttempts() {
+        return Math.max(1, ddosProxyMaxAttempts);
+    }
+
+    @Override
+    protected void onAutoreplyAttemptStarted(int attempt) {
+        if (attempt == 1) {
+            PROXY_RETRY_STATE.get().reset();
+        }
+    }
+
+    @Override
+    protected boolean shouldRetryAutoreplyWithNewProxy(StepResult<Void> result) {
+        String msg = result.getErrorMessage();
+        return msg != null && msg.contains(FlRuPlaywrightGuards.DDOS_RETRY_FAIL_MARKER);
+    }
+
+    @Override
+    protected boolean skipLoginAfterVerifyFailure(StepResult<Void> verifyResult) {
+        return shouldRetryAutoreplyWithNewProxy(verifyResult);
+    }
+
+    @Override
+    protected void prepareNextAutoreplyProxyAttempt(AiNotificationPayload payload, int nextAttempt) {
+        ProxyRetryState state = PROXY_RETRY_STATE.get();
+        ProxyCredentials next;
+        if (proxy) {
+            next = assignedProxyService.rotateProxyForUserModule(
+                    payload.getUser().getUuid(),
+                    payload.getModule().getId(),
+                    getSiteName(),
+                    state.lastUsed,
+                    state.triedHostPorts);
+        } else {
+            next = assignedProxyService.pickWorkingProxyExcluding(getSiteName(), state.triedHostPorts);
+        }
+        state.overrideProxy = next;
+        if (next == null) {
+            log.warn("АВТООТВЕТ: {} -> нет другого прокси для попытки {}", getSiteName(), nextAttempt);
+        }
+    }
+
+    @Override
+    protected BrowserLaunchOptions buildLaunchOptions(SiteName site, AiNotificationPayload payload) {
+        ProxyRetryState state = PROXY_RETRY_STATE.get();
+        String userEmail = payload.getUser() != null ? payload.getUser().getEmail() : null;
+        if (state.overrideProxy != null) {
+            state.lastUsed = state.overrideProxy;
+            state.triedHostPorts.add(AssignedProxyService.hostPortKey(state.lastUsed));
+            state.overrideProxy = null;
+            log.info("АВТООТВЕТ: {} -> запуск через прокси {}:{} (повтор после DDoS)",
+                    site, state.lastUsed.getHost(), state.lastUsed.getPort());
+            return new BrowserLaunchOptions(state.lastUsed, headless, true, userEmail);
+        }
+        BrowserLaunchOptions options = super.buildLaunchOptions(site, payload);
+        state.lastUsed = options.proxy();
+        if (state.lastUsed != null) {
+            state.triedHostPorts.add(AssignedProxyService.hostPortKey(state.lastUsed));
+        }
+        return options;
+    }
+
+    @Override
     protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
@@ -119,9 +205,17 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             safeNavigate(page, "https://www.fl.ru/account/login/");
             log.info("АВТООТВЕТ: {} -> страница логина загружена, пользователь: {}", getSiteName(), creds.login());
 
+            StepResult<Void> ddos = failIfAntiDdosWall(page, creds);
+            if (ddos != null) {
+                return ddos;
+            }
+
             humanWarmup(page);
 
             if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
+                if (FlRuPlaywrightGuards.isAntiDdosOrBotWall(page, captchaService)) {
+                    return failAntiDdosWall(page, creds);
+                }
                 report(Level.WARN, log,
                         "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: " + creds.login(),
                         AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -489,6 +583,33 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             }
         }
         return false;
+    }
+
+    private StepResult<Void> failIfAntiDdosWall(Page page, DecryptedCredential creds) {
+        if (FlRuPlaywrightGuards.isAntiDdosOrBotWall(page, captchaService)) {
+            return failAntiDdosWall(page, creds);
+        }
+        return null;
+    }
+
+    private StepResult<Void> failAntiDdosWall(Page page, DecryptedCredential creds) {
+        boolean suspiciousIp = FlRuPlaywrightGuards.isSuspiciousIpActivityBlock(page);
+        if (suspiciousIp) {
+            log.warn("АВТООТВЕТ: {} -> блок IP (подозрительная активность), url={}, пользователь: {}",
+                    getSiteName(), page.url(), creds.login());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> блок IP (подозрительная активность), пользователь: "
+                            + creds.login(),
+                    AutoreplyErrorTypes.ERROR_OPEN_PAGE);
+        } else {
+            log.warn("АВТООТВЕТ: {} -> страница защиты от DDoS/ботов, url={}, пользователь: {}",
+                    getSiteName(), page.url(), creds.login());
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> DDoS/ANTI-BOT, пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.ERROR_OPEN_PAGE);
+        }
+        return StepResult.fail(StepType.SEND_AUTOREPLY,
+                FlRuPlaywrightGuards.ddosRetryFailMessage(getSiteName()), captureScreenshot(page));
     }
 
     private boolean isLoginErrorPresent(Page page) {

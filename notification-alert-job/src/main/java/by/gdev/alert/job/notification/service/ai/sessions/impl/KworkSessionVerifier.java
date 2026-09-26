@@ -49,7 +49,7 @@ public class KworkSessionVerifier extends AbstractAutoreplySessionVerifier {
             if (loginField.count() > 0 && loginField.first().isVisible()) {
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Форма логина на главной");
             }
-            log.info("SESSION-VERIFY: KWORK сессия активна, пользователь: {}", creds.login());
+            log.info("SESSION-VERIFY: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());

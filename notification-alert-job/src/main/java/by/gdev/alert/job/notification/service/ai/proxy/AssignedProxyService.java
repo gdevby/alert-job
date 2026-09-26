@@ -155,6 +155,63 @@ public class AssignedProxyService {
     }
 
     /**
+     * Подбирает другой рабочий прокси для модуля (текущий исключается).
+     * Обновляет закрепление в {@link #userModuleProxyMap}.
+     */
+    public ProxyCredentials rotateProxyForUserModule(String userUuid, Long moduleId, SiteName site,
+                                                     ProxyCredentials current,
+                                                     Collection<String> excludedHostPorts) {
+        Set<String> excluded = new HashSet<>();
+        if (excludedHostPorts != null) {
+            excluded.addAll(excludedHostPorts);
+        }
+        if (current != null) {
+            excluded.add(hostPortKey(current));
+        }
+
+        List<ProxyCredentials> working = proxySupplier.getWorkingProxies().stream()
+                .filter(p -> !excluded.contains(hostPortKey(p)))
+                .toList();
+        if (working.isEmpty()) {
+            log.warn("Нет другого рабочего прокси для пользователя {} модуля {}", userUuid, moduleId);
+            return null;
+        }
+
+        String targetCountry = getSiteCountry(site);
+        ProxyCredentials next = working.stream()
+                .filter(p -> targetCountry != null && targetCountry.equalsIgnoreCase(p.getCountry()))
+                .findFirst()
+                .orElse(working.get(0));
+
+        userModuleProxyMap.computeIfAbsent(userUuid, k -> new ConcurrentHashMap<>()).put(moduleId, next);
+        log.info("Прокси для пользователя {} модуля {} (сайт {}) сменён на {}:{}, страна {}",
+                userUuid, moduleId, site, next.getHost(), next.getPort(), next.getCountry());
+        return next;
+    }
+
+    /**
+     * Случайный рабочий прокси, отличный от уже пробованных (host:port).
+     */
+    public ProxyCredentials pickWorkingProxyExcluding(SiteName site, Collection<String> excludedHostPorts) {
+        Set<String> excluded = excludedHostPorts != null ? new HashSet<>(excludedHostPorts) : Set.of();
+        List<ProxyCredentials> working = proxySupplier.getWorkingProxies().stream()
+                .filter(p -> !excluded.contains(hostPortKey(p)))
+                .toList();
+        if (working.isEmpty()) {
+            return null;
+        }
+        String targetCountry = getSiteCountry(site);
+        return working.stream()
+                .filter(p -> targetCountry != null && targetCountry.equalsIgnoreCase(p.getCountry()))
+                .findFirst()
+                .orElse(working.get(0));
+    }
+
+    public static String hostPortKey(ProxyCredentials proxy) {
+        return proxy.getHost() + ":" + proxy.getPort();
+    }
+
+    /**
      * Старый метод для обратной совместимости (использует первый модуль).
      * @deprecated используйте {@link #getProxyForUserAndModule(String, Long)}
      */

@@ -4,6 +4,7 @@ import by.gdev.alert.job.parser.domain.db.SiteSourceJob;
 import by.gdev.common.model.SiteName;
 import by.gdev.alert.job.parser.service.playwright.PlaywrightCategoryParser;
 import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.playwright.flru.FlRuPlaywrightGuards;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class FLCategoryParser extends PlaywrightCategoryParser implements Catego
             log.debug("Загрузка главной страницы fl.ru");
             page.navigate(BASE_URL, new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
             page.waitForLoadState();
+            ensurePageAccessible(page);
 
             // Ищем все категории верхнего уровня
             Locator categoryItems = page.locator("div.fl-home-page__spec-item > a");
@@ -177,5 +179,11 @@ public class FLCategoryParser extends PlaywrightCategoryParser implements Catego
     @Override
     public SiteName getSiteName() {
         return SiteName.FLRU;
+    }
+
+    private void ensurePageAccessible(Page page) {
+        if (FlRuPlaywrightGuards.isAntiDdosOrBotWall(page, null)) {
+            throw new RuntimeException(FlRuPlaywrightGuards.ddosRetryFailMessage(getSiteName()));
+        }
     }
 }
