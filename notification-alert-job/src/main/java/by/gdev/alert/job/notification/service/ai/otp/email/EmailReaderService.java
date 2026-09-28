@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -18,55 +20,186 @@ public class EmailReaderService {
 
     private final GdevEmailConfig gdevEmailConfig;
 
-    public List<MailDto> readUnreadMessages() {
-        List<MailDto> newMessages = new ArrayList<>();
+    /** Последний успешный IP почтового хоста — запасной вариант при сбое DNS в JVM */
+    private volatile String lastResolvedMailHostIp;
+
+    public MailReadResult readUnreadMessages() {
+        Store store;
         try {
-            Properties props = new Properties();
-            props.put("mail.store.protocol", "imaps");
-            props.put("mail.imaps.ssl.trust", "*");
-            props.put("mail.imaps.connectiontimeout", "5000");
-            props.put("mail.imaps.timeout", "5000");
+            store = connectStore();
+        } catch (MessagingException e) {
+            log.error("Ошибка подключения к IMAP", e);
+            return MailReadResult.connectFailed("подключение к IMAP: " + rootCauseMessage(e));
+        }
 
-            Session session = Session.getInstance(props);
-            Store store = session.getStore("imaps");
-            //log.info("АВТООТВЕТ: EMAIL -> подключение к почтовому ящику: {}", gdevEmailConfig.getUsername());
-            //log.info("АВТООТВЕТ: EMAIL -> хост: {}, порт: по умолчанию (993)", gdevEmailConfig.getHost());
-            store.connect(
-                    gdevEmailConfig.getHost(),
-                    gdevEmailConfig.getUsername(),
-                    gdevEmailConfig.getPassword()
-            );
-
-            Folder inbox = store.getFolder(gdevEmailConfig.getFolder());
-            inbox.open(Folder.READ_WRITE); // чтобы мы могли менять флаги у писем
-            //log.info("АВТООТВЕТ: EMAIL -> папка '{}' открыта, режим READ_WRITE", gdevEmailConfig.getFolder());
+        List<MailDto> newMessages = new ArrayList<>();
+        Folder inbox = null;
+        try {
+            inbox = store.getFolder(gdevEmailConfig.getFolder());
+            inbox.open(Folder.READ_WRITE);
             Message[] messages = inbox.getMessages();
-            //log.info("АВТООТВЕТ: EMAIL -> всего писем в папке: {}", messages.length);
             for (Message msg : messages) {
-                // Берём только НЕпрочитанные письма
                 if (msg.isSet(Flags.Flag.SEEN)) {
                     continue;
                 }
-                long uid = ((UIDFolder) inbox).getUID(msg);
-                String subject = msg.getSubject();
-                String from = msg.getFrom() != null ? msg.getFrom()[0].toString() : "";
-                Address[] recipients = msg.getRecipients(Message.RecipientType.TO);
-                String to = recipients != null ? recipients[0].toString() : "";
-                Date sentDate = msg.getSentDate();
-                String body = extractBody(msg);
-                log.info("АВТООТВЕТ: EMAIL -> найдено непрочитанное письмо UID={}, от: {}, тема: {}", uid, from, subject);
-                newMessages.add(new MailDto(uid, subject, from, to, sentDate, body));
-                // Помечаем это письмо как прочитанное
-                msg.setFlag(Flags.Flag.SEEN, true);
-                //log.debug("Обработано новое письмо UID={} (SEEN=true)", uid);
-               // log.info("АВТООТВЕТ: EMAIL -> письмо UID={} помечено как прочитанное", uid);
+                try {
+                    MailDto mail = readOneUnreadMessage(inbox, msg);
+                    newMessages.add(mail);
+                    msg.setFlag(Flags.Flag.SEEN, true);
+                } catch (Exception e) {
+                    log.warn("Не удалось обработать непрочитанное письмо, оставляем без флага SEEN: {}",
+                            e.getMessage(), e);
+                }
             }
-            inbox.close(true);
-            store.close();
+            return MailReadResult.success(newMessages);
         } catch (Exception e) {
-            log.error("Ошибка чтения почты", e);
+            log.error("Ошибка чтения почты после подключения к IMAP", e);
+            return MailReadResult.partialAfterConnect(newMessages, "чтение писем: " + rootCauseMessage(e));
+        } finally {
+            closeQuietly(inbox);
+            closeQuietly(store);
         }
-        return newMessages;
+    }
+
+    private MailDto readOneUnreadMessage(Folder inbox, Message msg) throws Exception {
+        long uid = ((UIDFolder) inbox).getUID(msg);
+        String subject = msg.getSubject();
+        String from = msg.getFrom() != null ? msg.getFrom()[0].toString() : "";
+        Address[] recipients = msg.getRecipients(Message.RecipientType.TO);
+        String to = recipients != null ? recipients[0].toString() : "";
+        Date sentDate = msg.getSentDate();
+        String body = extractBody(msg);
+        log.info("АВТООТВЕТ: EMAIL -> найдено непрочитанное письмо UID={}, от: {}, тема: {}", uid, from, subject);
+        return new MailDto(uid, subject, from, to, sentDate, body);
+    }
+
+    private Store connectStore() throws MessagingException {
+        int attempts = Math.max(1, gdevEmailConfig.getConnectRetries());
+        long delayMs = Math.max(0, gdevEmailConfig.getConnectRetryDelayMs());
+        MessagingException last = null;
+
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            String connectHost = gdevEmailConfig.getHost();
+            try {
+                connectHost = resolveConnectHost(attempt > 1);
+                Properties props = imapProperties();
+                Session session = Session.getInstance(props);
+                Store store = session.getStore("imaps");
+                store.connect(
+                        connectHost,
+                        gdevEmailConfig.getUsername(),
+                        gdevEmailConfig.getPassword()
+                );
+                rememberResolvedIp(connectHost);
+                if (attempt > 1) {
+                    log.info("IMAP: подключение к {} успешно с попытки {}", connectHost, attempt);
+                }
+                return store;
+            } catch (MessagingException e) {
+                last = e;
+                boolean retryable = isRetryableConnectFailure(e);
+                if (!retryable || attempt == attempts) {
+                    throw e;
+                }
+                log.warn("IMAP: попытка {}/{} к {} не удалась ({}), повтор через {} мс",
+                        attempt, attempts, connectHost, rootCauseMessage(e), delayMs);
+                sleep(delayMs);
+            }
+        }
+        throw last != null ? last : new MessagingException("IMAP connect failed");
+    }
+
+    private Properties imapProperties() {
+        Properties props = new Properties();
+        props.put("mail.store.protocol", "imaps");
+        props.put("mail.imaps.ssl.trust", "*");
+        props.put("mail.imaps.ssl.checkserveridentity", "false");
+        props.put("mail.imaps.connectiontimeout", String.valueOf(gdevEmailConfig.getConnectionTimeoutMs()));
+        props.put("mail.imaps.timeout", String.valueOf(gdevEmailConfig.getReadTimeoutMs()));
+        return props;
+    }
+
+    private String resolveConnectHost(boolean allowCachedIp) throws MessagingException {
+        String host = gdevEmailConfig.getHost();
+        try {
+            InetAddress address = InetAddress.getByName(host);
+            lastResolvedMailHostIp = address.getHostAddress();
+            return host;
+        } catch (UnknownHostException e) {
+            if (allowCachedIp && lastResolvedMailHostIp != null) {
+                log.warn("DNS не резолвит {}, используем последний известный IP {}", host, lastResolvedMailHostIp);
+                return lastResolvedMailHostIp;
+            }
+            throw new MessagingException("Не удалось разрешить хост почты: " + host, e);
+        }
+    }
+
+    private void rememberResolvedIp(String connectHost) {
+        String configuredHost = gdevEmailConfig.getHost();
+        if (connectHost.equals(configuredHost)) {
+            try {
+                lastResolvedMailHostIp = InetAddress.getByName(configuredHost).getHostAddress();
+            } catch (UnknownHostException ignored) {
+                // уже подключились по имени — IP необязателен
+            }
+        }
+    }
+
+    private static boolean isRetryableConnectFailure(MessagingException e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof UnknownHostException
+                    || cause instanceof java.net.SocketTimeoutException) {
+                return true;
+            }
+            String name = cause.getClass().getSimpleName();
+            if (name.contains("MailConnectException")) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    private static String rootCauseMessage(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        return root.getClass().getSimpleName() + ": " + root.getMessage();
+    }
+
+    private static void sleep(long delayMs) {
+        if (delayMs <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(delayMs);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void closeQuietly(Folder folder) {
+        if (folder == null || !folder.isOpen()) {
+            return;
+        }
+        try {
+            folder.close(true);
+        } catch (MessagingException e) {
+            log.debug("Не удалось закрыть папку IMAP: {}", e.getMessage());
+        }
+    }
+
+    private static void closeQuietly(Store store) {
+        if (store == null || !store.isConnected()) {
+            return;
+        }
+        try {
+            store.close();
+        } catch (MessagingException e) {
+            log.debug("Не удалось закрыть IMAP store: {}", e.getMessage());
+        }
     }
 
     private String extractBody(Message message) throws Exception {
@@ -115,5 +248,3 @@ public class EmailReaderService {
         return result.toString();
     }
 }
-
-

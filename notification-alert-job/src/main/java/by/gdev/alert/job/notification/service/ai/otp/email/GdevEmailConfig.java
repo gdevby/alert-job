@@ -12,4 +12,12 @@ public class GdevEmailConfig {
     private String username;
     private String password;
     private String folder;
+    /** Таймаут установки TCP/TLS-соединения IMAP, мс */
+    private int connectionTimeoutMs = 15_000;
+    /** Таймаут чтения IMAP, мс */
+    private int readTimeoutMs = 30_000;
+    /** Попыток connect при сбое (в т.ч. UnknownHostException) */
+    private int connectRetries = 3;
+    /** Пауза между попытками connect, мс */
+    private int connectRetryDelayMs = 2_000;
 }

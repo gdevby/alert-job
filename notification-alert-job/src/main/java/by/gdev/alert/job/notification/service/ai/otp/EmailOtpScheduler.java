@@ -4,6 +4,7 @@ import by.gdev.alert.job.notification.client.CoreUnifiedClient;
 import by.gdev.alert.job.notification.service.MailService;
 import by.gdev.alert.job.notification.service.ai.otp.email.EmailReaderService;
 import by.gdev.alert.job.notification.service.ai.otp.email.MailDto;
+import by.gdev.alert.job.notification.service.ai.otp.email.MailReadResult;
 import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.UserNotification;
@@ -36,9 +37,23 @@ public class EmailOtpScheduler {
     public void checkMailbox() {
         log.debug("Запуск шедулера проверки почты: {} ...", LocalDateTime.now().format(DATE_TIME_FMT));
         try {
-            List<MailDto> newMessages = emailReaderService.readUnreadMessages();
-            otpService.setMailAvailable(true);
-            for (MailDto mail : newMessages) {
+            MailReadResult readResult = emailReaderService.readUnreadMessages();
+            otpService.setMailAvailable(readResult.connected());
+            if (!readResult.connected()) {
+                if (!adminNotified) {
+                    String detail = readResult.errorMessage() != null
+                            ? readResult.errorMessage()
+                            : "не удалось подключиться к IMAP";
+                    sendAdminNotification(detail);
+                    adminNotified = true;
+                }
+                return;
+            }
+            adminNotified = false;
+            if (readResult.errorMessage() != null) {
+                log.warn("Частичная ошибка чтения почты (IMAP доступен): {}", readResult.errorMessage());
+            }
+            for (MailDto mail : readResult.messages()) {
                 log.debug("Новое письмо UID={}", mail.uid());
                 String userId = detectUser(mail);
                 if (userId == null) {
