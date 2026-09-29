@@ -30,8 +30,6 @@ const Examples = () => {
 		},
 	]
 
-	console.log(steps)
-
 	return (
 		<div className='examples'>
 			<h4>Примеры:</h4>
@@ -45,7 +43,7 @@ const Examples = () => {
 				          <Typography>{item.description}</Typography>
 				        </AccordionSummary>
 				        <AccordionDetails>
-				          <div className='examples_item_image'><img src={item.img} alt=''/></div>
+				          <div className='examples_item_image'><img src={item.img} loading='lazy' alt=''/></div>
 				        </AccordionDetails>
 				      </Accordion> 
 				})}
