@@ -30,7 +30,10 @@ public class PlaywrightCamoufoxManager implements PlaywrightBrowserManager {
         CamoufoxLauncherClient.LaunchResult result =
                 launcherClient.launch(options.proxy(), site, options.headless(), options.requestUserEmail());
         currentKey.set(result.key());
-        log.info("[{}] Подключение к Camoufox: {} (key={})", site, result.endpoint(), result.key());
+        String country = options.proxy() != null && options.proxy().getCountry() != null
+                ? options.proxy().getCountry()
+                : "-";
+        log.info("[{}] Подключение к Camoufox: {} country={} (key={})", site, result.endpoint(), country, result.key());
         try {
             return playwright.firefox().connect(result.endpoint());
         } catch (Exception e) {

@@ -38,6 +38,17 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             "На FL.ru включён вход по коду из письма. Автоотклики работать не будут, пока вы не отключите "
                     + "подтверждение входа по e-mail в настройках профиля FL.ru (Настройки -> Безопасность).";
 
+    private static final String VALIDATE_CAPTCHA_PATH = "/validate-captcha";
+
+    /** После IP-капчи FL.ru часто редиректит на главную — нужен явный переход на вход. */
+    private static final String FLRU_LOGIN_URL = "https://www.fl.ru/account/login/?return=%2F";
+
+    private static final String[] VALIDATE_CAPTCHA_MARKERS = {
+            "text=подозрительная активность",
+            "text=подтвердите, что вы не робот",
+            "#label:has-text('Я человек')"
+    };
+
     private final CaptchaService captchaService;
 
     @Value("${parser.autoreply.headless.fl.ru:true}")
@@ -66,20 +77,147 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
+    void safeNavigate(Page page, String url) {
+        super.safeNavigate(page, url);
+        StepResult<Void> gate = ensurePastValidateCaptcha(page, "navigate");
+        if (gate != null) {
+            throw new RuntimeException(gate.getErrorMessage());
+        }
+        resumeNavigationAfterValidateCaptcha(page, url, "navigate");
+    }
+
+    /**
+     * После {@code /validate-captcha} сайт часто оставляет на {@code https://www.fl.ru/} вместо исходного URL.
+     */
+    private void resumeNavigationAfterValidateCaptcha(Page page, String targetUrl, String login) {
+        if (targetUrl == null || targetUrl.isBlank() || isValidateCaptchaPage(page)) {
+            return;
+        }
+        if (!needsResumeToTarget(page.url(), targetUrl)) {
+            return;
+        }
+        log.info("АВТООТВЕТ: {} -> после validate-captcha с {} на {}, пользователь: {}",
+                getSiteName(), page.url(), targetUrl, login);
+        super.safeNavigate(page, targetUrl);
+        StepResult<Void> gate = ensurePastValidateCaptcha(page, login);
+        if (gate != null) {
+            throw new RuntimeException(gate.getErrorMessage());
+        }
+    }
+
+    private static boolean needsResumeToTarget(String currentUrl, String targetUrl) {
+        if (currentUrl == null) {
+            return true;
+        }
+        if (currentUrl.contains(VALIDATE_CAPTCHA_PATH)) {
+            return false;
+        }
+        if (targetUrl.contains("/account/login") && !currentUrl.contains("/account/login")) {
+            return true;
+        }
+        try {
+            java.net.URI target = java.net.URI.create(targetUrl);
+            java.net.URI current = java.net.URI.create(currentUrl);
+            String targetPath = normalizePath(target.getPath());
+            String currentPath = normalizePath(current.getPath());
+            if (targetPath.isEmpty()) {
+                return false;
+            }
+            return !currentPath.equals(targetPath) && !currentPath.startsWith(targetPath);
+        } catch (Exception e) {
+            return !currentUrl.startsWith(targetUrl);
+        }
+    }
+
+    private static String normalizePath(String path) {
+        if (path == null || path.isBlank() || "/".equals(path)) {
+            return "";
+        }
+        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+    }
+
+    private void ensureOnLoginPage(Page page, String login) {
+        if (page.locator("input[name='username']").count() > 0) {
+            return;
+        }
+        StepResult<Void> validateGate = ensurePastValidateCaptcha(page, login);
+        if (validateGate != null) {
+            throw new RuntimeException(validateGate.getErrorMessage());
+        }
+        if (page.locator("input[name='username']").count() > 0) {
+            return;
+        }
+        log.info("АВТООТВЕТ: {} -> форма входа не на экране (url={}), переход на login, пользователь: {}",
+                getSiteName(), page.url(), login);
+        super.safeNavigate(page, FLRU_LOGIN_URL);
+        resumeNavigationAfterValidateCaptcha(page, FLRU_LOGIN_URL, login);
+        StepResult<Void> gate = ensurePastValidateCaptcha(page, login);
+        if (gate != null) {
+            throw new RuntimeException(gate.getErrorMessage());
+        }
+        if (page.locator("input[name='username']").count() > 0) {
+            return;
+        }
+        clickFlRuLoginEntryLink(page, login);
+        page.waitForTimeout(800);
+        if (page.locator("input[name='username']").count() == 0) {
+            super.safeNavigate(page, FLRU_LOGIN_URL);
+            resumeNavigationAfterValidateCaptcha(page, FLRU_LOGIN_URL, login);
+            StepResult<Void> gate2 = ensurePastValidateCaptcha(page, login);
+            if (gate2 != null) {
+                throw new RuntimeException(gate2.getErrorMessage());
+            }
+        }
+    }
+
+    private void clickFlRuLoginEntryLink(Page page, String login) {
+        String[] selectors = {
+                "a[href*='/account/login']",
+                "a:has-text('Вход')",
+                "a:has-text('Войти')",
+                ".header-login a",
+                "header a[href*='login']"
+        };
+        for (String selector : selectors) {
+            Locator loc = page.locator(selector);
+            if (loc.count() == 0) {
+                continue;
+            }
+            try {
+                Locator first = loc.first();
+                if (first.isVisible()) {
+                    first.click(new Locator.ClickOptions().setTimeout(5000));
+                    log.info("АВТООТВЕТ: {} -> нажата ссылка входа ({}), пользователь: {}",
+                            getSiteName(), selector, login);
+                    page.waitForTimeout(1200);
+                    return;
+                }
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> клик входа '{}' не удался: {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+    }
+
+    @Override
     protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
         try {
-            safeNavigate(page, "https://www.fl.ru/account/login/");
-            log.info("АВТООТВЕТ: {} -> страница логина загружена, пользователь: {}", getSiteName(), creds.login());
+            safeNavigate(page, FLRU_LOGIN_URL);
+            ensureOnLoginPage(page, creds.login());
+            log.info("АВТООТВЕТ: {} -> страница логина, url={}, пользователь: {}",
+                    getSiteName(), page.url(), creds.login());
 
             humanWarmup(page);
 
             if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
-                report(Level.WARN, log,
-                        "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: " + creds.login(),
-                        AutoreplyErrorTypes.FIELD_NOT_FOUND);
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле логина не найдено", captureScreenshot(page));
+                ensureOnLoginPage(page, creds.login());
+                if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
+                    report(Level.WARN, log,
+                            "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: " + creds.login(),
+                            AutoreplyErrorTypes.FIELD_NOT_FOUND);
+                    return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле логина не найдено", captureScreenshot(page));
+                }
             }
 
             try {
@@ -120,19 +258,23 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             }
             log.info("АВТООТВЕТ: {} -> SmartCaptcha пройдена, пользователь: {}", getSiteName(), creds.login());
 
-            if (!clickOrFail(page, "#submit-button", 8000, "Кнопка 'Войти'")) {
+            if (!clickFlRuLoginButton(page, creds.login())) {
                 report(Level.WARN, log,
                         "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: " + creds.login(),
                         AutoreplyErrorTypes.BUTTON_NOT_FOUND);
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти' не найдена", captureScreenshot(page));
             }
-            log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата, пользователь: {}", getSiteName(), creds.login());
 
             if (waitForLoginError(page, 3000)) {
                 report(Level.WARN, log,
                         "АВТООТВЕТ: " + getSiteName() + " -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: " + creds.login(),
                         AutoreplyErrorTypes.LOGIN_FAILED);
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
+            }
+
+            StepResult<Void> afterSubmitGate = ensurePastValidateCaptcha(page, creds.login());
+            if (afterSubmitGate != null) {
+                return afterSubmitGate;
             }
 
             try {
@@ -173,6 +315,205 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         }
     }
 
+    /**
+     * FL.ru /validate-captcha — блокировка по IP («подозрительная активность», «Я человек»).
+     *
+     * @return {@code null} если страницы нет или успешно прошли; иначе ошибка шага
+     */
+    private StepResult<Void> ensurePastValidateCaptcha(Page page, String login) {
+        if (!isValidateCaptchaPage(page)) {
+            return null;
+        }
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            if (!isValidateCaptchaPage(page)) {
+                return null;
+            }
+            log.info("АВТООТВЕТ: {} -> validate-captcha / IP-блок (попытка {}), пользователь: {}",
+                    getSiteName(), attempt, login);
+            captchaService.logValidateCaptchaState(page, "ensure-attempt-" + attempt + "-before");
+            if (!captchaService.solveFlRuValidateCaptcha(page)) {
+                captchaService.logValidateCaptchaState(page, "ensure-attempt-" + attempt + "-failed");
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> validate-captcha: IP-капча не пройдена, пользователь: " + login,
+                        AutoreplyErrorTypes.CAPTCHA_FAILED);
+                return StepResult.fail(StepType.SEND_AUTOREPLY,
+                        "FL.ru validate-captcha: не пройдена hCaptcha «подозрительная активность»", captureScreenshot(page));
+            }
+            captchaService.dismissSmartCaptchaOverlay(page);
+            if (isValidateCaptchaPage(page)) {
+                submitFlRuLoginForm(page, login);
+                clickValidateCaptchaContinue(page, login);
+            }
+            waitUntilLeftValidateCaptcha(page, 15_000);
+            page.waitForTimeout(800);
+            captchaService.logValidateCaptchaState(page, "ensure-attempt-" + attempt + "-after-wait");
+            if (!isValidateCaptchaPage(page)) {
+                log.info("АВТООТВЕТ: {} -> validate-captcha снята после попытки {}, url={}, пользователь: {}",
+                        getSiteName(), attempt, page.url(), login);
+                return null;
+            }
+        }
+        if (isValidateCaptchaPage(page)) {
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> остались на validate-captcha, пользователь: " + login,
+                    AutoreplyErrorTypes.CAPTCHA_FAILED);
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "FL.ru validate-captcha: не удалось продолжить после капчи", captureScreenshot(page));
+        }
+        log.info("АВТООТВЕТ: {} -> validate-captcha пройдена, url={}, пользователь: {}",
+                getSiteName(), page.url(), login);
+        return null;
+    }
+
+    private boolean isValidateCaptchaPage(Page page) {
+        try {
+            String url = page.url();
+            if (url != null && url.contains(VALIDATE_CAPTCHA_PATH)) {
+                return true;
+            }
+            for (String marker : VALIDATE_CAPTCHA_MARKERS) {
+                Locator loc = page.locator(marker);
+                if (loc.count() > 0 && loc.first().isVisible()) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("АВТООТВЕТ: {} -> проверка validate-captcha: {}", getSiteName(), e.getMessage());
+        }
+        return false;
+    }
+
+    private void clickValidateCaptchaContinue(Page page, String login) {
+        String[] selectors = {
+                "button[type='submit']",
+                "input[type='submit']",
+                "button:has-text('Продолжить')",
+                "button:has-text('Отправить')",
+                "a.btn:has-text('Продолжить')"
+        };
+        for (String selector : selectors) {
+            Locator loc = page.locator(selector);
+            if (loc.count() == 0) {
+                continue;
+            }
+            try {
+                if (loc.first().isVisible() && !loc.first().isDisabled()) {
+                    loc.first().click(new Locator.ClickOptions().setTimeout(5000));
+                    log.info("АВТООТВЕТ: {} -> validate-captcha: нажато «{}», пользователь: {}",
+                            getSiteName(), selector, login);
+                    return;
+                }
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> validate-captcha клик '{}': {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+    }
+
+    private void waitUntilLeftValidateCaptcha(Page page, long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (!isValidateCaptchaPage(page)) {
+                return;
+            }
+            page.waitForTimeout(400);
+        }
+        try {
+            page.waitForURL(url -> url != null && !url.contains(VALIDATE_CAPTCHA_PATH),
+                    new Page.WaitForURLOptions().setTimeout(3000));
+        } catch (Exception ignored) {
+            // проверка isValidateCaptchaPage ниже по циклу ensurePastValidateCaptcha
+        }
+    }
+
+    private boolean clickFlRuLoginButton(Page page, String login) {
+        captchaService.dismissSmartCaptchaOverlay(page);
+        if (captchaService.isSmartCaptchaOverlayVisible(page)) {
+            log.warn("АВТООТВЕТ: {} -> SmartCaptcha advanced-оверлей перекрывает форму, отправляем без клика, пользователь: {}",
+                    getSiteName(), login);
+        }
+        if (submitFlRuLoginForm(page, login)) {
+            return true;
+        }
+
+        String[] selectors = {
+                "#submit-button",
+                "button[type='submit']",
+                "form button:has-text('Войти')",
+                "input[type='submit']"
+        };
+        long deadline = System.currentTimeMillis() + 20_000;
+        while (System.currentTimeMillis() < deadline) {
+            for (String selector : selectors) {
+                Locator loc = page.locator(selector);
+                if (loc.count() == 0) {
+                    continue;
+                }
+                Locator first = loc.first();
+                try {
+                    if (!first.isVisible()) {
+                        continue;
+                    }
+                    if (first.isDisabled()) {
+                        continue;
+                    }
+                    getCurrentManager().humanDelay(page);
+                    first.click(new Locator.ClickOptions().setTimeout(5000));
+                    log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата ({}), пользователь: {}", getSiteName(), selector, login);
+                    return true;
+                } catch (Exception e) {
+                    log.debug("АВТООТВЕТ: {} -> клик '{}' не удался: {}", getSiteName(), selector, e.getMessage());
+                }
+            }
+            page.waitForTimeout(400);
+        }
+        captchaService.dismissSmartCaptchaOverlay(page);
+        for (String selector : selectors) {
+            Locator loc = page.locator(selector);
+            if (loc.count() == 0) {
+                continue;
+            }
+            try {
+                loc.first().click(new Locator.ClickOptions().setTimeout(5000).setForce(true));
+                log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата force ({}), пользователь: {}", getSiteName(), selector, login);
+                return true;
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> force-клик '{}' не удался: {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+        if (submitFlRuLoginForm(page, login)) {
+            return true;
+        }
+        log.warn("CLICK FAILED at step 'Кнопка Войти': ни один селектор не сработал, пользователь: {}", login);
+        return false;
+    }
+
+    private boolean submitFlRuLoginForm(Page page, String login) {
+        try {
+            Object submitted = page.evaluate(
+                    """
+                            () => {
+                              const form = document.querySelector('form');
+                              if (!form) return false;
+                              const btn = document.querySelector('#submit-button, button[type="submit"]');
+                              if (typeof form.requestSubmit === 'function') {
+                                if (btn) form.requestSubmit(btn);
+                                else form.requestSubmit();
+                                return true;
+                              }
+                              form.submit();
+                              return true;
+                            }
+                            """);
+            if (Boolean.TRUE.equals(submitted)) {
+                log.info("АВТООТВЕТ: {} -> форма логина отправлена (requestSubmit/submit), пользователь: {}", getSiteName(), login);
+                return true;
+            }
+        } catch (Exception e) {
+            log.warn("АВТООТВЕТ: {} -> submit формы не удался: {}", getSiteName(), e.getMessage());
+        }
+        return false;
+    }
+
     private boolean waitForLoginError(Page page, int timeoutMs) {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
@@ -190,6 +531,10 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
      */
     @Override
     protected StepResult<Void> checkAfterLogin(Page page, DecryptedCredential creds) {
+        StepResult<Void> validateGate = ensurePastValidateCaptcha(page, creds.login());
+        if (validateGate != null) {
+            return validateGate;
+        }
         if (!isEmailCodePage(page)) {
             return null;
         }
@@ -235,7 +580,11 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ОБРАБОТКИ ЗАКАЗА: {}, пользователь: {}", getSiteName(), link, login);
 
         try {
-            page.navigate(link);
+            safeNavigate(page, link);
+            StepResult<Void> validateGate = ensurePastValidateCaptcha(page, login);
+            if (validateGate != null) {
+                return validateGate;
+            }
             page.waitForLoadState(LoadState.NETWORKIDLE);
             log.info("АВТООТВЕТ: {} -> страница заказа открыта, пользователь: {}", getSiteName(), login);
             takeScreenshot(page, getSiteName(), payload.getUser().getUuid(), "order_page");

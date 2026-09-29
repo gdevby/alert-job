@@ -255,7 +255,7 @@ public abstract class AutoreplyParser {
             page.locator(selector).click();
             return true;
         } catch (Exception e) {
-            log.warn("CLICK FAILED at step '{}': selector '{}'", step, selector);
+            log.warn("CLICK FAILED at step '{}': selector '{}': {}", step, selector, e.getMessage());
             return false;
         }
     }
