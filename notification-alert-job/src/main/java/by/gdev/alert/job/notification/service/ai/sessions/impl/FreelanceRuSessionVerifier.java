@@ -42,8 +42,8 @@ public class FreelanceRuSessionVerifier extends AbstractAutoreplySessionVerifier
             page.waitForLoadState(LoadState.NETWORKIDLE);
             page.waitForTimeout(1500);
             if (!page.url().contains("/auth/login")) {
-                log.info("SESSION-VERIFY: FREELANCERU сессия активна (редирект с login), пользователь: {}",
-                        creds.login());
+                log.info("SESSION-VERIFY: {} -> сессия активна (редирект с login), пользователь: {}",
+                        getSiteName(), creds.login());
                 return StepResult.ok(StepType.SEND_AUTOREPLY, null);
             }
             if (waitOrFail(page, "input[placeholder='логин или email']", 3000, "Поле логина")) {

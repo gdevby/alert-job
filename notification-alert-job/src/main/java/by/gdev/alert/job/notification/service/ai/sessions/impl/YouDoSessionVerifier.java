@@ -63,7 +63,7 @@ public class YouDoSessionVerifier extends AbstractAutoreplySessionVerifier {
                 } catch (Exception ignored) {
                 }
             }
-            log.info("SESSION-VERIFY: YOUDO сессия активна, пользователь: {}", creds.login());
+            log.info("SESSION-VERIFY: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());

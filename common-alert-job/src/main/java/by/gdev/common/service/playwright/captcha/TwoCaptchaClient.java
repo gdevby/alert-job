@@ -39,8 +39,12 @@ public class TwoCaptchaClient {
     @Value("${captcha.two-captcha.poll-interval-ms:3000}")
     private long pollIntervalMs;
 
-    @Value("${captcha.two-captcha.timeout-ms:120000}")
+    @Value("${captcha.two-captcha.timeout-ms:180000}")
     private long timeoutMs;
+
+    /** Сколько раз создавать новую задачу при timeout/processing (только hCaptcha / Yandex). */
+    @Value("${captcha.two-captcha.task-max-attempts:2}")
+    private int taskMaxAttempts;
 
     @PostConstruct
     void logConfiguration() {
@@ -92,17 +96,14 @@ public class TwoCaptchaClient {
             return Optional.empty();
         }
 
-        try {
+        return solveWithRetries(pageUrl, "Yandex SmartCaptcha", () -> {
             long taskId = createYandexTask(pageUrl, siteKey, userAgent, cookies);
             return pollTaskResult(taskId, "Yandex SmartCaptcha");
-        } catch (Exception e) {
-            log.error("2Captcha: не удалось решить Yandex SmartCaptcha для {}", pageUrl, e);
-            return Optional.empty();
-        }
+        });
     }
 
     /** @return hCaptcha response token (gRecaptchaResponse) */
-    public Optional<String> solveHCaptcha(String pageUrl, String siteKey, String userAgent) {
+    public Optional<String> solveHCaptcha(String pageUrl, String siteKey, String userAgent, String cookies) {
         if (!isConfigured()) {
             return Optional.empty();
         }
@@ -110,13 +111,45 @@ public class TwoCaptchaClient {
             log.warn("2Captcha: hCaptcha sitekey не найден для {}", pageUrl);
             return Optional.empty();
         }
-        try {
-            long taskId = createHCaptchaTask(pageUrl, siteKey, userAgent);
+        return solveWithRetries(pageUrl, "hCaptcha", () -> {
+            long taskId = createHCaptchaTask(pageUrl, siteKey, userAgent, cookies);
             return pollTaskResult(taskId, "hCaptcha");
-        } catch (Exception e) {
-            log.error("2Captcha: не удалось решить hCaptcha для {}", pageUrl, e);
-            return Optional.empty();
+        });
+    }
+
+    public Optional<String> solveHCaptcha(String pageUrl, String siteKey, String userAgent) {
+        return solveHCaptcha(pageUrl, siteKey, userAgent, null);
+    }
+
+    private Optional<String> solveWithRetries(String pageUrl, String kind, TaskPollSupplier supplier) {
+        int attempts = Math.max(1, taskMaxAttempts);
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            if (attempt > 1) {
+                log.warn("2Captcha: {} для {} — повторная задача {}/{}", kind, pageUrl, attempt, attempts);
+            }
+            try {
+                Optional<String> token = supplier.poll();
+                if (token.isPresent()) {
+                    return token;
+                }
+                log.warn("2Captcha: {} для {} — попытка {}/{} без токена (timeout или processing)",
+                        kind, pageUrl, attempt, attempts);
+            } catch (Exception e) {
+                lastError = e;
+                log.warn("2Captcha: {} для {} — попытка {}/{} ошибка: {}",
+                        kind, pageUrl, attempt, attempts, e.getMessage());
+            }
         }
+        if (lastError != null) {
+            log.error("2Captcha: не удалось решить {} для {}", kind, pageUrl, lastError);
+        }
+        return Optional.empty();
+    }
+
+    @FunctionalInterface
+    private interface TaskPollSupplier {
+        Optional<String> poll() throws Exception;
     }
 
     private long createYandexTask(String pageUrl, String siteKey, String userAgent, String cookies) throws Exception {
@@ -154,13 +187,16 @@ public class TwoCaptchaClient {
         return taskId;
     }
 
-    private long createHCaptchaTask(String pageUrl, String siteKey, String userAgent) throws Exception {
+    private long createHCaptchaTask(String pageUrl, String siteKey, String userAgent, String cookies) throws Exception {
         Map<String, Object> task = new LinkedHashMap<>();
         task.put("type", "HCaptchaTaskProxyless");
         task.put("websiteURL", pageUrl);
         task.put("websiteKey", siteKey);
         if (userAgent != null && !userAgent.isBlank()) {
             task.put("userAgent", userAgent);
+        }
+        if (cookies != null && !cookies.isBlank()) {
+            task.put("cookies", cookies);
         }
 
         Map<String, Object> body = new LinkedHashMap<>();

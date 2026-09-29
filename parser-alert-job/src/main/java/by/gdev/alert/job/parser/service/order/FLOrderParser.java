@@ -9,6 +9,7 @@ import by.gdev.alert.job.parser.domain.rss.Item;
 import by.gdev.alert.job.parser.domain.rss.Rss;
 import by.gdev.common.model.OrderDTO;
 import by.gdev.common.model.SiteName;
+import by.gdev.common.service.playwright.flru.FlRuPlaywrightGuards;
 import by.gdev.alert.job.parser.service.order.jsoup.JsoupClient;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
@@ -63,6 +64,10 @@ public class FLOrderParser extends AbsctractSiteParser {
             return List.of();
         }
         String trimmed = xml.trim();
+        if (FlRuPlaywrightGuards.isSuspiciousIpActivityInBody(trimmed)) {
+            log.warn("{}: ответ похож на блок IP (подозрительная активность), uri={}", getSiteName(), rssURI);
+            return List.of();
+        }
         StringReader reader = new StringReader(trimmed);
         Rss rss = (Rss) jaxbUnmarshaller.unmarshal(reader);
 

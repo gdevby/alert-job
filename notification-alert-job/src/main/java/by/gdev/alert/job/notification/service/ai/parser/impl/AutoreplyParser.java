@@ -64,8 +64,51 @@ public abstract class AutoreplyParser {
         this.assignedProxyService = assignedProxyService;
     }
 
+    /** Сколько раз открывать браузер заново (смена прокси между попытками — в наследнике). */
+    protected int autoreplyProxySwitchMaxAttempts() {
+        return 1;
+    }
+
+    protected boolean shouldRetryAutoreplyWithNewProxy(StepResult<Void> result) {
+        return false;
+    }
+
+    protected void prepareNextAutoreplyProxyAttempt(AiNotificationPayload payload, int nextAttempt) {
+    }
+
+    protected void onAutoreplyAttemptStarted(int attempt) {
+    }
+
+    /** Не логиниться в том же браузере (например DDoS — нужен другой прокси). */
+    protected boolean skipLoginAfterVerifyFailure(StepResult<Void> verifyResult, AutoreplyMode autoreplyMode) {
+        return false;
+    }
+
     public final StepResult<Void> sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload,
                                                 AutoreplyMode autoreplyMode) {
+        // Проверка учётных данных — один прогон: ретраи с новым прокси рвут Camoufox и затирают сессию.
+        if (autoreplyMode == AutoreplyMode.LOGIN_ONLY) {
+            return runAutoreplyOnce(creds, payload, autoreplyMode);
+        }
+        int maxAttempts = Math.max(1, autoreplyProxySwitchMaxAttempts());
+        StepResult<Void> last = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            onAutoreplyAttemptStarted(attempt);
+            if (attempt > 1) {
+                prepareNextAutoreplyProxyAttempt(payload, attempt);
+                log.warn("АВТООТВЕТ: {} -> повтор после DDoS/защиты, попытка {}/{}",
+                        getSiteName(), attempt, maxAttempts);
+            }
+            last = runAutoreplyOnce(creds, payload, autoreplyMode);
+            if (!last.failed() || attempt >= maxAttempts || !shouldRetryAutoreplyWithNewProxy(last)) {
+                return last;
+            }
+        }
+        return last;
+    }
+
+    private StepResult<Void> runAutoreplyOnce(DecryptedCredential creds, AiNotificationPayload payload,
+                                              AutoreplyMode autoreplyMode) {
         Playwright playwright = null;
         Browser browser = null;
         BrowserContext context = null;
@@ -82,7 +125,8 @@ public abstract class AutoreplyParser {
             playwright = manager.createPlaywright();
             browser = manager.createBrowser(playwright, options, getSiteName());
 
-            boolean hasSession = sessionStorage.hasSession(userUuid, siteName, login);
+            boolean hasSession = sessionStorage.hasSession(userUuid, siteName, login)
+                    || sessionStorage.storageStatePath(userUuid, siteName, login).isPresent();
             log.info("SESSION: location={} hasSession={} manager={}",
                     sessionStorage.describeSession(userUuid, siteName, login), hasSession,
                     camoufox ? "Camoufox" : "Chromium");
@@ -113,21 +157,50 @@ public abstract class AutoreplyParser {
                     userUuid, siteName, login, hasSession);
 
             if (!loginResult.failed()) {
-                pauseForSessionVerify(page, userUuid);
-                try {
-                    sessionStorage.save(context, userUuid, siteName, login);
-                    log.info("SESSION: save после успешного login/verify {}/{}", siteName, login);
-                } catch (Exception ex) {
-                    log.warn("Не удалось сохранить сессию: {}", ex.getMessage());
-                }
-            } else {
-                log.warn("SESSION: save пропущен — login/verify не успешен {}/{}", siteName, login);
-            }
-
-            if (!loginResult.failed()) {
+                // Строго до сохранения: пока дополнительный шаг не пройден, вход не завершён,
+                // и сохранённая сессия на следующем запуске упрётся в тот же шаг (FL.ru — код из письма).
                 StepResult<Void> afterLogin = checkAfterLogin(page, creds);
                 if (afterLogin != null) {
                     loginResult = afterLogin;
+                }
+            }
+
+            if (!loginResult.failed()) {
+                pauseForSessionVerify(page, userUuid);
+            }
+
+            if (!loginResult.failed()) {
+                StepResult<Void> finalized = finalizeBeforeSessionSave(page, creds, autoreplyMode);
+                if (finalized != null) {
+                    loginResult = finalized;
+                }
+            }
+
+            if (!loginResult.failed()) {
+                if (shouldPersistSession(page, loginResult)) {
+                    try {
+                        sessionStorage.save(context, userUuid, siteName, login);
+                        log.info("SESSION: save после успешного login/verify {}/{}", siteName, login);
+                    } catch (Exception ex) {
+                        log.warn("Не удалось сохранить сессию: {}", ex.getMessage());
+                    }
+                } else {
+                    log.warn("SESSION: save отменён — вход не подтверждён по UI (url={}) {}/{} — "
+                                    + "если login/verify OK в логе выше, проверьте shouldPersistSession",
+                            page != null ? page.url() : "n/a", siteName, login);
+                    StepResult<Void> incomplete = incompleteLoginAfterSaveBlocked(page, autoreplyMode);
+                    if (incomplete != null) {
+                        loginResult = incomplete;
+                    }
+                }
+            } else {
+                log.warn("SESSION: save пропущен — login/verify не успешен {}/{}", siteName, login);
+                if (shouldDeleteStoredSessionAfterLoginFailure(loginResult)) {
+                    try {
+                        sessionStorage.delete(userUuid, siteName, login);
+                    } catch (Exception ex) {
+                        log.warn("SESSION: не удалось удалить сессию после ошибки входа: {}", ex.getMessage());
+                    }
                 }
             }
 
@@ -181,19 +254,31 @@ public abstract class AutoreplyParser {
                                             boolean hasSession) {
         if (hasSession) {
             StepResult<Void> verified = verifyExistingSession(page, creds, autoreplyMode);
-            if (!verified.failed()) {
+            if (verified != null && !verified.failed()) {
                 log.info("SESSION: verifyExistingSession OK для {}/{}", siteName, login);
                 return verified;
             }
+            if (verified != null && skipLoginAfterVerifyFailure(verified, autoreplyMode)) {
+                return verified;
+            }
             log.warn("SESSION: verify не прошёл для {}/{} ({}), пробуем полный login без delete",
-                    siteName, login, verified.getErrorMessage());
+                    siteName, login, verified != null ? verified.getErrorMessage() : "null result");
         }
         StepResult<Void> loginResult = login(page, payload, creds, autoreplyMode);
-        if (loginResult.failed() && hasSession) {
-            log.warn("SESSION: полный login не удался — удаляем устаревшую сессию {}/{}", siteName, login);
+        if (loginResult.failed() && hasSession && shouldInvalidateStoredSessionAfterFailedRelogin(loginResult)) {
+            log.warn("SESSION: полный login не удался — удаляем устаревшую сессию {}/{} ({})",
+                    siteName, login, loginResult.getErrorMessage());
             sessionStorage.delete(userUuid, siteName, login);
         }
         return loginResult;
+    }
+
+    /**
+     * После неудачного полного login при уже сохранённой сессии — удалять файл только если сессия точно мёртвая
+     * (не при обрыве браузера, DDoS, капче).
+     */
+    protected boolean shouldInvalidateStoredSessionAfterFailedRelogin(StepResult<Void> loginResult) {
+        return false;
     }
 
     protected StepResult<Void> verifyExistingSession(Page page, DecryptedCredential creds, AutoreplyMode mode) {
@@ -204,13 +289,45 @@ public abstract class AutoreplyParser {
     }
 
     /**
-     * Проверка страницы после успешного login/verify — сессия к этому моменту уже сохранена.
+     * Проверка страницы после успешного login/verify — выполняется до сохранения сессии.
      * Нужна, когда биржа пускает по сессии, но требует дополнительное действие (например FL.ru просит код из письма).
      *
      * @return ошибку для пользователя либо {@code null}, если всё в порядке
      */
     protected StepResult<Void> checkAfterLogin(Page page, DecryptedCredential creds) {
         return null;
+    }
+
+    /**
+     * После паузы UI: FL.ru и др. могут показать validate-captcha / anti-bot уже после OTP или SmartCaptcha.
+     */
+    protected StepResult<Void> finalizeBeforeSessionSave(Page page, DecryptedCredential creds,
+                                                         AutoreplyMode autoreplyMode) {
+        return null;
+    }
+
+    /**
+     * {@link AutoreplyMode#LOGIN_ONLY}: нельзя считать проверку учётных данных успешной без сохранённой сессии.
+     */
+    protected StepResult<Void> incompleteLoginAfterSaveBlocked(Page page, AutoreplyMode autoreplyMode) {
+        if (autoreplyMode != AutoreplyMode.LOGIN_ONLY || page == null) {
+            return null;
+        }
+        return StepResult.fail(StepType.SEND_AUTOREPLY, "LOGIN_INCOMPLETE",
+                "Вход не завершён (сессия не сохранена), url=" + page.url(), captureScreenshot(page));
+    }
+
+    /**
+     * Дополнительная проверка перед записью storageState (после {@link #checkAfterLogin}).
+     * Сайты с OTP/капчей могут переопределить, чтобы не сохранить «полувход».
+     */
+    protected boolean shouldPersistSession(Page page, StepResult<Void> loginResult) {
+        return page != null && loginResult != null && !loginResult.failed();
+    }
+
+    /** Удалить файл сессии при неуспешном login/verify (переопределяется на сайтах). */
+    protected boolean shouldDeleteStoredSessionAfterLoginFailure(StepResult<Void> loginResult) {
+        return false;
     }
 
     protected void pauseForSessionVerify(Page page, String userUuid) {
@@ -252,7 +369,7 @@ public abstract class AutoreplyParser {
     boolean clickOrFail(Page page, String selector, int timeoutMs, String step) {
         if (!waitOrFail(page, selector, timeoutMs, step)) return false;
         try {
-            page.locator(selector).click();
+            getCurrentManager().humanClick(page, selector);
             return true;
         } catch (Exception e) {
             log.warn("CLICK FAILED at step '{}': selector '{}': {}", step, selector, e.getMessage());

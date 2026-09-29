@@ -16,7 +16,7 @@ public class RestTemplateConfig {
 
     @Bean("plainRestTemplate")
     public RestTemplate plainRestTemplate(
-            @Value("${credential.validation.timeout.ms:180000}") int credentialValidationTimeoutMs) {
+            @Value("${credential.validation.timeout.ms:600000}") int credentialValidationTimeoutMs) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(credentialValidationTimeoutMs);
         factory.setReadTimeout(credentialValidationTimeoutMs);

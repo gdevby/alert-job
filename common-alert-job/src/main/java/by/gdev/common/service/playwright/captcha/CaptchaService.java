@@ -1,5 +1,7 @@
 package by.gdev.common.service.playwright.captcha;
 
+import by.gdev.common.service.playwright.captcha.failure.CaptchaFailureCode;
+import by.gdev.common.service.playwright.captcha.failure.CaptchaFailureInfo;
 import com.microsoft.playwright.Frame;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Mouse;
@@ -41,13 +43,48 @@ public class CaptchaService {
     @Value("${captcha.yandex.two-captcha-first:false}")
     private boolean yandexTwoCaptchaFirst;
 
+    private static final ThreadLocal<CaptchaFailureInfo> LAST_FAILURE = new ThreadLocal<>();
+
+    /** Последняя ошибка капчи в этом потоке (для ответа API / StepResult). */
+    public Optional<CaptchaFailureInfo> getLastFailure() {
+        return Optional.ofNullable(LAST_FAILURE.get());
+    }
+
+    public void clearLastFailure() {
+        LAST_FAILURE.remove();
+    }
+
+    /** Остались на /validate-captcha после попыток (редирект не произошёл). */
+    public void recordFailureForValidateStuck(Page page) {
+        recordFailure(page, CaptchaFailureCode.FLRU_VALIDATE_HCAPTCHA_STUCK,
+                "FL.ru /validate-captcha: страница блокировки не снята после капчи",
+                "ensure-stuck-on-page");
+    }
+
+    private void recordFailure(Page page, CaptchaFailureCode code, String userMessage, String phase) {
+        String url = null;
+        try {
+            url = page != null ? page.url() : null;
+        } catch (Exception ignored) {
+            // page closed
+        }
+        LAST_FAILURE.set(new CaptchaFailureInfo(code, userMessage, phase, url));
+        log.warn("Captcha failure: code={} phase={} url={} — {}", code, phase, url, userMessage);
+    }
+
     private Frame findYandexCaptchaFrame(Page page) {
         for (Frame f : page.frames()) {
             String url = f.url();
-            if (url != null && (url.contains("smartcaptcha.yandexcloud.net")
-                    || url.contains("captcha.yandex")
-                    || url.contains("checkbox")
-                    || url.contains("advanced"))) {
+            if (url == null || url.isBlank()) {
+                continue;
+            }
+            if (url.contains("hcaptcha.com")) {
+                continue;
+            }
+            if (url.contains("smartcaptcha.yandexcloud.net") || url.contains("captcha.yandex")) {
+                return f;
+            }
+            if (url.contains("yandex") && (url.contains("/checkbox") || url.contains("/advanced"))) {
                 return f;
             }
         }
@@ -61,51 +98,311 @@ public class CaptchaService {
                     "iframe[src*='smartcaptcha.yandexcloud.net'], iframe[data-testid='checkbox-iframe'], "
                             + "iframe[data-testid='advanced-iframe'], .smart-captcha, [data-sitekey]",
                     new Page.WaitForSelectorOptions().setTimeout(timeoutMs));
+            log.info("SmartCaptcha DBG [wait-widget] селектор виджета появился за ≤{} ms", timeoutMs);
         } catch (Exception e) {
-            log.debug("SmartCaptcha: виджет не дождались за {} ms: {}", timeoutMs, e.getMessage());
+            log.warn("SmartCaptcha DBG [wait-widget] виджет не дождались за {} ms: {}", timeoutMs, e.getMessage());
         }
+    }
+
+    /** Снимок DOM SmartCaptcha на форме логина / validate-captcha. */
+    public void logSmartCaptchaState(Page page, String phase) {
+        try {
+            log.info("SmartCaptcha DBG [{}] url={}", phase, page.url());
+            Frame yandexFrame = findYandexCaptchaFrame(page);
+            log.info("SmartCaptcha DBG [{}] findYandexCaptchaFrame={}", phase,
+                    yandexFrame != null ? yandexFrame.url() : "null");
+            log.info("SmartCaptcha DBG [{}] advanced={} overlayVisible={} smartToken={}",
+                    phase, isYandexAdvancedChallenge(page), isSmartCaptchaOverlayVisible(page),
+                    isSmartTokenPresentOnPage(page));
+            String[] iframeSelectors = {
+                    "iframe[data-testid='checkbox-iframe']",
+                    "iframe[data-testid='advanced-iframe']",
+                    "iframe[src*='smartcaptcha.yandexcloud.net']",
+                    ".smart-captcha iframe",
+                    "iframe[src*='captcha.yandex']"
+            };
+            for (String sel : iframeSelectors) {
+                Locator loc = page.locator(sel);
+                int n = loc.count();
+                if (n == 0) {
+                    continue;
+                }
+                for (int i = 0; i < Math.min(n, 3); i++) {
+                    Locator one = loc.nth(i);
+                    boolean visible = false;
+                    BoundingBox box = null;
+                    String src = null;
+                    try {
+                        visible = one.isVisible();
+                        box = one.boundingBox();
+                        src = one.getAttribute("src");
+                    } catch (Exception ignored) {
+                        // next field
+                    }
+                    log.info("SmartCaptcha DBG [{}] iframe sel={} idx={} visible={} bbox={} src={}",
+                            phase, sel, i, visible,
+                            box == null ? "null"
+                                    : String.format("%.0fx%.0f@(%.0f,%.0f)", box.width, box.height, box.x, box.y),
+                            truncateForLog(src, 120));
+                }
+            }
+            StringBuilder frameUrls = new StringBuilder();
+            for (Frame f : page.frames()) {
+                String u = f.url();
+                if (u != null && !u.isBlank() && !"about:blank".equals(u)) {
+                    if (frameUrls.length() > 0) {
+                        frameUrls.append(" | ");
+                    }
+                    frameUrls.append(truncateForLog(u, 80));
+                }
+            }
+            log.info("SmartCaptcha DBG [{}] allFrameUrls={}", phase, frameUrls);
+            Object dom = page.evaluate(
+                    """
+                            () => {
+                              const sc = document.querySelector('.smart-captcha, [data-sitekey]');
+                              const style = sc && window.getComputedStyle(sc);
+                              return JSON.stringify({
+                                smartCaptchaDiv: !!sc,
+                                sitekey: sc && sc.getAttribute('data-sitekey'),
+                                callback: sc && sc.getAttribute('data-callback'),
+                                iframeCount: document.querySelectorAll('iframe').length,
+                                offsetHeight: sc && sc.offsetHeight,
+                                display: style && style.display,
+                                visibility: style && style.visibility
+                              });
+                            }
+                            """);
+            log.info("SmartCaptcha DBG [{}] dom={}", phase, dom);
+        } catch (Exception e) {
+            log.warn("SmartCaptcha DBG [{}] snapshot error: {}", phase, e.getMessage());
+        }
+    }
+
+    private static String truncateForLog(String s, int maxLen) {
+        if (s == null) {
+            return "null";
+        }
+        if (s.length() <= maxLen) {
+            return s;
+        }
+        return s.substring(0, maxLen) + "…";
+    }
+
+    private BoundingBox waitSmartCaptchaIframeBox(Locator iframeLocator, long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        int tick = 0;
+        while (System.currentTimeMillis() < deadline) {
+            tick++;
+            try {
+                Locator first = iframeLocator.first();
+                first.scrollIntoViewIfNeeded();
+                if (first.isVisible()) {
+                    BoundingBox box = first.boundingBox();
+                    if (box != null && box.width > 2 && box.height > 2) {
+                        log.info("SmartCaptcha DBG [wait-bbox] OK за {} проверок: {}x{} @ ({}, {})",
+                                tick, (int) box.width, (int) box.height, (int) box.x, (int) box.y);
+                        return box;
+                    }
+                }
+                if (tick == 1 || tick % 5 == 0) {
+                    log.info("SmartCaptcha DBG [wait-bbox] tick={} visible={} bbox={}",
+                            tick, first.isVisible(), first.boundingBox());
+                }
+            } catch (Exception e) {
+                log.info("SmartCaptcha DBG [wait-bbox] tick={} error: {}", tick, e.getMessage());
+            }
+            pageWait(iframeLocator, 400);
+        }
+        log.warn("SmartCaptcha DBG [wait-bbox] timeout {} ms, bbox так и не получен", timeoutMs);
+        return null;
+    }
+
+    private void pageWait(Locator iframeLocator, long ms) {
+        try {
+            iframeLocator.page().waitForTimeout(ms);
+        } catch (Exception ignored) {
+            // page closed
+        }
+    }
+
+    private void scrollSmartCaptchaIntoView(Page page) {
+        try {
+            Locator widget = page.locator(".smart-captcha, [data-sitekey], div:has(iframe[src*='smartcaptcha'])");
+            if (widget.count() > 0) {
+                widget.first().scrollIntoViewIfNeeded();
+                page.waitForTimeout(400);
+                log.info("SmartCaptcha DBG [scroll] .smart-captcha прокручен в видимую область");
+            }
+        } catch (Exception e) {
+            log.info("SmartCaptcha DBG [scroll] не удалось: {}", e.getMessage());
+        }
+    }
+
+    private boolean clickInsideYandexCaptchaFrame(Frame frame) {
+        String[] selectors = {
+                "input#js-button",
+                ".CheckboxCaptcha-Checkbox",
+                "#checkbox",
+                "[role='checkbox']",
+                "label"
+        };
+        for (String sel : selectors) {
+            try {
+                Locator loc = frame.locator(sel).first();
+                loc.click(new Locator.ClickOptions().setTimeout(8000).setForce(true));
+                log.info("SmartCaptcha DBG [click-frame] OK selector={} frameUrl={}", sel, frame.url());
+                return true;
+            } catch (Exception e) {
+                log.info("SmartCaptcha DBG [click-frame] FAIL {}: {}", sel, e.getMessage());
+            }
+        }
+        for (Frame child : frame.childFrames()) {
+            if (clickInsideYandexCaptchaFrame(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean clickYandexSmartCaptchaViaLocators(Page page) {
+        String[] paths = {
+                "iframe[data-testid='checkbox-iframe']",
+                ".smart-captcha iframe[src*='smartcaptcha']",
+                "iframe[src*='smartcaptcha.yandexcloud.net']"
+        };
+        for (String path : paths) {
+            try {
+                Locator target = page.frameLocator(path).locator(
+                        "input#js-button, .CheckboxCaptcha-Checkbox, #checkbox, [role='checkbox']").first();
+                target.click(new Locator.ClickOptions().setTimeout(8000).setForce(true));
+                log.info("SmartCaptcha DBG [click-frameloc] OK path={}", path);
+                return true;
+            } catch (Exception e) {
+                log.info("SmartCaptcha DBG [click-frameloc] FAIL {}: {}", path, e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    private boolean verifyYandexSmartCaptchaAfterClick(Page page, Frame frame) throws InterruptedException {
+        Frame activeFrame = findYandexCaptchaFrame(page);
+        if (activeFrame == null) {
+            activeFrame = frame;
+        }
+        try {
+            activeFrame.waitForSelector("input#js-button",
+                    new Frame.WaitForSelectorOptions().setTimeout(8000));
+        } catch (Exception e) {
+            log.info("SmartCaptcha DBG [verify] input#js-button не дождались: {}", e.getMessage());
+        }
+        try {
+            activeFrame.evaluate("window.postMessage(JSON.stringify({methodCall: 'start'}), '*')");
+        } catch (Exception e) {
+            log.info("SmartCaptcha DBG [verify] postMessage start: {}", e.getMessage());
+        }
+        Thread.sleep(1500);
+        if (isSmartTokenPresentOnPage(page)) {
+            log.info("SmartCaptcha DBG [verify] smart-token на странице — OK");
+            return true;
+        }
+        Locator input = activeFrame.locator("input#js-button");
+        String aria = input.count() > 0 ? input.getAttribute("aria-checked") : null;
+        String checked = activeFrame.locator(".CheckboxCaptcha-Checkbox").count() > 0
+                ? activeFrame.locator(".CheckboxCaptcha-Checkbox").getAttribute("data-checked")
+                : null;
+        log.info("SmartCaptcha DBG [verify] aria-checked={} data-checked={} frameUrl={}",
+                aria, checked, activeFrame.url());
+        if ("true".equals(aria) || "true".equals(checked)) {
+            return true;
+        }
+        if (isYandexSmartCaptchaPassed(activeFrame)) {
+            return true;
+        }
+        return false;
     }
 
     private boolean clickYandexSmartCaptcha(Page page, Frame frame) {
         try {
-            Locator iframeLocator = page.locator(
-                    "iframe[data-testid='checkbox-iframe'], iframe[src*='smartcaptcha.yandexcloud.net']");
-            if (iframeLocator.count() == 0) {
-                log.warn("SmartCaptcha: iframe виджета не найден на странице");
+            scrollSmartCaptchaIntoView(page);
+            String[] selectors = {
+                    "iframe[data-testid='checkbox-iframe']",
+                    "iframe[src*='smartcaptcha.yandexcloud.net']",
+                    ".smart-captcha iframe",
+                    "iframe[src*='captcha.yandex']"
+            };
+            Locator iframeLocator = null;
+            String usedSel = null;
+            for (String sel : selectors) {
+                Locator loc = page.locator(sel);
+                if (loc.count() > 0) {
+                    iframeLocator = loc;
+                    usedSel = sel;
+                    log.info("SmartCaptcha DBG [click] селектор {} (count={})", sel, loc.count());
+                    break;
+                }
+            }
+            boolean clicked = false;
+            if (iframeLocator != null && iframeLocator.count() > 0) {
+                BoundingBox box = waitSmartCaptchaIframeBox(iframeLocator, 15_000);
+                if (box != null) {
+                    double clickX = box.x + Math.min(12, box.width * 0.15);
+                    double clickY = box.y + box.height / 2.0;
+                    log.info("SmartCaptcha DBG [click] mouse bbox → ({}, {}) sel={}", (int) clickX, (int) clickY, usedSel);
+                    page.mouse().move(clickX, clickY, new Mouse.MoveOptions().setSteps(10));
+                    page.waitForTimeout(150);
+                    page.mouse().click(clickX, clickY);
+                    clicked = true;
+                } else {
+                    log.warn("SmartCaptcha DBG [click] bbox=null для {}, пробуем force-click / frame", usedSel);
+                    try {
+                        iframeLocator.first().click(new Locator.ClickOptions().setForce(true).setTimeout(5000));
+                        log.info("SmartCaptcha DBG [click] force-click по iframe OK");
+                        clicked = true;
+                    } catch (Exception e) {
+                        log.info("SmartCaptcha DBG [click] force-click iframe FAIL: {}", e.getMessage());
+                    }
+                }
+            } else {
+                log.warn("SmartCaptcha DBG [click] iframe на странице не найден (селекторы пусты)");
+            }
+            if (!clicked) {
+                clicked = clickYandexSmartCaptchaViaLocators(page);
+            }
+            if (!clicked && frame != null) {
+                clicked = clickInsideYandexCaptchaFrame(frame);
+            }
+            if (!clicked) {
+                logSmartCaptchaState(page, "click-all-paths-failed");
+                recordFailure(page, CaptchaFailureCode.FLRU_LOGIN_YANDEX_CHECKBOX,
+                        "Yandex SmartCaptcha: не удалось нажать чекбокс (iframe без координат или скрыт)",
+                        "click-all-paths-failed");
                 return false;
             }
-            BoundingBox box = iframeLocator.first().boundingBox();
-            if (box == null) {
-                log.warn("SmartCaptcha: не удалось получить boundingBox iframe");
-                return false;
-            }
-            page.mouse().click(box.x + 5, box.y + 5);
-            Thread.sleep(200);
-
-            frame.waitForSelector("input#js-button",
-                    new Frame.WaitForSelectorOptions().setTimeout(10000));
-            frame.evaluate("window.postMessage(JSON.stringify({methodCall: 'start'}), '*')");
-            Thread.sleep(1500);
-            Locator input = frame.locator("input#js-button");
-            String aria = input.getAttribute("aria-checked");
-            if ("true".equals(aria)) {
-                log.debug("SmartCaptcha: aria-checked=true — капча пройдена");
-                return true;
-            }
-            String checked = frame.locator(".CheckboxCaptcha-Checkbox")
-                    .getAttribute("data-checked");
-            if ("true".equals(checked)) {
-                log.debug("SmartCaptcha: data-checked=true — капча пройдена");
+            page.waitForTimeout(300);
+            if (verifyYandexSmartCaptchaAfterClick(page, frame)) {
+                log.info("SmartCaptcha: успешно пройдена после клика");
                 return true;
             }
             if (isSmartCaptchaOverlayVisible(page)) {
                 log.warn("SmartCaptcha: локальный клик не прошёл — открыт advanced challenge (оверлей поверх формы)");
+                recordFailure(page, CaptchaFailureCode.FLRU_LOGIN_YANDEX_ADVANCED,
+                        "Yandex SmartCaptcha: открыт visual challenge на форме входа — нужен 2Captcha (advanced)",
+                        "click-not-passed-advanced");
             } else {
-                log.warn("SmartCaptcha: input/data-checked не изменились");
+                log.warn("SmartCaptcha: клик был, но статус не подтверждён (advanced={})",
+                        isYandexAdvancedChallenge(page));
+                recordFailure(page, CaptchaFailureCode.FLRU_LOGIN_YANDEX_CHECKBOX,
+                        "Yandex SmartCaptcha: чекбокс на форме входа не подтверждён",
+                        "click-not-passed");
             }
+            logSmartCaptchaState(page, "click-not-passed");
             return false;
         } catch (Exception e) {
             log.error("SmartCaptcha: ошибка при клике", e);
+            logSmartCaptchaState(page, "click-exception");
+            recordFailure(page, CaptchaFailureCode.CAPTCHA_EXCEPTION,
+                    "Yandex SmartCaptcha: ошибка при клике — " + e.getMessage(), "click-exception");
             return false;
         }
     }
@@ -149,6 +446,33 @@ public class CaptchaService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Visual challenge «выберите картинки» / advanced iframe. Простой чекбокс Yandex — не advanced.
+     * 2Captcha для Yandex используем только в этом случае.
+     */
+    private boolean isYandexAdvancedChallenge(Page page) {
+        if (isSmartCaptchaOverlayVisible(page)) {
+            return true;
+        }
+        try {
+            Locator advancedIframe = page.locator("iframe[data-testid='advanced-iframe']");
+            if (advancedIframe.count() > 0 && advancedIframe.first().isVisible()) {
+                return true;
+            }
+            for (Frame f : page.frames()) {
+                String url = f.url();
+                if (url != null && !url.contains("hcaptcha.com")
+                        && url.contains("/advanced")
+                        && (url.contains("smartcaptcha") || url.contains("captcha.yandex"))) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("SmartCaptcha: проверка advanced: {}", e.getMessage());
+        }
+        return false;
     }
 
     /** Капча на форме логина FL.ru (Yandex SmartCaptcha). Если виджета нет — считаем, что капчи нет. */
@@ -206,6 +530,7 @@ public class CaptchaService {
      * На странице используется <strong>hCaptcha</strong> («Я человек»), не Yandex SmartCaptcha с логина.
      */
     public boolean solveFlRuValidateCaptcha(Page page) {
+        clearLastFailure();
         try {
             log.info("FL.ru validate-captcha: сценарий IP-блокировки (не форма логина)");
             logValidateCaptchaState(page, "01-start");
@@ -235,23 +560,30 @@ public class CaptchaService {
                 }
             }
 
-            if (yandexTwoCaptchaFallback && twoCaptchaClient.isConfigured()) {
+            if (yandexTwoCaptchaFallback && twoCaptchaClient.isConfigured() && isYandexAdvancedChallenge(page)) {
                 Frame frame = findYandexCaptchaFrame(page);
                 Frame tokenFrame = frame != null ? frame : page.mainFrame();
                 if (extractYandexSiteKey(page).isPresent()
                         && solveYandexSmartCaptchaViaTwoCaptcha(page, tokenFrame)) {
                     dismissSmartCaptchaOverlay(page);
-                    log.info("validate-captcha: пройдено через 2Captcha (Yandex)");
+                    log.info("validate-captcha: пройдено через 2Captcha (Yandex advanced)");
                     return true;
                 }
+            } else if (yandexTwoCaptchaFallback && twoCaptchaClient.isConfigured()) {
+                log.info("validate-captcha: Yandex без advanced — 2Captcha не вызываем");
             }
 
             log.warn("validate-captcha: не удалось пройти IP-капчу");
             logValidateCaptchaState(page, "99-fail-no-hcaptcha-path");
+            recordFailure(page, CaptchaFailureCode.FLRU_VALIDATE_UNKNOWN,
+                    "FL.ru /validate-captcha: не удалось пройти IP-капчу (hCaptcha/Yandex)",
+                    "99-fail-no-hcaptcha-path");
             return false;
         } catch (Exception e) {
             log.error("validate-captcha: ошибка", e);
             logValidateCaptchaState(page, "99-exception");
+            recordFailure(page, CaptchaFailureCode.CAPTCHA_EXCEPTION,
+                    "FL.ru /validate-captcha: " + e.getMessage(), "99-exception");
             return false;
         }
     }
@@ -270,12 +602,26 @@ public class CaptchaService {
                 log.info("validate-captcha: hCaptcha пройдена через 2Captcha (без puzzle)");
                 return true;
             }
-            log.info("validate-captcha DBG [13] 2Captcha hCaptcha не увёл со страницы, пробуем Yandex overlay");
-            if (trySolveValidateCaptchaVisualOverlay(page) && waitFlRuValidateCaptchaCleared(page)) {
-                log.info("validate-captcha: visual challenge пройден через 2Captcha (Yandex token)");
-                return true;
+            if (isSmartCaptchaOverlayVisible(page) || findYandexCaptchaFrame(page) != null) {
+                log.info("validate-captcha DBG [13] 2Captcha hCaptcha не увёл со страницы, пробуем Yandex overlay");
+                if (trySolveValidateCaptchaVisualOverlay(page) && waitFlRuValidateCaptchaCleared(page)) {
+                    log.info("validate-captcha: visual challenge пройден через 2Captcha (Yandex token)");
+                    return true;
+                }
+                logValidateCaptchaState(page, "14-after-2captcha-yandex-fallback");
+            } else {
+                log.warn("validate-captcha DBG [13] 2Captcha не вернул токен в срок — локальный клик не делаем "
+                        + "(откроет hCaptcha puzzle без токена). Попробуйте другой прокси или увеличьте "
+                        + "captcha.two-captcha.timeout-ms / task-max-attempts");
+                logValidateCaptchaState(page, "14-2captcha-exhausted-no-local");
             }
-            logValidateCaptchaState(page, "14-after-2captcha-yandex-fallback");
+            log.warn("validate-captcha: hCaptcha не пройдена (2Captcha)");
+            logValidateCaptchaState(page, "29-hcaptcha-fail");
+            recordFailure(page, CaptchaFailureCode.FLRU_VALIDATE_HCAPTCHA_TWO_CAPTCHA,
+                    "FL.ru /validate-captcha: hCaptcha не пройдена — 2Captcha не вернула токен в срок "
+                            + "(попробуйте другой прокси или увеличьте captcha.two-captcha.timeout-ms)",
+                    "29-hcaptcha-fail-2cap");
+            return false;
         } else {
             log.warn("validate-captcha DBG [11] 2Captcha выключен — только локальный клик");
         }
@@ -309,6 +655,17 @@ public class CaptchaService {
 
         if (isSmartCaptchaOverlayVisible(page) || findYandexCaptchaFrame(page) != null) {
             log.warn("validate-captcha: открыт visual challenge (картинки) — локально не решается, нужен 2Captcha");
+            recordFailure(page, CaptchaFailureCode.FLRU_VALIDATE_HCAPTCHA_VISUAL,
+                    "FL.ru /validate-captcha: hCaptcha visual puzzle — без токена 2Captcha не пройти",
+                    "29-hcaptcha-visual");
+        } else if (isHCaptchaResponsePresent(page)) {
+            recordFailure(page, CaptchaFailureCode.FLRU_VALIDATE_HCAPTCHA_STUCK,
+                    "FL.ru /validate-captcha: hCaptcha — ответ есть, но сайт не снял блокировку",
+                    "29-hcaptcha-stuck");
+        } else {
+            recordFailure(page, CaptchaFailureCode.FLRU_VALIDATE_HCAPTCHA_VISUAL,
+                    "FL.ru /validate-captcha: hCaptcha «подозрительная активность» не пройдена",
+                    "29-hcaptcha-fail");
         }
         log.warn("validate-captcha: hCaptcha не пройдена");
         logValidateCaptchaState(page, "29-hcaptcha-fail");
@@ -521,8 +878,12 @@ public class CaptchaService {
         waitForHcaptchaApi(page);
         log.info("validate-captcha DBG [2cap] sitekey={} url={}", siteKey.get(), page.url());
         String userAgent = page.evaluate("() => navigator.userAgent").toString();
+        String cookies = page.context().cookies(page.url()).stream()
+                .map(c -> c.name + "=" + c.value)
+                .collect(Collectors.joining("; "));
         log.info("validate-captcha DBG [2cap] запрос токена у 2Captcha…");
-        Optional<String> token = twoCaptchaClient.solveHCaptcha(page.url(), siteKey.get(), userAgent);
+        Optional<String> token = twoCaptchaClient.solveHCaptcha(
+                page.url(), siteKey.get(), userAgent, cookies);
         if (token.isEmpty()) {
             log.warn("validate-captcha DBG [2cap] токен не получен (timeout или ошибка API)");
             return false;
@@ -728,21 +1089,25 @@ public class CaptchaService {
     }
 
     private boolean solveYandexSmartCaptchaInternal(Page page, boolean captchaRequired) {
+        clearLastFailure();
         try {
+            waitForYandexSmartCaptchaWidget(page, 12_000);
+            logSmartCaptchaState(page, "01-start");
             Frame frame = findYandexCaptchaFrame(page);
             if (frame == null) {
                 if (captchaRequired) {
                     log.warn("SmartCaptcha: виджет обязателен, но iframe не найден");
+                    logSmartCaptchaState(page, "01-no-frame");
                     return false;
                 }
-                log.debug("SmartCaptcha: iframe не найден — капча отсутствует");
+                log.info("SmartCaptcha DBG [01] iframe не найден — капча отсутствует, url={}", page.url());
                 return true;
             }
-            log.debug("SmartCaptcha: iframe найден, начинаем обход...");
+            log.info("SmartCaptcha DBG [02] frame найден url={}, captchaRequired={}", frame.url(), captchaRequired);
 
-            if (yandexTwoCaptchaFirst && twoCaptchaClient.isConfigured()) {
+            if (yandexTwoCaptchaFirst && twoCaptchaClient.isConfigured() && isYandexAdvancedChallenge(page)) {
                 if (solveYandexSmartCaptchaViaTwoCaptcha(page, frame)) {
-                    log.info("SmartCaptcha: пройдена через 2Captcha (primary)");
+                    log.info("SmartCaptcha: пройдена через 2Captcha (primary, advanced)");
                     return true;
                 }
                 log.warn("SmartCaptcha: 2Captcha (primary) не помог, пробуем локальный клик");
@@ -753,29 +1118,54 @@ public class CaptchaService {
                 return true;
             }
 
+            if (!isYandexAdvancedChallenge(page)) {
+                if (isSmartTokenPresentOnPage(page) || isYandexSmartCaptchaPassed(frame)) {
+                    dismissSmartCaptchaOverlay(page);
+                    log.info("SmartCaptcha: чекбокс — smart-token/статус OK без advanced, 2Captcha не нужен");
+                    return true;
+                }
+                log.warn("SmartCaptcha: чекбокс не пройден локально; 2Captcha только для advanced — не вызываем");
+                logSmartCaptchaState(page, "03-checkbox-fail-no-advanced");
+                if (getLastFailure().isEmpty()) {
+                    recordFailure(page, CaptchaFailureCode.FLRU_LOGIN_YANDEX_CHECKBOX,
+                            "Yandex SmartCaptcha на входе: чекбокс не пройден (виджет не отрисован или клик не сработал)",
+                            "03-checkbox-fail-no-advanced");
+                }
+                return false;
+            }
+
             if (yandexTwoCaptchaFallback && twoCaptchaClient.isConfigured()) {
                 if (solveYandexSmartCaptchaViaTwoCaptcha(page, frame)) {
-                    log.info("SmartCaptcha: пройдена через 2Captcha (fallback)");
+                    log.info("SmartCaptcha: пройдена через 2Captcha (fallback, advanced)");
                     return true;
                 }
             }
 
-            log.warn("SmartCaptcha: не удалось пройти");
+            log.warn("SmartCaptcha: не удалось пройти (advanced)");
+            recordFailure(page, CaptchaFailureCode.FLRU_LOGIN_YANDEX_ADVANCED,
+                    "Yandex SmartCaptcha advanced на входе: 2Captcha не помогла", "advanced-fail");
             return false;
 
         } catch (Exception e) {
             log.error("SmartCaptcha: ошибка при обходе", e);
+            recordFailure(page, CaptchaFailureCode.CAPTCHA_EXCEPTION,
+                    "Yandex SmartCaptcha: " + e.getMessage(), "solve-internal-exception");
             return false;
         }
     }
 
     private boolean solveYandexSmartCaptchaViaTwoCaptcha(Page page, Frame frame) {
+        if (!isYandexAdvancedChallenge(page)) {
+            log.info("SmartCaptcha/2Captcha: пропуск — на странице нет advanced challenge");
+            return false;
+        }
         Optional<String> siteKey = extractYandexSiteKey(page);
         if (siteKey.isEmpty()) {
             log.warn("SmartCaptcha/2Captcha: sitekey не извлечён");
             return false;
         }
 
+        log.info("SmartCaptcha/2Captcha: advanced challenge — запрос токена");
         String userAgent = page.evaluate("() => navigator.userAgent").toString();
         String cookies = page.context().cookies(page.url()).stream()
                 .map(c -> c.name + "=" + c.value)

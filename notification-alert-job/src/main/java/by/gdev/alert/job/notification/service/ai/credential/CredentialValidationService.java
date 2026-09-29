@@ -58,9 +58,16 @@ public class CredentialValidationService {
         DecryptedCredential decryptedCred =  userCredentialService.getUserCredentials(login, password);
         StepResult<Void> result = parser.sendAutoreply(decryptedCred, payload, AutoreplyMode.LOGIN_ONLY);
         if (result.success()) {
+            log.info("CREDENTIAL_VALIDATE: OK uuid={} site={} login={}", uuid, siteName, login);
             return CredentialValidationResult.success();
-        } else {
-            return CredentialValidationResult.fail(result.getErrorMessage());
         }
+        String code = result.getErrorCode();
+        String message = result.getErrorMessage();
+        log.warn("CREDENTIAL_VALIDATE: FAIL uuid={} site={} login={} errorCode={} message={}",
+                uuid, siteName, login, code, message);
+        if (code != null && !code.isBlank()) {
+            return CredentialValidationResult.fail(code, message);
+        }
+        return CredentialValidationResult.fail(message);
     }
 }

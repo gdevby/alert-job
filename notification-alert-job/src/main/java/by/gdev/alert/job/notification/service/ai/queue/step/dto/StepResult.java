@@ -10,8 +10,16 @@ public record StepResult<T>(StepType step, T value, boolean success, StepError e
         return new StepResult<>(step, null, false, new StepError(description, screenshot));
     }
 
+    public static <T> StepResult<T> fail(StepType step, String errorCode, String description, byte[] screenshot) {
+        return new StepResult<>(step, null, false, new StepError(description, screenshot, errorCode));
+    }
+
     public static <T> StepResult<T> fail(StepType step, String description) {
-        return fail(step, description, null);
+        return fail(step, description, (byte[]) null);
+    }
+
+    public static <T> StepResult<T> fail(StepType step, String errorCode, String description) {
+        return fail(step, errorCode, description, (byte[]) null);
     }
 
     public boolean failed() {
@@ -20,6 +28,10 @@ public record StepResult<T>(StepType step, T value, boolean success, StepError e
 
     public String getErrorMessage() {
         return error != null ? error.description() : null;
+    }
+
+    public String getErrorCode() {
+        return error != null ? error.errorCode() : null;
     }
 
     public byte[] getScreenshot() {
