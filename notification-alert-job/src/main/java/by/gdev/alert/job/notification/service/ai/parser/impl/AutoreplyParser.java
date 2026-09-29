@@ -6,6 +6,8 @@ import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.parser.debug.AutoreplyReporter;
 import by.gdev.alert.job.notification.service.ai.parser.debug.ScreenshotService;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
+import by.gdev.alert.job.notification.service.ai.recovery.AutoreplyFailureAction;
+import by.gdev.alert.job.notification.service.ai.recovery.AutoreplyFailurePolicy;
 import by.gdev.alert.job.notification.service.ai.sessions.AutoreplySessionVerifierFactory;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
@@ -26,9 +28,26 @@ import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 
 @Slf4j
 public abstract class AutoreplyParser {
+
+    private static final class ProxyRetryState {
+        final Set<String> triedHostPorts = new HashSet<>();
+        ProxyCredentials overrideProxy;
+        ProxyCredentials lastUsed;
+
+        void reset() {
+            triedHostPorts.clear();
+            overrideProxy = null;
+            lastUsed = null;
+        }
+    }
+
+    private static final ThreadLocal<ProxyRetryState> PROXY_RETRY_STATE =
+            ThreadLocal.withInitial(ProxyRetryState::new);
 
     protected boolean headless;
     protected boolean sendRequest;
@@ -42,6 +61,10 @@ public abstract class AutoreplyParser {
 
     @Value("${parser.autoreply.post-login.pause-ms:0}")
     protected long postLoginPauseMs;
+
+    /** Сколько попыток логина/автоответа со сменой прокси по политике recovery. */
+    @Value("${parser.autoreply.proxy.switch.max-attempts:3}")
+    private int proxySwitchMaxAttempts;
 
     protected AssignedProxyService assignedProxyService;
 
@@ -64,19 +87,48 @@ public abstract class AutoreplyParser {
         this.assignedProxyService = assignedProxyService;
     }
 
-    /** Сколько раз открывать браузер заново (смена прокси между попытками — в наследнике). */
+    /** Сколько раз открывать браузер заново (смена прокси между попытками). */
     protected int autoreplyProxySwitchMaxAttempts() {
-        return 1;
+        return Math.max(1, proxySwitchMaxAttempts);
     }
 
+    /**
+     * Политика recovery по коду ошибки. Наследники могут расширять
+     * (по умолчанию — {@link AutoreplyFailurePolicy}).
+     */
+    protected AutoreplyFailureAction resolveFailureAction(StepResult<Void> result) {
+        return AutoreplyFailurePolicy.resolve(result);
+    }
+
+    /** @deprecated используйте {@link #resolveFailureAction(StepResult)} */
+    @Deprecated
     protected boolean shouldRetryAutoreplyWithNewProxy(StepResult<Void> result) {
-        return false;
+        return resolveFailureAction(result) == AutoreplyFailureAction.ROTATE_PROXY;
     }
 
     protected void prepareNextAutoreplyProxyAttempt(AiNotificationPayload payload, int nextAttempt) {
+        ProxyRetryState state = PROXY_RETRY_STATE.get();
+        ProxyCredentials next;
+        if (proxy) {
+            next = assignedProxyService.rotateProxyForUserModule(
+                    payload.getUser().getUuid(),
+                    payload.getModule().getId(),
+                    getSiteName(),
+                    state.lastUsed,
+                    state.triedHostPorts);
+        } else {
+            next = assignedProxyService.pickWorkingProxyExcluding(getSiteName(), state.triedHostPorts);
+        }
+        state.overrideProxy = next;
+        if (next == null) {
+            log.warn("АВТООТВЕТ: {} -> нет другого прокси для попытки {}", getSiteName(), nextAttempt);
+        }
     }
 
     protected void onAutoreplyAttemptStarted(int attempt) {
+        if (attempt == 1) {
+            PROXY_RETRY_STATE.get().reset();
+        }
     }
 
     /** Не логиниться в том же браузере (например DDoS — нужен другой прокси). */
@@ -86,21 +138,30 @@ public abstract class AutoreplyParser {
 
     public final StepResult<Void> sendAutoreply(DecryptedCredential creds, AiNotificationPayload payload,
                                                 AutoreplyMode autoreplyMode) {
-        // Проверка учётных данных — один прогон: ретраи с новым прокси рвут Camoufox и затирают сессию.
-        if (autoreplyMode == AutoreplyMode.LOGIN_ONLY) {
-            return runAutoreplyOnce(creds, payload, autoreplyMode);
-        }
+        // Общий цикл для LOGIN_ONLY (валидация) и FULL_AUTOREPLY (логин при автоответе).
         int maxAttempts = Math.max(1, autoreplyProxySwitchMaxAttempts());
         StepResult<Void> last = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             onAutoreplyAttemptStarted(attempt);
-            if (attempt > 1) {
-                prepareNextAutoreplyProxyAttempt(payload, attempt);
-                log.warn("АВТООТВЕТ: {} -> повтор после DDoS/защиты, попытка {}/{}",
-                        getSiteName(), attempt, maxAttempts);
+            if (attempt > 1 && last != null) {
+                AutoreplyFailureAction action = resolveFailureAction(last);
+                if (action == AutoreplyFailureAction.ROTATE_PROXY) {
+                    prepareNextAutoreplyProxyAttempt(payload, attempt);
+                    log.warn("АВТООТВЕТ: {} -> повтор со сменой прокси, попытка {}/{}, mode={}, action={}, code={}",
+                            getSiteName(), attempt, maxAttempts, autoreplyMode, action, last.getErrorCode());
+                } else {
+                    log.warn("АВТООТВЕТ: {} -> повтор без смены прокси, попытка {}/{}, mode={}, action={}, code={}",
+                            getSiteName(), attempt, maxAttempts, autoreplyMode, action, last.getErrorCode());
+                }
             }
             last = runAutoreplyOnce(creds, payload, autoreplyMode);
-            if (!last.failed() || attempt >= maxAttempts || !shouldRetryAutoreplyWithNewProxy(last)) {
+            if (!last.failed() || attempt >= maxAttempts) {
+                return last;
+            }
+            AutoreplyFailureAction action = resolveFailureAction(last);
+            log.warn("АВТООТВЕТ: {} -> failure mode={} action={} code={} message={}",
+                    getSiteName(), autoreplyMode, action, last.getErrorCode(), last.getErrorMessage());
+            if (action == AutoreplyFailureAction.ABORT) {
                 return last;
             }
         }
@@ -378,9 +439,21 @@ public abstract class AutoreplyParser {
     }
 
     protected BrowserLaunchOptions buildLaunchOptions(SiteName site, AiNotificationPayload payload) {
+        ProxyRetryState state = PROXY_RETRY_STATE.get();
         String userEmail = payload.getUser() != null ? payload.getUser().getEmail() : null;
+        if (state.overrideProxy != null) {
+            state.lastUsed = state.overrideProxy;
+            state.triedHostPorts.add(AssignedProxyService.hostPortKey(state.lastUsed));
+            state.overrideProxy = null;
+            log.info("АВТООТВЕТ: {} -> запуск через прокси {}:{} (повтор / смена прокси)",
+                    site, state.lastUsed.getHost(), state.lastUsed.getPort());
+            return new BrowserLaunchOptions(state.lastUsed, headless, true, userEmail);
+        }
         if (!proxy) {
-            return new BrowserLaunchOptions(null, headless, false, userEmail);
+            // даже при proxy=false recovery может подставить прокси на повторной попытке
+            BrowserLaunchOptions options = new BrowserLaunchOptions(null, headless, false, userEmail);
+            state.lastUsed = null;
+            return options;
         }
         ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(
                 payload.getUser().getUuid(),
@@ -390,6 +463,10 @@ public abstract class AutoreplyParser {
             proxyCred = managerResolver.getLocalManager().getProxyWithRetry(3, 500);
             log.info("АВТООТВЕТ: {} -> нет закреплённого прокси, взят случайный: {}", site,
                     proxyCred != null ? proxyCred.getHost() + ":" + proxyCred.getPort() : "нет активных");
+        }
+        state.lastUsed = proxyCred;
+        if (state.lastUsed != null) {
+            state.triedHostPorts.add(AssignedProxyService.hostPortKey(state.lastUsed));
         }
         return new BrowserLaunchOptions(proxyCred, headless, true, userEmail);
     }

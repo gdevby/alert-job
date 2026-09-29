@@ -10,12 +10,11 @@ import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParse
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
+import by.gdev.alert.job.notification.service.ai.recovery.AutoreplyFailureAction;
 import by.gdev.common.model.SiteName;
-import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.captcha.failure.CaptchaFailureInfo;
 import by.gdev.common.service.playwright.captcha.CaptchaService;
 import by.gdev.common.service.playwright.flru.FlRuPlaywrightGuards;
-import by.gdev.common.service.playwright.manager.BrowserLaunchOptions;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -24,28 +23,11 @@ import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 
 @Slf4j
 @Component
 public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPlaywrightParser {
-
-    private static final class ProxyRetryState {
-        final Set<String> triedHostPorts = new HashSet<>();
-        ProxyCredentials overrideProxy;
-        ProxyCredentials lastUsed;
-
-        void reset() {
-            triedHostPorts.clear();
-            overrideProxy = null;
-            lastUsed = null;
-        }
-    }
-
-    private static final ThreadLocal<ProxyRetryState> PROXY_RETRY_STATE =
-            ThreadLocal.withInitial(ProxyRetryState::new);
 
     private static final String[] LOGIN_ERROR_SELECTORS = {
             "div.invalid-feedback.mt-8.d-block:has-text('Неверный логин/пароль')",
@@ -88,8 +70,26 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             "FL.ru не принял код из письма — форма подтверждения осталась на экране. "
                     + "Код мог устареть, попробуйте запустить вход ещё раз.";
 
+    private static final String STAGE_LOOP_EXHAUSTED_MESSAGE =
+            "FL.ru: слишком много переходов между этапами входа (логин / капча / код из письма). "
+                    + "Попробуйте ещё раз.";
+
     /** После IP-капчи FL.ru часто редиректит на главную — нужен явный переход на вход. */
     private static final String FLRU_LOGIN_URL = "https://www.fl.ru/account/login/?return=%2F";
+
+    /** Сколько раз подряд можно обрабатывать validate/email в одном входе (они могут чередоваться). */
+    private static final int LOGIN_STAGE_MAX_ITERATIONS = 12;
+
+    /** Этапы входа FL.ru: validate-captcha и код из письма могут появляться повторно. */
+    private enum FlRuLoginStage {
+        ANTI_DDOS,
+        VALIDATE_CAPTCHA,
+        EMAIL_CODE,
+        LOGIN_ERROR,
+        LOGIN_FORM,
+        LOGGED_IN,
+        UNKNOWN
+    }
 
     private final CaptchaService captchaService;
     private final OtpService otpService;
@@ -281,24 +281,11 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
-    protected void onAutoreplyAttemptStarted(int attempt) {
-        if (attempt == 1) {
-            PROXY_RETRY_STATE.get().reset();
-        }
-    }
-
-    @Override
-    protected boolean shouldRetryAutoreplyWithNewProxy(StepResult<Void> result) {
-        String msg = result.getErrorMessage();
-        return msg != null && msg.contains(FlRuPlaywrightGuards.DDOS_RETRY_FAIL_MARKER);
-    }
-
-    @Override
     protected boolean skipLoginAfterVerifyFailure(StepResult<Void> verifyResult, AutoreplyMode autoreplyMode) {
         if (autoreplyMode == AutoreplyMode.LOGIN_ONLY) {
             return false;
         }
-        return shouldRetryAutoreplyWithNewProxy(verifyResult);
+        return resolveFailureAction(verifyResult) == AutoreplyFailureAction.ROTATE_PROXY;
     }
 
     @Override
@@ -312,46 +299,6 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     @Override
-    protected void prepareNextAutoreplyProxyAttempt(AiNotificationPayload payload, int nextAttempt) {
-        ProxyRetryState state = PROXY_RETRY_STATE.get();
-        ProxyCredentials next;
-        if (proxy) {
-            next = assignedProxyService.rotateProxyForUserModule(
-                    payload.getUser().getUuid(),
-                    payload.getModule().getId(),
-                    getSiteName(),
-                    state.lastUsed,
-                    state.triedHostPorts);
-        } else {
-            next = assignedProxyService.pickWorkingProxyExcluding(getSiteName(), state.triedHostPorts);
-        }
-        state.overrideProxy = next;
-        if (next == null) {
-            log.warn("АВТООТВЕТ: {} -> нет другого прокси для попытки {}", getSiteName(), nextAttempt);
-        }
-    }
-
-    @Override
-    protected BrowserLaunchOptions buildLaunchOptions(SiteName site, AiNotificationPayload payload) {
-        ProxyRetryState state = PROXY_RETRY_STATE.get();
-        String userEmail = payload.getUser() != null ? payload.getUser().getEmail() : null;
-        if (state.overrideProxy != null) {
-            state.lastUsed = state.overrideProxy;
-            state.triedHostPorts.add(AssignedProxyService.hostPortKey(state.lastUsed));
-            state.overrideProxy = null;
-            log.info("АВТООТВЕТ: {} -> запуск через прокси {}:{} (повтор после DDoS)",
-                    site, state.lastUsed.getHost(), state.lastUsed.getPort());
-            return new BrowserLaunchOptions(state.lastUsed, headless, true, userEmail);
-        }
-        BrowserLaunchOptions options = super.buildLaunchOptions(site, payload);
-        state.lastUsed = options.proxy();
-        if (state.lastUsed != null) {
-            state.triedHostPorts.add(AssignedProxyService.hostPortKey(state.lastUsed));
-        }
-        return options;
-    }
-
-    @Override
     protected StepResult<Void> login(Page page, AiNotificationPayload payload, DecryptedCredential creds, AutoreplyMode mode) {
         log.info("АВТООТВЕТ: {} -> НАЧАЛО ЛОГИНА, пользователь: {}", getSiteName(), creds.login());
 
@@ -361,97 +308,31 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             log.info("АВТООТВЕТ: {} -> страница логина, url={}, пользователь: {}",
                     getSiteName(), page.url(), creds.login());
 
-            StepResult<Void> ddos = failIfAntiDdosWall(page, creds);
-            if (ddos != null) {
-                return ddos;
+            StepResult<Void> pre = runLoginStageLoop(page, creds, true, false);
+            if (pre != null && pre.failed()) {
+                return pre;
+            }
+            if (detectLoginStage(page) == FlRuLoginStage.LOGGED_IN) {
+                log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН (без формы), пользователь: {}", getSiteName(), creds.login());
+                setOtp(payload, null, false);
+                return StepResult.ok(StepType.SEND_AUTOREPLY, null);
             }
 
             humanWarmup(page);
 
-            if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
-                ensureOnLoginPage(page, creds.login());
-                if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
-                    if (FlRuPlaywrightGuards.isAntiDdosOrBotWall(page, captchaService)) {
-                        return failAntiDdosWall(page, creds);
-                    }
-                    report(Level.WARN, log,
-                            "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: " + creds.login(),
-                            AutoreplyErrorTypes.FIELD_NOT_FOUND);
-                    return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле логина не найдено", captureScreenshot(page));
-                }
+            StepResult<Void> filled = fillAndSubmitLoginForm(page, creds);
+            if (filled != null && filled.failed()) {
+                return filled;
             }
 
-            try {
-                getCurrentManager().humanMouse(page);
-                getCurrentManager().humanDelay(page);
-                getCurrentManager().humanType(page, "input[name='username']", creds.login());
-                log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
-            } catch (Exception e) {
-                report(Level.WARN, log,
-                        "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ЛОГИН, пользователь: "
-                                + creds.login() + ", ошибка: " + e.getMessage(),
-                        AutoreplyErrorTypes.FIELD_NOT_FOUND);
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить логин: " + e.getMessage(), captureScreenshot(page));
-            }
-
-            try {
-                getCurrentManager().humanMouse(page);
-                getCurrentManager().humanDelay(page);
-                getCurrentManager().humanType(page, "input[name='password']", creds.password());
-                log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
-            } catch (Exception e) {
-                report(Level.WARN, log,
-                        "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ПАРОЛЬ, пользователь: "
-                                + creds.login() + ", ошибка: " + e.getMessage(),
-                        AutoreplyErrorTypes.FIELD_NOT_FOUND);
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить пароль: " + e.getMessage(), captureScreenshot(page));
-            }
-
-            getCurrentManager().humanScroll(page);
-            getCurrentManager().humanDelay(page);
-
-            log.info("АВТООТВЕТ: {} -> попытка прохождения SmartCaptcha для пользователя: {}, url={}",
-                    getSiteName(), creds.login(), page.url());
-            captchaService.waitForYandexSmartCaptchaWidget(page, 15_000);
-            captchaService.logSmartCaptchaState(page, "flru-login-before-captcha");
-            page.waitForTimeout(800);
-            if (!captchaService.solveYandexSmartCaptcha(page)) {
-                captchaService.logSmartCaptchaState(page, "flru-login-captcha-fail");
-                return failFlRuCaptcha(page, creds.login(),
-                        "Yandex SmartCaptcha на форме входа не пройдена");
-            }
-            log.info("АВТООТВЕТ: {} -> SmartCaptcha пройдена, пользователь: {}", getSiteName(), creds.login());
-
-            // Старые непрочитанные письма с кодом из прошлых попыток иначе подставляются вместо нового.
-            otpService.beginOtpWait(SiteName.FLRU.name(), creds.login());
-
-            if (!clickFlRuLoginButton(page, creds.login())) {
-                report(Level.WARN, log,
-                        "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: " + creds.login(),
-                        AutoreplyErrorTypes.BUTTON_NOT_FOUND);
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти' не найдена", captureScreenshot(page));
-            }
-
-            if (waitForLoginError(page, 3000)) {
-                report(Level.WARN, log,
-                        "АВТООТВЕТ: " + getSiteName() + " -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: " + creds.login(),
-                        AutoreplyErrorTypes.LOGIN_FAILED);
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
-            }
-
-            StepResult<Void> afterSubmitGate = ensurePastValidateCaptcha(page, creds.login());
-            if (afterSubmitGate != null) {
-                return afterSubmitGate;
-            }
-            waitForLoginCompletionOrEmailCode(page, 15000);
-
+            waitForLoginCompletionOrEmailCode(page, 15_000);
             try {
                 page.waitForLoadState(LoadState.NETWORKIDLE,
-                        new Page.WaitForLoadStateOptions().setTimeout(12000));
+                        new Page.WaitForLoadStateOptions().setTimeout(12_000));
                 log.info("АВТООТВЕТ: {} -> страница загружена после входа, пользователь: {}", getSiteName(), creds.login());
             } catch (Exception e) {
-                // На форме кода таймер «отправить повторно» держит сеть активной — это не ошибка логина.
-                if (!isEmailCodePage(page) && page.url().contains("/account/login")) {
+                FlRuLoginStage stage = detectLoginStage(page);
+                if (stage == FlRuLoginStage.LOGIN_FORM || stage == FlRuLoginStage.LOGIN_ERROR) {
                     report(Level.WARN, log,
                             "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ДОЖДАТЬСЯ ЗАГРУЗКИ ПОСЛЕ ВХОДА, пользователь: "
                                     + creds.login() + ", ошибка: " + e.getMessage(),
@@ -459,17 +340,29 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                     return StepResult.fail(StepType.SEND_AUTOREPLY,
                             "Не удалось дождаться загрузки после входа: " + e.getMessage(), captureScreenshot(page));
                 }
-                log.debug("АВТООТВЕТ: {} -> NETWORKIDLE не достигнут после входа, продолжаем (форма кода или редирект), пользователь: {}",
-                        getSiteName(), creds.login());
+                log.debug("АВТООТВЕТ: {} -> NETWORKIDLE не достигнут после входа (этап={}), продолжаем, пользователь: {}",
+                        getSiteName(), stage, creds.login());
             }
 
-            if (isEmailCodePage(page)) {
+            StepResult<Void> afterSubmit = runLoginStageLoop(page, creds, false, true);
+            if (afterSubmit != null && afterSubmit.failed()) {
+                return afterSubmit;
+            }
+
+            FlRuLoginStage stage = detectLoginStage(page);
+            if (stage == FlRuLoginStage.LOGGED_IN) {
+                log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
+                setOtp(payload, null, false);
+                return StepResult.ok(StepType.SEND_AUTOREPLY, null);
+            }
+            // EMAIL_CODE обработан в loop; checkAfterLogin подхватит, если форма ещё на экране
+            // (например, после restore session). Здесь ok — дальше stage-loop в checkAfterLogin.
+            if (stage == FlRuLoginStage.EMAIL_CODE) {
                 log.info("АВТООТВЕТ: {} -> FL.ru запросил код из письма (url={}), пользователь: {}",
                         getSiteName(), page.url(), creds.login());
                 return StepResult.ok(StepType.SEND_AUTOREPLY, null);
             }
-
-            if (page.url().contains("/account/login")) {
+            if (stage == FlRuLoginStage.LOGIN_FORM || stage == FlRuLoginStage.LOGIN_ERROR) {
                 if (isLoginErrorPresent(page)) {
                     report(Level.WARN, log,
                             "АВТООТВЕТ: " + getSiteName() + " -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: " + creds.login(),
@@ -482,7 +375,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Остались на странице логина", captureScreenshot(page));
             }
 
-            log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН, пользователь: {}", getSiteName(), creds.login());
+            log.info("АВТООТВЕТ: {} -> ЛОГИН УСПЕШЕН (этап={}), пользователь: {}", getSiteName(), stage, creds.login());
             setOtp(payload, null, false);
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
 
@@ -499,7 +392,228 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     }
 
     /**
-     * FL.ru /validate-captcha — блокировка по IP («подозрительная активность», «Я человек»).
+     * Заполнение формы логина + SmartCaptcha + submit. Без пост-гейтов.
+     *
+     * @return ошибка или {@code null} если форма отправлена
+     */
+    private StepResult<Void> fillAndSubmitLoginForm(Page page, DecryptedCredential creds) {
+        if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
+            ensureOnLoginPage(page, creds.login());
+            if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
+                if (FlRuPlaywrightGuards.isAntiDdosOrBotWall(page, captchaService)) {
+                    return failAntiDdosWall(page, creds);
+                }
+                report(Level.WARN, log,
+                        "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: " + creds.login(),
+                        AutoreplyErrorTypes.FIELD_NOT_FOUND);
+                return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле логина не найдено", captureScreenshot(page));
+            }
+        }
+
+        try {
+            getCurrentManager().humanMouse(page);
+            getCurrentManager().humanDelay(page);
+            getCurrentManager().humanType(page, "input[name='username']", creds.login());
+            log.info("АВТООТВЕТ: {} -> логин заполнен: {}", getSiteName(), creds.login());
+        } catch (Exception e) {
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ЛОГИН, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить логин: " + e.getMessage(), captureScreenshot(page));
+        }
+
+        try {
+            getCurrentManager().humanMouse(page);
+            getCurrentManager().humanDelay(page);
+            getCurrentManager().humanType(page, "input[name='password']", creds.password());
+            log.info("АВТООТВЕТ: {} -> пароль заполнен для пользователя: {}", getSiteName(), creds.login());
+        } catch (Exception e) {
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ЗАПОЛНИТЬ ПАРОЛЬ, пользователь: "
+                            + creds.login() + ", ошибка: " + e.getMessage(),
+                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить пароль: " + e.getMessage(), captureScreenshot(page));
+        }
+
+        getCurrentManager().humanScroll(page);
+        getCurrentManager().humanDelay(page);
+
+        log.info("АВТООТВЕТ: {} -> попытка прохождения SmartCaptcha для пользователя: {}, url={}",
+                getSiteName(), creds.login(), page.url());
+        captchaService.waitForYandexSmartCaptchaWidget(page, 15_000);
+        captchaService.logSmartCaptchaState(page, "flru-login-before-captcha");
+        page.waitForTimeout(800);
+        if (!captchaService.solveYandexSmartCaptcha(page)) {
+            captchaService.logSmartCaptchaState(page, "flru-login-captcha-fail");
+            return failFlRuCaptcha(page, creds.login(),
+                    "Yandex SmartCaptcha на форме входа не пройдена");
+        }
+        log.info("АВТООТВЕТ: {} -> SmartCaptcha пройдена, пользователь: {}", getSiteName(), creds.login());
+
+        // Старые непрочитанные письма с кодом из прошлых попыток иначе подставляются вместо нового.
+        otpService.beginOtpWait(SiteName.FLRU.name(), creds.login());
+
+        if (!clickFlRuLoginButton(page, creds.login())) {
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Войти' не найдена", captureScreenshot(page));
+        }
+
+        if (waitForLoginError(page, 3000)) {
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.LOGIN_FAILED);
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
+        }
+        return null;
+    }
+
+    /**
+     * Определяет текущий этап экрана FL.ru.
+     * Приоритет: anti-ddos → validate-captcha → код из письма → ошибка логина → форма логина → logged-in.
+     */
+    private FlRuLoginStage detectLoginStage(Page page) {
+        if (page == null) {
+            return FlRuLoginStage.UNKNOWN;
+        }
+        if (FlRuPlaywrightGuards.isAntiDdosOrBotWall(page, captchaService)) {
+            return FlRuLoginStage.ANTI_DDOS;
+        }
+        if (validateCaptchaSupport.isValidateCaptchaPage(page)) {
+            return FlRuLoginStage.VALIDATE_CAPTCHA;
+        }
+        if (isEmailCodePage(page)) {
+            return FlRuLoginStage.EMAIL_CODE;
+        }
+        if (isLoginErrorPresent(page)) {
+            return FlRuLoginStage.LOGIN_ERROR;
+        }
+        String url = page.url() == null ? "" : page.url().toLowerCase(Locale.ROOT);
+        // confirmation-email без формы — переходный экран, ждём форму или редирект
+        if (url.contains("confirmation-email") || url.contains("repeat-send-code")) {
+            return FlRuLoginStage.UNKNOWN;
+        }
+        boolean onLoginUrl = url.contains("/account/login");
+        boolean hasUsername = false;
+        try {
+            hasUsername = page.locator("input[name='username']").count() > 0;
+        } catch (Exception ignored) {
+            // страница могла уйти
+        }
+        if (onLoginUrl && hasUsername) {
+            return FlRuLoginStage.LOGIN_FORM;
+        }
+        if (onLoginUrl) {
+            return FlRuLoginStage.UNKNOWN;
+        }
+        if (url.contains("/validate-captcha")) {
+            return FlRuLoginStage.VALIDATE_CAPTCHA;
+        }
+        return FlRuLoginStage.LOGGED_IN;
+    }
+
+    /**
+     * Цикл смешанных этапов: validate-captcha и код из письма могут чередоваться после логина.
+     *
+     * @param allowLoginForm если {@code true} — остановка на форме логина без ошибки (ещё не отправляли);
+     *                       если {@code false} — форма логина = провал входа
+     * @param otpWaitArmed   {@code true} если {@link OtpService#beginOtpWait} уже вызван перед submit логина
+     * @return {@code null} при успехе / готовности продолжить; иначе ошибка шага
+     */
+    private StepResult<Void> runLoginStageLoop(Page page, DecryptedCredential creds,
+                                               boolean allowLoginForm, boolean otpWaitArmed) {
+        int emailHandled = 0;
+        int validateHandled = 0;
+        boolean otpArmed = otpWaitArmed;
+
+        for (int i = 1; i <= LOGIN_STAGE_MAX_ITERATIONS; i++) {
+            FlRuLoginStage stage = detectLoginStage(page);
+            log.info("АВТООТВЕТ: {} -> этап входа {}/{}: {} url={}, пользователь: {}",
+                    getSiteName(), i, LOGIN_STAGE_MAX_ITERATIONS, stage, page.url(), creds.login());
+
+            switch (stage) {
+                case ANTI_DDOS -> {
+                    return failAntiDdosWall(page, creds);
+                }
+                case VALIDATE_CAPTCHA -> {
+                    validateHandled++;
+                    if (validateHandled > 5) {
+                        return failFlRuCaptcha(page, creds.login(),
+                                "FL.ru /validate-captcha: слишком много повторов IP-капчи");
+                    }
+                    if (!validateCaptchaSupport.passValidateCaptcha(page, creds.login())) {
+                        return failFlRuCaptcha(page, creds.login(),
+                                "FL.ru /validate-captcha: IP-капча не пройдена или страница не покинута");
+                    }
+                    // После IP-гейта снова может быть код из письма — нужен новый beginOtpWait.
+                    otpArmed = false;
+                    page.waitForTimeout(400);
+                }
+                case EMAIL_CODE -> {
+                    emailHandled++;
+                    if (emailHandled > 5) {
+                        return StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_EMAIL_CODE_PENDING",
+                                STAGE_LOOP_EXHAUSTED_MESSAGE, captureScreenshot(page));
+                    }
+                    boolean renewOtpWait = !otpArmed;
+                    StepResult<Void> otp = handleEmailCodeStage(page, creds, renewOtpWait);
+                    otpArmed = false;
+                    if (otp != null && otp.failed()) {
+                        return otp;
+                    }
+                    page.waitForTimeout(400);
+                }
+                case LOGIN_ERROR -> {
+                    report(Level.WARN, log,
+                            "АВТООТВЕТ: " + getSiteName() + " -> НЕВЕРНЫЙ ЛОГИН/ПАРОЛЬ, пользователь: " + creds.login(),
+                            AutoreplyErrorTypes.LOGIN_FAILED);
+                    return StepResult.fail(StepType.SEND_AUTOREPLY, "Неверный логин/пароль", captureScreenshot(page));
+                }
+                case LOGIN_FORM -> {
+                    if (allowLoginForm) {
+                        return null;
+                    }
+                    report(Level.WARN, log,
+                            "АВТООТВЕТ: " + getSiteName() + " -> ВХОД НЕ ВЫПОЛНЕН, остались на странице логина, пользователь: "
+                                    + creds.login(),
+                            AutoreplyErrorTypes.LOGIN_FAILED);
+                    return StepResult.fail(StepType.SEND_AUTOREPLY, "Остались на странице логина", captureScreenshot(page));
+                }
+                case LOGGED_IN -> {
+                    return null;
+                }
+                case UNKNOWN -> {
+                    page.waitForTimeout(700);
+                    FlRuLoginStage again = detectLoginStage(page);
+                    if (again != FlRuLoginStage.UNKNOWN) {
+                        continue;
+                    }
+                    String url = page.url() == null ? "" : page.url().toLowerCase(Locale.ROOT);
+                    // confirmation-email без формы может грузиться дольше обычного редиректа
+                    int minBeforeFail = (url.contains("confirmation-email") || url.contains("repeat-send-code"))
+                            ? 8 : 3;
+                    if (i >= minBeforeFail) {
+                        log.warn("АВТООТВЕТ: {} -> неизвестный этап входа, url={}, пользователь: {}",
+                                getSiteName(), page.url(), creds.login());
+                        return StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_LOGIN_UNKNOWN_STAGE",
+                                "FL.ru: неизвестный экран после входа: " + page.url(), captureScreenshot(page));
+                    }
+                }
+            }
+        }
+
+        return StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_LOGIN_STAGE_LOOP",
+                STAGE_LOOP_EXHAUSTED_MESSAGE, captureScreenshot(page));
+    }
+
+    private boolean isValidateCaptchaPage(Page page) {
+        return validateCaptchaSupport.isValidateCaptchaPage(page);
+    }
+
+    /**
+     * Только IP-гейт /validate-captcha (навигация, открытие заказа). Без email-кода.
      *
      * @return {@code null} если страницы нет или успешно прошли; иначе ошибка шага
      */
@@ -514,8 +628,11 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                 "FL.ru /validate-captcha: IP-капча не пройдена или страница не покинута");
     }
 
-    private boolean isValidateCaptchaPage(Page page) {
-        return validateCaptchaSupport.isValidateCaptchaPage(page);
+    /**
+     * Post-login гейты: validate-captcha и код из письма могут чередоваться.
+     */
+    private StepResult<Void> clearFlRuPostLoginGates(Page page, DecryptedCredential creds) {
+        return runLoginStageLoop(page, creds, false, false);
     }
 
     private boolean clickFlRuLoginButton(Page page, String login) {
@@ -733,14 +850,19 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         }
     }
 
-    /** Ждём редирект с логина, форму кода из письма или сообщение об ошибке пароля. */
+    /** Ждём редирект с логина, форму кода из письма, validate-captcha или ошибку пароля. */
     private void waitForLoginCompletionOrEmailCode(Page page, int timeoutMs) {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
-            if (isLoginErrorPresent(page) || isEmailCodePage(page)) {
+            FlRuLoginStage stage = detectLoginStage(page);
+            if (stage == FlRuLoginStage.LOGIN_ERROR
+                    || stage == FlRuLoginStage.EMAIL_CODE
+                    || stage == FlRuLoginStage.VALIDATE_CAPTCHA
+                    || stage == FlRuLoginStage.ANTI_DDOS
+                    || stage == FlRuLoginStage.LOGGED_IN) {
                 return;
             }
-            if (!page.url().contains("/account/login")) {
+            if (stage != FlRuLoginStage.LOGIN_FORM && stage != FlRuLoginStage.UNKNOWN) {
                 return;
             }
             page.waitForTimeout(300);
@@ -749,7 +871,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
 
     /**
      * FL.ru показывает форму кода из письма и после логина, и при заходе с восстановленной сессией,
-     * причём прямо на главной — URL при этом не меняется, поэтому проверяем по разметке.
+     * причём прямо на главной — URL при этом может не меняться, поэтому проверяем по разметке.
      */
     @Override
     protected StepResult<Void> finalizeBeforeSessionSave(Page page, DecryptedCredential creds,
@@ -763,7 +885,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         } catch (Exception e) {
             log.debug("АВТООТВЕТ: {} -> DOMCONTENTLOADED перед finalize: {}", getSiteName(), e.getMessage());
         }
-        return clearFlRuPostLoginGates(page, creds);
+        return runLoginStageLoop(page, creds, false, false);
     }
 
     @Override
@@ -771,38 +893,15 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         if (autoreplyMode != AutoreplyMode.LOGIN_ONLY || page == null) {
             return null;
         }
-        String url = page.url().toLowerCase(Locale.ROOT);
-        if (url.contains("/validate-captcha")) {
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_POST_LOGIN_VALIDATE_CAPTCHA",
+        FlRuLoginStage stage = detectLoginStage(page);
+        return switch (stage) {
+            case VALIDATE_CAPTCHA -> StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_POST_LOGIN_VALIDATE_CAPTCHA",
                     "FL.ru: страница validate-captcha (подозрительная активность) после входа",
                     captureScreenshot(page));
-        }
-        if (isEmailCodePage(page)) {
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_EMAIL_CODE_PENDING",
+            case EMAIL_CODE -> StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_EMAIL_CODE_PENDING",
                     CODE_REJECTED_MESSAGE, captureScreenshot(page));
-        }
-        return super.incompleteLoginAfterSaveBlocked(page, autoreplyMode);
-    }
-
-    /**
-     * validate-captcha и anti-bot могут появиться после логина, OTP или задержки редиректа.
-     */
-    private StepResult<Void> clearFlRuPostLoginGates(Page page, DecryptedCredential creds) {
-        StepResult<Void> validateGate = ensurePastValidateCaptcha(page, creds.login());
-        if (validateGate != null) {
-            return validateGate;
-        }
-        StepResult<Void> ddos = failIfAntiDdosWall(page, creds);
-        if (ddos != null) {
-            return ddos;
-        }
-        if (isEmailCodePage(page)) {
-            log.warn("АВТООТВЕТ: {} -> форма кода из письма после post-login gates, url={}, пользователь: {}",
-                    getSiteName(), page.url(), creds.login());
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_EMAIL_CODE_PENDING",
-                    CODE_REJECTED_MESSAGE, captureScreenshot(page));
-        }
-        return null;
+            default -> super.incompleteLoginAfterSaveBlocked(page, autoreplyMode);
+        };
     }
 
     @Override
@@ -810,17 +909,21 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         if (!super.shouldPersistSession(page, loginResult)) {
             return false;
         }
-        if (isEmailCodePage(page)) {
+        FlRuLoginStage stage = detectLoginStage(page);
+        if (stage == FlRuLoginStage.EMAIL_CODE) {
             log.warn("SESSION: FLRU — форма кода из письма на экране, save запрещён, url={}", page.url());
             return false;
         }
-        String url = page.url().toLowerCase(Locale.ROOT);
-        if (url.contains("/validate-captcha")) {
+        if (stage == FlRuLoginStage.VALIDATE_CAPTCHA) {
             log.warn("SESSION: FLRU — validate-captcha, save запрещён, url={}", page.url());
             return false;
         }
-        if (url.contains("/account/login") && page.locator("input[name='username']").count() > 0) {
+        if (stage == FlRuLoginStage.LOGIN_FORM || stage == FlRuLoginStage.LOGIN_ERROR) {
             log.warn("SESSION: FLRU — форма логина на экране, save запрещён, url={}", page.url());
+            return false;
+        }
+        if (stage == FlRuLoginStage.ANTI_DDOS) {
+            log.warn("SESSION: FLRU — anti-ddos, save запрещён, url={}", page.url());
             return false;
         }
         return true;
@@ -855,7 +958,8 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
         }
         // Ошибка капчи / прокси — не затираем сессию от успешной проверки минутой ранее.
         if (code.contains("CAPTCHA") || code.contains("YANDEX") || code.contains("HCAPTCHA")
-                || code.contains("VALIDATE") || code.contains("DDOS") || code.contains("PROXY")) {
+                || code.contains("VALIDATE") || code.contains("DDOS") || code.contains("PROXY")
+                || code.contains("EMAIL_CODE") || code.contains("STAGE")) {
             return false;
         }
         return code.contains("LOGIN") || code.contains("CREDENTIAL") || code.contains("PASSWORD");
@@ -863,22 +967,31 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
 
     @Override
     protected StepResult<Void> checkAfterLogin(Page page, DecryptedCredential creds) {
-        StepResult<Void> validateGate = ensurePastValidateCaptcha(page, creds.login());
-        if (validateGate != null) {
-            return validateGate;
-        }
-        if (!isEmailCodePage(page)) {
-            return null;
-        }
-        log.info("АВТООТВЕТ: {} -> запрошен код из письма, пользователь: {}", getSiteName(), creds.login());
+        return runLoginStageLoop(page, creds, false, false);
+    }
+
+    /**
+     * Один проход этапа «код из письма»: ждать OTP → ввести → отправить.
+     * После успешного ввода форма должна исчезнуть; иначе — ошибка (код отклонён).
+     * При повторном появлении формы (после validate-captcha) вызывается снова из stage-loop.
+     *
+     * @param renewOtpWait вызвать {@link OtpService#beginOtpWait} (повторный email-гейт); не вызывать,
+     *                     если wait уже стартовал перед submit логина
+     */
+    private StepResult<Void> handleEmailCodeStage(Page page, DecryptedCredential creds, boolean renewOtpWait) {
+        log.info("АВТООТВЕТ: {} -> этап EMAIL_CODE, renewOtpWait={}, url={}, пользователь: {}",
+                getSiteName(), renewOtpWait, page.url(), creds.login());
 
         if (findFirst(page, CODE_INPUT_SELECTORS) == null) {
-            // Разметку формы вживую не видели — выводим её, чтобы уточнить селекторы по факту.
             log.warn("АВТООТВЕТ: {} -> поле кода не найдено, разметка формы: {}", getSiteName(), dumpCodeForm(page));
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ КОДА ИЗ ПИСЬМА, пользователь: " + creds.login(),
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
             return StepResult.fail(StepType.SEND_AUTOREPLY, CODE_FORM_NOT_PARSED_MESSAGE, captureScreenshot(page));
+        }
+
+        if (renewOtpWait) {
+            otpService.beginOtpWait(SiteName.FLRU.name(), creds.login());
         }
 
         String otp = waitForOtpWithResend(page, creds);
@@ -909,11 +1022,11 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
 
             Locator submit = findFirst(page, CODE_SUBMIT_SELECTORS);
             if (submit != null) {
-                submit.click(new Locator.ClickOptions().setTimeout(10000));
+                submit.click(new Locator.ClickOptions().setTimeout(10_000));
             } else {
                 page.keyboard().press("Enter");
             }
-            waitForEmailCodeAccepted(page, 25000);
+            waitForEmailCodeAccepted(page, 25_000);
         } catch (Exception e) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ОТПРАВИТЬ КОД ИЗ ПИСЬМА, пользователь: "
@@ -923,23 +1036,28 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                     "Не удалось отправить код из письма: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (isEmailCodePage(page)) {
-            log.warn("АВТООТВЕТ: {} -> форма кода всё ещё на экране, url={}, разметка: {}, пользователь: {}",
+        otpService.invalidateOtp(SiteName.FLRU.name(), creds.login());
+
+        // Форма кода ещё на экране — либо код отклонён, либо сразу ушли на validate-captcha / другой гейт.
+        FlRuLoginStage after = detectLoginStage(page);
+        if (after == FlRuLoginStage.EMAIL_CODE) {
+            log.warn("АВТООТВЕТ: {} -> форма кода всё ещё на экране после отправки, url={}, разметка: {}, пользователь: {}",
                     getSiteName(), page.url(), dumpCodeForm(page), creds.login());
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> КОД ИЗ ПИСЬМА ОТКЛОНЁН, пользователь: " + creds.login(),
                     AutoreplyErrorTypes.EMAIL_CODE_LOGIN_ENABLED);
-            return StepResult.fail(StepType.SEND_AUTOREPLY, CODE_REJECTED_MESSAGE, captureScreenshot(page));
+            return StepResult.fail(StepType.SEND_AUTOREPLY, "FLRU_EMAIL_CODE_PENDING",
+                    CODE_REJECTED_MESSAGE, captureScreenshot(page));
         }
 
-        otpService.invalidateOtp(SiteName.FLRU.name(), creds.login());
-        log.info("АВТООТВЕТ: {} -> код из письма принят, пользователь: {}", getSiteName(), creds.login());
+        log.info("АВТООТВЕТ: {} -> код из письма принят (следующий этап={}), пользователь: {}",
+                getSiteName(), after, creds.login());
         try {
             page.waitForLoadState(LoadState.LOAD, new Page.WaitForLoadStateOptions().setTimeout(15_000));
         } catch (Exception e) {
             log.debug("АВТООТВЕТ: {} -> LOAD после OTP: {}", getSiteName(), e.getMessage());
         }
-        return clearFlRuPostLoginGates(page, creds);
+        return null;
     }
 
     /** Первый селектор из списка, которому на странице что-то соответствует. */
