@@ -13,6 +13,7 @@ import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepType;
 import by.gdev.common.model.SiteName;
 import by.gdev.common.model.proxy.ProxyCredentials;
+import by.gdev.common.service.playwright.captcha.CaptchaService;
 import by.gdev.common.service.playwright.sessions.storage.SessionStorage;
 import by.gdev.common.service.playwright.manager.BrowserLaunchOptions;
 import by.gdev.common.service.playwright.manager.PlaywrightBrowserManager;
@@ -76,6 +77,9 @@ public abstract class AutoreplyParser {
 
     @Autowired
     protected SessionStorage sessionStorage;
+
+    @Autowired(required = false)
+    protected CaptchaService captchaService;
 
     @Autowired
     protected PlaywrightManagerResolver managerResolver;
@@ -291,6 +295,9 @@ public abstract class AutoreplyParser {
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Необработанная ошибка: " + e.getMessage(), screenshot);
 
         } finally {
+            if (captchaService != null) {
+                captchaService.clearCurrentProxy();
+            }
             manager.closeResources(page, context, browser, playwright, getSiteName());
         }
     }
@@ -447,12 +454,18 @@ public abstract class AutoreplyParser {
             state.overrideProxy = null;
             log.info("АВТООТВЕТ: {} -> запуск через прокси {}:{} (повтор / смена прокси)",
                     site, state.lastUsed.getHost(), state.lastUsed.getPort());
+            if (captchaService != null) {
+                captchaService.setCurrentProxy(state.lastUsed);
+            }
             return new BrowserLaunchOptions(state.lastUsed, headless, true, userEmail);
         }
         if (!proxy) {
             // даже при proxy=false recovery может подставить прокси на повторной попытке
             BrowserLaunchOptions options = new BrowserLaunchOptions(null, headless, false, userEmail);
             state.lastUsed = null;
+            if (captchaService != null) {
+                captchaService.clearCurrentProxy();
+            }
             return options;
         }
         ProxyCredentials proxyCred = assignedProxyService.getProxyForUserAndModule(
@@ -467,6 +480,9 @@ public abstract class AutoreplyParser {
         state.lastUsed = proxyCred;
         if (state.lastUsed != null) {
             state.triedHostPorts.add(AssignedProxyService.hostPortKey(state.lastUsed));
+        }
+        if (captchaService != null) {
+            captchaService.setCurrentProxy(state.lastUsed);
         }
         return new BrowserLaunchOptions(proxyCred, headless, true, userEmail);
     }

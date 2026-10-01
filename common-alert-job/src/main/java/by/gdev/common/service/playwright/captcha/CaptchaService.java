@@ -1,5 +1,6 @@
 package by.gdev.common.service.playwright.captcha;
 
+import by.gdev.common.model.proxy.ProxyCredentials;
 import by.gdev.common.service.playwright.captcha.failure.CaptchaFailureCode;
 import by.gdev.common.service.playwright.captcha.failure.CaptchaFailureInfo;
 import com.microsoft.playwright.Frame;
@@ -29,6 +30,24 @@ public class CaptchaService {
     private static final String WEBLANCER_COOKIE_URL = "https://www.weblancer.net";
     private static final Pattern SITEKEY_QUERY = Pattern.compile("[?&]sitekey=([^&]+)", Pattern.CASE_INSENSITIVE);
 
+    /**
+     * Advanced SmartCaptcha UI: слайдер-пазл (kaleidoscope), модалка YouDo/ServicePipe и т.п.
+     * Часто в DOM без обёртки {@code SmartCaptcha-Overlay_visible}.
+     */
+    private static final String YANDEX_ADVANCED_UI_SELECTOR =
+            ".AdvancedCaptcha_kaleidoscope, "
+                    + ".AdvancedCaptcha-KaleidoscopeCanvas, "
+                    + ".AdvancedCaptcha_audio, "
+                    + ".Captcha-ModalContent, "
+                    + ".CaptchaSlider, "
+                    + "#captcha-slider, "
+                    + "[aria-labelledby='captcha-form-label'], "
+                    + "[data-testid='slider'], "
+                    + "[data-testid='play'], "
+                    + "button[data-testid='challenge-type'], "
+                    + "text=Перемещайте слайдер";
+
+
     private final TwoCaptchaClient twoCaptchaClient;
 
     @Value("${captcha.cloudflare.enabled:true}")
@@ -44,6 +63,20 @@ public class CaptchaService {
     private boolean yandexTwoCaptchaFirst;
 
     private static final ThreadLocal<CaptchaFailureInfo> LAST_FAILURE = new ThreadLocal<>();
+    private static final ThreadLocal<ProxyCredentials> CURRENT_PROXY = new ThreadLocal<>();
+
+    /** Прокси текущего Playwright-запроса (для 2Captcha с тем же IP). */
+    public void setCurrentProxy(ProxyCredentials proxy) {
+        if (proxy == null) {
+            CURRENT_PROXY.remove();
+        } else {
+            CURRENT_PROXY.set(proxy);
+        }
+    }
+
+    public void clearCurrentProxy() {
+        CURRENT_PROXY.remove();
+    }
 
     /** Последняя ошибка капчи в этом потоке (для ответа API / StepResult). */
     public Optional<CaptchaFailureInfo> getLastFailure() {
@@ -442,37 +475,155 @@ public class CaptchaService {
             Locator overlay = page.locator(
                     "[data-testid='advanced-container'].SmartCaptcha-Overlay_visible, "
                             + ".SmartCaptcha-Overlay.SmartCaptcha-Overlay_visible");
-            return overlay.count() > 0 && overlay.first().isVisible();
+            if (overlay.count() > 0 && isOnScreenVisible(overlay.first())) {
+                return true;
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    /**
+     * Видимый advanced UI Yandex SmartCaptcha: слайдер-пазл / аудио / модалка.
+     * Off-screen leftover iframe @ −10000 не считаем.
+     */
+    public boolean isYandexAdvancedUiVisible(Page page) {
+        try {
+            if (hasOnScreenSelector(page.mainFrame(), YANDEX_ADVANCED_UI_SELECTOR)) {
+                return true;
+            }
+            for (Frame f : page.frames()) {
+                if (f == page.mainFrame()) {
+                    continue;
+                }
+                if (hasOnScreenSelector(f, YANDEX_ADVANCED_UI_SELECTOR)) {
+                    return true;
+                }
+            }
+            Locator adv = page.locator("iframe[data-testid='advanced-iframe']");
+            int n = adv.count();
+            for (int i = 0; i < Math.min(n, 4); i++) {
+                if (isOnScreenVisible(adv.nth(i))) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("SmartCaptcha: проверка advanced UI: {}", e.getMessage());
+        }
+        return false;
+    }
+
+    private boolean hasOnScreenSelector(Frame frame, String selector) {
+        try {
+            Locator loc = frame.locator(selector);
+            int n = loc.count();
+            for (int i = 0; i < Math.min(n, 6); i++) {
+                if (isOnScreenVisible(loc.nth(i))) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
+    }
+
+    /** Playwright isVisible() бывает true у элементов с bbox вне экрана (−10000). */
+    private static boolean isOnScreenVisible(Locator locator) {
+        try {
+            if (!locator.isVisible()) {
+                return false;
+            }
+            BoundingBox box = locator.boundingBox();
+            if (box == null || box.width < 2 || box.height < 2) {
+                return false;
+            }
+            return box.x > -500 && box.y > -500;
         } catch (Exception e) {
             return false;
         }
     }
 
     /**
-     * Visual challenge «выберите картинки» / advanced iframe. Простой чекбокс Yandex — не advanced.
+     * Visual challenge «выберите картинки» / слайдер-пазл / advanced iframe. Простой чекбокс Yandex — не advanced.
      * 2Captcha для Yandex используем только в этом случае.
      */
     private boolean isYandexAdvancedChallenge(Page page) {
+        if (isYandexAdvancedUiVisible(page)) {
+            return true;
+        }
         if (isSmartCaptchaOverlayVisible(page)) {
             return true;
         }
         try {
-            Locator advancedIframe = page.locator("iframe[data-testid='advanced-iframe']");
-            if (advancedIframe.count() > 0 && advancedIframe.first().isVisible()) {
-                return true;
-            }
             for (Frame f : page.frames()) {
                 String url = f.url();
                 if (url != null && !url.contains("hcaptcha.com")
                         && url.contains("/advanced")
                         && (url.contains("smartcaptcha") || url.contains("captcha.yandex"))) {
-                    return true;
+                    // frame есть — но leftover после обхода часто остаётся; требуем on-screen UI выше
+                    // здесь только если есть хоть какой-то признак challenge controls
+                    if (hasOnScreenSelector(f,
+                            ".AdvancedCaptcha_kaleidoscope, .CaptchaSlider, [data-testid='challenge-type'], "
+                                    + "[data-testid='play'], .AdvancedCaptcha_audio")) {
+                        return true;
+                    }
                 }
             }
         } catch (Exception e) {
             log.debug("SmartCaptcha: проверка advanced: {}", e.getMessage());
         }
         return false;
+    }
+
+    public void logYouDoCaptchaDebug(Page page, String phase) {
+        try {
+            Frame frame = findYandexCaptchaFrame(page);
+            Optional<String> siteKey = extractYandexSiteKey(page);
+            Object snap = page.evaluate(
+                    """
+                            () => {
+                              const q = (s) => document.querySelector(s);
+                              const vis = (el) => {
+                                if (!el) return false;
+                                const r = el.getBoundingClientRect();
+                                const st = getComputedStyle(el);
+                                return r.width > 2 && r.height > 2 && r.x > -500 && r.y > -500
+                                  && st.display !== 'none' && st.visibility !== 'hidden';
+                              };
+                              const tok = q('input[name="smart-token"], input[name="smart_token"]');
+                              const adv = q("iframe[data-testid='advanced-iframe']");
+                              return {
+                                url: location.href,
+                                otpField: !!q("input[name='code']"),
+                                emailField: !!q("input[name='login']"),
+                                loginBtn: !!q("[data-test='LoginButton']"),
+                                emailLoginBtn: !!q("[data-test='LoginWithEmailButton']"),
+                                nextBtnText: Array.from(document.querySelectorAll('button'))
+                                  .some(b => (b.innerText || '').includes('Далее')),
+                                smartTokenLen: tok && tok.value ? tok.value.length : 0,
+                                advancedIframe: !!adv,
+                                advancedIframeVisible: vis(adv),
+                                advancedIframeSrc: adv ? (adv.getAttribute('src') || '').slice(0, 120) : null,
+                                overlayVisible: !!q('.SmartCaptcha-Overlay_visible, [data-testid="advanced-container"].SmartCaptcha-Overlay_visible'),
+                                kaleidoscope: !!q('.AdvancedCaptcha_kaleidoscope, .CaptchaSlider, #captcha-slider'),
+                                captchaModal: !!q('.Captcha-ModalContent, [aria-labelledby="captcha-form-label"]'),
+                                iframeCount: document.querySelectorAll('iframe').length
+                              };
+                            }
+                            """);
+            log.info("YOUDO-CAPTCHA DBG [{}] siteKeyPresent={} frameUrl={} advancedChallenge={} overlay={} advancedUi={} smartToken={} snap={}",
+                    phase,
+                    siteKey.isPresent(),
+                    frame != null ? truncateForLog(frame.url(), 100) : "null",
+                    isYandexAdvancedChallenge(page),
+                    isSmartCaptchaOverlayVisible(page),
+                    isYandexAdvancedUiVisible(page),
+                    isSmartTokenPresentOnPage(page),
+                    snap);
+        } catch (Exception e) {
+            log.warn("YOUDO-CAPTCHA DBG [{}] snapshot failed: {}", phase, e.getMessage());
+        }
     }
 
     /** Капча на форме логина FL.ru (Yandex SmartCaptcha). Если виджета нет — считаем, что капчи нет. */
