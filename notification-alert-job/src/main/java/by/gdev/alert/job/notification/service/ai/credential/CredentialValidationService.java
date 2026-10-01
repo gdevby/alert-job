@@ -9,6 +9,8 @@ import by.gdev.alert.job.notification.model.dto.credential.CredentialValidationR
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyParserFactory;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
+import by.gdev.alert.job.notification.service.ai.recovery.AutoreplyFailureAction;
+import by.gdev.alert.job.notification.service.ai.recovery.AutoreplyFailurePolicy;
 import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,9 +60,17 @@ public class CredentialValidationService {
         DecryptedCredential decryptedCred =  userCredentialService.getUserCredentials(login, password);
         StepResult<Void> result = parser.sendAutoreply(decryptedCred, payload, AutoreplyMode.LOGIN_ONLY);
         if (result.success()) {
+            log.info("CREDENTIAL_VALIDATE: OK uuid={} site={} login={}", uuid, siteName, login);
             return CredentialValidationResult.success();
-        } else {
-            return CredentialValidationResult.fail(result.getErrorMessage());
         }
+        String code = result.getErrorCode();
+        String message = result.getErrorMessage();
+        AutoreplyFailureAction action = AutoreplyFailurePolicy.resolve(code, message);
+        log.warn("CREDENTIAL_VALIDATE: FAIL uuid={} site={} login={} errorCode={} action={} message={}",
+                uuid, siteName, login, code, action, message);
+        if (code != null && !code.isBlank()) {
+            return CredentialValidationResult.fail(code, message, action.name());
+        }
+        return CredentialValidationResult.fail(null, message, action.name());
     }
 }

@@ -82,7 +82,7 @@ public class WeblancerSessionVerifier extends AbstractAutoreplySessionVerifier {
             if (loginBtn.count() > 0 && loginBtn.first().isVisible()) {
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка «Вход» видна при наличии cookies");
             }
-            log.info("SESSION-VERIFY: WEBLANCER сессия активна, пользователь: {}", creds.login());
+            log.info("SESSION-VERIFY: {} -> сессия активна, пользователь: {}", getSiteName(), creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Ошибка проверки сессии: " + e.getMessage());
@@ -93,10 +93,10 @@ public class WeblancerSessionVerifier extends AbstractAutoreplySessionVerifier {
         if (!cloudflareCaptchaEnabled) {
             return null;
         }
-        log.debug("SESSION-VERIFY: WEBLANCER Cloudflare ({})", step);
+        log.debug("SESSION-VERIFY: {} -> Cloudflare ({})", getSiteName(), step);
         if (!captchaService.solveCloudflareTurnstile(page)) {
-            reporter.report(Level.WARN, log, SiteName.WEBLANCER,
-                    "SESSION-VERIFY: WEBLANCER Cloudflare не пройдена, шаг: " + step,
+            reporter.report(Level.WARN, log, getSiteName(),
+                    "SESSION-VERIFY: " + getSiteName() + " -> Cloudflare не пройдена, шаг: " + step,
                     AutoreplyErrorTypes.CAPTCHA_FAILED);
             return StepResult.fail(StepType.SEND_AUTOREPLY,
                     "Cloudflare Turnstile не пройдена (" + step + ")",

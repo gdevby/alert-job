@@ -26,8 +26,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class NotificationClient {
+    private static final String VALIDATION_TIMEOUT_CODE = "CREDENTIAL_VALIDATE_CLIENT_TIMEOUT";
     private static final String VALIDATION_TIMEOUT_MESSAGE =
-            "Проверка аккаунта заняла слишком много времени. Дождитесь OTP-письма и попробуйте снова.";
+            "Проверка аккаунта заняла слишком много времени (капча и код из письма). "
+                    + "Подождите завершения на сервере и повторите проверку через минуту.";
+
+    @Value("${credential.validation.timeout.ms:600000}")
+    private int credentialValidationTimeoutMs;
 
     private final RestTemplate restTemplate;
 
@@ -110,6 +115,7 @@ public class NotificationClient {
      */
     public CredentialValidationResult validateCredentials(String uuid, String userEmail, Long siteId,
                                                           String login, String password) {
+        long startedMs = System.currentTimeMillis();
         try {
             CredentialValidationRequest request = new CredentialValidationRequest();
             request.setSiteId(siteId);
@@ -131,7 +137,10 @@ public class NotificationClient {
             );
 
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.convertValue(response.getBody(), CredentialValidationResult.class);
+            CredentialValidationResult result = mapper.convertValue(response.getBody(), CredentialValidationResult.class);
+            log.info("Проверка аккаунта notification: siteId={} login={} success={} за {} ms (лимит клиента {} ms)",
+                    siteId, login, result.isSuccess(), System.currentTimeMillis() - startedMs, credentialValidationTimeoutMs);
+            return result;
 
         } catch (HttpClientErrorException e) {
             ObjectMapper mapper = new ObjectMapper();
@@ -145,20 +154,24 @@ public class NotificationClient {
         } catch (HttpServerErrorException e) {
             log.error("Ошибка валидации (HTTP {}): {}", e.getStatusCode().value(), e.getMessage());
             if (e.getStatusCode().value() == 504) {
-                return CredentialValidationResult.fail(VALIDATION_TIMEOUT_MESSAGE);
+                return validationClientTimeout(startedMs, siteId, login, "HTTP 504");
             }
             return CredentialValidationResult.fail("Ошибка проверки аккаунта: " + e.getStatusCode());
         } catch (ResourceAccessException e) {
-            log.error("Таймаут при валидации учётных данных", e);
-            return CredentialValidationResult.fail(VALIDATION_TIMEOUT_MESSAGE);
+            return validationClientTimeout(startedMs, siteId, login, e.getMessage());
         } catch (Exception e) {
             log.error("Ошибка валидации", e);
             return CredentialValidationResult.fail("Ошибка: " + e.getMessage());
         }
     }
 
-
-
-
+    private CredentialValidationResult validationClientTimeout(long startedMs, Long siteId, String login, String cause) {
+        long elapsed = System.currentTimeMillis() - startedMs;
+        log.error(
+                "Таймаут клиента core→notification при проверке siteId={} login={}: {} ms из {} ms. "
+                        + "Notification мог уже завершить вход и сохранить сессию. Причина: {}",
+                siteId, login, elapsed, credentialValidationTimeoutMs, cause);
+        return CredentialValidationResult.fail(VALIDATION_TIMEOUT_CODE, VALIDATION_TIMEOUT_MESSAGE);
+    }
 
 }

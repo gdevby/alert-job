@@ -33,7 +33,11 @@ public class SendAutoreplyStep implements AiStep<SendAutoreplyInput, StepResult<
                 if (result.success()) {
                     return StepResult.ok(StepType.SEND_AUTOREPLY, null);
                 } else {
-                    return StepResult.fail(StepType.SEND_AUTOREPLY, result.getErrorMessage(), result.getScreenshot());
+                    return StepResult.fail(
+                            StepType.SEND_AUTOREPLY,
+                            result.getErrorCode(),
+                            result.getErrorMessage(),
+                            result.getScreenshot());
                 }
             } catch (Exception e) {
                 return StepResult.fail(StepType.SEND_AUTOREPLY, "Исключение при отправке: " + e.getMessage());
