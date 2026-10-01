@@ -176,7 +176,23 @@ export type BindingUpdateRequestNotificationTypeEnum = typeof BindingUpdateReque
 export interface CredentialValidationResult {
     'success'?: boolean;
     'errorMessage'?: string;
+    'errorCode'?: string;
+    'recommendedAction'?: string;
 }
+
+export interface CredentialValidationJobResponse {
+    'jobId'?: string;
+    'status'?: CredentialValidationJobStatusEnum;
+    'result'?: CredentialValidationResult;
+}
+
+export const CredentialValidationJobStatusEnum = {
+    Pending: 'PENDING',
+    Completed: 'COMPLETED',
+    Failed: 'FAILED',
+} as const;
+
+export type CredentialValidationJobStatusEnum = typeof CredentialValidationJobStatusEnum[keyof typeof CredentialValidationJobStatusEnum];
 export interface DailySubscriptionStat {
     'id'?: number;
     'statDate'?: string;
@@ -1445,12 +1461,35 @@ export const UserCredentialsApiAxiosParamCreator = function (configuration?: Con
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        validateCredential: async (credentialId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'credentialId' is not null or undefined
-            assertParamExists('validateCredential', 'credentialId', credentialId)
+        startCredentialValidation: async (credentialId: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            assertParamExists('startCredentialValidation', 'credentialId', credentialId)
             const localVarPath = `/api/credentials/validate/{credentialId}`
                 .replace('{credentialId}', encodeURIComponent(String(credentialId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        getCredentialValidationJob: async (jobId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            assertParamExists('getCredentialValidationJob', 'jobId', jobId)
+            const localVarPath = `/api/credentials/validate/jobs/{jobId}`
+                .replace('{jobId}', encodeURIComponent(String(jobId)));
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
             if (configuration) {
@@ -1538,10 +1577,16 @@ export const UserCredentialsApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async validateCredential(credentialId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CredentialValidationResult>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.validateCredential(credentialId, options);
+        async startCredentialValidation(credentialId: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CredentialValidationJobResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.startCredentialValidation(credentialId, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.validateCredential']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.startCredentialValidation']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        async getCredentialValidationJob(jobId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CredentialValidationJobResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getCredentialValidationJob(jobId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserCredentialsApi.getCredentialValidationJob']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -1598,8 +1643,11 @@ export const UserCredentialsApiFactory = function (configuration?: Configuration
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        validateCredential(credentialId: number, options?: RawAxiosRequestConfig): AxiosPromise<CredentialValidationResult> {
-            return localVarFp.validateCredential(credentialId, options).then((request) => request(axios, basePath));
+        startCredentialValidation(credentialId: number, options?: RawAxiosRequestConfig): AxiosPromise<CredentialValidationJobResponse> {
+            return localVarFp.startCredentialValidation(credentialId, options).then((request) => request(axios, basePath));
+        },
+        getCredentialValidationJob(jobId: string, options?: RawAxiosRequestConfig): AxiosPromise<CredentialValidationJobResponse> {
+            return localVarFp.getCredentialValidationJob(jobId, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1657,8 +1705,12 @@ export class UserCredentialsApi extends BaseAPI {
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public validateCredential(credentialId: number, options?: RawAxiosRequestConfig) {
-        return UserCredentialsApiFp(this.configuration).validateCredential(credentialId, options).then((request) => request(this.axios, this.basePath));
+    public startCredentialValidation(credentialId: number, options?: RawAxiosRequestConfig) {
+        return UserCredentialsApiFp(this.configuration).startCredentialValidation(credentialId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    public getCredentialValidationJob(jobId: string, options?: RawAxiosRequestConfig) {
+        return UserCredentialsApiFp(this.configuration).getCredentialValidationJob(jobId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

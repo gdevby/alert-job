@@ -105,14 +105,13 @@ public class AiNotificationController {
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @RequestBody CredentialValidationRequest request) {
 
-        CredentialValidationResult result = credentialValidationService.validate(
-                uuid,
-                request.getSiteId(),
-                request.getLogin(),
-                request.getPassword(),
-                request.getUserEmail()
-        );
-
-        return Mono.just(result);
+        return Mono.fromCallable(() -> credentialValidationService.validate(
+                        uuid,
+                        request.getSiteId(),
+                        request.getLogin(),
+                        request.getPassword(),
+                        request.getUserEmail()
+                ))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 }
