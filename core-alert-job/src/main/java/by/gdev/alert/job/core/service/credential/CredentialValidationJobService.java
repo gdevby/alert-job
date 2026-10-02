@@ -23,10 +23,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
+/**
+ * Асинхронная проверка сохранённых учётных данных: core отдаёт jobId сразу (202),
+ * длительный вызов notification выполняется в {@code credentialValidationExecutor}.
+ * Фронт опрашивает {@link #getStatus}. Задачи хранятся в памяти до {@link #purgeExpiredJobs()}.
+ */
 @Slf4j
 @Service
 public class CredentialValidationJobService {
 
+    /** Время жизни записи о задаче в памяти (для опроса статуса после завершения). */
     private static final long JOB_TTL_MS = 30 * 60 * 1000L;
 
     private final UserSiteCredentialRepository userSiteCredentialRepository;
@@ -34,6 +40,7 @@ public class CredentialValidationJobService {
     private final AppUserService appUserService;
     private final Executor credentialValidationExecutor;
 
+    /** jobId → состояние; не переживает рестарт core. */
     private final Map<String, JobEntry> jobs = new ConcurrentHashMap<>();
 
     public CredentialValidationJobService(
@@ -47,6 +54,7 @@ public class CredentialValidationJobService {
         this.credentialValidationExecutor = credentialValidationExecutor;
     }
 
+    /** Создаёт задачу и запускает проверку в фоне; ответ сразу со статусом PENDING. */
     public CredentialValidationJobResponse start(Long credentialId, String userUuid) {
         UserSiteCredential cred = userSiteCredentialRepository.findById(credentialId)
                 .orElseThrow(() -> new CredentialNotFoundException("Учетные данные не найдены: " + credentialId));
@@ -102,6 +110,7 @@ public class CredentialValidationJobService {
         }
     }
 
+    /** Удаляет устаревшие jobId, чтобы не раздувать память. */
     @Scheduled(fixedRate = 300_000)
     void purgeExpiredJobs() {
         Instant cutoff = Instant.now().minusMillis(JOB_TTL_MS);

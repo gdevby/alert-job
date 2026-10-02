@@ -10,7 +10,6 @@ import by.gdev.alert.job.core.model.credential.dto.UserSiteCredentialShortRespon
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -152,7 +151,11 @@ public class UserCredentialController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Запустить проверку учётных данных (асинхронно)")
+    @Operation(
+            summary = "Запустить проверку учётных данных (асинхронно)",
+            description = "Вместо долгого синхронного ответа — 202 и jobId. Итог: GET /validate/jobs/{jobId}. "
+                    + "GET оставлен для совместимости со старым фронтом."
+    )
     @ApiResponse(responseCode = "202", description = "Задача проверки создана")
     @RequestMapping(value = "/validate/{credentialId}", method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<CredentialValidationJobResponse> startCredentialValidation(
@@ -163,7 +166,10 @@ public class UserCredentialController {
         return ResponseEntity.accepted().body(job);
     }
 
-    @Operation(summary = "Статус задачи проверки учётных данных")
+    @Operation(
+            summary = "Статус задачи проверки учётных данных",
+            description = "Пока status=PENDING, проверка на бирже ещё идёт в notification."
+    )
     @GetMapping("/validate/jobs/{jobId}")
     public CredentialValidationJobResponse getCredentialValidationJob(
             @Parameter(hidden = true)

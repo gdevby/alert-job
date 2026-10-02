@@ -100,6 +100,10 @@ public class AiNotificationController {
         return ResponseEntity.ok(size);
     }
 
+    /**
+     * Вызывается из core (Feign) при фоновой проверке учётных данных.
+     * boundedElastic — чтобы Playwright не блокировал event-loop WebFlux.
+     */
     @PostMapping("/credentials/validate")
     public Mono<CredentialValidationResult> validateCredentials(
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,

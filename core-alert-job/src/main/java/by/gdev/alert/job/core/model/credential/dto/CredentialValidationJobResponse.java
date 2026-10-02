@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/** Тело ответа при старте проверки и при опросе jobId. */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

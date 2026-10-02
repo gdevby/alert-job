@@ -150,6 +150,8 @@ public class UserSiteCredentialService {
         log.debug("Удалена учётная запись id={}", id);
     }
 
+    // Проверка уже сохранённого аккаунта по id — в CredentialValidationJobService (async + опрос).
+
     private CredentialValidationResult checkAccount(String uuid, Long siteId, String login, String password) {
         try {
             CredentialValidationResult result = notificationClient.validateCredentials(

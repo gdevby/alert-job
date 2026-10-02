@@ -57,6 +57,7 @@ public class GlobalExceptionHandler {
         return body;
     }
 
+    // Асинхронная проверка учётных данных (CredentialValidationJobService)
     @ExceptionHandler(CredentialNotFoundException.class)
     public ResponseEntity<?> handleCredentialNotFound(CredentialNotFoundException ex) {
         return ResponseEntity.status(404).body(ex.getMessage());

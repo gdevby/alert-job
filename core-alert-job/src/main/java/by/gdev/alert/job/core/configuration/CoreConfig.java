@@ -75,6 +75,10 @@ public class CoreConfig {
 		return taskScheduler;
 	}
 
+	/**
+	 * Фоновые потоки для проверки учётных данных (Playwright в notification).
+	 * Ограничивает число одновременных проверок, чтобы не блокировать HTTP-поток core.
+	 */
 	@Bean(name = "credentialValidationExecutor")
 	Executor credentialValidationExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

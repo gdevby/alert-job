@@ -36,6 +36,7 @@ const Row = ({ index, data, onEditButton, onRemoveButton }: Props) => {
     isPending,
     data: response,
   } = useMutation({
+    // Асинхронная проверка в core (202 + polling), см. pollCredentialValidation.ts
     mutationFn: (id: number) => runCredentialValidationWithPolling(id),
   });
 

@@ -1,3 +1,7 @@
+/**
+ * Двухшаговая проверка аккаунта: POST/GET validate → jobId, затем опрос GET validate/jobs/{jobId}.
+ * Нужна, чтобы не упираться в таймаут nginx при долгом Playwright.
+ */
 import type { AxiosResponse } from 'axios';
 import {
   UserCredentialsApi,
@@ -5,7 +9,9 @@ import {
   type CredentialValidationResult,
 } from '@/apis/coreApi';
 
+/** Интервал опроса статуса job, мс */
 const POLL_INTERVAL_MS = 3000;
+/** Максимальное ожидание завершения проверки, мс */
 const MAX_POLL_MS = 600_000;
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
