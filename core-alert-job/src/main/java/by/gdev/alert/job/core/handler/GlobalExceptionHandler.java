@@ -3,6 +3,8 @@ package by.gdev.alert.job.core.handler;
 import by.gdev.alert.job.core.exeption.ai.*;
 import by.gdev.alert.job.core.exeption.ai.binding.BindingAlreadyExistsException;
 import by.gdev.alert.job.core.exeption.ai.binding.BindingNotFoundException;
+import by.gdev.alert.job.core.exeption.ai.credential.CredentialNotFoundException;
+import by.gdev.alert.job.core.exeption.ai.credential.CredentialValidationJobNotFoundException;
 import by.gdev.alert.job.core.exeption.ai.credential.InvalidCredentialsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +55,22 @@ public class GlobalExceptionHandler {
         body.put("error", e.getMessage());
         body.put("status", 400);
         return body;
+    }
+
+    // Асинхронная проверка учётных данных (CredentialValidationJobService)
+    @ExceptionHandler(CredentialNotFoundException.class)
+    public ResponseEntity<?> handleCredentialNotFound(CredentialNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(CredentialValidationJobNotFoundException.class)
+    public ResponseEntity<?> handleValidationJobNotFound(CredentialValidationJobNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(403).body(ex.getMessage());
     }
 }
 

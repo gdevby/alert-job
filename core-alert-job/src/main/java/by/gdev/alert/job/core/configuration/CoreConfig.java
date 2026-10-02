@@ -13,7 +13,10 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.xml.Jaxb2XmlDecoder;
 import org.springframework.http.codec.xml.Jaxb2XmlEncoder;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+
+import java.util.concurrent.Executor;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
@@ -70,5 +73,20 @@ public class CoreConfig {
 		ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
 		taskScheduler.setPoolSize(2);
 		return taskScheduler;
+	}
+
+	/**
+	 * Фоновые потоки для проверки учётных данных (Playwright в notification).
+	 * Ограничивает число одновременных проверок, чтобы не блокировать HTTP-поток core.
+	 */
+	@Bean(name = "credentialValidationExecutor")
+	Executor credentialValidationExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(2);
+		executor.setMaxPoolSize(4);
+		executor.setQueueCapacity(100);
+		executor.setThreadNamePrefix("cred-val-");
+		executor.initialize();
+		return executor;
 	}
 }

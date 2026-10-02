@@ -14,6 +14,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { FormState } from '@/lib/constants/FormState';
 import { UserCredentialsApi, type UserSiteCredentialShortResponse } from '@/apis/coreApi';
+import { runCredentialValidationWithPolling } from '@/modules/auto-replies/lib/pollCredentialValidation';
 import { AccountDialog } from '@/modules/auto-replies/components/AccountsTab/AccountDialog';
 import { FormattedDate } from '@/components/FormattedDate';
 import { CircularProgress, Tooltip } from '@mui/material';
@@ -35,7 +36,8 @@ const Row = ({ index, data, onEditButton, onRemoveButton }: Props) => {
     isPending,
     data: response,
   } = useMutation({
-    mutationFn: (id: number) => userCredentialsApi.validateCredential(id),
+    // Асинхронная проверка в core (202 + polling), см. pollCredentialValidation.ts
+    mutationFn: (id: number) => runCredentialValidationWithPolling(id),
   });
 
   const handleCheckAvailabilityButton = (id: number) => {

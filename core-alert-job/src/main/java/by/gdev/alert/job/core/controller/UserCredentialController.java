@@ -2,14 +2,14 @@ package by.gdev.alert.job.core.controller;
 
 import by.gdev.alert.job.core.model.SiteDTO;
 import by.gdev.alert.job.core.model.UserCredentialEncrypted;
-import by.gdev.alert.job.core.model.credential.dto.CredentialValidationResult;
+import by.gdev.alert.job.core.model.credential.dto.CredentialValidationJobResponse;
+import by.gdev.alert.job.core.service.credential.CredentialValidationJobService;
 import by.gdev.alert.job.core.model.credential.dto.UserCredentialRequest;
 import by.gdev.alert.job.core.model.db.ai.UserSiteCredential;
 import by.gdev.alert.job.core.model.credential.dto.UserSiteCredentialShortResponse;
 import by.gdev.alert.job.core.service.credential.UserSiteCredentialService;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserCredentialController {
 
     private final UserSiteCredentialService credentialService;
+    private final CredentialValidationJobService credentialValidationJobService;
 
     @Operation(
             summary = "Получить все учётные данные пользователя",
@@ -150,13 +151,31 @@ public class UserCredentialController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/validate/{credentialId}")
-    public ResponseEntity<CredentialValidationResult> validateCredential(
+    @Operation(
+            summary = "Запустить проверку учётных данных (асинхронно)",
+            description = "Вместо долгого синхронного ответа — 202 и jobId. Итог: GET /validate/jobs/{jobId}. "
+                    + "GET оставлен для совместимости со старым фронтом."
+    )
+    @ApiResponse(responseCode = "202", description = "Задача проверки создана")
+    @RequestMapping(value = "/validate/{credentialId}", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<CredentialValidationJobResponse> startCredentialValidation(
             @Parameter(hidden = true)
             @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
             @PathVariable Long credentialId) {
-        CredentialValidationResult result = credentialService.validate(credentialId, uuid);
-        return ResponseEntity.ok(result);
+        CredentialValidationJobResponse job = credentialValidationJobService.start(credentialId, uuid);
+        return ResponseEntity.accepted().body(job);
+    }
+
+    @Operation(
+            summary = "Статус задачи проверки учётных данных",
+            description = "Пока status=PENDING, проверка на бирже ещё идёт в notification."
+    )
+    @GetMapping("/validate/jobs/{jobId}")
+    public CredentialValidationJobResponse getCredentialValidationJob(
+            @Parameter(hidden = true)
+            @RequestHeader(HeaderName.UUID_USER_HEADER) String uuid,
+            @PathVariable String jobId) {
+        return credentialValidationJobService.getStatus(jobId, uuid);
     }
 
 }
