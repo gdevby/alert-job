@@ -89,6 +89,13 @@ public class JsoupClient {
     }
 
     /**
+     * GET через Apache HttpClient (с опциональным прокси), те же заголовки что у {@link #baseRequest}.
+     */
+    public String getRaw(String url, ProxyCredentials proxy) throws IOException {
+        return executeHttpGet(url, proxy);
+    }
+
+    /**
      * Выполняет GET‑запрос к указанному URL с retry‑логикой.
      * Поведение:
      *  - делает до 3 попыток;
@@ -121,47 +128,55 @@ public class JsoupClient {
     }
 
     public Document get(String url, ProxyCredentials proxy) throws IOException {
+        String html = executeHttpGet(url, proxy);
+        return Jsoup.parse(html, url);
+    }
 
-        HttpHost proxyHost = new HttpHost(proxy.getHost(), proxy.getPort());
-
-        BasicCredentialsProvider creds = new BasicCredentialsProvider();
-        creds.setCredentials(
-                new AuthScope(proxy.getHost(), proxy.getPort()),
-                new UsernamePasswordCredentials(
-                        proxy.getUsername(),
-                        proxy.getPassword().toCharArray()
-                )
-        );
-
+    private String executeHttpGet(String url, ProxyCredentials proxy) throws IOException {
         HttpClientContext context = HttpClientContext.create();
-        context.setCredentialsProvider(creds);
+        CloseableHttpClient client;
 
-        CloseableHttpClient client = HttpClients.custom()
-                .setProxy(proxyHost)
-                .build();
+        if (proxy != null) {
+            HttpHost proxyHost = new HttpHost(proxy.getHost(), proxy.getPort());
+            BasicCredentialsProvider creds = new BasicCredentialsProvider();
+            creds.setCredentials(
+                    new AuthScope(proxy.getHost(), proxy.getPort()),
+                    new UsernamePasswordCredentials(
+                            proxy.getUsername(),
+                            proxy.getPassword().toCharArray()
+                    )
+            );
+            context.setCredentialsProvider(creds);
+            client = HttpClients.custom().setProxy(proxyHost).build();
+        } else {
+            client = HttpClients.custom().build();
+        }
 
         HttpGet request = new HttpGet(url);
-        request.addHeader("User-Agent", "Mozilla/5.0");
-        request.addHeader("Accept", "*/*");
+        request.addHeader("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+        request.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
+        request.addHeader("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
+        request.addHeader("Accept-Encoding", "gzip, deflate, br");
+        request.addHeader("Cache-Control", "no-cache");
+        request.addHeader("Pragma", "no-cache");
         request.addHeader("Connection", "keep-alive");
+        request.addHeader("Referer", "https://www.fl.ru/");
 
-        try (CloseableHttpResponse response = client.execute(request, context)) {
+        try (CloseableHttpClient httpClient = client;
+             CloseableHttpResponse response = httpClient.execute(request, context)) {
 
             int code = response.getCode();
             if (code == 407) {
                 throw new IOException("Proxy auth failed (407)");
             }
 
-            String html;
             try {
-                html = EntityUtils.toString(response.getEntity());
+                return EntityUtils.toString(response.getEntity());
             } catch (org.apache.hc.core5.http.ParseException e) {
                 throw new IOException("Failed to parse HTTP response", e);
             }
-
-            return Jsoup.parse(html, url);
         }
-
     }
 
 
