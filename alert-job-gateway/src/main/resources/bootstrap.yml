@@ -1,7 +1,3 @@
-eureka:
-  client:
-    fetchRegistry: false
-    registerWithEureka: false
 server:
   port: 8015
 spring:
@@ -10,7 +6,5 @@ spring:
   cloud:
     config:
       uri: http://config:8011
-    loadbalancer:
-      ribbon: false
   profiles:
-    active: dev  
+    active: dev

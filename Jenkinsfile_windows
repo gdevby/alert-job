@@ -1,9 +1,9 @@
 #!groovy
 pipeline {
     agent any
-    //java should be 17
+    //java should be 25
     tools {
-        jdk 'jdk_17'
+        jdk 'jdk_25'
     }
     environment {
         REVISION = "1.0.${BUILD_ID}"
@@ -53,9 +53,6 @@ pipeline {
                         parallel(
                             'config': {
                                 buildAndPush('alert-job-config', 'alert-job-config', "alert-job-config-${REVISION}.jar", '8011', 'java-service.Dockerfile')
-                            },
-                            'eureka': {
-                                buildAndPush('alert-job-eureka', 'alert-job-eureka', "alert-job-eureka-${REVISION}.jar", '8012', 'java-service.Dockerfile')
                             },
                             'gateway': {
                                 buildAndPush('alert-job-gateway', 'alert-job-gateway', "alert-job-gateway-${REVISION}.jar", '8015', 'java-service.Dockerfile')

@@ -4,7 +4,7 @@
 ARG PLAYWRIGHT_VERSION=1.62.0
 
 # Stage 1: unpack the JAR into layers (same logic as java-service.Dockerfile).
-FROM eclipse-temurin:17-jre-jammy AS extractor
+FROM eclipse-temurin:25-jre-jammy AS extractor
 
 # JAR file name is passed from Maven (dockerfile-maven-plugin).
 ARG JAR_FILE

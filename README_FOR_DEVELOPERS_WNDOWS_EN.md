@@ -107,7 +107,7 @@ c:\Windows\System32\drivers\etc\hosts
 
 Add next lines to the end of file
 ```bash
-127.0.0.1 config eureka keycloak gateway notification parser core 
+127.0.0.1 config keycloak gateway notification parser core llm
 127.0.0.1 auth.alertjob.by alertjob.by
 ```
 
@@ -166,11 +166,11 @@ nginx -t
 ### 10. Run project
 Run project services using your IDE in next order: 
 1. config 
-2. eureka 
-3. gateway 
-4. parser 
-5. core 
-6. notification 
+2. gateway 
+3. parser 
+4. core 
+5. notification 
+6. llm 
 
 After that project available on [alertjob.by](http://alertjob.by/). If everything is alright then you can return to step #2 and change ExecutionPolicy to your default value.
 

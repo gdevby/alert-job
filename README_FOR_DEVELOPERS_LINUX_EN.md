@@ -68,7 +68,7 @@ Then open terminal and alter hosts file
 sudo nano /etc/hosts
 
 add next lines
-127.0.0.1 config eureka keycloak gateway notification parser core 
+127.0.0.1 config keycloak gateway notification parser core llm
 127.0.0.1 auth.alertjob.by alertjob.by
 ```
 
@@ -139,11 +139,11 @@ sudo usermod -aG $USER www-data
 
 Run project services using your IDE in next order: 
 1. config 
-2. eureka 
-3. gateway 
-4. parser 
-5. core 
-6. notification 
+2. gateway 
+3. parser 
+4. core 
+5. notification 
+6. llm 
 
 After that project available on [alertjob.by](http://alertjob.by/)
 

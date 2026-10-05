@@ -108,7 +108,7 @@ c:\Windows\System32\drivers\etc\hosts
 
 Добавьте следующие строки в конец файла
 ```bash
-127.0.0.1 config eureka keycloak gateway notification parser core 
+127.0.0.1 config keycloak gateway notification parser core llm
 127.0.0.1 auth.alertjob.by alertjob.by
 ```
 
@@ -167,11 +167,11 @@ nginx -t
 ### 10. Запуск проекта
 Запустите сервисы проекта используя вашу IDE в следующем порядке:
 1. config 
-2. eureka 
-3. gateway 
-4. parser 
-5. core 
-6. notification 
+2. gateway 
+3. parser 
+4. core 
+5. notification 
+6. llm 
 
 После этого, проект доступен по [alertjob.by](http://alertjob.by/). Если все в порядке, тогда вы можете вернуться к шагу №2 и изменить ExecutionPolicy к вашему прежнему значению.
 

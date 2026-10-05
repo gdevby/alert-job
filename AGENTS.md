@@ -17,7 +17,6 @@
 ```
 alert-job/                    # этот репозиторий (backend + front + infra)
 ├── alert-job-config/         # Config Server
-├── alert-job-eureka/         # Eureka
 ├── alert-job-gateway/        # Gateway + OAuth2
 ├── parser-alert-job/         # Парсеры бирж
 ├── core-alert-job/           # Ядро (фильтры, пользователи, заказы)
