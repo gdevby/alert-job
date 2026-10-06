@@ -19,11 +19,11 @@ alwaysApply: false
 
 ## Сервисы в compose
 
-nginx-proxy → keycloak → config → eureka → gateway → (parser, core, notification, llm) → front, prometheus, grafana, adminer, db (prod)
+nginx-proxy → keycloak → config → gateway → (parser, core, notification, llm) → front, prometheus, grafana, adminer, db (prod)
 
 ## Healthcheck-зависимости
 
-Сервисы ждут `config` и `eureka` с `condition: service_healthy`. При изменении compose сохранять порядок `depends_on`.
+Сервисы ждут `config` (и при необходимости другие backend-сервисы) с `condition: service_healthy`. Gateway маршрутизирует на фиксированные `http://<service>:<port>` из config repo (без Eureka).
 
 ## Сборка образов
 

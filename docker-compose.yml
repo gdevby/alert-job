@@ -6,6 +6,7 @@ services:
       - "start-dev"
       - "--hostname-url=http://alertjob.by/keycloak"
       - "--hostname-admin-url=http://alertjob.by/keycloak"
+      - "--proxy=edge"
       #- health-enabled=true
       #- metrics-enabled=true
     ports:

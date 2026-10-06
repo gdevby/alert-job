@@ -3,6 +3,10 @@ server:
 spring:
   application:
     name: alert-job-gateway
+  devtools:
+    add-properties: false
+    livereload:
+      enabled: false
   cloud:
     config:
       uri: http://config:8011

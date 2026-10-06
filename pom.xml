@@ -32,6 +32,8 @@
 		<docker.skip>false</docker.skip>
 		<docker.dockerfile.name>java-service.Dockerfile</docker.dockerfile.name>
 		<playwright.version>1.62.0</playwright.version>
+		<!-- JDK 23+: Netty native libs; shared by Maven, IDEA (via .run template), and documented for Docker JAVA_OPTS -->
+		<app.jvmArguments>--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow</app.jvmArguments>
 	</properties>
 
 	<dependencies>
@@ -137,9 +139,17 @@
 					</executions>
 				</plugin>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<configuration>
+						<argLine>${app.jvmArguments}</argLine>
+					</configuration>
+				</plugin>
+				<plugin>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-maven-plugin</artifactId>
 					<configuration>
+						<jvmArguments>${app.jvmArguments}</jvmArguments>
 						<layers>
 							<enabled>true</enabled>
 						</layers>

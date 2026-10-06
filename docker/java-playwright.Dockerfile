@@ -23,7 +23,8 @@ ARG SERVER_PORT=8017
 # Persist the port in an environment variable for HEALTHCHECK.
 ENV SERVER_PORT=${SERVER_PORT}
 # JVM flags: respect container limits and faster random startup.
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=80.0 -XX:+CrashOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+# Keep in sync with app.jvmArguments in pom.xml
+ENV JAVA_OPTS="--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow -XX:+UseContainerSupport -XX:MaxRAMPercentage=80.0 -XX:+CrashOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
 # Temporarily root — required for apt-get install curl.
 USER root

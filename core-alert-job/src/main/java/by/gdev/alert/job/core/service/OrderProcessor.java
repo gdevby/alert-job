@@ -19,7 +19,7 @@ import by.gdev.alert.job.core.service.ai.AiOrderRequestMapper;
 import by.gdev.common.model.NotificationType;
 import by.gdev.common.model.SiteName;
 import lombok.Getter;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;

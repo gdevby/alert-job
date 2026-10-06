@@ -52,7 +52,7 @@ public class SecurityConfig {
                 "/",
                 "/favicon.png",
                 "/actuator/**",
-                "/core-alert-job/api/user/test",
+                "/core/api/user/test",
                 "/parser/api/orders/statistics",
                 "/core/stats/subscriptions/**"
         ));
