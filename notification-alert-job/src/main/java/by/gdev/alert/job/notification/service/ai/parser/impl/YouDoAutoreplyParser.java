@@ -3,7 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
-import by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes;
+import by.gdev.alert.job.notification.service.ai.metrics.errors.AutoreplyErrorTypes;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.otp.OtpService;
 import by.gdev.alert.job.notification.service.ai.parser.YoudoTariffChecker;
@@ -119,7 +119,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        if (!waitForLoginModal(page, 10000)) {
+        if (!waitForLoginModal(page)) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Войти через email', пользователь: " + creds.login(),
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);
@@ -136,7 +136,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         log.info("АВТООТВЕТ: {} -> кнопка 'Войти через email' нажата, пользователь: {}", getSiteName(), creds.login());
 
         // Ожидание поля ввода email
-        if (!waitOrFail(page, "input[name='login']", 8000, "Поле email")) {
+        if (!waitOrFail(page, "input[name='login']", "Поле email")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ EMAIL, пользователь: " + creds.login(),
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -156,7 +156,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
 
         // Клик по кнопке "Далее"
-        if (!clickOrFail(page, "button:has-text('Далее')", 8000, "Кнопка 'Далее'")) {
+        if (!clickOrFail(page, "button:has-text('Далее')", "Кнопка 'Далее'")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Далее', пользователь: " + creds.login(),
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);
@@ -172,7 +172,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
 
         // Ожидание поля ввода OTP
-        if (!waitOrFail(page, "input[name='code']", 15000, "Поле ввода кода")) {
+        if (!waitOrFail(page, "input[name='code']", "Поле ввода кода")) {
             if (isEmailErrorPresent(page)) {
                 report(Level.WARN, log,
                         "АВТООТВЕТ: " + getSiteName() + " -> НЕПРАВИЛЬНЫЙ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ, пользователь: " + creds.login(),
@@ -248,7 +248,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
                 locator.scrollIntoViewIfNeeded();
                 clickLocator(locator);
                 log.info("АВТООТВЕТ: {} -> кнопка 'Войти' нажата (селектор: {})", getSiteName(), selector);
-                if (waitForLoginModal(page, 5000)) {
+                if (waitForLoginModal(page)) {
                     return true;
                 }
                 log.debug("АВТООТВЕТ: {} -> модалка логина не открылась после клика '{}'", getSiteName(), selector);
@@ -259,9 +259,9 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         return false;
     }
 
-    private boolean waitForLoginModal(Page page, int timeoutMs) {
+    private boolean waitForLoginModal(Page page) {
         for (String selector : LOGIN_EMAIL_BUTTON_SELECTORS) {
-            if (waitOrFail(page, selector, timeoutMs, "Модалка логина")) {
+            if (waitOrFail(page, selector, "Модалка логина")) {
                 return true;
             }
         }
@@ -352,7 +352,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть заказ: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!clickOrFail(page, "button:has-text('Откликнуться')", 8000, "Кнопка 'Откликнуться'")) {
+        if (!clickOrFail(page, "button:has-text('Откликнуться')", "Кнопка 'Откликнуться'")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Откликнуться', пользователь: " + login,
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);
@@ -360,7 +360,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Откликнуться' нажата, пользователь: {}", getSiteName(), login);
 
-        if (!waitOrFail(page, "input[placeholder='В рублях']", 8000, "Поле цены")) {
+        if (!waitOrFail(page, "input[placeholder='В рублях']", "Поле цены")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЦЕНЫ, пользователь: " + login,
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -378,7 +378,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить цену: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!waitOrFail(page, "textarea.Textarea_textarea__FjgmX", 8000, "Поле текста отклика")) {
+        if (!waitOrFail(page, "textarea.Textarea_textarea__FjgmX", "Поле текста отклика")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ТЕКСТА ОТКЛИКА, пользователь: " + login,
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -398,7 +398,7 @@ public class YouDoAutoreplyParser extends AutoreplyParser implements AutoreplyPl
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить текст отклика: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!waitOrFail(page, "button.NewButton_button__2D_5n:has-text('Далее')", 8000, "Кнопка 'Далее'")) {
+        if (!waitOrFail(page, "button.NewButton_button__2D_5n:has-text('Далее')", "Кнопка 'Далее'")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Далее', пользователь: " + login,
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);

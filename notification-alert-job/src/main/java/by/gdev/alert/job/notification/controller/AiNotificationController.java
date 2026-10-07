@@ -4,6 +4,7 @@ import by.gdev.alert.job.notification.model.dto.*;
 import by.gdev.alert.job.notification.model.dto.credential.CredentialValidationRequest;
 import by.gdev.alert.job.notification.model.dto.credential.CredentialValidationResult;
 import by.gdev.alert.job.notification.service.ai.credential.CredentialValidationService;
+import by.gdev.alert.job.notification.service.ai.queue.AiDecisionDedupRegistry;
 import by.gdev.alert.job.notification.service.ai.queue.UserQueueManager;
 import by.gdev.common.model.HeaderName;
 import by.gdev.common.model.SiteName;
@@ -16,12 +17,9 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,20 +29,15 @@ import java.util.stream.Collectors;
 public class AiNotificationController {
     private final UserQueueManager userQueueManager;
     private final CredentialValidationService credentialValidationService;
-    private final Set<String> dedup = ConcurrentHashMap.newKeySet();
+    private final AiDecisionDedupRegistry dedupRegistry;
 
     @PostMapping("/decision")
     public Mono<ResponseEntity<?>> receiveAiDecision(@RequestBody AiNotificationPayload payload) {
-        String key = payload.getOrder().getLink();
-        if (!dedup.add(key)) {
+        String key = payload.getOrder() != null ? payload.getOrder().getLink() : null;
+        if (!dedupRegistry.tryAcquire(key)) {
             log.warn("DUPLICATE DROPPED at NotificationController: {}", key);
             return Mono.just(ResponseEntity.ok(Map.of("status", "duplicate")));
         }
-        // Через 5 минут удаляем ключ из dedup, чтобы:
-        // не держать ссылку в памяти вечно (иначе Set разрастётся),
-        // позволить повторно обработать этот же заказ, если он придёт позже,
-        // не блокировать повторную отправку, если предыдущая попытка упала.
-        Schedulers.boundedElastic().schedule(() -> dedup.remove(key), 5, TimeUnit.MINUTES);
         log.info("QUEUE: accepted AI decision {}", key);
         //кладем пайлоад в очередь обработки пользователя
         userQueueManager.submit(payload);

@@ -3,7 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
-import by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes;
+import by.gdev.alert.job.notification.service.ai.metrics.errors.AutoreplyErrorTypes;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
@@ -173,31 +173,47 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
 
     private StepResult<Void> clickOfferButton(Page page, String userUuid, DecryptedCredential creds) {
         String selector = "span.projects-offer-btn:has-text('Предложить услугу')";
+        String step = "Кнопка 'Предложить услугу'";
+
+        if (!waitOrFail(page, selector, step)) {
+            report(Level.WARN, log,
+                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу', пользователь: " + creds.login(),
+                    AutoreplyErrorTypes.BUTTON_NOT_FOUND);
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Кнопка 'Предложить услугу' не найдена", captureScreenshot(page));
+        }
+
+        Locator offerButton = page.locator(selector).first();
         try {
-            Locator offerButton = page.locator(selector);
-            offerButton.waitFor(new Locator.WaitForOptions().setTimeout(8000));
-            boolean isDisabled = offerButton.getAttribute("class").contains("disabled") || offerButton.isDisabled();
+            String cssClass = offerButton.getAttribute("class");
+            boolean isDisabled = (cssClass != null && cssClass.contains("disabled"))
+                    || offerButton.isDisabled();
             if (isDisabled) {
                 report(Level.WARN, log,
                         "АВТООТВЕТ: " + getSiteName() + " -> КНОПКА 'Предложить услугу' НЕАКТИВНА (disabled), пользователь: " + creds.login(),
                         AutoreplyErrorTypes.TARIFF_LIMIT);
-                return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' неактивна - отклики закончились", captureScreenshot(page));
+                return StepResult.fail(StepType.SEND_AUTOREPLY,
+                        "Кнопка 'Предложить услугу' неактивна - отклики закончились",
+                        captureScreenshot(page));
             }
             offerButton.click();
             takeScreenshot(page, getSiteName(), userUuid, "click_propose");
-            log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}", getSiteName(), creds.login());
+            log.info("АВТООТВЕТ: {} -> кнопка 'Предложить услугу' нажата, пользователь: {}",
+                    getSiteName(), creds.login());
             return StepResult.ok(StepType.SEND_AUTOREPLY, null);
         } catch (Exception e) {
             report(Level.WARN, log,
-                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Предложить услугу' или ошибка, пользователь: "
+                    "АВТООТВЕТ: " + getSiteName() + " -> ОШИБКА ПРИ КЛИКЕ 'Предложить услугу', пользователь: "
                             + creds.login() + ", ошибка: " + e.getMessage(),
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "Кнопка 'Предложить услугу' не найдена или ошибка: " + e.getMessage(), captureScreenshot(page));
+            return StepResult.fail(StepType.SEND_AUTOREPLY,
+                    "Ошибка при клике 'Предложить услугу': " + e.getMessage(),
+                    captureScreenshot(page));
         }
     }
 
     private StepResult<Void> waitAndFillReplyEditor(Page page, AiNotificationPayload payload, DecryptedCredential creds) {
-        if (!waitOrFail(page, "div.trumbowyg-editor", 8000, "Редактор ответа")) {
+        if (!waitOrFail(page, "div.trumbowyg-editor",  "Редактор ответа")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕН РЕДАКТОР, пользователь: " + creds.login(),
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -313,7 +329,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     private StepResult<Void> selectDuration(Page page, DecryptedCredential creds) {
-        if (!clickOrFail(page, "div.duration-select", 5000, "Открыть список сроков")) {
+        if (!clickOrFail(page, "div.duration-select", "Открыть список сроков")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ УДАЛОСЬ ОТКРЫТЬ СПИСОК СРОКОВ, пользователь: " + creds.login(),
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -321,7 +337,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
         }
         log.info("АВТООТВЕТ: {} -> список сроков открыт, пользователь: {}", getSiteName(), creds.login());
 
-        if (!waitOrFail(page, "ul.vs__dropdown-menu li", 5000, "Список сроков")) {
+        if (!waitOrFail(page, "ul.vs__dropdown-menu li", "Список сроков")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕН СПИСОК СРОКОВ, пользователь: " + creds.login(),
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -342,7 +358,7 @@ public class KworkAutoreplyParser extends AutoreplyParser implements AutoreplyPl
     }
 
     private StepResult<Void> submitOffer(Page page, String userUuid, DecryptedCredential creds) {
-        if (!waitOrFail(page, "button.kw-button--green:has-text('Предложить')", 8000, "Кнопка отправки")) {
+        if (!waitOrFail(page, "button.kw-button--green:has-text('Предложить')", "Кнопка отправки")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Предложить', пользователь: " + creds.login(),
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);
