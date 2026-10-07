@@ -11,13 +11,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Метрики времени выполнения операций автоответа.
+ * Метрика автоответа: длительность операций (Micrometer {@link Timer}).
+ * <p>
+ * Теги: {@code site}, {@code operation} ({@link AutoreplyMetricOperations}), {@code status} (success/failure).
+ * Среднее время: {@code sum / count} у таймера (в Prometheus — {@code _sum} / {@code _count}).
+ * Перцентиль 95: client-side quantile {@code 0.95} (в Prometheus — label {@code quantile="0.95"}).
  */
 @Slf4j
 @Component
 public class AutoreplyDurationMetrics {
 
-    private static final String METRIC_NAME = "autoreply_operation_duration";
+    /** Имя метрики в Actuator / Prometheus. */
+    public static final String METRIC_NAME = "autoreply_operation_duration";
+
+    public static final String STATUS_SUCCESS = "success";
+    public static final String STATUS_FAILURE = "failure";
 
     private final MeterRegistry meterRegistry;
     private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
@@ -27,16 +35,7 @@ public class AutoreplyDurationMetrics {
     }
 
     public void recordDuration(String siteName, String operation, String status, long millis) {
-        String key = siteName + "|" + operation + "|" + status;
-        timers.computeIfAbsent(key, k ->
-                Timer.builder(METRIC_NAME)
-                        .description("Время выполнения операций автоответа")
-                        .tag("site", safe(siteName))
-                        .tag("operation", safe(operation))
-                        .tag("status", safe(status))
-                        .publishPercentiles(0.5, 0.95, 0.99)
-                        .register(meterRegistry)
-        ).record(millis, TimeUnit.MILLISECONDS);
+        timerFor(siteName, operation, status).record(millis, TimeUnit.MILLISECONDS);
     }
 
     /** Замеряет время выполнения и автоматически пишет в метрику. */
@@ -49,8 +48,24 @@ public class AutoreplyDurationMetrics {
             return result;
         } finally {
             long ms = (System.nanoTime() - start) / 1_000_000;
-            recordDuration(siteName, operation, ok ? "success" : "failure", ms);
+            recordDuration(siteName, operation, ok ? STATUS_SUCCESS : STATUS_FAILURE, ms);
         }
+    }
+
+    private Timer timerFor(String siteName, String operation, String status) {
+        String site = safe(siteName);
+        String op = safe(operation);
+        String st = safe(status);
+        String key = site + "|" + op + "|" + st;
+        return timers.computeIfAbsent(key, k ->
+                Timer.builder(METRIC_NAME)
+                        .description("Метрика автоответа")
+                        .tag("site", site)
+                        .tag("operation", op)
+                        .tag("status", st)
+                        .publishPercentiles(0.95)
+                        .register(meterRegistry)
+        );
     }
 
     private String safe(String value) {

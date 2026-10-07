@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 public class AiDecisionWorker {
 
     private final List<AiStep<?, ?>> steps;
+    private final AiDecisionDedupRegistry dedupRegistry;
     private Map<StepType, AiStep<?, ?>> stepMap;
 
     @PostConstruct
@@ -40,13 +41,16 @@ public class AiDecisionWorker {
     );
 
     public void process(AiNotificationPayload payload) {
-        log.info("Processing payload for order: {}", payload.getOrder().getLink());
+        String orderLink = payload.getOrder() != null ? payload.getOrder().getLink() : null;
+        log.info("Processing payload for order: {}", orderLink);
         SiteName site = null;
         AutoreplyPlaywrightParser parser = null;
         DecryptedCredential creds = null;
 
         StepResult<?> lastError = null;
+        boolean pipelineSucceeded = false;
 
+        try {
         for (StepType type : PIPELINE) {
             String userUuid = payload.getUser() != null ? payload.getUser().getUuid() : "unknown";
             log.info("АВТООТВЕТ: этап {} -> НАЧАЛО", type);
@@ -120,8 +124,18 @@ public class AiDecisionWorker {
                     var step = (AiStep<AiNotificationPayload, StepResult<Void>>) stepMap.get(type);
                     step.execute(payload);
                     log.info("АВТООТВЕТ: этап {} -> уведомление отправлено, пользователь: {}", type, userUuid);
+                    pipelineSucceeded = lastError == null;
                     return;
                 }
+            }
+        }
+        } catch (Exception e) {
+            log.error("АВТООТВЕТ: необработанное исключение в pipeline для заказа {}", orderLink, e);
+        } finally {
+            if (pipelineSucceeded) {
+                dedupRegistry.retainAfterSuccess(orderLink);
+            } else {
+                dedupRegistry.releaseAfterFailure(orderLink);
             }
         }
     }

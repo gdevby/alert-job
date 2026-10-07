@@ -4,6 +4,7 @@ import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.metrics.timings.AutoreplyDurationMetrics;
+import by.gdev.alert.job.notification.service.ai.metrics.timings.AutoreplyMetricOperations;
 import by.gdev.alert.job.notification.service.ai.metrics.timings.AutoreplyTimeouts;
 import by.gdev.alert.job.notification.service.ai.parser.debug.AutoreplyReporter;
 import by.gdev.alert.job.notification.service.ai.parser.debug.ScreenshotService;
@@ -227,12 +228,9 @@ public abstract class AutoreplyParser {
             sessionStorage.logContextCookies(context, sessionCookieCheckUrl(), "after-restore");
 
             long loginStart = System.nanoTime();
-            StepResult<Void> loginResult = resolveLogin(page, payload, creds, autoreplyMode,
+            LoginResolveOutcome loginOutcome = resolveLogin(page, payload, creds, autoreplyMode,
                     userUuid, siteName, login, hasSession);
-            long loginMs = (System.nanoTime() - loginStart) / 1_000_000;
-            String loginStatus = loginResult.failed() ? "failure" : "success";
-            durationMetrics.recordDuration(siteName, "login", loginStatus, loginMs);
-            log.info("METRIC: {} login status={} duration={} ms", siteName, loginStatus, loginMs);
+            StepResult<Void> loginResult = loginOutcome.result();
 
             if (!loginResult.failed()) {
                 // Строго до сохранения: пока дополнительный шаг не пройден, вход не завершён,
@@ -282,6 +280,19 @@ public abstract class AutoreplyParser {
                 }
             }
 
+            if (loginOutcome.loginFormUsed()) {
+                long loginMs = (System.nanoTime() - loginStart) / 1_000_000;
+                String loginStatus = loginResult.failed()
+                        ? AutoreplyDurationMetrics.STATUS_FAILURE
+                        : AutoreplyDurationMetrics.STATUS_SUCCESS;
+                durationMetrics.recordDuration(siteName, AutoreplyMetricOperations.LOGIN, loginStatus, loginMs);
+                log.info("METRIC: {} operation={} status={} duration={} ms",
+                        siteName, AutoreplyMetricOperations.LOGIN, loginStatus, loginMs);
+            } else {
+                log.debug("METRIC: {} operation={} skipped — сессия уже действительна, вход по форме не выполнялся",
+                        siteName, AutoreplyMetricOperations.LOGIN);
+            }
+
             if (autoreplyMode.equals(AutoreplyMode.LOGIN_ONLY)) {
                 return loginResult;
             }
@@ -296,9 +307,12 @@ public abstract class AutoreplyParser {
             long processStart = System.nanoTime();
             StepResult<Void> processResult = processAutoReply(page, payload, creds);
             long processMs = (System.nanoTime() - processStart) / 1_000_000;
-            String processStatus = processResult.failed() ? "failure" : "success";
-            durationMetrics.recordDuration(siteName, "process_autoreply", processStatus, processMs);
-            log.info("METRIC: {} process_autoreply status={} duration={} ms", siteName, processStatus, processMs);
+            String processStatus = processResult.failed()
+                    ? AutoreplyDurationMetrics.STATUS_FAILURE
+                    : AutoreplyDurationMetrics.STATUS_SUCCESS;
+            durationMetrics.recordDuration(siteName, AutoreplyMetricOperations.PROCESS_AUTOREPLY, processStatus, processMs);
+            log.info("METRIC: {} operation={} status={} duration={} ms",
+                    siteName, AutoreplyMetricOperations.PROCESS_AUTOREPLY, processStatus, processMs);
 
 
             if (processResult.failed()) {
@@ -336,18 +350,25 @@ public abstract class AutoreplyParser {
         return null;
     }
 
-    protected StepResult<Void> resolveLogin(Page page, AiNotificationPayload payload,
-                                            DecryptedCredential creds, AutoreplyMode autoreplyMode,
-                                            String userUuid, String siteName, String login,
-                                            boolean hasSession) {
+    /**
+     * @param loginFormUsed {@code true}, если вызывался {@link #login} (форма логина/пароля);
+     *                      {@code false} при успешной проверке уже восстановленной сессии
+     */
+    protected record LoginResolveOutcome(StepResult<Void> result, boolean loginFormUsed) {
+    }
+
+    protected LoginResolveOutcome resolveLogin(Page page, AiNotificationPayload payload,
+                                               DecryptedCredential creds, AutoreplyMode autoreplyMode,
+                                               String userUuid, String siteName, String login,
+                                               boolean hasSession) {
         if (hasSession) {
             StepResult<Void> verified = verifyExistingSession(page, creds, autoreplyMode);
             if (verified != null && !verified.failed()) {
                 log.info("SESSION: verifyExistingSession OK для {}/{}", siteName, login);
-                return verified;
+                return new LoginResolveOutcome(verified, false);
             }
             if (verified != null && skipLoginAfterVerifyFailure(verified, autoreplyMode)) {
-                return verified;
+                return new LoginResolveOutcome(verified, false);
             }
             log.warn("SESSION: verify не прошёл для {}/{} ({}), пробуем полный login без delete",
                     siteName, login, verified != null ? verified.getErrorMessage() : "null result");
@@ -358,7 +379,7 @@ public abstract class AutoreplyParser {
                     siteName, login, loginResult.getErrorMessage());
             sessionStorage.delete(userUuid, siteName, login);
         }
-        return loginResult;
+        return new LoginResolveOutcome(loginResult, true);
     }
 
     /**

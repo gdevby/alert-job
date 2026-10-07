@@ -77,6 +77,23 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
     /** После IP-капчи FL.ru часто редиректит на главную — нужен явный переход на вход. */
     private static final String FLRU_LOGIN_URL = "https://www.fl.ru/account/login/?return=%2F";
 
+    private static final String REPLY_TEXT_FIELD = "#el-descr";
+
+    /** Попап «купите отклик» — на аккаунте нет доступных откликов. */
+    private static final String PAYWALL_POPUP = "#project_answer_popup";
+
+    private static final String[] OPEN_REPLY_BUTTON_SELECTORS = {
+            "#reply_offer",
+            "a[name='new_offer']",
+            "a[data-popup='project_answer_popup']",
+            "a.ui-button._primary:has-text('Откликнуться')",
+            "a:has-text('Откликнуться')"
+    };
+
+    private static final String NO_RESPONSES_USER_MESSAGE =
+            "На FL.ru закончились доступные отклики (или не хватает средств на балансе). "
+                    + "Пополните баланс или купите отклики на сайте, чтобы сервис мог отправлять автоответы.";
+
     /** Сколько раз подряд можно обрабатывать validate/email в одном входе (они могут чередоваться). */
     private static final int LOGIN_STAGE_MAX_ITERATIONS = 12;
 
@@ -1125,6 +1142,153 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
                 FlRuPlaywrightGuards.ddosRetryFailMessage(getSiteName()), captureScreenshot(page));
     }
 
+    /**
+     * Открывает форму отклика (кнопка «Откликнуться») и ждёт поле текста.
+     * Если FL.ru показывает попап покупки отклика — сразу ошибка {@link AutoreplyErrorTypes#TARIFF_LIMIT}.
+     *
+     * @return {@code null}, если форма готова; иначе ошибка шага
+     */
+    private StepResult<Void> prepareFlRuReplyForm(Page page, String login) {
+        if (isReplyFormPresent(page)) {
+            return null;
+        }
+        StepResult<Void> paywall = failIfBuyResponsePaywall(page, login);
+        if (paywall != null) {
+            return paywall;
+        }
+
+        boolean clicked = clickOpenReplyButtonIfPresent(page, login);
+        if (clicked) {
+            page.waitForTimeout(900);
+            paywall = failIfBuyResponsePaywall(page, login);
+            if (paywall != null) {
+                return paywall;
+            }
+            if (isReplyFormPresent(page)) {
+                return null;
+            }
+        }
+
+        long totalMs = timeouts.getElementWaitMs();
+        long pollMs = timeouts.getElementPollMs();
+        long deadline = System.currentTimeMillis() + totalMs;
+        int attempts = 0;
+        while (System.currentTimeMillis() < deadline) {
+            attempts++;
+            paywall = failIfBuyResponsePaywall(page, login);
+            if (paywall != null) {
+                return paywall;
+            }
+            if (isReplyFormPresent(page)) {
+                long spent = totalMs - (deadline - System.currentTimeMillis());
+                log.info("OK at step '{}': '{}' найдено за {} ms (attempts={})",
+                        "Поле текста отклика", REPLY_TEXT_FIELD, spent, attempts);
+                return null;
+            }
+            if (!clicked && attempts == 3) {
+                clicked = clickOpenReplyButtonIfPresent(page, login);
+                if (clicked) {
+                    page.waitForTimeout(900);
+                }
+            }
+            long remaining = deadline - System.currentTimeMillis();
+            if (remaining <= 0) {
+                break;
+            }
+            page.waitForTimeout(Math.min(pollMs, remaining));
+        }
+
+        paywall = failIfBuyResponsePaywall(page, login);
+        if (paywall != null) {
+            return paywall;
+        }
+
+        log.warn("TIMEOUT at step '{}': '{}' не найдено за {} ms (attempts={})",
+                "Поле текста отклика", REPLY_TEXT_FIELD, totalMs, attempts);
+        report(Level.WARN, log,
+                "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ТЕКСТА ОТКЛИКА, пользователь: " + login,
+                AutoreplyErrorTypes.FIELD_NOT_FOUND);
+        return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле текста отклика не найдено", captureScreenshot(page));
+    }
+
+    private StepResult<Void> failIfBuyResponsePaywall(Page page, String login) {
+        if (!isFlRuBuyResponsePaywallVisible(page)) {
+            return null;
+        }
+        return failNoResponsesLeft(page, login);
+    }
+
+    private StepResult<Void> failNoResponsesLeft(Page page, String login) {
+        log.warn("АВТООТВЕТ: {} -> попап покупки отклика (нет откликов/средств), url={}, пользователь: {}",
+                getSiteName(), page.url(), login);
+        report(Level.WARN, log,
+                "АВТООТВЕТ: " + getSiteName() + " -> НЕТ ОТКЛИКОВ / ТРЕБУЕТСЯ ОПЛАТА, пользователь: " + login,
+                AutoreplyErrorTypes.TARIFF_LIMIT);
+        return StepResult.fail(StepType.SEND_AUTOREPLY, AutoreplyErrorTypes.TARIFF_LIMIT,
+                NO_RESPONSES_USER_MESSAGE, captureScreenshot(page));
+    }
+
+    private boolean isFlRuBuyResponsePaywallVisible(Page page) {
+        if (page == null) {
+            return false;
+        }
+        try {
+            Locator popup = page.locator(PAYWALL_POPUP).first();
+            if (popup.count() > 0 && popup.isVisible()) {
+                return true;
+            }
+            Locator buyOffers = page.locator("[id^='quickPaymentPopupBuyOffers']").first();
+            if (buyOffers.count() > 0 && buyOffers.isVisible()) {
+                return true;
+            }
+            Locator hint = page.locator("text=купить 1 отклик").first();
+            if (hint.count() > 0 && hint.isVisible()) {
+                return true;
+            }
+            Locator hintAlt = page.locator("text=купить отклик").first();
+            if (hintAlt.count() > 0 && hintAlt.isVisible()) {
+                return true;
+            }
+        } catch (Exception e) {
+            log.debug("АВТООТВЕТ: {} -> проверка попапа откликов: {}", getSiteName(), e.getMessage());
+        }
+        return false;
+    }
+
+    private boolean isReplyFormPresent(Page page) {
+        if (page == null) {
+            return false;
+        }
+        try {
+            return page.locator(REPLY_TEXT_FIELD).count() > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean clickOpenReplyButtonIfPresent(Page page, String login) {
+        for (String selector : OPEN_REPLY_BUTTON_SELECTORS) {
+            Locator loc = page.locator(selector);
+            if (loc.count() == 0) {
+                continue;
+            }
+            Locator first = loc.first();
+            try {
+                if (!first.isVisible()) {
+                    continue;
+                }
+                getCurrentManager().humanDelay(page);
+                first.click(new Locator.ClickOptions().setTimeout(10_000));
+                log.info("АВТООТВЕТ: {} -> нажата кнопка отклика ({}), пользователь: {}",
+                        getSiteName(), selector, login);
+                return true;
+            } catch (Exception e) {
+                log.debug("АВТООТВЕТ: {} -> клик отклика '{}' не удался: {}", getSiteName(), selector, e.getMessage());
+            }
+        }
+        return false;
+    }
+
     private boolean isLoginErrorPresent(Page page) {
         for (String selector : LOGIN_ERROR_SELECTORS) {
             try {
@@ -1163,11 +1327,9 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть заказ: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!waitOrFail(page, "#el-descr",  "Поле текста отклика")) {
-            report(Level.WARN, log,
-                    "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ТЕКСТА ОТКЛИКА, пользователь: " + login,
-                    AutoreplyErrorTypes.FIELD_NOT_FOUND);
-            return StepResult.fail(StepType.SEND_AUTOREPLY, "Поле текста отклика не найдено", captureScreenshot(page));
+        StepResult<Void> replyFormReady = prepareFlRuReplyForm(page, login);
+        if (replyFormReady != null) {
+            return replyFormReady;
         }
 
         try {
