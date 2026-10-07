@@ -1,7 +1,7 @@
 package by.gdev.alert.job.notification.service.ai.sessions.impl;
 
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
-import by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes;
+import by.gdev.alert.job.notification.service.ai.metrics.errors.AutoreplyErrorTypes;
 import by.gdev.alert.job.notification.service.ai.parser.debug.AutoreplyReporter;
 import by.gdev.alert.job.notification.service.ai.parser.debug.ScreenshotService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;

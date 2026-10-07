@@ -4,7 +4,7 @@ import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
 import by.gdev.alert.job.notification.service.ai.flru.FlRuValidateCaptchaSupport;
-import by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes;
+import by.gdev.alert.job.notification.service.ai.metrics.errors.AutoreplyErrorTypes;
 import by.gdev.alert.job.notification.service.ai.otp.OtpService;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
@@ -397,9 +397,9 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
      * @return ошибка или {@code null} если форма отправлена
      */
     private StepResult<Void> fillAndSubmitLoginForm(Page page, DecryptedCredential creds) {
-        if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
+        if (!waitOrFail(page, "input[name='username']", "Поле логина")) {
             ensureOnLoginPage(page, creds.login());
-            if (!waitOrFail(page, "input[name='username']", 8000, "Поле логина")) {
+            if (!waitOrFail(page, "input[name='username']", "Поле логина")) {
                 if (FlRuPlaywrightGuards.isAntiDdosOrBotWall(page, captchaService)) {
                     return failAntiDdosWall(page, creds);
                 }
@@ -1163,7 +1163,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть заказ: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!waitOrFail(page, "#el-descr", 8000, "Поле текста отклика")) {
+        if (!waitOrFail(page, "#el-descr",  "Поле текста отклика")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ТЕКСТА ОТКЛИКА, пользователь: " + login,
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -1195,7 +1195,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             // Не критично, продолжаем
         }
 
-        if (!waitOrFail(page, "#el-time_from", 8000, "Поле срока выполнения")) {
+        if (!waitOrFail(page, "#el-time_from", "Поле срока выполнения")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ СРОКА ВЫПОЛНЕНИЯ, пользователь: " + login,
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -1214,7 +1214,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить срок выполнения: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!waitOrFail(page, "#el-cost_from", 8000, "Поле цены")) {
+        if (!waitOrFail(page, "#el-cost_from",  "Поле цены")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЦЕНЫ, пользователь: " + login,
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -1233,7 +1233,7 @@ public class FlRuAutoreplyParser extends AutoreplyParser implements AutoreplyPla
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить цену: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!waitOrFail(page, "#el-submit", 8000, "Кнопка отправки отклика")) {
+        if (!waitOrFail(page, "#el-submit",  "Кнопка отправки отклика")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА ОТПРАВКИ ОТКЛИКА, пользователь: " + login,
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);

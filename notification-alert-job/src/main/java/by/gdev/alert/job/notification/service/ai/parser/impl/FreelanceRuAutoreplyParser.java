@@ -3,7 +3,7 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
-import by.gdev.alert.job.notification.service.ai.merics.AutoreplyErrorTypes;
+import by.gdev.alert.job.notification.service.ai.metrics.errors.AutoreplyErrorTypes;
 import by.gdev.alert.job.notification.service.ai.parser.AutoreplyPlaywrightParser;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
 import by.gdev.alert.job.notification.service.ai.queue.step.dto.StepResult;
@@ -65,7 +65,7 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось открыть главную страницу: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!clickOrFail(page, "a[href='/auth/login']", 8000, "Кнопка 'Вход'")) {
+        if (!clickOrFail(page, "a[href='/auth/login']", "Кнопка 'Вход'")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Вход', пользователь: " + creds.login(),
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);
@@ -73,7 +73,7 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
         }
         log.info("АВТООТВЕТ: {} -> кнопка 'Вход' нажата, пользователь: {}", getSiteName(), creds.login());
 
-        if (!waitOrFail(page, "input[placeholder='логин или email']", 8000, "Поле логина")) {
+        if (!waitOrFail(page, "input[placeholder='логин или email']", "Поле логина")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ЛОГИНА, пользователь: " + creds.login(),
                     AutoreplyErrorTypes.FIELD_NOT_FOUND);
@@ -102,7 +102,7 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
             return StepResult.fail(StepType.SEND_AUTOREPLY, "Не удалось заполнить пароль: " + e.getMessage(), captureScreenshot(page));
         }
 
-        if (!clickOrFail(page, "button:has-text('Войти')", 8000, "Кнопка 'Войти'")) {
+        if (!clickOrFail(page, "button:has-text('Войти')", "Кнопка 'Войти'")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Войти', пользователь: " + creds.login(),
                     AutoreplyErrorTypes.BUTTON_NOT_FOUND);
@@ -165,7 +165,6 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
 
         if (!clickOrFail(page,
                 "button.btn.btn--success.btn--lg.btn--block:has-text('Откликнуться')",
-                8000,
                 "Кнопка 'Откликнуться'")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА 'Откликнуться', пользователь: " + login,
@@ -176,7 +175,6 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
 
         if (!waitOrFail(page,
                 "textarea#replyText[name='TaskReply[text]']",
-                8000,
                 "Поле ответа")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНО ПОЛЕ ОТВЕТА, пользователь: " + login,
@@ -198,7 +196,6 @@ public class FreelanceRuAutoreplyParser extends AutoreplyParser implements Autor
 
         if (!waitOrFail(page,
                 "button#createReply.btn.btn--success.btn--sm",
-                8000,
                 "Кнопка отправки")) {
             report(Level.WARN, log,
                     "АВТООТВЕТ: " + getSiteName() + " -> НЕ НАЙДЕНА КНОПКА ОТПРАВКИ, пользователь: " + login,

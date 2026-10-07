@@ -1,6 +1,6 @@
 package by.gdev.alert.job.notification.service.ai.parser.debug;
 
-import by.gdev.alert.job.notification.service.ai.merics.AutoreplyMetrics;
+import by.gdev.alert.job.notification.service.ai.metrics.AutoreplyMetrics;
 import by.gdev.common.model.SiteName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

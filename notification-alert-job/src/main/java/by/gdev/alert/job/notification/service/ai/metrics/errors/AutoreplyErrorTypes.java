@@ -1,4 +1,4 @@
-package by.gdev.alert.job.notification.service.ai.merics;
+package by.gdev.alert.job.notification.service.ai.metrics.errors;
 
 public final class AutoreplyErrorTypes {
     public static final String BUTTON_NOT_FOUND = "BUTTON_NOT_FOUND";

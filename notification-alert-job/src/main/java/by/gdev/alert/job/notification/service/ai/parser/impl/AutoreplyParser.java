@@ -3,6 +3,8 @@ package by.gdev.alert.job.notification.service.ai.parser.impl;
 import by.gdev.alert.job.notification.model.AutoreplyMode;
 import by.gdev.alert.job.notification.model.dto.AiNotificationPayload;
 import by.gdev.alert.job.notification.model.dto.DecryptedCredential;
+import by.gdev.alert.job.notification.service.ai.metrics.timings.AutoreplyDurationMetrics;
+import by.gdev.alert.job.notification.service.ai.metrics.timings.AutoreplyTimeouts;
 import by.gdev.alert.job.notification.service.ai.parser.debug.AutoreplyReporter;
 import by.gdev.alert.job.notification.service.ai.parser.debug.ScreenshotService;
 import by.gdev.alert.job.notification.service.ai.proxy.AssignedProxyService;
@@ -74,6 +76,12 @@ public abstract class AutoreplyParser {
 
     @Autowired
     protected AutoreplyReporter reporter;
+
+    @Autowired
+    protected AutoreplyTimeouts timeouts;
+
+    @Autowired
+    protected AutoreplyDurationMetrics durationMetrics;
 
     @Autowired
     protected SessionStorage sessionStorage;
@@ -218,8 +226,13 @@ public abstract class AutoreplyParser {
 
             sessionStorage.logContextCookies(context, sessionCookieCheckUrl(), "after-restore");
 
+            long loginStart = System.nanoTime();
             StepResult<Void> loginResult = resolveLogin(page, payload, creds, autoreplyMode,
                     userUuid, siteName, login, hasSession);
+            long loginMs = (System.nanoTime() - loginStart) / 1_000_000;
+            String loginStatus = loginResult.failed() ? "failure" : "success";
+            durationMetrics.recordDuration(siteName, "login", loginStatus, loginMs);
+            log.info("METRIC: {} login status={} duration={} ms", siteName, loginStatus, loginMs);
 
             if (!loginResult.failed()) {
                 // Строго до сохранения: пока дополнительный шаг не пройден, вход не завершён,
@@ -278,9 +291,16 @@ public abstract class AutoreplyParser {
             }
 
             takeScreenshot(page, getSiteName(), userUuid, "after_login");
-            page.waitForTimeout(1000);
+            page.waitForTimeout(timeouts.getBeforeProcessPauseMs());
 
+            long processStart = System.nanoTime();
             StepResult<Void> processResult = processAutoReply(page, payload, creds);
+            long processMs = (System.nanoTime() - processStart) / 1_000_000;
+            String processStatus = processResult.failed() ? "failure" : "success";
+            durationMetrics.recordDuration(siteName, "process_autoreply", processStatus, processMs);
+            log.info("METRIC: {} process_autoreply status={} duration={} ms", siteName, processStatus, processMs);
+
+
             if (processResult.failed()) {
                 log.warn("Автоответ НЕ отправлен пользователем {}", login);
                 return processResult;
@@ -401,7 +421,7 @@ public abstract class AutoreplyParser {
     protected void pauseForSessionVerify(Page page, String userUuid) {
         long pause = postLoginPauseMs;
         if (pause <= 0 && !headless) {
-            pause = 5000;
+            pause = timeouts.getSessionVerifyHeadfulPauseMs();
         }
         if (pause <= 0 || page == null) {
             return;
@@ -418,13 +438,13 @@ public abstract class AutoreplyParser {
                 return;
             } catch (PlaywrightException e) {
                 log.warn("Навигация не удалась (попытка {}): {}", i, e.getMessage());
-                page.waitForTimeout(1500);
+                page.waitForTimeout(timeouts.getNavigateRetryPauseMs());
             }
         }
         throw new RuntimeException("Не удалось открыть страницу после 5 попыток: " + url);
     }
 
-    boolean waitOrFail(Page page, String selector, int timeoutMs, String step) {
+    /*boolean waitOrFail(Page page, String selector, int timeoutMs, String step) {
         try {
             page.waitForSelector(selector, new Page.WaitForSelectorOptions().setTimeout(timeoutMs));
             return true;
@@ -432,10 +452,37 @@ public abstract class AutoreplyParser {
             log.warn("TIMEOUT at step '{}': selector '{}' not found within {} ms", step, selector, timeoutMs);
             return false;
         }
+    }*/
+
+    boolean waitOrFail(Page page, String selector, String step) {
+        long totalMs = timeouts.getElementWaitMs();
+        long pollMs  = timeouts.getElementPollMs();
+        long deadline = System.currentTimeMillis() + totalMs;
+        int attempts = 0;
+        while (System.currentTimeMillis() < deadline) {
+            attempts++;
+            try {
+                Locator loc = page.locator(selector).first();
+                if (loc.count() > 0) {
+                    long spent = totalMs - (deadline - System.currentTimeMillis());
+                    log.info("OK at step '{}': '{}' найдено за {} ms (attempts={})",
+                            step, selector, spent, attempts);
+                    return true;
+                }
+            } catch (Exception e) {
+                log.debug("Poll at step '{}' '{}': {}", step, selector, e.getMessage());
+            }
+            long remaining = deadline - System.currentTimeMillis();
+            if (remaining <= 0) break;
+            page.waitForTimeout(Math.min(pollMs, remaining));
+        }
+        log.warn("TIMEOUT at step '{}': '{}' не найдено за {} ms (attempts={})",
+                step, selector, totalMs, attempts);
+        return false;
     }
 
-    boolean clickOrFail(Page page, String selector, int timeoutMs, String step) {
-        if (!waitOrFail(page, selector, timeoutMs, step)) return false;
+    boolean clickOrFail(Page page, String selector, String step) {
+        if (!waitOrFail(page, selector, step)) return false;
         try {
             getCurrentManager().humanClick(page, selector);
             return true;
